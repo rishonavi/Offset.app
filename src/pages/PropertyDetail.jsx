@@ -24,6 +24,7 @@ import { leaseStatus } from '../lib/lease'
 import { iconForAssetType } from '../lib/assetIcon'
 import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
+import DocumentsCard from '../components/DocumentsCard'
 import ExpenseTable from '../components/ExpenseTable'
 import IncomeTable from '../components/IncomeTable'
 
@@ -53,7 +54,7 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
 export default function PropertyDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { properties, expenses, income, loading, propertyNameById, deleteProperty, deleteExpense, deleteIncome, canWrite } = useData()
+  const { properties, expenses, income, documents, loading, propertyNameById, deleteProperty, deleteExpense, deleteIncome, addDocument, deleteDocument, canWrite } = useData()
 
   const property = useMemo(() => properties.find((p) => p.id === id), [properties, id])
   const items = useMemo(() => expenses.filter((e) => e.property_id === id), [expenses, id])
@@ -84,6 +85,7 @@ export default function PropertyDetail() {
   const monthly = useMemo(() => monthlySeries(items, 12), [items])
   const loan = useMemo(() => loanSummary(property), [property])
   const lease = useMemo(() => leaseStatus(property), [property])
+  const docs = useMemo(() => documents.filter((d) => d.property_id === id), [documents, id])
 
   if (loading) return <Spinner />
 
@@ -348,6 +350,9 @@ export default function PropertyDetail() {
           )}
         </Card>
       </div>
+
+      {/* Documents */}
+      <DocumentsCard propertyId={property.id} documents={docs} canWrite={canWrite} onAdd={addDocument} onDelete={deleteDocument} />
 
       {/* Expenses */}
       <div>

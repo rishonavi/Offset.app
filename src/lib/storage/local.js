@@ -4,6 +4,7 @@
 const PROPS_KEY = 'pl_properties'
 const EXP_KEY = 'pl_expenses'
 const INC_KEY = 'pl_income'
+const DOC_KEY = 'pl_documents'
 
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
@@ -67,9 +68,10 @@ export async function updateProperty(id, payload) {
 }
 export async function deleteProperty(id) {
   write(PROPS_KEY, read(PROPS_KEY).filter((p) => p.id !== id))
-  // cascade: remove this property's expenses and income too
+  // cascade: remove this property's expenses, income and documents too
   write(EXP_KEY, read(EXP_KEY).filter((e) => e.property_id !== id))
   write(INC_KEY, read(INC_KEY).filter((e) => e.property_id !== id))
+  write(DOC_KEY, read(DOC_KEY).filter((d) => d.property_id !== id))
 }
 
 // ── Expenses ───────────────────────────────────────────────────────
@@ -119,4 +121,17 @@ export async function updateIncome(id, payload) {
 }
 export async function deleteIncome(id) {
   write(INC_KEY, read(INC_KEY).filter((e) => e.id !== id))
+}
+
+// ── Documents (leases, insurance, warranties…) ─────────────────────
+export async function getDocuments() {
+  return read(DOC_KEY).sort((a, b) => (a.expiry_date || '').localeCompare(b.expiry_date || ''))
+}
+export async function addDocument(payload) {
+  const row = { id: uid(), created_at: new Date().toISOString(), ...payload }
+  write(DOC_KEY, [...read(DOC_KEY), row])
+  return row
+}
+export async function deleteDocument(id) {
+  write(DOC_KEY, read(DOC_KEY).filter((d) => d.id !== id))
 }

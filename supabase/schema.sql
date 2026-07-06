@@ -100,6 +100,25 @@ alter table public.income   add column if not exists tax numeric(14,2);
 alter table public.expenses add column if not exists recurrence text default 'none';
 alter table public.income   add column if not exists recurrence text default 'none';
 
+-- ── Documents (leases, insurance, warranties…) ──────────────────
+create table if not exists public.documents (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  property_id uuid not null references public.properties(id) on delete cascade,
+  title       text not null,
+  doc_type    text,
+  expiry_date date,
+  file_url    text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists documents_user_idx     on public.documents(user_id);
+create index if not exists documents_property_idx  on public.documents(property_id);
+
+alter table public.documents enable row level security;
+drop policy if exists "own documents" on public.documents;
+create policy "own documents" on public.documents
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- ── Billing / plan (commercial tiers; written by the Stripe webhook) ─
 create table if not exists public.profiles (
   user_id            uuid primary key references auth.users(id) on delete cascade,

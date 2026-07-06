@@ -16,6 +16,7 @@ export function DataProvider({ children }) {
   const [properties, setProperties] = useState([])
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
+  const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -29,10 +30,16 @@ export function DataProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const [p, e, inc] = await Promise.all([db.getProperties(), db.getExpenses(), db.getIncome()])
+      const [p, e, inc, docs] = await Promise.all([
+        db.getProperties(),
+        db.getExpenses(),
+        db.getIncome(),
+        db.getDocuments(),
+      ])
       setProperties([...p].sort(byNameAsc))
       setExpenses([...e].sort(byDateDesc))
       setIncome([...inc].sort(byDateDesc))
+      setDocuments(docs)
     } catch (err) {
       setError(err?.message || String(err))
     } finally {
@@ -53,6 +60,7 @@ export function DataProvider({ children }) {
   const scopedProperties = useMemo(() => inScope(properties), [properties, inScope])
   const scopedExpenses = useMemo(() => inScope(expenses), [expenses, inScope])
   const scopedIncome = useMemo(() => inScope(income), [income, inScope])
+  const scopedDocuments = useMemo(() => inScope(documents), [documents, inScope])
 
   const propertyNameById = useCallback(
     (id) => scopedProperties.find((p) => p.id === id)?.name,
@@ -78,6 +86,7 @@ export function DataProvider({ children }) {
     setProperties((prev) => prev.filter((p) => p.id !== id))
     setExpenses((prev) => prev.filter((e) => e.property_id !== id))
     setIncome((prev) => prev.filter((e) => e.property_id !== id))
+    setDocuments((prev) => prev.filter((d) => d.property_id !== id))
   }
 
   // ── Expenses ──
@@ -118,11 +127,25 @@ export function DataProvider({ children }) {
     setIncome((prev) => prev.filter((e) => e.id !== id))
   }
 
+  // ── Documents ──
+  const addDocument = async (data) => {
+    guard()
+    const row = await db.addDocument(data)
+    setDocuments((prev) => [...prev, row])
+    return row
+  }
+  const deleteDocument = async (id) => {
+    guard()
+    await db.deleteDocument(id)
+    setDocuments((prev) => prev.filter((d) => d.id !== id))
+  }
+
   const value = useMemo(
     () => ({
       properties: scopedProperties,
       expenses: scopedExpenses,
       income: scopedIncome,
+      documents: scopedDocuments,
       loading,
       error,
       canWrite,
@@ -137,9 +160,11 @@ export function DataProvider({ children }) {
       addIncome,
       updateIncome,
       deleteIncome,
+      addDocument,
+      deleteDocument,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopedProperties, scopedExpenses, scopedIncome, loading, error, canWrite, refresh, propertyNameById],
+    [scopedProperties, scopedExpenses, scopedIncome, scopedDocuments, loading, error, canWrite, refresh, propertyNameById],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

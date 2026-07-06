@@ -29,6 +29,7 @@ import {
   AlertTriangle,
   Repeat,
   CalendarClock,
+  FileText,
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
@@ -40,6 +41,7 @@ import { monthSpendByProperty, budgetStatus } from '../lib/budget'
 import { outstandingTotal, isOverdue } from '../lib/payments'
 import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/recurring'
 import { leasesNeedingAttention } from '../lib/lease'
+import { expiringDocuments } from '../lib/documents'
 import { Card, Button, EmptyState, Skeleton } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 
@@ -130,7 +132,7 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const { expenses, income, properties, loading, propertyNameById, canWrite, addExpense, addIncome } = useData()
+  const { expenses, income, properties, documents, loading, propertyNameById, canWrite, addExpense, addIncome } = useData()
   const toast = useToast()
   const [propertyId, setPropertyId] = useState('')
   const [range, setRange] = useState('all')
@@ -154,6 +156,7 @@ export default function Dashboard() {
   }
 
   const leaseAlerts = useMemo(() => leasesNeedingAttention(properties), [properties])
+  const docAlerts = useMemo(() => expiringDocuments(documents), [documents])
 
   const propertyScoped = useMemo(
     () => (propertyId ? expenses.filter((e) => e.property_id === propertyId) : expenses),
@@ -395,6 +398,44 @@ export default function Dashboard() {
                   }
                 >
                   {lease.state === 'expired' ? `Expired ${Math.abs(lease.daysLeft)}d ago` : `${lease.daysLeft}d left`}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Documents expiring */}
+      {docAlerts.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <FileText size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Documents expiring</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {docAlerts.map(({ doc, exp }) => (
+              <Link
+                key={doc.id}
+                to={`/properties/${doc.property_id}`}
+                className="flex items-center justify-between gap-3 py-2.5 transition hover:opacity-80"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">
+                    {doc.title} <span className="text-slate-400">· {doc.doc_type}</span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {propertyNameById(doc.property_id) || '—'} · expires {formatDate(doc.expiry_date)}
+                  </div>
+                </div>
+                <span
+                  className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={
+                    exp.state === 'expired'
+                      ? { background: '#fee2e2', color: '#b91c1c' }
+                      : { background: '#fef3c7', color: '#b45309' }
+                  }
+                >
+                  {exp.state === 'expired' ? `Expired ${Math.abs(exp.daysLeft)}d ago` : `${exp.daysLeft}d left`}
                 </span>
               </Link>
             ))}
