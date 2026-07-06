@@ -1,5 +1,5 @@
 import { Suspense, useState } from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   Boxes,
@@ -116,10 +116,17 @@ function WorkspaceSwitcher() {
   )
 }
 
+// Hides the mobile floating quick-add on the very form it would link to
+// (/properties/new, /expenses/:id/edit, etc.) — otherwise it's a redundant
+// shortcut to the current page, floating over the form's own fields.
+const ON_ADD_EDIT_FORM = /^\/(properties|expenses|income)\/(new|[^/]+\/edit)$/
+
 export default function Layout() {
   const { user, signOut, isCloud } = useAuth()
   const { canWrite } = useData()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const location = useLocation()
+  const showFab = canWrite && !ON_ADD_EDIT_FORM.test(location.pathname)
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
@@ -203,7 +210,7 @@ export default function Layout() {
       </main>
 
       {/* Mobile floating quick-add */}
-      {canWrite && (
+      {showFab && (
         <Link
           to="/expenses/new"
           className="fixed bottom-5 right-5 z-30 grid h-14 w-14 place-items-center bg-gold text-navy shadow-lg shadow-navy/40 transition active:scale-95 lg:hidden"
