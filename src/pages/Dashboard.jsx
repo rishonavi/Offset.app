@@ -28,6 +28,7 @@ import {
   ArrowRight,
   AlertTriangle,
   Repeat,
+  CalendarClock,
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
@@ -38,6 +39,7 @@ import { sumAmount } from '../lib/filters'
 import { monthSpendByProperty, budgetStatus } from '../lib/budget'
 import { outstandingTotal, isOverdue } from '../lib/payments'
 import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/recurring'
+import { leasesNeedingAttention } from '../lib/lease'
 import { Card, Button, EmptyState, Skeleton } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 
@@ -150,6 +152,8 @@ export default function Dashboard() {
       toast(e?.message || 'Could not log it.', { type: 'error' })
     }
   }
+
+  const leaseAlerts = useMemo(() => leasesNeedingAttention(properties), [properties])
 
   const propertyScoped = useMemo(
     () => (propertyId ? expenses.filter((e) => e.property_id === propertyId) : expenses),
@@ -357,6 +361,42 @@ export default function Dashboard() {
                   </Button>
                 </div>
               </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Lease renewals */}
+      {leaseAlerts.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <CalendarClock size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Lease renewals</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {leaseAlerts.map(({ property, lease }) => (
+              <Link
+                key={property.id}
+                to={`/properties/${property.id}`}
+                className="flex items-center justify-between gap-3 py-2.5 transition hover:opacity-80"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">{property.name}</div>
+                  <div className="text-xs text-slate-400">
+                    {lease.tenant ? `${lease.tenant} · ` : ''}ends {formatDate(lease.end)}
+                  </div>
+                </div>
+                <span
+                  className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={
+                    lease.state === 'expired'
+                      ? { background: '#fee2e2', color: '#b91c1c' }
+                      : { background: '#fef3c7', color: '#b45309' }
+                  }
+                >
+                  {lease.state === 'expired' ? `Expired ${Math.abs(lease.daysLeft)}d ago` : `${lease.daysLeft}d left`}
+                </span>
+              </Link>
             ))}
           </div>
         </Card>

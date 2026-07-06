@@ -20,6 +20,7 @@ import { colorForCategory } from '../lib/constants'
 import { totalsByCategory, monthlySeries } from '../lib/stats'
 import { sumAmount } from '../lib/filters'
 import { loanSummary } from '../lib/loan'
+import { leaseStatus } from '../lib/lease'
 import { iconForAssetType } from '../lib/assetIcon'
 import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
@@ -82,6 +83,7 @@ export default function PropertyDetail() {
   const byCategory = useMemo(() => totalsByCategory(items), [items])
   const monthly = useMemo(() => monthlySeries(items, 12), [items])
   const loan = useMemo(() => loanSummary(property), [property])
+  const lease = useMemo(() => leaseStatus(property), [property])
 
   if (loading) return <Spinner />
 
@@ -249,6 +251,51 @@ export default function PropertyDetail() {
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
               <div className="h-full rounded-full bg-gold" style={{ width: `${loan.progressPct}%` }} />
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Tenancy / lease */}
+      {lease && (
+        <Card className="p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-700">Tenancy / lease</h3>
+            {lease.daysLeft != null && (
+              <span
+                className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                style={
+                  lease.state === 'expired'
+                    ? { background: '#fee2e2', color: '#b91c1c' }
+                    : lease.state === 'ending'
+                    ? { background: '#fef3c7', color: '#b45309' }
+                    : { background: '#dcfce7', color: '#15803d' }
+                }
+              >
+                {lease.state === 'expired'
+                  ? `Expired ${Math.abs(lease.daysLeft)}d ago`
+                  : lease.state === 'upcoming'
+                  ? 'Starts soon'
+                  : `${lease.daysLeft}d left`}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Tenant</div>
+              <div className="truncate font-serif text-lg font-bold text-slate-900">{lease.tenant || '—'}</div>
+            </div>
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Lease start</div>
+              <div className="font-serif text-lg font-bold text-slate-900">{lease.start ? formatDate(lease.start) : '—'}</div>
+            </div>
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Lease end</div>
+              <div className="font-serif text-lg font-bold text-slate-900">{lease.end ? formatDate(lease.end) : '—'}</div>
+            </div>
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Deposit held</div>
+              <div className="font-serif text-lg font-bold text-slate-900">{lease.deposit ? formatCurrency(lease.deposit) : '—'}</div>
             </div>
           </div>
         </Card>

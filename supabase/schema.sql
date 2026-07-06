@@ -26,6 +26,12 @@ alter table public.properties add column if not exists loan_rate          numeri
 alter table public.properties add column if not exists loan_tenure_months integer;
 alter table public.properties add column if not exists loan_start         date;
 
+-- Tenancy / lease for rented assets (all optional; safe to re-run).
+alter table public.properties add column if not exists tenant_name text;
+alter table public.properties add column if not exists lease_start date;
+alter table public.properties add column if not exists lease_end   date;
+alter table public.properties add column if not exists deposit     numeric(14,2);
+
 create table if not exists public.expenses (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references auth.users(id) on delete cascade default auth.uid(),
