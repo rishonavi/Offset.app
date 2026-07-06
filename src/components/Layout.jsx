@@ -23,6 +23,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
+import ErrorBoundary from './ErrorBoundary'
 import { Spinner } from './ui'
 
 const NAV = [
@@ -203,9 +204,11 @@ export default function Layout() {
           </div>
         )}
         <div className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-10">
-          <Suspense fallback={<Spinner />}>
-            <Outlet />
-          </Suspense>
+          <ErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<Spinner />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
 
