@@ -10,6 +10,12 @@ export const ASSET_TYPES = [
   'Yacht / Boat',
   'Aircraft',
   'Machinery / Equipment',
+  'Jewellery',
+  'Precious Metals — Gold / Silver',
+  'Stocks / Equity',
+  'Mutual Funds / Bonds',
+  'Cryptocurrency',
+  'Art / Collectibles',
   'Other',
 ]
 
