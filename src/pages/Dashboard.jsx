@@ -42,6 +42,7 @@ import { outstandingTotal, isOverdue } from '../lib/payments'
 import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/recurring'
 import { leasesNeedingAttention } from '../lib/lease'
 import { expiringDocuments } from '../lib/documents'
+import { spendingAnomalies } from '../lib/anomalies'
 import { Card, Button, EmptyState, Skeleton } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 
@@ -157,6 +158,7 @@ export default function Dashboard() {
 
   const leaseAlerts = useMemo(() => leasesNeedingAttention(properties), [properties])
   const docAlerts = useMemo(() => expiringDocuments(documents), [documents])
+  const anomalies = useMemo(() => spendingAnomalies(expenses), [expenses])
 
   const propertyScoped = useMemo(
     () => (propertyId ? expenses.filter((e) => e.property_id === propertyId) : expenses),
@@ -438,6 +440,34 @@ export default function Dashboard() {
                   {exp.state === 'expired' ? `Expired ${Math.abs(exp.daysLeft)}d ago` : `${exp.daysLeft}d left`}
                 </span>
               </Link>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Unusual spending */}
+      {anomalies.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <TrendingUp size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Unusual spending</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {anomalies.map((a) => (
+              <div key={a.category} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorForCategory(a.category) }} />
+                    <span className="truncate">{a.category}</span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {formatCurrency(a.current)} this month · vs {formatCurrency(a.average)} average
+                  </div>
+                </div>
+                <span className="shrink-0 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+                  +{a.changePct}%
+                </span>
+              </div>
             ))}
           </div>
         </Card>
