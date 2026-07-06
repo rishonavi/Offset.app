@@ -27,15 +27,18 @@ import {
   Plus,
   ArrowRight,
   AlertTriangle,
+  Repeat,
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useToast } from '../context/ToastContext'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory, CHART_PALETTE } from '../lib/constants'
 import { totalsByCategory, totalsByProperty, monthlySeries, monthlyIncomeExpense } from '../lib/stats'
 import { sumAmount } from '../lib/filters'
 import { monthSpendByProperty, budgetStatus } from '../lib/budget'
 import { outstandingTotal, isOverdue } from '../lib/payments'
-import { Card, EmptyState, Skeleton } from '../components/ui'
+import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/recurring'
+import { Card, Button, EmptyState, Skeleton } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 
 const RANGES = [
@@ -125,9 +128,28 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const { expenses, income, properties, loading, propertyNameById } = useData()
+  const { expenses, income, properties, loading, propertyNameById, canWrite, addExpense, addIncome } = useData()
+  const toast = useToast()
   const [propertyId, setPropertyId] = useState('')
   const [range, setRange] = useState('all')
+
+  const recurringDue = useMemo(
+    () =>
+      [...dueRecurring(expenses, 'expense'), ...dueRecurring(income, 'income')].sort((a, b) =>
+        a.dueDate.localeCompare(b.dueDate),
+      ),
+    [expenses, income],
+  )
+  const logDue = async (d) => {
+    try {
+      const payload = nextOccurrencePayload(d.template, d.kind, d.dueDate)
+      if (d.kind === 'income') await addIncome(payload)
+      else await addExpense(payload)
+      toast(`Logged ${d.kind === 'income' ? 'income' : 'expense'} for ${formatDate(d.dueDate)}.`)
+    } catch (e) {
+      toast(e?.message || 'Could not log it.', { type: 'error' })
+    }
+  }
 
   const propertyScoped = useMemo(
     () => (propertyId ? expenses.filter((e) => e.property_id === propertyId) : expenses),
@@ -305,6 +327,40 @@ export default function Dashboard() {
         <StatCard icon={Scale} label={`Net (${rangeLabel})`} value={formatCurrency(netScoped)} accent={netScoped >= 0 ? '#2F8F6B' : '#C0492F'} />
         <StatCard icon={Receipt} label="Expense entries" value={String(scoped.length)} accent="#0A1828" />
       </div>
+
+      {/* Recurring due to log */}
+      {canWrite && recurringDue.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Repeat size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Recurring — due to log</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {recurringDue.map((d) => (
+              <div key={`${d.kind}-${d.template.id}`} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">
+                    {propertyNameById(d.template.property_id) || '—'} ·{' '}
+                    {(d.kind === 'income' ? d.template.source : d.template.category) || (d.kind === 'income' ? 'Income' : 'Expense')}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {RECURRENCE_LABEL[d.template.recurrence]} · due {formatDate(d.dueDate)}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="text-sm font-semibold" style={{ color: d.kind === 'income' ? '#2F8F6B' : '#0A1828' }}>
+                    {d.kind === 'income' ? '+' : ''}
+                    {formatCurrency(d.template.amount)}
+                  </span>
+                  <Button onClick={() => logDue(d)} className="px-3 py-1.5">
+                    <Plus size={15} /> Log
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Budgets */}
       {budgeted.length > 0 && (

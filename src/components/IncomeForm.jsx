@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
 import { INCOME_SOURCES, PAYMENT_METHODS } from '../lib/constants'
+import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { currencySymbol, todayISO } from '../lib/format'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
@@ -17,6 +18,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
     payment_method: initial?.payment_method || '',
     status: initial?.status || 'received',
     due_date: initial?.due_date || '',
+    recurrence: initial?.recurrence || 'none',
     description: initial?.description || '',
   })
   const [file, setFile] = useState(null)
@@ -116,6 +118,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
         payment_method: form.payment_method,
         status: form.status,
         due_date: form.status === 'pending' ? form.due_date || null : null,
+        recurrence: form.recurrence,
         description: form.description.trim(),
         receipt_url: receipt_url || null,
       })
@@ -248,6 +251,16 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
             <Input type="date" value={form.due_date} onChange={set('due_date')} />
           </Field>
         )}
+
+        <Field label="Repeats" hint="Recurring income shows a one-tap prompt on the dashboard when due">
+          <Select value={form.recurrence} onChange={set('recurrence')}>
+            {RECURRENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
       </div>
 
       <Field label="Description / Notes">

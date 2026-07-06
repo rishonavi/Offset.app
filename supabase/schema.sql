@@ -84,6 +84,10 @@ alter table public.income   add column if not exists due_date date;
 alter table public.expenses add column if not exists tax numeric(14,2);
 alter table public.income   add column if not exists tax numeric(14,2);
 
+-- ── Recurrence: none | monthly | quarterly | yearly (safe to re-run) ─
+alter table public.expenses add column if not exists recurrence text default 'none';
+alter table public.income   add column if not exists recurrence text default 'none';
+
 -- ── Billing / plan (commercial tiers; written by the Stripe webhook) ─
 create table if not exists public.profiles (
   user_id            uuid primary key references auth.users(id) on delete cascade,
