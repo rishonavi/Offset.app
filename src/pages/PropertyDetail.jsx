@@ -15,10 +15,11 @@ import {
 import { startOfMonth, subMonths, format } from 'date-fns'
 import { ArrowLeft, Plus, Pencil, Trash2, MapPin, Wallet, Receipt, CalendarDays, Banknote, Scale } from 'lucide-react'
 import { useData } from '../context/DataContext'
-import { formatCurrency, formatCompact } from '../lib/format'
+import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory } from '../lib/constants'
 import { totalsByCategory, monthlySeries } from '../lib/stats'
 import { sumAmount } from '../lib/filters'
+import { loanSummary } from '../lib/loan'
 import { iconForAssetType } from '../lib/assetIcon'
 import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
@@ -80,6 +81,7 @@ export default function PropertyDetail() {
 
   const byCategory = useMemo(() => totalsByCategory(items), [items])
   const monthly = useMemo(() => monthlySeries(items, 12), [items])
+  const loan = useMemo(() => loanSummary(property), [property])
 
   if (loading) return <Spinner />
 
@@ -212,6 +214,43 @@ export default function PropertyDetail() {
           <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand hover:underline">
             Set value
           </Link>
+        </Card>
+      )}
+
+      {/* Loan / mortgage */}
+      {loan && (
+        <Card className="p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-700">Loan / mortgage</h3>
+            <span className="text-xs text-slate-400">
+              {loan.rate}% · {loan.months} mo · payoff {formatDate(loan.payoffDate)}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+            {[
+              { label: 'Monthly EMI', value: formatCurrency(loan.emi), hint: `${loan.paid} of ${loan.months} paid` },
+              { label: 'Outstanding', value: formatCurrency(loan.outstanding), hint: `${loan.remaining} mo left`, accent: '#C0492F' },
+              { label: 'Total interest', value: formatCurrency(loan.totalInterest), hint: 'over full tenure' },
+              { label: 'Loan amount', value: formatCurrency(loan.principal), hint: 'original principal' },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div className="font-serif text-2xl font-bold" style={{ color: m.accent || '#0A1828' }}>
+                  {m.value}
+                </div>
+                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
+            <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+              <span>Repaid</span>
+              <span className="font-semibold text-slate-700">{loan.progressPct}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-gold" style={{ width: `${loan.progressPct}%` }} />
+            </div>
+          </div>
         </Card>
       )}
 

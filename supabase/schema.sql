@@ -20,6 +20,12 @@ create table if not exists public.properties (
 alter table public.properties add column if not exists monthly_budget numeric(14,2);
 alter table public.properties add column if not exists value          numeric(14,2);
 
+-- Loan / mortgage held against the asset (all optional; safe to re-run).
+alter table public.properties add column if not exists loan_principal     numeric(14,2);
+alter table public.properties add column if not exists loan_rate          numeric(6,3);
+alter table public.properties add column if not exists loan_tenure_months integer;
+alter table public.properties add column if not exists loan_start         date;
+
 create table if not exists public.expenses (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references auth.users(id) on delete cascade default auth.uid(),
