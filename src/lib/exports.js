@@ -59,10 +59,6 @@ function sheetFromRows(rows) {
   return wb
 }
 
-export function exportExcel(rows, filename = 'expenses') {
-  XLSX.writeFile(sheetFromRows(rows), `${filename}.xlsx`)
-}
-
 export function exportCSV(rows, filename = 'expenses') {
   XLSX.writeFile(sheetFromRows(rows), `${filename}.csv`, { bookType: 'csv' })
 }

@@ -43,18 +43,6 @@ export function monthlySeries(expenses, months = 12) {
   return order.map(({ key, label }) => ({ month: label, total: buckets.get(key) || 0 }))
 }
 
-export function totalsBySource(income) {
-  const map = new Map()
-  for (const e of income) {
-    const k = e.source || 'Other'
-    map.set(k, (map.get(k) || 0) + (Number(e.amount) || 0))
-  }
-  return [...map.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .filter((d) => d.value > 0)
-    .sort((a, b) => b.value - a.value)
-}
-
 // Combined per-month income / expense / net over the last `months`.
 export function monthlyIncomeExpense(expenses, income, months = 12) {
   const exp = new Map()

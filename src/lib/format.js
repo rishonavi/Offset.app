@@ -36,12 +36,6 @@ export const formatDate = (d) => {
   return isValid(dt) ? format(dt, 'dd MMM yyyy') : String(d)
 }
 
-export const formatMonth = (d) => {
-  if (!d) return ''
-  const dt = toDate(d)
-  return isValid(dt) ? format(dt, 'MMM yyyy') : String(d)
-}
-
 export const todayISO = () => format(new Date(), 'yyyy-MM-dd')
 
 export const monthKey = (d) => {

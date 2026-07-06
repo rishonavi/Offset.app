@@ -41,9 +41,3 @@ export const PLANS = {
 }
 
 export const planById = (id) => PLANS[id] || PLANS.free
-
-// Is a feature available on a plan? key ∈ gmailImport | cloudBackup
-export const allows = (planId, key) => Boolean(planById(planId).limits[key])
-
-// Has a numeric limit been reached? key ∈ assets | scansPerMonth
-export const atLimit = (planId, key, current) => current >= planById(planId).limits[key]
