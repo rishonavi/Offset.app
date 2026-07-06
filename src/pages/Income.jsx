@@ -55,7 +55,7 @@ export default function Income() {
     <div className="animate-fade-in space-y-5">
       <PageHeader
         title="Income"
-        subtitle={`${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'}${active ? ' (filtered)' : ''} · ${formatCurrency(total)} received`}
+        subtitle={`${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'}${active ? ' (filtered)' : ''} · ${formatCurrency(total)} total`}
         actions={
           canWrite ? (
             <Link to="/income/new" className="btn-primary">

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Banknote, Building2, Eye } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { Card, EmptyState, Spinner } from '../components/ui'
@@ -9,6 +9,7 @@ import IncomeForm from '../components/IncomeForm'
 export default function IncomeFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [params] = useSearchParams()
   const { income, properties, loading, addIncome, updateIncome, canWrite } = useData()
 
@@ -42,7 +43,7 @@ export default function IncomeFormPage() {
   }
 
   const editing = id ? income.find((e) => e.id === id) : null
-  const goBack = () => navigate(-1)
+  const goBack = () => (location.key === 'default' ? navigate('/income') : navigate(-1))
 
   if (id && !editing) {
     return (

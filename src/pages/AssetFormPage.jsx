@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Building2, Crown, Eye } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { usePlan } from '../context/PlanContext'
@@ -9,6 +9,7 @@ import PropertyForm from '../components/PropertyForm'
 export default function AssetFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { properties, loading, addProperty, updateProperty, canWrite } = useData()
   const plan = usePlan()
 
@@ -32,7 +33,7 @@ export default function AssetFormPage() {
   }
 
   const editing = id ? properties.find((p) => p.id === id) : null
-  const goBack = () => navigate(-1)
+  const goBack = () => (location.key === 'default' ? navigate('/properties') : navigate(-1))
   const atAssetLimit = !editing && plan && !plan.canAddAsset(properties.length)
 
   if (id && !editing) {
