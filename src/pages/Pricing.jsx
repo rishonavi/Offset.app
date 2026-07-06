@@ -75,7 +75,7 @@ export default function Pricing() {
                       {billingEnabled ? 'Upgrade to Pro' : 'Get Pro'}
                     </Button>
                   ) : (
-                    <Link to={user ? '/' : '/login'} className="btn-ghost w-full border-white/30 text-white hover:text-gold">
+                    <Link to={user ? '/' : '/login'} className="btn-ghost w-full border-white/30 bg-transparent text-white hover:text-gold">
                       Get started
                     </Link>
                   )}
