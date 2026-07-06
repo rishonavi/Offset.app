@@ -16,6 +16,7 @@ import {
 import { cloudProviders } from '../lib/cloud'
 import { Card, Button, Spinner, EmptyState, Badge } from '../components/ui'
 import PageHeader from '../components/PageHeader'
+import AskCard from '../components/AskCard'
 import FilterBar from '../components/FilterBar'
 
 const PREVIEW_LIMIT = 100
@@ -318,6 +319,8 @@ export default function Reports() {
         title="Reports & Export"
         subtitle="Filter your expenses, then export or import as Excel, CSV or PDF."
       />
+
+      <AskCard />
 
       <FilterBar properties={properties} value={filters} onChange={setFilters} />
 
