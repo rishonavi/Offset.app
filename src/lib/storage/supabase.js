@@ -11,6 +11,18 @@ async function requireUserId() {
   return user.id
 }
 
+// When an editor is acting inside another user's (shared) workspace, new rows
+// and uploaded files must be stamped with the *owner's* id — not the editor's —
+// so the data belongs to the shared workspace. DataContext sets this to the
+// active workspace owner, or null for your own workspace / read-only viewing.
+let writeOwnerId = null
+export function setWriteOwner(id) {
+  writeOwnerId = id || null
+}
+async function ownerForWrite() {
+  return writeOwnerId || (await requireUserId())
+}
+
 // ── Auth ───────────────────────────────────────────────────────────
 export async function getCurrentUser() {
   const {
@@ -72,7 +84,7 @@ export async function getProperties() {
   return data
 }
 export async function addProperty(payload) {
-  const user_id = await requireUserId()
+  const user_id = await ownerForWrite()
   const { data, error } = await supabase
     .from('properties')
     .insert({ ...payload, user_id })
@@ -106,7 +118,7 @@ export async function getExpenses() {
   return data
 }
 export async function addExpense(payload) {
-  const user_id = await requireUserId()
+  const user_id = await ownerForWrite()
   const { data, error } = await supabase
     .from('expenses')
     .insert({ ...payload, user_id })
@@ -137,7 +149,7 @@ export async function getIncome() {
   return data
 }
 export async function addIncome(payload) {
-  const user_id = await requireUserId()
+  const user_id = await ownerForWrite()
   const { data, error } = await supabase.from('income').insert({ ...payload, user_id }).select().single()
   if (error) throw error
   return data
@@ -159,7 +171,7 @@ export async function getDocuments() {
   return data
 }
 export async function addDocument(payload) {
-  const user_id = await requireUserId()
+  const user_id = await ownerForWrite()
   const { data, error } = await supabase.from('documents').insert({ ...payload, user_id }).select().single()
   if (error) throw error
   return data
@@ -171,7 +183,8 @@ export async function deleteDocument(id) {
 
 // ── Receipts (private bucket: store the path, serve via signed URL) ──
 export async function uploadReceipt(file) {
-  const user_id = await requireUserId()
+  // Store under the workspace owner's folder so shared readers can view it.
+  const user_id = await ownerForWrite()
   const ext = (file.name.split('.').pop() || 'bin').toLowerCase()
   const path = `${user_id}/${crypto.randomUUID()}.${ext}`
   const { error } = await supabase.storage

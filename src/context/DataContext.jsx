@@ -12,7 +12,7 @@ const byDateDesc = (a, b) => (b.date || '').localeCompare(a.date || '')
 
 export function DataProvider({ children }) {
   const { user } = useAuth()
-  const { activeOwner, isOwnWorkspace } = useWorkspace()
+  const { activeOwner, isOwnWorkspace, canWriteActive } = useWorkspace()
   const [properties, setProperties] = useState([])
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
@@ -20,11 +20,18 @@ export function DataProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Shared workspaces are read-only; your own (and demo mode) are read/write.
-  const canWrite = !isCloud || isOwnWorkspace
+  // Your own workspace and demo mode are always read/write; a shared workspace
+  // is writable only when you were invited as an editor.
+  const canWrite = !isCloud || canWriteActive
   const guard = () => {
     if (!canWrite) throw new Error('This shared workspace is read-only.')
   }
+
+  // Stamp new rows/files with the active workspace owner when acting as an
+  // editor in someone else's workspace (null = your own workspace).
+  useEffect(() => {
+    if (isCloud) db.setWriteOwner(isOwnWorkspace ? null : activeOwner)
+  }, [isOwnWorkspace, activeOwner])
 
   const refresh = useCallback(async () => {
     setLoading(true)

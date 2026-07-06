@@ -18,6 +18,7 @@ export default function Settings() {
   const [busy, setBusy] = useState(false)
   const [team, setTeam] = useState({ sharedByMe: [], sharedWithMe: [] })
   const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('viewer')
   const [inviting, setInviting] = useState(false)
 
   const loadTeam = async () => {
@@ -37,10 +38,10 @@ export default function Settings() {
     if (!email) return
     setInviting(true)
     try {
-      await inviteMember(email)
+      await inviteMember(email, inviteRole)
       setInviteEmail('')
       await loadTeam()
-      toast('Shared — they can now view your workspace.')
+      toast(inviteRole === 'editor' ? 'Shared — they can now view and edit.' : 'Shared — they can now view your workspace.')
     } catch (err) {
       toast(err?.message || 'Could not share.', { type: 'error' })
     } finally {
@@ -181,7 +182,8 @@ export default function Settings() {
         <Card className="p-5">
           <h3 className="text-sm font-semibold text-slate-700">Team &amp; sharing</h3>
           <p className="mt-1 text-xs text-slate-500">
-            Invite someone (e.g. your accountant) to <strong>view</strong> your workspace — read-only. They’ll need an Offset account.
+            Invite someone (e.g. your accountant or partner) to your workspace. A <strong>viewer</strong> is read-only;
+            an <strong>editor</strong> can add and change records. They’ll need an Offset account.
           </p>
           <form onSubmit={invite} className="mt-3 flex flex-wrap gap-2">
             <input
@@ -191,6 +193,10 @@ export default function Settings() {
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
             />
+            <select className="field-input w-auto" value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+              <option value="viewer">Viewer</option>
+              <option value="editor">Editor</option>
+            </select>
             <Button type="submit" loading={inviting}>
               <UserPlus size={16} /> Share
             </Button>
@@ -201,8 +207,13 @@ export default function Settings() {
               <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">People with access</div>
               <div className="mt-1 divide-y divide-slate-100">
                 {team.sharedByMe.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between py-2 text-sm">
-                    <span className="truncate text-slate-700">{m.member_email || m.member_id}</span>
+                  <div key={m.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                    <span className="min-w-0 truncate text-slate-700">
+                      {m.member_email || m.member_id}
+                      <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">
+                        {m.role === 'editor' ? 'Editor' : 'Viewer'}
+                      </span>
+                    </span>
                     <button onClick={() => unshare(m.id)} className="shrink-0 text-xs font-medium text-red-600 hover:underline">
                       Remove
                     </button>

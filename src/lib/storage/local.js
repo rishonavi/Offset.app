@@ -8,6 +8,9 @@ const DOC_KEY = 'pl_documents'
 
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
+// No-op in demo mode — there are no shared workspaces without a cloud backend.
+export function setWriteOwner() {}
+
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
