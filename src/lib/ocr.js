@@ -239,12 +239,27 @@ async function prepareForUpload(file) {
 async function scanWithAI(file) {
   const payload = await prepareForUpload(file)
   if (!payload) return { data: null, error: 'too_big' } // file too large → OCR
+  const headers = { 'Content-Type': 'application/json' }
+  // Include the auth token so the server can attribute the scan to the user
+  // when plan limits are enforced (harmless otherwise).
+  try {
+    const { supabase } = await import('./supabaseClient')
+    if (supabase) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
+    }
+  } catch {
+    /* no cloud session — proceed unauthenticated */
+  }
   const res = await fetch(AI_ENDPOINT, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
   })
   if (res.status === 501) return { data: null, error: 'not_configured' }
+  if (res.status === 429) return { data: null, error: 'scan_limit_reached' }
   if (!res.ok) return { data: null, error: `http_${res.status}` }
   const d = await res.json().catch(() => null)
   if (!d) return { data: null, error: 'bad_response' }
