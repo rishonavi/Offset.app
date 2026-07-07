@@ -138,6 +138,34 @@ end;
 $$;
 grant execute on function public.admin_list_users(text, int, int) to authenticated;
 
+-- ── Admin roles ──────────────────────────────────────────────────
+-- superadmin: everything, incl. managing admins & app config.
+-- admin:      users + plans + config.
+-- support:    users + plans.
+-- readonly:   view only.
+create or replace function public.admin_role(uid uuid default auth.uid())
+returns text
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select role from public.admins where user_id = uid;
+$$;
+grant execute on function public.admin_role(uuid) to authenticated;
+
+-- May the caller perform user/plan write actions?
+create or replace function public.admin_can_write()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select public.admin_role() in ('superadmin', 'admin', 'support');
+$$;
+grant execute on function public.admin_can_write() to authenticated;
+
 -- Set a user's plan (comp Pro / downgrade), writing an audit row.
 create or replace function public.admin_set_plan(p_target uuid, p_plan text)
 returns text
@@ -147,7 +175,7 @@ set search_path = public, auth
 as $$
 declare v_email text;
 begin
-  if not public.is_admin() then
+  if not public.admin_can_write() then
     raise exception 'not_admin' using errcode = '42501';
   end if;
   if p_plan not in ('free', 'pro') then
@@ -195,3 +223,75 @@ begin
 end;
 $$;
 grant execute on function public.admin_audit_log(int) to authenticated;
+
+-- ── Manage the admin allowlist (superadmin only) ─────────────────
+create or replace function public.admin_list_admins()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, auth
+stable
+as $$
+declare result jsonb;
+begin
+  if not public.is_admin() then
+    raise exception 'not_admin' using errcode = '42501';
+  end if;
+  select coalesce(jsonb_agg(row_to_json(t)), '[]'::jsonb) into result
+  from (
+    select a.user_id, u.email, a.role, a.created_at
+    from public.admins a
+    join auth.users u on u.id = a.user_id
+    order by a.created_at
+  ) t;
+  return result;
+end;
+$$;
+grant execute on function public.admin_list_admins() to authenticated;
+
+create or replace function public.admin_add_admin(p_email text, p_role text default 'admin')
+returns text
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare v_uid uuid;
+begin
+  if public.admin_role() <> 'superadmin' then
+    raise exception 'not_superadmin' using errcode = '42501';
+  end if;
+  if p_role not in ('superadmin', 'admin', 'support', 'readonly') then
+    raise exception 'invalid_role';
+  end if;
+  select id into v_uid from auth.users where lower(email) = lower(p_email);
+  if v_uid is null then
+    raise exception 'no_such_user';
+  end if;
+  insert into public.admins (user_id, role) values (v_uid, p_role)
+    on conflict (user_id) do update set role = excluded.role;
+  insert into public.admin_audit (admin_id, admin_email, action, target_user, target_email, detail)
+    values (auth.uid(), (select email from auth.users where id = auth.uid()), 'add_admin', v_uid, p_email, jsonb_build_object('role', p_role));
+  return p_role;
+end;
+$$;
+grant execute on function public.admin_add_admin(text, text) to authenticated;
+
+create or replace function public.admin_remove_admin(p_uid uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if public.admin_role() <> 'superadmin' then
+    raise exception 'not_superadmin' using errcode = '42501';
+  end if;
+  if p_uid = auth.uid() then
+    raise exception 'cannot_remove_self';
+  end if;
+  delete from public.admins where user_id = p_uid;
+  insert into public.admin_audit (admin_id, admin_email, action, target_user)
+    values (auth.uid(), (select email from auth.users where id = auth.uid()), 'remove_admin', p_uid);
+end;
+$$;
+grant execute on function public.admin_remove_admin(uuid) to authenticated;

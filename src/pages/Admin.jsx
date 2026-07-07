@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Crown, TrendingUp, Activity, Boxes, Receipt, Banknote, ScanLine, Search, ShieldAlert } from 'lucide-react'
+import { Users, Crown, TrendingUp, Activity, Boxes, Receipt, Banknote, ScanLine, Search, ShieldAlert, UserPlus, Trash2 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
-import { checkIsAdmin, adminOverview, adminListUsers, adminSetPlan, adminAuditLog } from '../lib/admin'
+import {
+  checkIsAdmin,
+  adminRole,
+  adminOverview,
+  adminListUsers,
+  adminSetPlan,
+  adminAuditLog,
+  adminListAdmins,
+  adminAddAdmin,
+  adminRemoveAdmin,
+} from '../lib/admin'
 import { formatDate } from '../lib/format'
 import { Card, Button, Spinner, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -32,18 +42,53 @@ export default function Admin() {
   const [audit, setAudit] = useState([])
   const [search, setSearch] = useState('')
   const [busyId, setBusyId] = useState(null)
+  const [role, setRole] = useState(null)
+  const [admins, setAdmins] = useState([])
+  const [newAdmin, setNewAdmin] = useState({ email: '', role: 'admin' })
+  const [addingAdmin, setAddingAdmin] = useState(false)
+
+  const canWrite = role === 'superadmin' || role === 'admin' || role === 'support'
+  const isSuper = role === 'superadmin'
 
   const load = async (q = '') => {
     setLoading(true)
     try {
-      const [ov, us, au] = await Promise.all([adminOverview(), adminListUsers(q), adminAuditLog(30)])
+      const [ov, us, au, rl] = await Promise.all([adminOverview(), adminListUsers(q), adminAuditLog(30), adminRole()])
       setOverview(ov)
       setUsers(us)
       setAudit(au)
+      setRole(rl)
+      if (rl === 'superadmin') setAdmins(await adminListAdmins().catch(() => []))
     } catch (e) {
       toast(e?.message || 'Could not load admin data.', { type: 'error' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const addAdmin = async (e) => {
+    e.preventDefault()
+    if (!newAdmin.email.trim()) return
+    setAddingAdmin(true)
+    try {
+      await adminAddAdmin(newAdmin.email.trim(), newAdmin.role)
+      setNewAdmin({ email: '', role: 'admin' })
+      setAdmins(await adminListAdmins())
+      toast('Admin added.')
+    } catch (err) {
+      toast(err?.message || 'Could not add admin.', { type: 'error' })
+    } finally {
+      setAddingAdmin(false)
+    }
+  }
+
+  const removeAdmin = async (uid) => {
+    try {
+      await adminRemoveAdmin(uid)
+      setAdmins((prev) => prev.filter((a) => a.user_id !== uid))
+      toast('Admin removed.')
+    } catch (err) {
+      toast(err?.message || 'Could not remove admin.', { type: 'error' })
     }
   }
 
@@ -101,7 +146,14 @@ export default function Admin() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader title="Admin" subtitle="Platform overview, users and audit log." />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PageHeader title="Admin" subtitle="Platform overview, users and audit log." />
+        {role && (
+          <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold">
+            {role}
+          </span>
+        )}
+      </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -170,7 +222,9 @@ export default function Admin() {
                     </span>
                   </td>
                   <td className="py-2.5">
-                    {u.plan === 'pro' ? (
+                    {!canWrite ? (
+                      <span className="text-xs text-slate-300">—</span>
+                    ) : u.plan === 'pro' ? (
                       <button
                         onClick={() => setPlan(u, 'free')}
                         disabled={busyId === u.user_id}
@@ -201,6 +255,51 @@ export default function Admin() {
           </table>
         </div>
       </Card>
+
+      {/* Admins (superadmin only) */}
+      {isSuper && (
+        <Card className="p-5">
+          <h3 className="mb-1 text-sm font-semibold text-slate-700">Admins</h3>
+          <p className="mb-3 text-xs text-slate-500">Manage who can access this area. The user must already have an Offset account.</p>
+          <form onSubmit={addAdmin} className="flex flex-wrap gap-2">
+            <input
+              type="email"
+              className="field-input min-w-0 flex-1"
+              placeholder="their@email.com"
+              value={newAdmin.email}
+              onChange={(e) => setNewAdmin((s) => ({ ...s, email: e.target.value }))}
+            />
+            <select
+              className="field-input w-auto"
+              value={newAdmin.role}
+              onChange={(e) => setNewAdmin((s) => ({ ...s, role: e.target.value }))}
+            >
+              <option value="admin">Admin</option>
+              <option value="support">Support</option>
+              <option value="readonly">Read-only</option>
+              <option value="superadmin">Superadmin</option>
+            </select>
+            <Button type="submit" loading={addingAdmin}>
+              <UserPlus size={16} /> Add
+            </Button>
+          </form>
+          <div className="mt-3 divide-y divide-slate-100">
+            {admins.map((a) => (
+              <div key={a.user_id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="min-w-0 truncate text-slate-700">
+                  {a.email}
+                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">
+                    {a.role}
+                  </span>
+                </span>
+                <button onClick={() => removeAdmin(a.user_id)} className="shrink-0 text-slate-400 hover:text-red-600" title="Remove admin">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Audit log */}
       <Card className="p-5">

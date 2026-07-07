@@ -39,3 +39,28 @@ export async function adminAuditLog(limit = 50) {
   if (error) throw error
   return data || []
 }
+
+// ── Roles & admin management ──
+export async function adminRole() {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('admin_role')
+  if (error) return null
+  return data || null
+}
+
+export async function adminListAdmins() {
+  const { data, error } = await supabase.rpc('admin_list_admins')
+  if (error) throw error
+  return data || []
+}
+
+export async function adminAddAdmin(email, role = 'admin') {
+  const { data, error } = await supabase.rpc('admin_add_admin', { p_email: email, p_role: role })
+  if (error) throw error
+  return data
+}
+
+export async function adminRemoveAdmin(userId) {
+  const { error } = await supabase.rpc('admin_remove_admin', { p_uid: userId })
+  if (error) throw error
+}
