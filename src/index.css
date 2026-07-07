@@ -222,3 +222,50 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 .dark .hover\:text-slate-900:hover { color: #f1ebda; }
 
 .dark .file\:bg-brand-light::file-selector-button { background-color: rgba(197, 160, 89, 0.15); }
+.dark .border-border-light { border-color: #1e3560; }
+
+/* ─── Accessibility ──────────────────────────────────────────────── */
+/* Visible focus ring for keyboard users on interactive, non-field elements.
+   (Form fields already show a gold glow via the input:focus rule above.) */
+a:focus-visible,
+button:focus-visible,
+[role='button']:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Honour a reduced-motion preference — kill the fade/stagger/shimmer motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Screen-reader-only helper + reveal-on-focus (for the skip link). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.focus\:not-sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}

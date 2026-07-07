@@ -175,6 +175,12 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded focus:bg-gold focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy"
+      >
+        Skip to content
+      </a>
       <div className="noise-overlay" />
 
       {/* Desktop sidebar */}
@@ -244,7 +250,7 @@ export default function Layout() {
       )}
 
       {/* Main content */}
-      <main className="min-w-0">
+      <main id="main-content" className="min-w-0">
         {maintenance?.active && (
           <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-700 lg:px-8">
             <Info size={14} className="shrink-0" />
