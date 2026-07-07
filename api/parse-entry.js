@@ -83,6 +83,10 @@ async function callGemini(apiKey, system, userText, schema) {
 
 export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY
+  if (req.method === 'GET') {
+    res.status(200).json({ ok: true, configured: !!apiKey })
+    return
+  }
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' })
     return

@@ -14,8 +14,9 @@ import {
   adminAddAdmin,
   adminRemoveAdmin,
   adminSetConfig,
+  adminHealth,
 } from '../lib/admin'
-import { formatDate } from '../lib/format'
+import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button, Spinner, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 
@@ -43,6 +44,7 @@ export default function Admin() {
   const [overview, setOverview] = useState(null)
   const [users, setUsers] = useState([])
   const [audit, setAudit] = useState([])
+  const [health, setHealth] = useState(null)
   const [search, setSearch] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [role, setRole] = useState(null)
@@ -86,6 +88,7 @@ export default function Admin() {
       setAudit(au)
       setRole(rl)
       if (rl === 'superadmin') setAdmins(await adminListAdmins().catch(() => []))
+      adminHealth().then(setHealth).catch(() => {})
     } catch (e) {
       toast(e?.message || 'Could not load admin data.', { type: 'error' })
     } finally {
@@ -192,6 +195,70 @@ export default function Admin() {
         <Stat icon={Receipt} label="Expenses" value={overview?.expenses ?? '—'} accent="#B5673F" />
         <Stat icon={Banknote} label="Income entries" value={overview?.income ?? '—'} accent="#2F8F6B" />
         <Stat icon={ScanLine} label="AI scans · month" value={overview?.scans_this_month ?? '—'} accent="#46618A" />
+      </div>
+
+      {/* Billing & health */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700">Billing</h3>
+            <a
+              href="https://dashboard.stripe.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-medium text-brand hover:underline"
+            >
+              Open Stripe ↗
+            </a>
+          </div>
+          <div className="mb-3">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Est. MRR</div>
+            <div className="font-serif text-2xl font-bold text-slate-900">
+              {formatCurrency((overview?.pro_users || 0) * (Number(plans.pro_price) || 0))}
+            </div>
+            <div className="text-[0.65rem] text-slate-400">{overview?.pro_users ?? 0} Pro × {formatCurrency(Number(plans.pro_price) || 0)}</div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { label: 'Active', v: overview?.sub_active, c: '#15803d' },
+              { label: 'Past due', v: overview?.sub_past_due, c: '#b45309' },
+              { label: 'Canceled', v: overview?.sub_canceled, c: '#b91c1c' },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg bg-slate-50 py-2">
+                <div className="font-serif text-lg font-bold" style={{ color: s.c }}>{s.v ?? 0}</div>
+                <div className="text-[0.6rem] uppercase tracking-wide text-slate-500">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">Endpoint health</h3>
+          <div className="divide-y divide-slate-100">
+            {[
+              { key: 'scan', label: 'Receipt scanning (/api/scan-receipt)' },
+              { key: 'parse', label: 'AI quick-add (/api/parse-entry)' },
+              { key: 'ask', label: 'AI answers (/api/ask)' },
+            ].map((e) => {
+              const h = health?.[e.key]
+              const state = !h || !h.reachable ? 'down' : h.configured ? 'live' : 'unconfigured'
+              const meta = {
+                live: { c: '#15803d', t: 'Live' },
+                unconfigured: { c: '#b45309', t: 'Not configured' },
+                down: { c: '#94a3b8', t: health ? 'Unreachable' : 'Checking…' },
+              }[state]
+              return (
+                <div key={e.key} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <span className="min-w-0 truncate text-slate-600">{e.label}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium" style={{ color: meta.c }}>
+                    <span className="h-2 w-2 rounded-full" style={{ background: meta.c }} />
+                    {meta.t}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
       </div>
 
       {/* App config */}

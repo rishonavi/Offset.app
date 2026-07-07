@@ -65,6 +65,25 @@ export async function adminRemoveAdmin(userId) {
   if (error) throw error
 }
 
+// ── Endpoint health ──
+export async function adminHealth() {
+  const check = async (url) => {
+    try {
+      const r = await fetch(url)
+      const d = await r.json().catch(() => ({}))
+      return { reachable: r.ok, ...d }
+    } catch {
+      return { reachable: false, configured: false }
+    }
+  }
+  const [scan, parse, ask] = await Promise.all([
+    check('/api/scan-receipt'),
+    check('/api/parse-entry'),
+    check('/api/ask'),
+  ])
+  return { scan, parse, ask }
+}
+
 // ── App config ──
 export async function adminSetConfig(key, value) {
   const { data, error } = await supabase.rpc('admin_set_config', { p_key: key, p_value: value })
