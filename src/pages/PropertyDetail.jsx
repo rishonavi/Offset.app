@@ -20,6 +20,7 @@ import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory } from '../lib/constants'
 import { totalsByCategory, monthlySeries } from '../lib/stats'
 import { sumAmount } from '../lib/filters'
+import { assetMetrics } from '../lib/metrics'
 import { loanSummary } from '../lib/loan'
 import { leaseStatus } from '../lib/lease'
 import { iconForAssetType } from '../lib/assetIcon'
@@ -35,6 +36,8 @@ const tooltipStyle = {
   boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
   fontSize: 13,
 }
+
+const fmtPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`)
 
 function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   return (
@@ -91,6 +94,8 @@ export default function PropertyDetail() {
   const grossYield = assetValue ? (ttm.inc / assetValue) * 100 : null
   const netYield = assetValue ? (ttm.net / assetValue) * 100 : null
   const totalRoi = assetValue ? (net / assetValue) * 100 : null
+
+  const metrics = useMemo(() => assetMetrics(property, items, incomeItems), [property, items, incomeItems])
 
   const byCategory = useMemo(() => totalsByCategory(items), [items])
   const monthly = useMemo(() => monthlySeries(items, 12), [items])
@@ -221,6 +226,32 @@ export default function PropertyDetail() {
               </div>
               <div className="text-[0.65rem] text-slate-400">income − expenses</div>
             </div>
+          </div>
+
+          {/* Operating performance (trailing 12 months) */}
+          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
+            {[
+              { label: 'Cap rate', value: fmtPct(metrics.capRate), hint: 'NOI ÷ value', tone: metrics.capRate },
+              { label: 'NOI', value: formatCurrency(metrics.noi), hint: 'last 12 mo operating', tone: metrics.noi },
+              { label: 'Expense ratio', value: fmtPct(metrics.expenseRatio), hint: 'opex ÷ income' },
+              {
+                label: 'Cash flow / mo',
+                value: formatCurrency(metrics.monthlyCashFlow),
+                hint: metrics.hasLoan ? 'after loan' : 'operating',
+                tone: metrics.monthlyCashFlow,
+              },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div
+                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-slate-900' : ''}`}
+                  style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
+                >
+                  {m.value}
+                </div>
+                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+              </div>
+            ))}
           </div>
         </Card>
       ) : (

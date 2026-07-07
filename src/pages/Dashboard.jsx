@@ -36,6 +36,7 @@ import { useToast } from '../context/ToastContext'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory, CHART_PALETTE } from '../lib/constants'
 import { totalsByCategory, totalsByProperty, monthlySeries, monthlyIncomeExpense } from '../lib/stats'
+import { portfolioMetrics } from '../lib/metrics'
 import { sumAmount } from '../lib/filters'
 import { monthSpendByProperty, budgetStatus } from '../lib/budget'
 import { outstandingTotal, isOverdue } from '../lib/payments'
@@ -56,6 +57,8 @@ const greeting = () => {
   const h = new Date().getHours()
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 }
+
+const fmtPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`)
 
 function DeltaChip({ delta }) {
   if (delta == null) return null
@@ -226,6 +229,15 @@ export default function Dashboard() {
     [propertyScoped, incomePropertyScoped],
   )
 
+  // Portfolio performance (cap rate, NOI, yield, occupancy…) over the assets in
+  // the current property filter. Computed from the full income/expense history.
+  const perfProps = useMemo(
+    () => (propertyId ? properties.filter((p) => p.id === propertyId) : properties),
+    [properties, propertyId],
+  )
+  const perf = useMemo(() => portfolioMetrics(perfProps, expenses, income), [perfProps, expenses, income])
+  const showPerf = perfProps.length > 0 && (perf.totalValue > 0 || perf.ttmIncome > 0)
+
   const monthSpend = useMemo(() => monthSpendByProperty(expenses), [expenses])
   const budgeted = useMemo(
     () =>
@@ -336,6 +348,43 @@ export default function Dashboard() {
         <StatCard icon={Scale} label={`Net (${rangeLabel})`} value={formatCurrency(netScoped)} accent={netScoped >= 0 ? '#2F8F6B' : '#C0492F'} />
         <StatCard icon={Receipt} label="Expense entries" value={String(scoped.length)} accent="#0A1828" />
       </div>
+
+      {/* Portfolio performance */}
+      {showPerf && (
+        <Card className="p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-700">Portfolio performance</h3>
+            <span className="text-xs text-slate-400">
+              {formatCurrency(perf.totalValue)} value · trailing 12 months
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              { label: 'Cap rate', value: fmtPct(perf.capRate), hint: 'NOI ÷ value', tone: perf.capRate },
+              { label: 'NOI', value: formatCurrency(perf.noi), hint: 'net operating income', tone: perf.noi },
+              { label: 'Gross yield', value: fmtPct(perf.grossYield), hint: 'income ÷ value' },
+              { label: 'Expense ratio', value: fmtPct(perf.expenseRatio), hint: 'opex ÷ income' },
+              { label: 'Cash flow / mo', value: formatCurrency(perf.monthlyCashFlow), hint: 'after loan', tone: perf.monthlyCashFlow },
+              {
+                label: 'Occupancy',
+                value: perf.occupancyPct == null ? '—' : `${perf.occupancyPct}%`,
+                hint: perf.lettable ? `${perf.occupied}/${perf.lettable} let` : 'no let assets',
+              },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div
+                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-slate-900' : ''}`}
+                  style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
+                >
+                  {m.value}
+                </div>
+                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Recurring due to log */}
       {canWrite && recurringDue.length > 0 && (
