@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   PiggyBank,
   Trash2,
+  Search,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -29,6 +30,7 @@ import { useWorkspace } from '../context/WorkspaceContext'
 import { useConfig } from '../context/ConfigContext'
 import ErrorBoundary from './ErrorBoundary'
 import QuickAddExpense from './QuickAddExpense'
+import CommandPalette from './CommandPalette'
 import { checkIsAdmin } from '../lib/admin'
 import { Spinner } from './ui'
 
@@ -137,6 +139,7 @@ export default function Layout() {
   const { announcement, maintenance } = useConfig()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState(false)
+  const [cmdOpen, setCmdOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const location = useLocation()
   const showFab = canWrite && !ON_ADD_EDIT_FORM.test(location.pathname)
@@ -149,9 +152,15 @@ export default function Layout() {
     }
   }, [user])
 
-  // Press "n" anywhere (outside a field) to quick-add an expense.
+  // Keyboard: ⌘K / Ctrl-K opens the command palette anywhere; "n" quick-adds an
+  // expense (but not while typing in a field).
   useEffect(() => {
     const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        setCmdOpen((v) => !v)
+        return
+      }
       if (e.key !== 'n' && e.key !== 'N') return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const t = e.target
@@ -173,6 +182,14 @@ export default function Layout() {
         <Brand />
         <WorkspaceSwitcher />
         {canWrite && <QuickAdd onClick={() => setQuickAdd(true)} />}
+        <button
+          onClick={() => setCmdOpen(true)}
+          className="mt-3 flex w-full items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/50 transition hover:border-gold/40 hover:text-white/80"
+        >
+          <Search size={14} />
+          <span className="flex-1 text-left">Search…</span>
+          <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem]">⌘K</kbd>
+        </button>
         <div className="mt-6 flex-1">
           <NavItems isAdmin={isAdmin} />
         </div>
@@ -183,6 +200,13 @@ export default function Layout() {
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-dark bg-navy px-4 py-3 lg:hidden">
         <Brand />
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCmdOpen(true)}
+            className="grid h-10 w-10 place-items-center text-white/70 hover:text-gold"
+            aria-label="Search"
+          >
+            <Search size={20} />
+          </button>
           <ThemeToggle />
           <button
             onClick={() => setMobileOpen(true)}
@@ -271,6 +295,7 @@ export default function Layout() {
       )}
 
       <QuickAddExpense open={quickAdd} onClose={() => setQuickAdd(false)} />
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} onQuickAdd={() => setQuickAdd(true)} />
     </div>
   )
 }
