@@ -64,3 +64,10 @@ export async function adminRemoveAdmin(userId) {
   const { error } = await supabase.rpc('admin_remove_admin', { p_uid: userId })
   if (error) throw error
 }
+
+// ── App config ──
+export async function adminSetConfig(key, value) {
+  const { data, error } = await supabase.rpc('admin_set_config', { p_key: key, p_value: value })
+  if (error) throw error
+  return data
+}

@@ -9,16 +9,25 @@
 --  Keep the numbers in sync with src/lib/plans.js.
 -- ════════════════════════════════════════════════════════════════
 
--- Per-plan asset cap.
+-- Per-plan asset cap. The free cap is read from app_config ('plans'.free_assets)
+-- when present (so the admin config editor stays in sync), else defaults to 2.
 create or replace function public.plan_asset_limit(p text)
 returns integer
-language sql
-immutable
+language plpgsql
+stable
+set search_path = public
 as $$
-  select case coalesce(p, 'free')
-           when 'pro' then 2147483647   -- effectively unlimited
-           else 2                        -- free plan cap
-         end;
+declare v integer := 2;
+begin
+  if coalesce(p, 'free') = 'pro' then
+    return 2147483647; -- effectively unlimited
+  end if;
+  begin
+    select (value ->> 'free_assets')::int into v from public.app_config where key = 'plans';
+  exception when undefined_table then v := 2;
+  end;
+  return coalesce(v, 2);
+end;
 $$;
 
 -- Reject an insert that would take the workspace owner over their plan's asset

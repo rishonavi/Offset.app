@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, Crown, TrendingUp, Activity, Boxes, Receipt, Banknote, ScanLine, Search, ShieldAlert, UserPlus, Trash2 } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
+import { useConfig } from '../context/ConfigContext'
 import {
   checkIsAdmin,
   adminRole,
@@ -12,6 +13,7 @@ import {
   adminListAdmins,
   adminAddAdmin,
   adminRemoveAdmin,
+  adminSetConfig,
 } from '../lib/admin'
 import { formatDate } from '../lib/format'
 import { Card, Button, Spinner, EmptyState } from '../components/ui'
@@ -35,6 +37,7 @@ function Stat({ icon: Icon, label, value, accent = '#C5A059' }) {
 
 export default function Admin() {
   const toast = useToast()
+  const cfg = useConfig()
   const [allowed, setAllowed] = useState(null) // null = checking
   const [loading, setLoading] = useState(true)
   const [overview, setOverview] = useState(null)
@@ -48,7 +51,31 @@ export default function Admin() {
   const [addingAdmin, setAddingAdmin] = useState(false)
 
   const canWrite = role === 'superadmin' || role === 'admin' || role === 'support'
+  const canConfig = role === 'superadmin' || role === 'admin'
   const isSuper = role === 'superadmin'
+
+  // Editable copies of app_config, seeded from the live config.
+  const [announcement, setAnnouncement] = useState({ active: false, text: '' })
+  const [maintenance, setMaintenance] = useState({ active: false, message: '' })
+  const [plans, setPlans] = useState({ pro_price: 499, free_assets: 2, free_scans: 10 })
+  const [savingCfg, setSavingCfg] = useState(null)
+  useEffect(() => {
+    if (cfg.announcement) setAnnouncement({ active: !!cfg.announcement.active, text: cfg.announcement.text || '' })
+    if (cfg.maintenance) setMaintenance({ active: !!cfg.maintenance.active, message: cfg.maintenance.message || '' })
+    if (cfg.plans) setPlans({ pro_price: cfg.plans.pro_price ?? 499, free_assets: cfg.plans.free_assets ?? 2, free_scans: cfg.plans.free_scans ?? 10 })
+  }, [cfg])
+
+  const saveConfig = async (key, value) => {
+    setSavingCfg(key)
+    try {
+      await adminSetConfig(key, value)
+      toast('Saved. Users see the change on their next load.')
+    } catch (e) {
+      toast(e?.message || 'Could not save config.', { type: 'error' })
+    } finally {
+      setSavingCfg(null)
+    }
+  }
 
   const load = async (q = '') => {
     setLoading(true)
@@ -166,6 +193,86 @@ export default function Admin() {
         <Stat icon={Banknote} label="Income entries" value={overview?.income ?? '—'} accent="#2F8F6B" />
         <Stat icon={ScanLine} label="AI scans · month" value={overview?.scans_this_month ?? '—'} accent="#46618A" />
       </div>
+
+      {/* App config */}
+      {canConfig && (
+        <Card className="p-5">
+          <h3 className="mb-4 text-sm font-semibold text-slate-700">App configuration</h3>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Announcement */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Announcement banner</span>
+                <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <input type="checkbox" checked={announcement.active} onChange={(e) => setAnnouncement((s) => ({ ...s, active: e.target.checked }))} />
+                  On
+                </label>
+              </div>
+              <textarea
+                className="field-input h-20 resize-none"
+                placeholder="Shown to everyone at the top of the app"
+                value={announcement.text}
+                onChange={(e) => setAnnouncement((s) => ({ ...s, text: e.target.value }))}
+              />
+              <Button className="mt-2 w-full" loading={savingCfg === 'announcement'} onClick={() => saveConfig('announcement', announcement)}>
+                Save banner
+              </Button>
+            </div>
+
+            {/* Maintenance */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Maintenance mode</span>
+                <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                  <input type="checkbox" checked={maintenance.active} onChange={(e) => setMaintenance((s) => ({ ...s, active: e.target.checked }))} />
+                  On
+                </label>
+              </div>
+              <textarea
+                className="field-input h-20 resize-none"
+                placeholder="Message shown while in maintenance"
+                value={maintenance.message}
+                onChange={(e) => setMaintenance((s) => ({ ...s, message: e.target.value }))}
+              />
+              <Button className="mt-2 w-full" loading={savingCfg === 'maintenance'} onClick={() => saveConfig('maintenance', maintenance)}>
+                Save maintenance
+              </Button>
+            </div>
+
+            {/* Plan limits */}
+            <div>
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Plan limits</span>
+              <div className="space-y-2">
+                <label className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                  Pro price
+                  <input type="number" min="0" className="field-input h-9 w-28" value={plans.pro_price} onChange={(e) => setPlans((s) => ({ ...s, pro_price: e.target.value }))} />
+                </label>
+                <label className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                  Free assets
+                  <input type="number" min="0" className="field-input h-9 w-28" value={plans.free_assets} onChange={(e) => setPlans((s) => ({ ...s, free_assets: e.target.value }))} />
+                </label>
+                <label className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                  Free scans/mo
+                  <input type="number" min="0" className="field-input h-9 w-28" value={plans.free_scans} onChange={(e) => setPlans((s) => ({ ...s, free_scans: e.target.value }))} />
+                </label>
+              </div>
+              <Button
+                className="mt-2 w-full"
+                loading={savingCfg === 'plans'}
+                onClick={() =>
+                  saveConfig('plans', {
+                    pro_price: Number(plans.pro_price) || 0,
+                    free_assets: Number(plans.free_assets) || 0,
+                    free_scans: Number(plans.free_scans) || 0,
+                  })
+                }
+              >
+                Save limits
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Users */}
       <Card className="p-5">

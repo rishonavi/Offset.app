@@ -224,6 +224,44 @@ end;
 $$;
 grant execute on function public.admin_audit_log(int) to authenticated;
 
+-- ── App config: banners, maintenance mode, editable plan limits ──
+-- Publicly readable (drives the app-wide banner and the plan limits shown in
+-- the app); written only by admin/superadmin via admin_set_config().
+create table if not exists public.app_config (
+  key        text primary key,
+  value      jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.app_config enable row level security;
+drop policy if exists "config public read" on public.app_config;
+create policy "config public read" on public.app_config for select using (true);
+
+insert into public.app_config (key, value) values
+  ('announcement', jsonb_build_object('active', false, 'text', '')),
+  ('maintenance',  jsonb_build_object('active', false, 'message', 'Offset is undergoing brief maintenance — please check back soon.')),
+  ('plans',        jsonb_build_object('pro_price', 499, 'free_assets', 2, 'free_scans', 10))
+on conflict (key) do nothing;
+
+create or replace function public.admin_set_config(p_key text, p_value jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if public.admin_role() not in ('superadmin', 'admin') then
+    raise exception 'not_admin' using errcode = '42501';
+  end if;
+  insert into public.app_config (key, value, updated_at)
+  values (p_key, p_value, now())
+  on conflict (key) do update set value = excluded.value, updated_at = now();
+  insert into public.admin_audit (admin_id, admin_email, action, detail)
+  values (auth.uid(), (select email from auth.users where id = auth.uid()), 'set_config', jsonb_build_object('key', p_key, 'value', p_value));
+  return p_value;
+end;
+$$;
+grant execute on function public.admin_set_config(text, jsonb) to authenticated;
+
 -- ── Manage the admin allowlist (superadmin only) ─────────────────
 create or replace function public.admin_list_admins()
 returns jsonb

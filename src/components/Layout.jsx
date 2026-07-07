@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
+import { useConfig } from '../context/ConfigContext'
 import ErrorBoundary from './ErrorBoundary'
 import { checkIsAdmin } from '../lib/admin'
 import { Spinner } from './ui'
@@ -128,6 +129,7 @@ const ON_ADD_EDIT_FORM = /^\/(properties|expenses|income)\/(new|[^/]+\/edit)$/
 export default function Layout() {
   const { user, signOut, isCloud } = useAuth()
   const { canWrite } = useData()
+  const { announcement, maintenance } = useConfig()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const location = useLocation()
@@ -198,6 +200,18 @@ export default function Layout() {
 
       {/* Main content */}
       <main className="min-w-0">
+        {maintenance?.active && (
+          <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-700 lg:px-8">
+            <Info size={14} className="shrink-0" />
+            <span>{maintenance.message || 'Offset is undergoing brief maintenance.'}</span>
+          </div>
+        )}
+        {announcement?.active && announcement.text && (
+          <div className="flex items-center gap-2 border-b border-gold/30 bg-brand-light px-4 py-2 text-xs font-medium text-slate-700 lg:px-8">
+            <Info size={14} className="shrink-0 text-gold" />
+            <span>{announcement.text}</span>
+          </div>
+        )}
         {!canWrite && (
           <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs text-slate-600 lg:px-8">
             <Eye size={14} className="shrink-0" />
