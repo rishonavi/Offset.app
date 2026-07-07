@@ -21,6 +21,17 @@ export default function Expenses() {
     await deleteExpense(e.id)
     toast('Expense moved to bin', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
   }
+  const removeMany = async (rows) => {
+    for (const e of rows) await deleteExpense(e.id)
+    toast(`${rows.length} moved to bin`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          for (const e of rows) await restoreExpense(e)
+        },
+      },
+    })
+  }
 
   const markPaid = async (e) => {
     const { id, user_id, created_at, ...rest } = e
@@ -99,6 +110,8 @@ export default function Expenses() {
               onDelete={removeExpense}
               onMarkSettled={markPaid}
               onDuplicate={duplicate}
+              onBulkDelete={removeMany}
+              selectable
               readOnly={!canWrite}
             />
           )}

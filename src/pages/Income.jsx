@@ -21,6 +21,17 @@ export default function Income() {
     await deleteIncome(e.id)
     toast('Income moved to bin', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
   }
+  const removeMany = async (rows) => {
+    for (const e of rows) await deleteIncome(e.id)
+    toast(`${rows.length} moved to bin`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          for (const e of rows) await restoreIncome(e)
+        },
+      },
+    })
+  }
 
   const markReceived = async (e) => {
     const { id, user_id, created_at, ...rest } = e
@@ -128,6 +139,8 @@ export default function Income() {
               onDelete={removeIncome}
               onMarkSettled={markReceived}
               onDuplicate={duplicate}
+              onBulkDelete={removeMany}
+              selectable
               readOnly={!canWrite}
             />
           )}
