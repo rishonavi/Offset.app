@@ -19,6 +19,7 @@ import {
   Moon,
   Eye,
   ShieldCheck,
+  PiggyBank,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -34,6 +35,7 @@ const NAV = [
   { to: '/properties', label: 'Assets', icon: Boxes },
   { to: '/expenses', label: 'Expenses', icon: Receipt },
   { to: '/income', label: 'Income', icon: Banknote },
+  { to: '/personal', label: 'Personal', icon: PiggyBank },
   { to: '/bills', label: 'Bills', icon: FileText },
   { to: '/import', label: 'Import from Gmail', icon: MailPlus },
   { to: '/reports', label: 'Reports & Export', icon: PieChart },

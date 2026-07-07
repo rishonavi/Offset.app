@@ -119,6 +119,37 @@ drop policy if exists "own documents" on public.documents;
 create policy "own documents" on public.documents
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- ── Personal budgeting & everyday expenses (not tied to an asset) ─
+create table if not exists public.personal_expenses (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  date           date not null,
+  amount         numeric(14,2) not null check (amount >= 0),
+  category       text,
+  note           text,
+  payment_method text,
+  created_at     timestamptz not null default now()
+);
+create index if not exists personal_expenses_user_idx on public.personal_expenses(user_id);
+create index if not exists personal_expenses_date_idx  on public.personal_expenses(date);
+
+alter table public.personal_expenses enable row level security;
+drop policy if exists "own personal expenses" on public.personal_expenses;
+create policy "own personal expenses" on public.personal_expenses
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists public.personal_budgets (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  category      text not null,
+  monthly_limit numeric(14,2) not null default 0,
+  unique (user_id, category)
+);
+alter table public.personal_budgets enable row level security;
+drop policy if exists "own personal budgets" on public.personal_budgets;
+create policy "own personal budgets" on public.personal_budgets
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- ── Billing / plan (commercial tiers; written by the Stripe webhook) ─
 create table if not exists public.profiles (
   user_id            uuid primary key references auth.users(id) on delete cascade,

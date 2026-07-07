@@ -164,6 +164,43 @@ export async function deleteIncome(id) {
   if (error) throw error
 }
 
+// ── Personal expenses & budgets (not tied to an asset) ─────────────
+export async function getPersonalExpenses() {
+  const { data, error } = await supabase.from('personal_expenses').select('*').order('date', { ascending: false })
+  if (error) throw error
+  return data
+}
+export async function addPersonalExpense(payload) {
+  const user_id = await requireUserId()
+  const { data, error } = await supabase.from('personal_expenses').insert({ ...payload, user_id }).select().single()
+  if (error) throw error
+  return data
+}
+export async function updatePersonalExpense(id, payload) {
+  const { data, error } = await supabase.from('personal_expenses').update(payload).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}
+export async function deletePersonalExpense(id) {
+  const { error } = await supabase.from('personal_expenses').delete().eq('id', id)
+  if (error) throw error
+}
+export async function getPersonalBudgets() {
+  const { data, error } = await supabase.from('personal_budgets').select('*')
+  if (error) throw error
+  return data
+}
+export async function setPersonalBudget(category, monthly_limit) {
+  const user_id = await requireUserId()
+  const { data, error } = await supabase
+    .from('personal_budgets')
+    .upsert({ user_id, category, monthly_limit }, { onConflict: 'user_id,category' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 // ── Documents (leases, insurance, warranties…) ─────────────────────
 export async function getDocuments() {
   const { data, error } = await supabase.from('documents').select('*').order('expiry_date', { ascending: true })

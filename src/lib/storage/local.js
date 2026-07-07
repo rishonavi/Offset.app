@@ -5,6 +5,8 @@ const PROPS_KEY = 'pl_properties'
 const EXP_KEY = 'pl_expenses'
 const INC_KEY = 'pl_income'
 const DOC_KEY = 'pl_documents'
+const PEXP_KEY = 'pl_personal_expenses'
+const PBUD_KEY = 'pl_personal_budgets'
 
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
@@ -124,6 +126,40 @@ export async function updateIncome(id, payload) {
 }
 export async function deleteIncome(id) {
   write(INC_KEY, read(INC_KEY).filter((e) => e.id !== id))
+}
+
+// ── Personal expenses & budgets (not tied to an asset) ─────────────
+export async function getPersonalExpenses() {
+  return read(PEXP_KEY).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+}
+export async function addPersonalExpense(payload) {
+  const row = { id: uid(), created_at: new Date().toISOString(), ...payload }
+  write(PEXP_KEY, [...read(PEXP_KEY), row])
+  return row
+}
+export async function updatePersonalExpense(id, payload) {
+  const list = read(PEXP_KEY).map((e) => (e.id === id ? { ...e, ...payload } : e))
+  write(PEXP_KEY, list)
+  return list.find((e) => e.id === id)
+}
+export async function deletePersonalExpense(id) {
+  write(PEXP_KEY, read(PEXP_KEY).filter((e) => e.id !== id))
+}
+export async function getPersonalBudgets() {
+  return read(PBUD_KEY)
+}
+export async function setPersonalBudget(category, monthly_limit) {
+  const list = read(PBUD_KEY)
+  const existing = list.find((b) => b.category === category)
+  let row
+  if (existing) {
+    row = { ...existing, monthly_limit }
+    write(PBUD_KEY, list.map((b) => (b.category === category ? row : b)))
+  } else {
+    row = { id: uid(), category, monthly_limit }
+    write(PBUD_KEY, [...list, row])
+  }
+  return row
 }
 
 // ── Documents (leases, insurance, warranties…) ─────────────────────
