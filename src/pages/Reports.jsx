@@ -1,4 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
+import jsPDF from 'jspdf'
+import autoTableImport from 'jspdf-autotable'
+// jspdf-autotable ships as CJS; under Vite's interop the default import can be
+// the module wrapper rather than the function itself, so unwrap defensively.
+const autoTable = autoTableImport?.default || autoTableImport
 import { FileSpreadsheet, FileText, FileType, Upload, Download, CheckCircle2, AlertCircle, Cloud, UploadCloud, DownloadCloud, Landmark } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { applyFilters, emptyFilters, sumAmount } from '../lib/filters'
@@ -75,9 +80,22 @@ export default function Reports() {
     return [...m.values()].sort((a, b) => b.year.localeCompare(a.year))
   }, [filtered, incomeFiltered])
 
-  const downloadYearEndPDF = async () => {
-    const { default: jsPDF } = await import('jspdf')
-    const { default: autoTable } = await import('jspdf-autotable')
+  // Deductible expenses grouped by category — the view tax returns (Schedule E /
+  // SA105) are actually built from.
+  const byCategoryTax = useMemo(() => {
+    const m = new Map()
+    for (const e of filtered) {
+      const k = e.category || 'Other'
+      if (!m.has(k)) m.set(k, { category: k, total: 0, tax: 0, count: 0 })
+      const r = m.get(k)
+      r.total += Number(e.amount) || 0
+      r.tax += Number(e.tax) || 0
+      r.count += 1
+    }
+    return [...m.values()].sort((a, b) => b.total - a.total)
+  }, [filtered])
+
+  const downloadYearEndPDF = () => {
     const doc = new jsPDF()
     doc.setFontSize(16)
     doc.text('Offset — Year-end & tax summary', 14, 18)
@@ -108,6 +126,22 @@ export default function Reports() {
       headStyles: { fillColor: [10, 24, 40] },
       footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
     })
+
+    if (byCategoryTax.length > 0) {
+      const y = doc.lastAutoTable.finalY + 10
+      doc.setFontSize(12)
+      doc.setTextColor(20)
+      doc.text('Expenses by category (deductible)', 14, y)
+      autoTable(doc, {
+        startY: y + 4,
+        head: [['Category', 'Entries', 'Tax', 'Amount']],
+        body: byCategoryTax.map((r) => [r.category, String(r.count), formatCurrency(r.tax), formatCurrency(r.total)]),
+        foot: [['Total', String(filtered.length), formatCurrency(taxPaid), formatCurrency(total)]],
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [10, 24, 40] },
+        footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
+      })
+    }
     doc.save(`${baseName}-year-end.pdf`)
   }
 
@@ -341,7 +375,7 @@ export default function Reports() {
             </Button>
           </div>
           <p className="mt-3 text-[0.7rem] text-slate-400">
-            Excel includes a separate <strong>Income</strong> sheet. CSV/PDF cover expenses; the year-end PDF below covers income, expenses &amp; tax by year.
+            Excel includes a separate <strong>Income</strong> sheet. CSV/PDF cover expenses; the year-end PDF below covers income, expenses &amp; tax by year and a deductible breakdown by category.
           </p>
         </Card>
 
@@ -438,6 +472,46 @@ export default function Reports() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {byCategoryTax.length > 0 && (
+          <div className="mt-6">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[1px] text-slate-500">
+              Deductible expenses by category
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="py-2 pr-3 font-semibold">Category</th>
+                    <th className="px-3 py-2 text-right font-semibold">Entries</th>
+                    <th className="px-3 py-2 text-right font-semibold">Tax</th>
+                    <th className="py-2 pl-3 text-right font-semibold">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {byCategoryTax.map((r) => (
+                    <tr key={r.category}>
+                      <td className="py-2 pr-3">
+                        <Badge color={colorForCategory(r.category)}>{r.category}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-600">{r.count}</td>
+                      <td className="px-3 py-2 text-right text-slate-600">{formatCurrency(r.tax)}</td>
+                      <td className="py-2 pl-3 text-right font-semibold text-slate-800">{formatCurrency(r.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-slate-200 font-semibold text-slate-900">
+                    <td className="py-2 pr-3">Total</td>
+                    <td className="px-3 py-2 text-right">{filtered.length}</td>
+                    <td className="px-3 py-2 text-right">{formatCurrency(taxPaid)}</td>
+                    <td className="py-2 pl-3 text-right">{formatCurrency(total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         )}
       </Card>
