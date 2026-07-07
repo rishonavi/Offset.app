@@ -19,7 +19,7 @@ export default function Expenses() {
 
   const removeExpense = async (e) => {
     await deleteExpense(e.id)
-    toast('Expense moved to trash', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
+    toast('Expense moved to bin', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
   }
 
   const markPaid = async (e) => {

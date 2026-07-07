@@ -75,7 +75,7 @@ export default function Trash() {
   }
 
   const emptyAll = async () => {
-    if (!window.confirm(`Permanently delete all ${items.length} item(s) in the trash? This cannot be undone.`)) return
+    if (!window.confirm(`Permanently delete all ${items.length} item(s) in the bin? This cannot be undone.`)) return
     setBusy(true)
     try {
       await db.emptyTrash()
@@ -96,16 +96,16 @@ export default function Trash() {
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader title="Trash" subtitle={`Deleted items are kept for ${RETENTION_DAYS} days, then removed for good.`} />
+        <PageHeader title="Bin" subtitle={`Deleted items are kept for ${RETENTION_DAYS} days, then removed for good.`} />
         {items.length > 0 && (
           <Button variant="ghost" onClick={emptyAll} loading={busy} className="text-red-600 hover:bg-red-50">
-            <Trash2 size={15} /> Empty trash
+            <Trash2 size={15} /> Empty bin
           </Button>
         )}
       </div>
 
       {items.length === 0 ? (
-        <EmptyState icon={Trash2} title="Trash is empty" subtitle="Deleted expenses and income appear here, recoverable for 30 days." />
+        <EmptyState icon={Trash2} title="Bin is empty" subtitle="Deleted expenses and income appear here, recoverable for 30 days." />
       ) : (
         <Card className="p-0">
           <div className="divide-y divide-slate-100">

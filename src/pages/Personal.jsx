@@ -38,7 +38,7 @@ export default function Personal() {
 
   const removeExpense = async (e) => {
     await deleteExpense(e.id)
-    toast('Expense moved to trash', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
+    toast('Expense moved to bin', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
   }
   const [month, setMonth] = useState(monthKey())
   const [form, setForm] = useState(emptyForm)

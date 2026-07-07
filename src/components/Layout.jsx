@@ -28,19 +28,20 @@ import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { useConfig } from '../context/ConfigContext'
 import ErrorBoundary from './ErrorBoundary'
+import QuickAddExpense from './QuickAddExpense'
 import { checkIsAdmin } from '../lib/admin'
 import { Spinner } from './ui'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/properties', label: 'Assets', icon: Boxes },
-  { to: '/expenses', label: 'Expenses', icon: Receipt },
-  { to: '/income', label: 'Income', icon: Banknote },
   { to: '/personal', label: 'Personal', icon: PiggyBank },
+  { to: '/properties', label: 'Assets', icon: Boxes },
+  { to: '/income', label: 'Income', icon: Banknote },
+  { to: '/expenses', label: 'Expenses', icon: Receipt },
   { to: '/bills', label: 'Bills', icon: FileText },
-  { to: '/import', label: 'Import from Gmail', icon: MailPlus },
+  { to: '/import', label: 'Import', icon: MailPlus },
   { to: '/reports', label: 'Reports & Export', icon: PieChart },
-  { to: '/trash', label: 'Trash', icon: Trash2 },
+  { to: '/bin', label: 'Bin', icon: Trash2 },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
@@ -98,11 +99,11 @@ function ThemeToggle({ className = '' }) {
   )
 }
 
-function QuickAdd({ onNavigate }) {
+function QuickAdd({ onClick }) {
   return (
-    <Link to="/expenses/new" onClick={onNavigate} className="btn-primary mt-6 w-full">
+    <button onClick={onClick} className="btn-primary mt-6 w-full">
       <Plus size={15} /> Add expense
-    </Link>
+    </button>
   )
 }
 
@@ -135,6 +136,7 @@ export default function Layout() {
   const { canWrite } = useData()
   const { announcement, maintenance } = useConfig()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [quickAdd, setQuickAdd] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const location = useLocation()
   const showFab = canWrite && !ON_ADD_EDIT_FORM.test(location.pathname)
@@ -147,6 +149,21 @@ export default function Layout() {
     }
   }, [user])
 
+  // Press "n" anywhere (outside a field) to quick-add an expense.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'n' && e.key !== 'N') return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const t = e.target
+      if (t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.tagName === 'SELECT' || t?.isContentEditable) return
+      if (!canWrite) return
+      e.preventDefault()
+      setQuickAdd(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [canWrite])
+
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
       <div className="noise-overlay" />
@@ -155,7 +172,7 @@ export default function Layout() {
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-navy-dark bg-navy px-4 py-5 lg:flex">
         <Brand />
         <WorkspaceSwitcher />
-        {canWrite && <QuickAdd />}
+        {canWrite && <QuickAdd onClick={() => setQuickAdd(true)} />}
         <div className="mt-6 flex-1">
           <NavItems isAdmin={isAdmin} />
         </div>
@@ -193,7 +210,7 @@ export default function Layout() {
               </button>
             </div>
             <WorkspaceSwitcher />
-            {canWrite && <QuickAdd onNavigate={() => setMobileOpen(false)} />}
+            {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
             <div className="mt-6 flex-1">
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
             </div>
@@ -244,14 +261,16 @@ export default function Layout() {
 
       {/* Mobile floating quick-add */}
       {showFab && (
-        <Link
-          to="/expenses/new"
+        <button
+          onClick={() => setQuickAdd(true)}
           className="fixed bottom-5 right-5 z-30 grid h-14 w-14 place-items-center bg-gold text-navy shadow-lg shadow-navy/40 transition active:scale-95 lg:hidden"
           aria-label="Add expense"
         >
           <Plus size={26} />
-        </Link>
+        </button>
       )}
+
+      <QuickAddExpense open={quickAdd} onClose={() => setQuickAdd(false)} />
     </div>
   )
 }

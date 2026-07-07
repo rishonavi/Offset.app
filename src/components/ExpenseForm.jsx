@@ -129,7 +129,6 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
     e.preventDefault()
     if (!form.property_id) return setError('Please choose a property.')
     if (!form.date) return setError('Please choose a date.')
-    if (!form.category) return setError('Please choose a category.')
     const amount = Number(form.amount)
     if (!amount || amount <= 0) return setError('Enter an amount greater than zero.')
 
@@ -144,7 +143,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
         date: form.date,
         amount,
         tax: form.tax === '' ? null : Number(form.tax),
-        category: form.category,
+        category: form.category.trim() || 'Other',
         vendor: form.vendor.trim(),
         payment_method: form.payment_method,
         status: form.status,
@@ -235,7 +234,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
           </div>
         </Field>
 
-        <Field label="Category" required>
+        <Field label="Category" hint="Defaults to “Other” if left blank">
           <Input
             list="expense-categories"
             value={form.category}

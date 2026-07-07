@@ -60,11 +60,11 @@ export default function PropertyDetail() {
 
   const removeExpense = async (e) => {
     await deleteExpense(e.id)
-    toast('Expense moved to trash', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
+    toast('Expense moved to bin', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
   }
   const removeIncome = async (e) => {
     await deleteIncome(e.id)
-    toast('Income moved to trash', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
+    toast('Income moved to bin', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
   }
 
   const property = useMemo(() => properties.find((p) => p.id === id), [properties, id])

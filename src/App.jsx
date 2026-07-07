@@ -114,7 +114,7 @@ export default function App() {
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
         <Route path="personal" element={<Personal />} />
-        <Route path="trash" element={<Trash />} />
+        <Route path="bin" element={<Trash />} />
         <Route path="admin" element={<Admin />} />
       </Route>
 

@@ -19,7 +19,7 @@ export default function Income() {
 
   const removeIncome = async (e) => {
     await deleteIncome(e.id)
-    toast('Income moved to trash', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
+    toast('Income moved to bin', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
   }
 
   const markReceived = async (e) => {
