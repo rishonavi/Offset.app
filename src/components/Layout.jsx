@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -18,12 +18,14 @@ import {
   Sun,
   Moon,
   Eye,
+  ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import ErrorBoundary from './ErrorBoundary'
+import { checkIsAdmin } from '../lib/admin'
 import { Spinner } from './ui'
 
 const NAV = [
@@ -37,10 +39,11 @@ const NAV = [
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
-function NavItems({ onNavigate }) {
+function NavItems({ onNavigate, isAdmin }) {
+  const items = isAdmin ? [...NAV, { to: '/admin', label: 'Admin', icon: ShieldCheck }] : NAV
   return (
     <nav className="flex flex-col gap-1">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
+      {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}
@@ -126,8 +129,17 @@ export default function Layout() {
   const { user, signOut, isCloud } = useAuth()
   const { canWrite } = useData()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const location = useLocation()
   const showFab = canWrite && !ON_ADD_EDIT_FORM.test(location.pathname)
+
+  useEffect(() => {
+    let active = true
+    checkIsAdmin().then((ok) => active && setIsAdmin(ok))
+    return () => {
+      active = false
+    }
+  }, [user])
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
@@ -139,7 +151,7 @@ export default function Layout() {
         <WorkspaceSwitcher />
         {canWrite && <QuickAdd />}
         <div className="mt-6 flex-1">
-          <NavItems />
+          <NavItems isAdmin={isAdmin} />
         </div>
         <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
       </aside>
@@ -177,7 +189,7 @@ export default function Layout() {
             <WorkspaceSwitcher />
             {canWrite && <QuickAdd onNavigate={() => setMobileOpen(false)} />}
             <div className="mt-6 flex-1">
-              <NavItems onNavigate={() => setMobileOpen(false)} />
+              <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
             </div>
             <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
           </div>
