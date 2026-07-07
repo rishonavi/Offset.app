@@ -113,6 +113,7 @@ export async function getExpenses() {
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
+    .is('deleted_at', null)
     .order('date', { ascending: false })
   if (error) throw error
   return data
@@ -138,13 +139,14 @@ export async function updateExpense(id, payload) {
   return data
 }
 export async function deleteExpense(id) {
-  const { error } = await supabase.from('expenses').delete().eq('id', id)
+  // Soft delete → moves to the trash bin (recoverable for 30 days).
+  const { error } = await supabase.from('expenses').update({ deleted_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
 }
 
 // ── Income ─────────────────────────────────────────────────────────
 export async function getIncome() {
-  const { data, error } = await supabase.from('income').select('*').order('date', { ascending: false })
+  const { data, error } = await supabase.from('income').select('*').is('deleted_at', null).order('date', { ascending: false })
   if (error) throw error
   return data
 }
@@ -160,13 +162,13 @@ export async function updateIncome(id, payload) {
   return data
 }
 export async function deleteIncome(id) {
-  const { error } = await supabase.from('income').delete().eq('id', id)
+  const { error } = await supabase.from('income').update({ deleted_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
 }
 
 // ── Personal expenses & budgets (not tied to an asset) ─────────────
 export async function getPersonalExpenses() {
-  const { data, error } = await supabase.from('personal_expenses').select('*').order('date', { ascending: false })
+  const { data, error } = await supabase.from('personal_expenses').select('*').is('deleted_at', null).order('date', { ascending: false })
   if (error) throw error
   return data
 }
@@ -182,8 +184,48 @@ export async function updatePersonalExpense(id, payload) {
   return data
 }
 export async function deletePersonalExpense(id) {
-  const { error } = await supabase.from('personal_expenses').delete().eq('id', id)
+  const { error } = await supabase.from('personal_expenses').update({ deleted_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
+}
+
+// ── Trash bin (soft-deleted expenses / income / personal expenses) ─
+const TRASH_TABLES = { expense: 'expenses', income: 'income', personal: 'personal_expenses' }
+const TRASH_DAYS = 30
+
+export async function getTrash() {
+  // Purge anything older than the retention window, then return what remains.
+  const cutoff = new Date(Date.now() - TRASH_DAYS * 86400000).toISOString()
+  await Promise.all(
+    Object.values(TRASH_TABLES).map((t) =>
+      supabase.from(t).delete().not('deleted_at', 'is', null).lt('deleted_at', cutoff),
+    ),
+  )
+  const load = async (t) => {
+    const { data } = await supabase.from(t).select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false })
+    return data || []
+  }
+  const [expenses, income, personal] = await Promise.all([
+    load('expenses'),
+    load('income'),
+    load('personal_expenses'),
+  ])
+  return { expenses, income, personal }
+}
+
+export async function restoreTrash(kind, id) {
+  const { error } = await supabase.from(TRASH_TABLES[kind]).update({ deleted_at: null }).eq('id', id)
+  if (error) throw error
+}
+
+export async function purgeTrash(kind, id) {
+  const { error } = await supabase.from(TRASH_TABLES[kind]).delete().eq('id', id)
+  if (error) throw error
+}
+
+export async function emptyTrash() {
+  await Promise.all(
+    Object.values(TRASH_TABLES).map((t) => supabase.from(t).delete().not('deleted_at', 'is', null)),
+  )
 }
 export async function getPersonalBudgets() {
   const { data, error } = await supabase.from('personal_budgets').select('*')

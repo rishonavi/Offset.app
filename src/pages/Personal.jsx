@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { Wallet, Receipt, Scale, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
 import { usePersonal } from '../context/PersonalContext'
+import { useToast } from '../context/ToastContext'
 import { PERSONAL_CATEGORIES, colorForPersonal, monthKey, monthLabel, shiftMonth, inMonth } from '../lib/personal'
 import { PAYMENT_METHODS } from '../lib/constants'
 import { sumAmount } from '../lib/filters'
@@ -32,7 +33,13 @@ function Stat({ icon: Icon, label, value, accent }) {
 }
 
 export default function Personal() {
-  const { expenses, loading, addExpense, updateExpense, deleteExpense, setBudget, budgetFor } = usePersonal()
+  const { expenses, loading, addExpense, updateExpense, deleteExpense, restoreExpense, setBudget, budgetFor } = usePersonal()
+  const toast = useToast()
+
+  const removeExpense = async (e) => {
+    await deleteExpense(e.id)
+    toast('Expense moved to trash', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
+  }
   const [month, setMonth] = useState(monthKey())
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -280,7 +287,7 @@ export default function Personal() {
                   <button onClick={() => startEdit(e)} className="shrink-0 text-slate-400 hover:text-brand" title="Edit">
                     <Pencil size={15} />
                   </button>
-                  <button onClick={() => deleteExpense(e.id)} className="shrink-0 text-slate-400 hover:text-red-600" title="Delete">
+                  <button onClick={() => removeExpense(e)} className="shrink-0 text-slate-400 hover:text-red-600" title="Delete">
                     <Trash2 size={15} />
                   </button>
                 </div>

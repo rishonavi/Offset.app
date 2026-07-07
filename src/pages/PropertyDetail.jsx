@@ -15,6 +15,7 @@ import {
 import { startOfMonth, subMonths, format } from 'date-fns'
 import { ArrowLeft, Plus, Pencil, Trash2, MapPin, Wallet, Receipt, CalendarDays, Banknote, Scale } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useToast } from '../context/ToastContext'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory } from '../lib/constants'
 import { totalsByCategory, monthlySeries } from '../lib/stats'
@@ -54,7 +55,17 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
 export default function PropertyDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { properties, expenses, income, documents, loading, propertyNameById, deleteProperty, deleteExpense, deleteIncome, addDocument, deleteDocument, canWrite } = useData()
+  const { properties, expenses, income, documents, loading, propertyNameById, deleteProperty, deleteExpense, restoreExpense, deleteIncome, restoreIncome, addDocument, deleteDocument, canWrite } = useData()
+  const toast = useToast()
+
+  const removeExpense = async (e) => {
+    await deleteExpense(e.id)
+    toast('Expense moved to trash', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
+  }
+  const removeIncome = async (e) => {
+    await deleteIncome(e.id)
+    toast('Income moved to trash', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
+  }
 
   const property = useMemo(() => properties.find((p) => p.id === id), [properties, id])
   const items = useMemo(() => expenses.filter((e) => e.property_id === id), [expenses, id])
@@ -373,7 +384,7 @@ export default function PropertyDetail() {
             expenses={items}
             propertyNameById={propertyNameById}
             onEdit={(e) => navigate(`/expenses/${e.id}/edit`)}
-            onDelete={deleteExpense}
+            onDelete={removeExpense}
             readOnly={!canWrite}
           />
         )}
@@ -405,7 +416,7 @@ export default function PropertyDetail() {
             income={incomeItems}
             propertyNameById={propertyNameById}
             onEdit={(e) => navigate(`/income/${e.id}/edit`)}
-            onDelete={deleteIncome}
+            onDelete={removeIncome}
             readOnly={!canWrite}
           />
         )}

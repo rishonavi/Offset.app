@@ -12,10 +12,15 @@ import FilterBar from '../components/FilterBar'
 import ExpenseTable from '../components/ExpenseTable'
 
 export default function Expenses() {
-  const { expenses, properties, loading, deleteExpense, addExpense, updateExpense, propertyNameById, canWrite } = useData()
+  const { expenses, properties, loading, deleteExpense, restoreExpense, addExpense, updateExpense, propertyNameById, canWrite } = useData()
   const [filters, setFilters] = useState(emptyFilters)
   const navigate = useNavigate()
   const toast = useToast()
+
+  const removeExpense = async (e) => {
+    await deleteExpense(e.id)
+    toast('Expense moved to trash', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
+  }
 
   const markPaid = async (e) => {
     const { id, user_id, created_at, ...rest } = e
@@ -91,7 +96,7 @@ export default function Expenses() {
               expenses={filtered}
               propertyNameById={propertyNameById}
               onEdit={(e) => navigate(`/expenses/${e.id}/edit`)}
-              onDelete={deleteExpense}
+              onDelete={removeExpense}
               onMarkSettled={markPaid}
               onDuplicate={duplicate}
               readOnly={!canWrite}

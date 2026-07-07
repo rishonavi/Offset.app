@@ -46,6 +46,10 @@ export function PersonalProvider({ children }) {
     await db.deletePersonalExpense(id)
     setExpenses((p) => p.filter((e) => e.id !== id))
   }
+  const restoreExpense = async (row) => {
+    await db.restoreTrash('personal', row.id)
+    setExpenses((p) => [row, ...p.filter((e) => e.id !== row.id)].sort(byDateDesc))
+  }
   const setBudget = async (category, monthly_limit) => {
     const row = await db.setPersonalBudget(category, monthly_limit)
     setBudgets((p) => {
@@ -60,7 +64,7 @@ export function PersonalProvider({ children }) {
   )
 
   const value = useMemo(
-    () => ({ expenses, budgets, loading, refresh, addExpense, updateExpense, deleteExpense, setBudget, budgetFor }),
+    () => ({ expenses, budgets, loading, refresh, addExpense, updateExpense, deleteExpense, restoreExpense, setBudget, budgetFor }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [expenses, budgets, loading, budgetFor],
   )

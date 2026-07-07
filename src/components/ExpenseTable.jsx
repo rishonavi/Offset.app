@@ -9,11 +9,6 @@ import ReceiptViewer from './ReceiptViewer'
 
 export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDelete, onMarkSettled, onDuplicate, readOnly }) {
   const [viewing, setViewing] = useState(null)
-  const confirmDelete = (e) => {
-    if (window.confirm(`Delete this ${formatCurrency(e.amount)} expense? This cannot be undone.`)) {
-      onDelete(e.id)
-    }
-  }
 
   return (
     <>
@@ -86,7 +81,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
                       <Pencil size={15} />
                     </button>
                     <button
-                      onClick={() => confirmDelete(e)}
+                      onClick={() => onDelete(e)}
                       className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
                       title="Delete"
                     >
@@ -139,7 +134,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
               <button onClick={() => onEdit(e)} className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
                 <Pencil size={13} /> Edit
               </button>
-              <button onClick={() => confirmDelete(e)} className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
+              <button onClick={() => onDelete(e)} className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
                 <Trash2 size={13} /> Delete
               </button>
             </div>

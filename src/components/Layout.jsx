@@ -20,6 +20,7 @@ import {
   Eye,
   ShieldCheck,
   PiggyBank,
+  Trash2,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -39,6 +40,7 @@ const NAV = [
   { to: '/bills', label: 'Bills', icon: FileText },
   { to: '/import', label: 'Import from Gmail', icon: MailPlus },
   { to: '/reports', label: 'Reports & Export', icon: PieChart },
+  { to: '/trash', label: 'Trash', icon: Trash2 },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 

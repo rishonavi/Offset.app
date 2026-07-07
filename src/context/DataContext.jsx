@@ -114,6 +114,11 @@ export function DataProvider({ children }) {
     await db.deleteExpense(id)
     setExpenses((prev) => prev.filter((e) => e.id !== id))
   }
+  const restoreExpense = async (row) => {
+    guard()
+    await db.restoreTrash('expense', row.id)
+    setExpenses((prev) => [row, ...prev.filter((e) => e.id !== row.id)].sort(byDateDesc))
+  }
 
   // ── Income ──
   const addIncome = async (data) => {
@@ -132,6 +137,11 @@ export function DataProvider({ children }) {
     guard()
     await db.deleteIncome(id)
     setIncome((prev) => prev.filter((e) => e.id !== id))
+  }
+  const restoreIncome = async (row) => {
+    guard()
+    await db.restoreTrash('income', row.id)
+    setIncome((prev) => [row, ...prev.filter((e) => e.id !== row.id)].sort(byDateDesc))
   }
 
   // ── Documents ──
@@ -164,9 +174,11 @@ export function DataProvider({ children }) {
       addExpense,
       updateExpense,
       deleteExpense,
+      restoreExpense,
       addIncome,
       updateIncome,
       deleteIncome,
+      restoreIncome,
       addDocument,
       deleteDocument,
     }),

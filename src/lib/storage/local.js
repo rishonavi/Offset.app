@@ -81,7 +81,7 @@ export async function deleteProperty(id) {
 
 // ── Expenses ───────────────────────────────────────────────────────
 export async function getExpenses() {
-  return read(EXP_KEY).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  return read(EXP_KEY).filter((e) => !e.deleted_at).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 export async function addExpense(payload) {
   const row = { id: uid(), created_at: new Date().toISOString(), ...payload }
@@ -94,7 +94,7 @@ export async function updateExpense(id, payload) {
   return list.find((e) => e.id === id)
 }
 export async function deleteExpense(id) {
-  write(EXP_KEY, read(EXP_KEY).filter((e) => e.id !== id))
+  write(EXP_KEY, read(EXP_KEY).map((e) => (e.id === id ? { ...e, deleted_at: new Date().toISOString() } : e)))
 }
 
 // ── Receipts (stored inline as data URLs) ──────────────────────────
@@ -112,7 +112,7 @@ export async function getReceiptUrl(stored) {
 
 // ── Income ─────────────────────────────────────────────────────────
 export async function getIncome() {
-  return read(INC_KEY).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  return read(INC_KEY).filter((e) => !e.deleted_at).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 export async function addIncome(payload) {
   const row = { id: uid(), created_at: new Date().toISOString(), ...payload }
@@ -125,12 +125,12 @@ export async function updateIncome(id, payload) {
   return list.find((e) => e.id === id)
 }
 export async function deleteIncome(id) {
-  write(INC_KEY, read(INC_KEY).filter((e) => e.id !== id))
+  write(INC_KEY, read(INC_KEY).map((e) => (e.id === id ? { ...e, deleted_at: new Date().toISOString() } : e)))
 }
 
 // ── Personal expenses & budgets (not tied to an asset) ─────────────
 export async function getPersonalExpenses() {
-  return read(PEXP_KEY).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  return read(PEXP_KEY).filter((e) => !e.deleted_at).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 }
 export async function addPersonalExpense(payload) {
   const row = { id: uid(), created_at: new Date().toISOString(), ...payload }
@@ -143,7 +143,37 @@ export async function updatePersonalExpense(id, payload) {
   return list.find((e) => e.id === id)
 }
 export async function deletePersonalExpense(id) {
-  write(PEXP_KEY, read(PEXP_KEY).filter((e) => e.id !== id))
+  write(PEXP_KEY, read(PEXP_KEY).map((e) => (e.id === id ? { ...e, deleted_at: new Date().toISOString() } : e)))
+}
+
+// ── Trash bin (soft-deleted expenses / income / personal expenses) ─
+const TRASH = { expense: EXP_KEY, income: INC_KEY, personal: PEXP_KEY }
+const TRASH_DAYS = 30
+
+export async function getTrash() {
+  const cutoff = Date.now() - TRASH_DAYS * 86400000
+  const collect = (key, kind) => {
+    const all = read(key)
+    const kept = all.filter((e) => !e.deleted_at || Date.parse(e.deleted_at) >= cutoff)
+    if (kept.length !== all.length) write(key, kept) // purge expired
+    return kept.filter((e) => e.deleted_at).map((e) => ({ ...e, kind }))
+  }
+  return {
+    expenses: collect(EXP_KEY, 'expense'),
+    income: collect(INC_KEY, 'income'),
+    personal: collect(PEXP_KEY, 'personal'),
+  }
+}
+export async function restoreTrash(kind, id) {
+  const key = TRASH[kind]
+  write(key, read(key).map((e) => (e.id === id ? { ...e, deleted_at: null } : e)))
+}
+export async function purgeTrash(kind, id) {
+  const key = TRASH[kind]
+  write(key, read(key).filter((e) => e.id !== id))
+}
+export async function emptyTrash() {
+  for (const key of Object.values(TRASH)) write(key, read(key).filter((e) => !e.deleted_at))
 }
 export async function getPersonalBudgets() {
   return read(PBUD_KEY)

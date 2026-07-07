@@ -28,6 +28,7 @@ const Reports = lazy(() => import('./pages/Reports'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Personal = lazy(() => import('./pages/Personal'))
+const Trash = lazy(() => import('./pages/Trash'))
 
 export default function App() {
   const { isCloud } = useAuth()
@@ -113,6 +114,7 @@ export default function App() {
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
         <Route path="personal" element={<Personal />} />
+        <Route path="trash" element={<Trash />} />
         <Route path="admin" element={<Admin />} />
       </Route>
 

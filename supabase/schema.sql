@@ -100,6 +100,13 @@ alter table public.income   add column if not exists tax numeric(14,2);
 alter table public.expenses add column if not exists recurrence text default 'none';
 alter table public.income   add column if not exists recurrence text default 'none';
 
+-- ── Soft-delete / trash bin: deleted rows keep a deleted_at timestamp and are
+--    hidden from normal views; recoverable for 30 days, then purged. Safe to re-run.
+alter table public.expenses          add column if not exists deleted_at timestamptz;
+alter table public.income            add column if not exists deleted_at timestamptz;
+create index if not exists expenses_deleted_idx on public.expenses(deleted_at);
+create index if not exists income_deleted_idx   on public.income(deleted_at);
+
 -- ── Documents (leases, insurance, warranties…) ──────────────────
 create table if not exists public.documents (
   id          uuid primary key default gen_random_uuid(),
@@ -132,6 +139,8 @@ create table if not exists public.personal_expenses (
 );
 create index if not exists personal_expenses_user_idx on public.personal_expenses(user_id);
 create index if not exists personal_expenses_date_idx  on public.personal_expenses(date);
+alter table public.personal_expenses add column if not exists deleted_at timestamptz;
+create index if not exists personal_expenses_deleted_idx on public.personal_expenses(deleted_at);
 
 alter table public.personal_expenses enable row level security;
 drop policy if exists "own personal expenses" on public.personal_expenses;

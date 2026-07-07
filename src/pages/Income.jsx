@@ -12,10 +12,15 @@ import IncomeTable from '../components/IncomeTable'
 const EMPTY = { propertyId: '', from: '', to: '', q: '' }
 
 export default function Income() {
-  const { income, properties, loading, deleteIncome, addIncome, updateIncome, propertyNameById, canWrite } = useData()
+  const { income, properties, loading, deleteIncome, restoreIncome, addIncome, updateIncome, propertyNameById, canWrite } = useData()
   const [filters, setFilters] = useState(EMPTY)
   const navigate = useNavigate()
   const toast = useToast()
+
+  const removeIncome = async (e) => {
+    await deleteIncome(e.id)
+    toast('Income moved to trash', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
+  }
 
   const markReceived = async (e) => {
     const { id, user_id, created_at, ...rest } = e
@@ -120,7 +125,7 @@ export default function Income() {
               income={filtered}
               propertyNameById={propertyNameById}
               onEdit={(e) => navigate(`/income/${e.id}/edit`)}
-              onDelete={deleteIncome}
+              onDelete={removeIncome}
               onMarkSettled={markReceived}
               onDuplicate={duplicate}
               readOnly={!canWrite}
