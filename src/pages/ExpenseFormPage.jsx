@@ -96,6 +96,7 @@ export default function ExpenseFormPage() {
           initial={editing}
           properties={properties}
           vendors={vendors}
+          history={expenses}
           defaultPropertyId={params.get('asset') || ''}
           onSubmit={onSubmit}
           onCancel={goBack}

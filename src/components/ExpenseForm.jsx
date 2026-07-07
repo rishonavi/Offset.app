@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
-import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Paperclip, X, Loader2, Sparkles, Camera, Upload, Wand2 } from 'lucide-react'
 import { CATEGORIES, PAYMENT_METHODS } from '../lib/constants'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
+import { buildVendorIndex, suggestCategory } from '../lib/categorize'
 import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
 import { Field, Input, Select, Textarea, Button } from './ui'
 
-export default function ExpenseForm({ initial, properties, vendors = [], defaultPropertyId, onSubmit, onCancel }) {
+export default function ExpenseForm({ initial, properties, vendors = [], history = [], defaultPropertyId, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     property_id: initial?.property_id || defaultPropertyId || (properties[0]?.id ?? ''),
     date: initial?.date || todayISO(),
@@ -36,6 +37,15 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
   const fileRef = useRef(null)
   const cameraRef = useRef(null)
   const plan = usePlan()
+
+  // Suggest a category from the vendor — learns from past entries, falls back to
+  // a built-in keyword map. Only offered while the category is still empty.
+  const vendorIndex = useMemo(() => buildVendorIndex(history), [history])
+  const suggestion = useMemo(
+    () => (form.category.trim() ? null : suggestCategory(form.vendor, vendorIndex)),
+    [form.vendor, form.category, vendorIndex],
+  )
+  const applySuggestion = () => suggestion && setForm((f) => ({ ...f, category: suggestion.category }))
 
   const runParse = async () => {
     if (!nlText.trim()) return
@@ -246,6 +256,17 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
               <option key={c} value={c} />
             ))}
           </datalist>
+          {suggestion && (
+            <button
+              type="button"
+              onClick={applySuggestion}
+              className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-brand-light px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-gold hover:text-gold"
+            >
+              <Wand2 size={12} className="text-gold" />
+              Use <span className="font-semibold text-slate-800">{suggestion.category}</span>
+              {suggestion.source === 'history' && <span className="text-slate-400">· from past entries</span>}
+            </button>
+          )}
         </Field>
 
         <Field label="Vendor / Payee">
