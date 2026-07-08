@@ -126,6 +126,24 @@ drop policy if exists "own documents" on public.documents;
 create policy "own documents" on public.documents
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- ── Comments (notes on a bill / expense / income entry) ─────────
+create table if not exists public.comments (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  kind        text not null check (kind in ('expense', 'income')),
+  entry_id    uuid not null,
+  body        text not null,
+  author      text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists comments_user_idx    on public.comments(user_id);
+create index if not exists comments_entry_idx   on public.comments(entry_id);
+
+alter table public.comments enable row level security;
+drop policy if exists "own comments" on public.comments;
+create policy "own comments" on public.comments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- ── Personal budgeting & everyday expenses (not tied to an asset) ─
 create table if not exists public.personal_expenses (
   id             uuid primary key default gen_random_uuid(),

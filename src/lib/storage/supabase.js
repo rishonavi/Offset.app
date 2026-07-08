@@ -260,6 +260,23 @@ export async function deleteDocument(id) {
   if (error) throw error
 }
 
+// ── Comments (notes people leave on a bill / expense / income) ─────
+export async function getComments() {
+  const { data, error } = await supabase.from('comments').select('*').order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+export async function addComment(payload) {
+  const user_id = await ownerForWrite()
+  const { data, error } = await supabase.from('comments').insert({ ...payload, user_id }).select().single()
+  if (error) throw error
+  return data
+}
+export async function deleteComment(id) {
+  const { error } = await supabase.from('comments').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ── Receipts (private bucket: store the path, serve via signed URL) ──
 export async function uploadReceipt(file) {
   // Store under the workspace owner's folder so shared readers can view it.

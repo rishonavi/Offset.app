@@ -7,6 +7,7 @@ const INC_KEY = 'pl_income'
 const DOC_KEY = 'pl_documents'
 const PEXP_KEY = 'pl_personal_expenses'
 const PBUD_KEY = 'pl_personal_budgets'
+const COMMENT_KEY = 'pl_comments'
 
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
@@ -203,4 +204,17 @@ export async function addDocument(payload) {
 }
 export async function deleteDocument(id) {
   write(DOC_KEY, read(DOC_KEY).filter((d) => d.id !== id))
+}
+
+// ── Comments (notes people leave on a bill / expense / income) ─────
+export async function getComments() {
+  return read(COMMENT_KEY).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+}
+export async function addComment(payload) {
+  const row = { id: uid(), created_at: new Date().toISOString(), ...payload }
+  write(COMMENT_KEY, [...read(COMMENT_KEY), row])
+  return row
+}
+export async function deleteComment(id) {
+  write(COMMENT_KEY, read(COMMENT_KEY).filter((c) => c.id !== id))
 }

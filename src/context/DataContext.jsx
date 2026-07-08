@@ -17,6 +17,7 @@ export function DataProvider({ children }) {
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
   const [documents, setDocuments] = useState([])
+  const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -37,16 +38,18 @@ export function DataProvider({ children }) {
     setLoading(true)
     setError(null)
     try {
-      const [p, e, inc, docs] = await Promise.all([
+      const [p, e, inc, docs, cmts] = await Promise.all([
         db.getProperties(),
         db.getExpenses(),
         db.getIncome(),
         db.getDocuments(),
+        db.getComments(),
       ])
       setProperties([...p].sort(byNameAsc))
       setExpenses([...e].sort(byDateDesc))
       setIncome([...inc].sort(byDateDesc))
       setDocuments(docs)
+      setComments(cmts)
     } catch (err) {
       setError(err?.message || String(err))
     } finally {
@@ -68,6 +71,7 @@ export function DataProvider({ children }) {
   const scopedExpenses = useMemo(() => inScope(expenses), [expenses, inScope])
   const scopedIncome = useMemo(() => inScope(income), [income, inScope])
   const scopedDocuments = useMemo(() => inScope(documents), [documents, inScope])
+  const scopedComments = useMemo(() => inScope(comments), [comments, inScope])
 
   const propertyNameById = useCallback(
     (id) => scopedProperties.find((p) => p.id === id)?.name,
@@ -157,12 +161,26 @@ export function DataProvider({ children }) {
     setDocuments((prev) => prev.filter((d) => d.id !== id))
   }
 
+  // ── Comments ──
+  const addComment = async (data) => {
+    guard()
+    const row = await db.addComment(data)
+    setComments((prev) => [...prev, row])
+    return row
+  }
+  const deleteComment = async (id) => {
+    guard()
+    await db.deleteComment(id)
+    setComments((prev) => prev.filter((c) => c.id !== id))
+  }
+
   const value = useMemo(
     () => ({
       properties: scopedProperties,
       expenses: scopedExpenses,
       income: scopedIncome,
       documents: scopedDocuments,
+      comments: scopedComments,
       loading,
       error,
       canWrite,
@@ -181,9 +199,11 @@ export function DataProvider({ children }) {
       restoreIncome,
       addDocument,
       deleteDocument,
+      addComment,
+      deleteComment,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopedProperties, scopedExpenses, scopedIncome, scopedDocuments, loading, error, canWrite, refresh, propertyNameById],
+    [scopedProperties, scopedExpenses, scopedIncome, scopedDocuments, scopedComments, loading, error, canWrite, refresh, propertyNameById],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
