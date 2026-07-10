@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Paperclip, Pencil, Trash2, Copy, CheckCircle2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Paperclip, Pencil, Trash2, Copy, CheckCircle2, ChevronDown } from 'lucide-react'
 import { colorForCategory } from '../lib/constants'
 import { formatCurrency, formatDate } from '../lib/format'
 import { isSettled } from '../lib/payments'
@@ -7,10 +7,18 @@ import { Badge } from './ui'
 import PaymentChip from './PaymentChip'
 import ReceiptViewer from './ReceiptViewer'
 
+// Render rows in pages so a few thousand entries don't paint at once.
+const PAGE = 100
+
 export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDelete, onMarkSettled, onDuplicate, onBulkDelete, selectable, readOnly }) {
   const [viewing, setViewing] = useState(null)
   const [selected, setSelected] = useState(() => new Set())
+  const [limit, setLimit] = useState(PAGE)
   const canSelect = selectable && !readOnly
+
+  // Reset paging whenever the (filtered) list changes.
+  useEffect(() => setLimit(PAGE), [expenses])
+  const visible = expenses.slice(0, limit)
 
   const toggle = (id) =>
     setSelected((prev) => {
@@ -59,7 +67,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {expenses.map((e) => (
+            {visible.map((e) => (
               <tr key={e.id} className={`transition hover:bg-slate-50/70 ${selected.has(e.id) ? 'bg-brand-light/40' : ''}`}>
                 {canSelect && (
                   <td className="px-4 py-3">
@@ -135,7 +143,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
 
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
-        {expenses.map((e) => (
+        {visible.map((e) => (
           <div key={e.id} className={`card p-4 ${selected.has(e.id) ? 'border-gold' : ''}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2">
@@ -184,6 +192,20 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
           </div>
         ))}
       </div>
+
+      {expenses.length > limit && (
+        <div className="flex items-center justify-center gap-3 pt-2 text-sm text-slate-500">
+          <span>
+            Showing {visible.length} of {expenses.length}
+          </span>
+          <button
+            onClick={() => setLimit((l) => l + PAGE * 5)}
+            className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+          >
+            <ChevronDown size={15} /> Show more
+          </button>
+        </div>
+      )}
 
       {viewing && <ReceiptViewer stored={viewing} onClose={() => setViewing(null)} />}
     </>

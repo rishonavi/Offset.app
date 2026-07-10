@@ -18,7 +18,18 @@ export default function Bills() {
   const [viewing, setViewing] = useState(null)
   const [openId, setOpenId] = useState(null)
   const authorLabel = user?.email || 'You'
-  const commentsFor = (b) => comments.filter((c) => c.kind === b.kind && c.entry_id === b.id)
+  // Group comments by entry once, so per-bill lookup is O(1) not O(comments).
+  const commentsByEntry = useMemo(() => {
+    const m = new Map()
+    for (const c of comments) {
+      const k = `${c.kind}-${c.entry_id}`
+      const arr = m.get(k)
+      if (arr) arr.push(c)
+      else m.set(k, [c])
+    }
+    return m
+  }, [comments])
+  const commentsFor = (b) => commentsByEntry.get(`${b.kind}-${b.id}`) || []
 
   const bills = useMemo(() => {
     const ex = expenses

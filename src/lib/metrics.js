@@ -63,7 +63,19 @@ export function assetMetrics(property, expenses, income, today = new Date()) {
 // the aggregate (sum of NOI / sum of value) so a big asset weighs more than a
 // small one, which is how investors read a portfolio.
 export function portfolioMetrics(properties, expenses, income, today = new Date()) {
-  const byProp = (rows, id) => rows.filter((r) => r.property_id === id)
+  // Group rows by property once (O(n)) instead of re-scanning per asset (O(n²)).
+  const group = (rows) => {
+    const m = new Map()
+    for (const r of rows) {
+      const arr = m.get(r.property_id)
+      if (arr) arr.push(r)
+      else m.set(r.property_id, [r])
+    }
+    return m
+  }
+  const expByProp = group(expenses)
+  const incByProp = group(income)
+
   let totalValue = 0
   let ttmIncome = 0
   let ttmOperating = 0
@@ -73,7 +85,7 @@ export function portfolioMetrics(properties, expenses, income, today = new Date(
   let occupied = 0
 
   for (const p of properties) {
-    const m = assetMetrics(p, byProp(expenses, p.id), byProp(income, p.id), today)
+    const m = assetMetrics(p, expByProp.get(p.id) || [], incByProp.get(p.id) || [], today)
     totalValue += m.value
     ttmIncome += m.ttmIncome
     ttmOperating += m.ttmOperating
