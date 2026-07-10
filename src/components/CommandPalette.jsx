@@ -17,6 +17,7 @@ import {
   Sun,
   Building2,
   CornerDownLeft,
+  Keyboard,
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -38,7 +39,7 @@ const NAV_COMMANDS = [
 // A ⌘K / Ctrl-K palette: jump to any page, run a quick action, or search across
 // assets, income, expenses and documents. Everything is local — no navigation
 // round-trips until you pick a result.
-export default function CommandPalette({ open, onClose, onQuickAdd }) {
+export default function CommandPalette({ open, onClose, onQuickAdd, onHelp }) {
   const navigate = useNavigate()
   const { properties, expenses, income, documents, propertyNameById, canWrite } = useData()
   const { theme, toggle } = useTheme()
@@ -75,6 +76,8 @@ export default function CommandPalette({ open, onClose, onQuickAdd }) {
     const dark = theme === 'dark'
     if (match(dark ? 'light mode' : 'dark mode') || match('theme') || match('appearance'))
       push('Actions', dark ? 'Switch to light mode' : 'Switch to dark mode', '', dark ? Sun : Moon, () => { toggle(); onClose() })
+    if (match('keyboard shortcuts') || match('help'))
+      push('Actions', 'Keyboard shortcuts', '', Keyboard, () => { onClose(); onHelp?.() })
 
     for (const n of NAV_COMMANDS) if (match(n.label)) push('Go to', n.label, '', n.icon, go(n.to))
 
@@ -139,7 +142,13 @@ export default function CommandPalette({ open, onClose, onQuickAdd }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-navy/50 p-4 pt-[12vh] backdrop-blur-sm" onClick={onClose}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command palette"
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-navy/50 p-4 pt-[12vh] backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div className="card w-full max-w-xl animate-fade-in overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-border-light px-4">
           <Search size={18} className="shrink-0 text-slate-400" />

@@ -3,6 +3,7 @@ import { Paperclip, Pencil, Trash2, Copy, CheckCircle2, ChevronDown } from 'luci
 import { colorForCategory } from '../lib/constants'
 import { formatCurrency, formatDate } from '../lib/format'
 import { isSettled } from '../lib/payments'
+import { useSorted, SortTh } from '../lib/tableSort'
 import { Badge } from './ui'
 import PaymentChip from './PaymentChip'
 import ReceiptViewer from './ReceiptViewer'
@@ -16,9 +17,17 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
   const [limit, setLimit] = useState(PAGE)
   const canSelect = selectable && !readOnly
 
+  const { sorted, sort, toggle: onSort } = useSorted(expenses, {
+    date: (e) => e.date || '',
+    property: (e) => propertyNameById(e.property_id) || '',
+    category: (e) => e.category || '',
+    vendor: (e) => e.vendor || '',
+    amount: (e) => Number(e.amount) || 0,
+  })
+
   // Reset paging whenever the (filtered) list changes.
   useEffect(() => setLimit(PAGE), [expenses])
-  const visible = expenses.slice(0, limit)
+  const visible = sorted.slice(0, limit)
 
   const toggle = (id) =>
     setSelected((prev) => {
@@ -58,11 +67,11 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" />
                 </th>
               )}
-              <th className="px-4 py-3 font-semibold">Date</th>
-              <th className="px-4 py-3 font-semibold">Property</th>
-              <th className="px-4 py-3 font-semibold">Category</th>
-              <th className="px-4 py-3 font-semibold">Vendor</th>
-              <th className="px-4 py-3 text-right font-semibold">Amount</th>
+              <SortTh label="Date" k="date" sort={sort} onSort={onSort} />
+              <SortTh label="Property" k="property" sort={sort} onSort={onSort} />
+              <SortTh label="Category" k="category" sort={sort} onSort={onSort} />
+              <SortTh label="Vendor" k="vendor" sort={sort} onSort={onSort} />
+              <SortTh label="Amount" k="amount" sort={sort} onSort={onSort} align="right" />
               <th className="px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>

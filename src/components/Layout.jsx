@@ -31,6 +31,7 @@ import { useConfig } from '../context/ConfigContext'
 import ErrorBoundary from './ErrorBoundary'
 import QuickAddExpense from './QuickAddExpense'
 import CommandPalette from './CommandPalette'
+import ShortcutsHelp from './ShortcutsHelp'
 import { checkIsAdmin } from '../lib/admin'
 import { Spinner } from './ui'
 
@@ -140,6 +141,7 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const location = useLocation()
   const showFab = canWrite && !ON_ADD_EDIT_FORM.test(location.pathname)
@@ -161,10 +163,16 @@ export default function Layout() {
         setCmdOpen((v) => !v)
         return
       }
-      if (e.key !== 'n' && e.key !== 'N') return
       if (e.metaKey || e.ctrlKey || e.altKey) return
       const t = e.target
-      if (t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.tagName === 'SELECT' || t?.isContentEditable) return
+      const typing = t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.tagName === 'SELECT' || t?.isContentEditable
+      if (typing) return
+      if (e.key === '?') {
+        e.preventDefault()
+        setHelpOpen(true)
+        return
+      }
+      if (e.key !== 'n' && e.key !== 'N') return
       if (!canWrite) return
       e.preventDefault()
       setQuickAdd(true)
@@ -301,7 +309,13 @@ export default function Layout() {
       )}
 
       <QuickAddExpense open={quickAdd} onClose={() => setQuickAdd(false)} />
-      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} onQuickAdd={() => setQuickAdd(true)} />
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        onQuickAdd={() => setQuickAdd(true)}
+        onHelp={() => setHelpOpen(true)}
+      />
+      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   )
 }

@@ -61,6 +61,9 @@ export default function QuickAddExpense({ open, onClose }) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Quick add expense"
       className="fixed inset-0 z-50 flex items-start justify-center bg-navy/40 p-4 pt-24 backdrop-blur-sm"
       onClick={onClose}
     >
