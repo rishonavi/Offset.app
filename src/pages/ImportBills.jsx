@@ -10,6 +10,7 @@ import { currencySymbol, todayISO } from '../lib/format'
 import { gmailConfigured, connectGmail, isGmailConnected, fetchBillCandidates, attachmentToFile } from '../lib/gmail'
 import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
+import BankImport from '../components/BankImport'
 
 export default function ImportBills() {
   const { properties, loading, addExpense } = useData()
@@ -101,38 +102,15 @@ export default function ImportBills() {
   return (
     <div className="animate-fade-in space-y-6">
       <PageHeader
-        title="Import bills from Gmail"
-        subtitle="Offset reads recent invoice/receipt emails, lets Gemini extract the details, and you add them with one tap."
+        title="Import"
+        subtitle="Reconcile a bank / UPI statement to see which bills are paid, or pull invoices from your inbox."
       />
 
-      {plan && plan.billingEnabled && !plan.can('gmailImport') ? (
-        <Card className="flex flex-col items-start gap-3 p-6">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/15 text-gold">
-            <Mail size={20} />
-          </span>
-          <div>
-            <p className="font-semibold text-slate-800">Importing bills from Gmail is a Pro feature.</p>
-            <p className="mt-1 text-sm text-slate-500">Upgrade to read invoices straight from your inbox with Gemini.</p>
-          </div>
-          <Link to="/settings" className="btn-primary">
-            Upgrade to Pro
-          </Link>
-        </Card>
-      ) : !gmailConfigured ? (
-        <Card className="p-5 text-sm text-slate-600">
-          <p className="font-semibold text-slate-800">Gmail import isn’t set up yet.</p>
-          <p className="mt-2">
-            It uses the same <code className="bg-slate-100 px-1">VITE_GOOGLE_CLIENT_ID</code> as Drive backup. In Google Cloud:
-            enable the <strong>Gmail API</strong>, add the <strong>gmail.readonly</strong> scope to your OAuth consent screen,
-            add yourself as a <strong>Test user</strong>, then redeploy. (Gmail is a Google “restricted” scope, so it works for
-            your own account; opening it to everyone needs Google’s security review.)
-          </p>
-        </Card>
-      ) : properties.length === 0 ? (
+      {properties.length === 0 ? (
         <EmptyState
           icon={Building2}
           title="Add an asset first"
-          subtitle="Imported bills are logged against an asset, so create one before importing."
+          subtitle="Imported entries are logged against an asset, so create one before importing."
           action={
             <Link to="/properties/new" className="btn-primary">
               <Plus size={16} /> Add asset
@@ -141,6 +119,35 @@ export default function ImportBills() {
         />
       ) : (
         <>
+          <BankImport />
+
+          <div className="space-y-6 border-t border-border-light pt-6">
+            <h2 className="text-sm font-semibold uppercase tracking-[1px] text-slate-500">Bills from Gmail</h2>
+            {plan && plan.billingEnabled && !plan.can('gmailImport') ? (
+              <Card className="flex flex-col items-start gap-3 p-6">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/15 text-gold">
+                  <Mail size={20} />
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-800">Importing bills from Gmail is a Pro feature.</p>
+                  <p className="mt-1 text-sm text-slate-500">Upgrade to read invoices straight from your inbox with Gemini.</p>
+                </div>
+                <Link to="/settings" className="btn-primary">
+                  Upgrade to Pro
+                </Link>
+              </Card>
+            ) : !gmailConfigured ? (
+              <Card className="p-5 text-sm text-slate-600">
+                <p className="font-semibold text-slate-800">Gmail import isn’t set up yet.</p>
+                <p className="mt-2">
+                  It uses the same <code className="bg-slate-100 px-1">VITE_GOOGLE_CLIENT_ID</code> as Drive backup. In Google Cloud:
+                  enable the <strong>Gmail API</strong>, add the <strong>gmail.readonly</strong> scope to your OAuth consent screen,
+                  add yourself as a <strong>Test user</strong>, then redeploy. (Gmail is a Google “restricted” scope, so it works for
+                  your own account; opening it to everyone needs Google’s security review.)
+                </p>
+              </Card>
+            ) : (
+              <>
           <Card className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-light text-brand">
@@ -242,6 +249,9 @@ export default function ImportBills() {
               <option key={c} value={c} />
             ))}
           </datalist>
+              </>
+            )}
+          </div>
         </>
       )}
     </div>
