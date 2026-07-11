@@ -4,7 +4,7 @@ import autoTableImport from 'jspdf-autotable'
 // jspdf-autotable ships as CJS; under Vite's interop the default import can be
 // the module wrapper rather than the function itself, so unwrap defensively.
 const autoTable = autoTableImport?.default || autoTableImport
-import { FileSpreadsheet, FileText, FileType, Upload, Download, CheckCircle2, AlertCircle, Cloud, UploadCloud, DownloadCloud, Landmark } from 'lucide-react'
+import { FileSpreadsheet, FileText, FileType, Upload, Download, CheckCircle2, AlertCircle, Cloud, UploadCloud, DownloadCloud, Landmark, Calculator } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { applyFilters, emptyFilters, sumAmount } from '../lib/filters'
 import { formatCurrency, formatDate } from '../lib/format'
@@ -18,6 +18,7 @@ import {
   parseSpreadsheet,
   rowToExpenseInput,
 } from '../lib/exports'
+import { toTallyXML } from '../lib/tally'
 import { cloudProviders } from '../lib/cloud'
 import { Card, Button, Spinner, EmptyState, Badge } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -154,6 +155,18 @@ export default function Reports() {
       exportWorkbook({ expenses: rows, income: toIncomeRows(incomeFiltered, propertyNameById) }, baseName)
     if (kind === 'csv') exportCSV(rows, baseName)
     if (kind === 'pdf') exportPDF(rows, { title: 'Offset — Expense Report', subtitle })
+  }
+
+  // Tally-importable XML (Payment vouchers for expenses, Receipt for income).
+  const exportTally = () => {
+    const xml = toTallyXML({ expenses: filtered, income: incomeFiltered, propertyNameById, company: 'Offset' })
+    const blob = new Blob([xml], { type: 'application/xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${baseName}-tally.xml`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleImport = async (file) => {
@@ -373,9 +386,14 @@ export default function Reports() {
             <Button variant="ghost" onClick={() => doExport('pdf')} disabled={filtered.length === 0}>
               <FileText size={16} className="text-red-600" /> PDF
             </Button>
+            <Button variant="ghost" onClick={exportTally} disabled={filtered.length === 0 && incomeFiltered.length === 0}>
+              <Calculator size={16} className="text-indigo-600" /> Tally (XML)
+            </Button>
           </div>
           <p className="mt-3 text-[0.7rem] text-slate-400">
             Excel includes a separate <strong>Income</strong> sheet. CSV/PDF cover expenses; the year-end PDF below covers income, expenses &amp; tax by year and a deductible breakdown by category.
+            <br />
+            <strong>Tally</strong> exports the filtered income &amp; expenses as import-ready vouchers — in TallyPrime: Gateway of Tally → Import → Vouchers.
           </p>
         </Card>
 
