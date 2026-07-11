@@ -46,6 +46,55 @@ function voucher({ type, date, number, narration, ledger, counter, amount, debit
     </TALLYMESSAGE>`
 }
 
+// ── Import: parse a Tally XML export (Day Book / Voucher Register) back into
+// generic voucher rows. Expenses come out as debits (Payment/Purchase), income
+// as credits (Receipt/Sales). The caller maps these onto Offset assets. ──────
+const isoFromTally = (d) => {
+  const s = String(d || '').trim()
+  return /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : s.slice(0, 10)
+}
+const tagText = (el, tag) => el.getElementsByTagName(tag)[0]?.textContent?.trim() || ''
+const isCashBank = (n) => /cash|bank/i.test(n)
+
+export function parseTallyXML(xml) {
+  if (typeof DOMParser === 'undefined') throw new Error('XML parsing is only available in the browser.')
+  const doc = new DOMParser().parseFromString(xml, 'application/xml')
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('That file isn’t valid XML.')
+
+  const out = []
+  for (const v of doc.getElementsByTagName('VOUCHER')) {
+    const typeRaw = (v.getAttribute('VCHTYPE') || tagText(v, 'VOUCHERTYPENAME')).toLowerCase()
+    const date = isoFromTally(tagText(v, 'DATE'))
+    const narration = tagText(v, 'NARRATION')
+    const entries = [
+      ...v.getElementsByTagName('ALLLEDGERENTRIES.LIST'),
+      ...v.getElementsByTagName('LEDGERENTRIES.LIST'),
+    ].map((le) => ({ name: tagText(le, 'LEDGERNAME'), amount: parseFloat(tagText(le, 'AMOUNT')) || 0 }))
+    if (!entries.length || !date) continue
+
+    // The "primary" ledger is the non cash/bank one (the category / income head).
+    const primary = entries.find((e) => !isCashBank(e.name)) || [...entries].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0]
+    const cash = entries.find((e) => isCashBank(e.name))
+    const amount = Math.abs(primary.amount)
+    if (!amount) continue
+
+    let kind
+    if (/receipt|sales/.test(typeRaw)) kind = 'income'
+    else if (/payment|purchase/.test(typeRaw)) kind = 'expense'
+    else kind = primary.amount < 0 ? 'expense' : 'income' // debit → expense
+
+    out.push({
+      kind,
+      date,
+      amount,
+      ledger: primary.name || (kind === 'income' ? 'Income' : 'Other'),
+      narration,
+      payment_method: cash ? (/bank/i.test(cash.name) ? 'Bank Transfer' : 'Cash') : '',
+    })
+  }
+  return out
+}
+
 export function toTallyXML({ expenses = [], income = [], propertyNameById = () => '', company = 'Offset' } = {}) {
   const messages = []
   let n = 0

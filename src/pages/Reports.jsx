@@ -18,7 +18,7 @@ import {
   parseSpreadsheet,
   rowToExpenseInput,
 } from '../lib/exports'
-import { toTallyXML } from '../lib/tally'
+import { toTallyXML, parseTallyXML } from '../lib/tally'
 import { cloudProviders } from '../lib/cloud'
 import { Card, Button, Spinner, EmptyState, Badge } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -33,6 +33,7 @@ export default function Reports() {
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState(null)
   const fileRef = useRef(null)
+  const tallyRef = useRef(null)
   const backupFileRef = useRef(null)
   const [cloudBusy, setCloudBusy] = useState(false)
   const [cloudMsg, setCloudMsg] = useState(null)
@@ -214,6 +215,67 @@ export default function Reports() {
     } finally {
       setImporting(false)
       if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  // Import a Tally XML export — Payment/Purchase vouchers become expenses,
+  // Receipt/Sales become income. Each voucher is matched to an asset named in
+  // its narration, else filed under a single "Imported from Tally" asset.
+  const handleTallyImport = async (file) => {
+    if (!file) return
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const vouchers = parseTallyXML(await file.text())
+      if (vouchers.length === 0) {
+        setImportMsg({ ok: false, text: 'No vouchers found in that Tally file.' })
+        return
+      }
+      const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
+      const matchAsset = (narration) => {
+        for (const seg of (narration || '').split('·').map((s) => s.trim().toLowerCase())) {
+          if (seg && nameToId.has(seg)) return nameToId.get(seg)
+        }
+        return null
+      }
+      let fallbackId = nameToId.get('imported from tally') || null
+      const ensureFallback = async () => {
+        if (fallbackId) return fallbackId
+        const created = await addProperty({ name: 'Imported from Tally', type: 'Other', address: '', notes: '' })
+        fallbackId = created.id
+        nameToId.set('imported from tally', fallbackId)
+        return fallbackId
+      }
+      // Skip entries that already exist so re-importing the same day book is safe.
+      const expSeen = new Set(expenses.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.category}`))
+      const incSeen = new Set(income.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.source}`))
+      let addedE = 0
+      let addedI = 0
+      let skipped = 0
+      for (const v of vouchers) {
+        const pid = matchAsset(v.narration) || (await ensureFallback())
+        const key = `${pid}|${v.date}|${v.amount}|${v.ledger}`
+        if (v.kind === 'income') {
+          if (incSeen.has(key)) { skipped++; continue }
+          incSeen.add(key)
+          await addIncome({ property_id: pid, date: v.date, amount: v.amount, source: v.ledger, payer: '', payment_method: v.payment_method, status: 'received', description: v.narration, receipt_url: null })
+          addedI++
+        } else {
+          if (expSeen.has(key)) { skipped++; continue }
+          expSeen.add(key)
+          await addExpense({ property_id: pid, date: v.date, amount: v.amount, category: v.ledger, vendor: '', payment_method: v.payment_method, status: 'paid', description: v.narration, receipt_url: null })
+          addedE++
+        }
+      }
+      setImportMsg({
+        ok: true,
+        text: `Imported ${addedE} expense${addedE === 1 ? '' : 's'} and ${addedI} income from Tally${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}` : ''}.`,
+      })
+    } catch (err) {
+      setImportMsg({ ok: false, text: `Tally import failed: ${err?.message || err}` })
+    } finally {
+      setImporting(false)
+      if (tallyRef.current) tallyRef.current.value = ''
     }
   }
 
@@ -417,6 +479,26 @@ export default function Reports() {
               {!importing && <Upload size={16} />} Choose file…
             </Button>
           </div>
+
+          <div className="mt-4 border-t border-slate-200 pt-4">
+            <p className="text-xs text-slate-500">
+              Or import a <strong>Tally XML</strong> export (Day Book / Voucher Register). Payment/Purchase vouchers become
+              expenses and Receipt/Sales become income, matched to the asset named in each voucher. Duplicates are skipped.
+            </p>
+            <input
+              ref={tallyRef}
+              type="file"
+              accept=".xml,text/xml,application/xml"
+              className="hidden"
+              onChange={(e) => handleTallyImport(e.target.files?.[0])}
+            />
+            <div className="mt-3">
+              <Button variant="ghost" onClick={() => tallyRef.current?.click()} loading={importing}>
+                {!importing && <Calculator size={16} className="text-indigo-600" />} Import Tally XML
+              </Button>
+            </div>
+          </div>
+
           {importMsg && (
             <div
               className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
