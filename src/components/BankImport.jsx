@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
-import { Landmark, Upload, CheckCircle2, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
+import { Landmark, Upload, CheckCircle2, AlertCircle, ArrowRight, Link2 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { parseSpreadsheet } from '../lib/exports'
 import { parseStatement, reconcile, parseCSV } from '../lib/statement'
 import { buildVendorIndex, suggestCategory } from '../lib/categorize'
+import { bankSyncEnabled, bankProviderLabel, startBankLink, fetchLiveTransactions } from '../lib/bankSync'
 import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button } from './ui'
 
@@ -22,6 +23,7 @@ export default function BankImport() {
   const [assetId, setAssetId] = useState(properties[0]?.id || '')
   const [addNew, setAddNew] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [linking, setLinking] = useState(false)
   const [msg, setMsg] = useState(null)
 
   const reset = () => {
@@ -29,6 +31,19 @@ export default function BankImport() {
     setMeta(null)
     setMsg(null)
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  // Shared by file import and live sync: reconcile a set of transactions and
+  // show the preview.
+  const loadTransactions = (transactions, sourceName) => {
+    if (!transactions || transactions.length === 0) {
+      setMsg({ ok: false, text: 'No transactions found in that source.' })
+      setPlan(null)
+      return
+    }
+    setPlan(reconcile(transactions, expenses, income))
+    setMeta({ name: sourceName, count: transactions.length })
+    setAssetId((id) => id || properties[0]?.id || '')
   }
 
   const onFile = async (file) => {
@@ -40,20 +55,53 @@ export default function BankImport() {
       // spreadsheet reader (dates are unambiguous serials there).
       const isCsv = /\.csv$/i.test(file.name) || file.type === 'text/csv'
       const rows = isCsv ? parseCSV(await file.text()) : await parseSpreadsheet(file)
-      const { transactions, columns } = parseStatement(rows)
+      const { transactions } = parseStatement(rows)
       if (transactions.length === 0) {
         setMsg({ ok: false, text: 'Couldn’t find transactions. Expected columns like Date and Debit/Credit (or Amount).' })
         setPlan(null)
         return
       }
-      setPlan(reconcile(transactions, expenses, income))
-      setMeta({ name: file.name, count: transactions.length, columns })
-      setAssetId((id) => id || properties[0]?.id || '')
+      loadTransactions(transactions, file.name)
     } catch (err) {
       setMsg({ ok: false, text: `Could not read that file: ${err?.message || err}` })
     } finally {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  // Live connection (optional; needs a provider configured — see docs/BANK_SYNC).
+  const NOT_SET_UP =
+    'Live bank connection isn’t enabled here. It supports Plaid (US/UK/EU) and Account Aggregator (India) — see docs/BANK_SYNC.md. Import a statement file below in the meantime.'
+
+  const connectLive = async () => {
+    setMsg(null)
+    if (!bankSyncEnabled) return setMsg({ ok: false, text: NOT_SET_UP })
+    setLinking(true)
+    try {
+      const link = await startBankLink()
+      if (link.url) {
+        window.open(link.url, '_blank', 'noopener')
+        setMsg({ ok: true, text: `Approve access in the ${bankProviderLabel} window, then click “Sync transactions”.` })
+      } else {
+        setMsg({ ok: true, text: 'Bank link ready — complete it in the provider window, then click “Sync transactions”.' })
+      }
+    } catch (e) {
+      setMsg({ ok: false, text: e?.code === 'not_configured' ? NOT_SET_UP : e?.message || 'Could not start the connection.' })
+    } finally {
+      setLinking(false)
+    }
+  }
+
+  const syncLive = async () => {
+    setMsg(null)
+    setBusy(true)
+    try {
+      loadTransactions(await fetchLiveTransactions({}), `your bank (${bankProviderLabel})`)
+    } catch (e) {
+      setMsg({ ok: false, text: e?.code === 'not_configured' ? NOT_SET_UP : e?.message || 'Could not sync transactions.' })
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -142,7 +190,36 @@ export default function BankImport() {
       />
 
       {!plan && (
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
+          <div className="rounded-xl border border-slate-200 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <Link2 size={15} className="text-slate-500" /> Connect a bank (live)
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-slate-500">
+                  {bankSyncEnabled ? bankProviderLabel : 'Setup required'}
+                </span>
+              </span>
+              <div className="flex gap-2">
+                <Button variant="ghost" onClick={connectLive} loading={linking} disabled={!canWrite} className="px-3 py-1.5 text-[0.65rem]">
+                  Connect
+                </Button>
+                {bankSyncEnabled && (
+                  <Button variant="ghost" onClick={syncLive} loading={busy} disabled={!canWrite} className="px-3 py-1.5 text-[0.65rem]">
+                    Sync transactions
+                  </Button>
+                )}
+              </div>
+            </div>
+            <p className="mt-1.5 text-[0.7rem] text-slate-400">
+              Pull transactions straight from your bank — no file needed. Uses Plaid or an Account Aggregator (India).
+              {!bankSyncEnabled && ' Not enabled on this deployment.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wide text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" /> or import a file <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
           <Button variant="ghost" onClick={() => fileRef.current?.click()} loading={busy} disabled={!canWrite}>
             {!busy && <Upload size={16} />} Choose statement…
           </Button>
