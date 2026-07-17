@@ -1,7 +1,11 @@
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import autoTableImport from 'jspdf-autotable'
 import { format, parseISO, isValid } from 'date-fns'
+
+// jspdf-autotable ships as CJS; under Vite's interop the default import can be
+// the module wrapper rather than the function itself, so unwrap defensively.
+const autoTable = autoTableImport?.default || autoTableImport
 import { formatCurrency, formatDate } from './format'
 
 // Convert expense rows (joined with a property-name lookup) into the
@@ -57,10 +61,6 @@ function sheetFromRows(rows) {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Expenses')
   return wb
-}
-
-export function exportExcel(rows, filename = 'expenses') {
-  XLSX.writeFile(sheetFromRows(rows), `${filename}.xlsx`)
 }
 
 export function exportCSV(rows, filename = 'expenses') {

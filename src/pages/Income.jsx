@@ -12,10 +12,26 @@ import IncomeTable from '../components/IncomeTable'
 const EMPTY = { propertyId: '', from: '', to: '', q: '' }
 
 export default function Income() {
-  const { income, properties, loading, deleteIncome, addIncome, updateIncome, propertyNameById, canWrite } = useData()
+  const { income, properties, loading, deleteIncome, restoreIncome, addIncome, updateIncome, propertyNameById, canWrite } = useData()
   const [filters, setFilters] = useState(EMPTY)
   const navigate = useNavigate()
   const toast = useToast()
+
+  const removeIncome = async (e) => {
+    await deleteIncome(e.id)
+    toast('Income moved to bin', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
+  }
+  const removeMany = async (rows) => {
+    for (const e of rows) await deleteIncome(e.id)
+    toast(`${rows.length} moved to bin`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          for (const e of rows) await restoreIncome(e)
+        },
+      },
+    })
+  }
 
   const markReceived = async (e) => {
     const { id, user_id, created_at, ...rest } = e
@@ -55,7 +71,7 @@ export default function Income() {
     <div className="animate-fade-in space-y-5">
       <PageHeader
         title="Income"
-        subtitle={`${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'}${active ? ' (filtered)' : ''} · ${formatCurrency(total)} received`}
+        subtitle={`${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'}${active ? ' (filtered)' : ''} · ${formatCurrency(total)} total`}
         actions={
           canWrite ? (
             <Link to="/income/new" className="btn-primary">
@@ -120,9 +136,11 @@ export default function Income() {
               income={filtered}
               propertyNameById={propertyNameById}
               onEdit={(e) => navigate(`/income/${e.id}/edit`)}
-              onDelete={deleteIncome}
+              onDelete={removeIncome}
               onMarkSettled={markReceived}
               onDuplicate={duplicate}
+              onBulkDelete={removeMany}
+              selectable
               readOnly={!canWrite}
             />
           )}

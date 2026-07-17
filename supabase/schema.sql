@@ -20,6 +20,18 @@ create table if not exists public.properties (
 alter table public.properties add column if not exists monthly_budget numeric(14,2);
 alter table public.properties add column if not exists value          numeric(14,2);
 
+-- Loan / mortgage held against the asset (all optional; safe to re-run).
+alter table public.properties add column if not exists loan_principal     numeric(14,2);
+alter table public.properties add column if not exists loan_rate          numeric(6,3);
+alter table public.properties add column if not exists loan_tenure_months integer;
+alter table public.properties add column if not exists loan_start         date;
+
+-- Tenancy / lease for rented assets (all optional; safe to re-run).
+alter table public.properties add column if not exists tenant_name text;
+alter table public.properties add column if not exists lease_start date;
+alter table public.properties add column if not exists lease_end   date;
+alter table public.properties add column if not exists deposit     numeric(14,2);
+
 create table if not exists public.expenses (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references auth.users(id) on delete cascade default auth.uid(),
@@ -83,6 +95,87 @@ alter table public.income   add column if not exists due_date date;
 -- ── Tax / GST amount (safe to re-run) ────────────────────────────
 alter table public.expenses add column if not exists tax numeric(14,2);
 alter table public.income   add column if not exists tax numeric(14,2);
+
+-- ── Recurrence: none | monthly | quarterly | yearly (safe to re-run) ─
+alter table public.expenses add column if not exists recurrence text default 'none';
+alter table public.income   add column if not exists recurrence text default 'none';
+
+-- ── Soft-delete / trash bin: deleted rows keep a deleted_at timestamp and are
+--    hidden from normal views; recoverable for 30 days, then purged. Safe to re-run.
+alter table public.expenses          add column if not exists deleted_at timestamptz;
+alter table public.income            add column if not exists deleted_at timestamptz;
+create index if not exists expenses_deleted_idx on public.expenses(deleted_at);
+create index if not exists income_deleted_idx   on public.income(deleted_at);
+
+-- ── Documents (leases, insurance, warranties…) ──────────────────
+create table if not exists public.documents (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  property_id uuid not null references public.properties(id) on delete cascade,
+  title       text not null,
+  doc_type    text,
+  expiry_date date,
+  file_url    text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists documents_user_idx     on public.documents(user_id);
+create index if not exists documents_property_idx  on public.documents(property_id);
+
+alter table public.documents enable row level security;
+drop policy if exists "own documents" on public.documents;
+create policy "own documents" on public.documents
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ── Comments (notes on a bill / expense / income entry) ─────────
+create table if not exists public.comments (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  kind        text not null check (kind in ('expense', 'income')),
+  entry_id    uuid not null,
+  body        text not null,
+  author      text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists comments_user_idx    on public.comments(user_id);
+create index if not exists comments_entry_idx   on public.comments(entry_id);
+
+alter table public.comments enable row level security;
+drop policy if exists "own comments" on public.comments;
+create policy "own comments" on public.comments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ── Personal budgeting & everyday expenses (not tied to an asset) ─
+create table if not exists public.personal_expenses (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  date           date not null,
+  amount         numeric(14,2) not null check (amount >= 0),
+  category       text,
+  note           text,
+  payment_method text,
+  created_at     timestamptz not null default now()
+);
+create index if not exists personal_expenses_user_idx on public.personal_expenses(user_id);
+create index if not exists personal_expenses_date_idx  on public.personal_expenses(date);
+alter table public.personal_expenses add column if not exists deleted_at timestamptz;
+create index if not exists personal_expenses_deleted_idx on public.personal_expenses(deleted_at);
+
+alter table public.personal_expenses enable row level security;
+drop policy if exists "own personal expenses" on public.personal_expenses;
+create policy "own personal expenses" on public.personal_expenses
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists public.personal_budgets (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  category      text not null,
+  monthly_limit numeric(14,2) not null default 0,
+  unique (user_id, category)
+);
+alter table public.personal_budgets enable row level security;
+drop policy if exists "own personal budgets" on public.personal_budgets;
+create policy "own personal budgets" on public.personal_budgets
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- ── Billing / plan (commercial tiers; written by the Stripe webhook) ─
 create table if not exists public.profiles (

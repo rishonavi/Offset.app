@@ -102,6 +102,45 @@ function toStr(v) {
   return s.slice(0, 80)
 }
 
+// Free-plan monthly AI-scan cap. Keep in sync with src/lib/plans.js. Only
+// enforced when ENFORCE_PLAN_LIMITS=true and Supabase service creds are set.
+const FREE_SCAN_LIMIT = 10
+
+// Decide whether this scan is allowed under the caller's plan. Returns
+// { allow, uid?, admin?, month?, reason? }. A no-op (allow:true) when plan
+// enforcement is off or Supabase isn't configured — so free/OCR keeps working.
+async function scanGate(req) {
+  const enforce = String(process.env.ENFORCE_PLAN_LIMITS || '').toLowerCase() === 'true'
+  const url = process.env.SUPABASE_URL
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!enforce || !url || !serviceRole) return { allow: true }
+
+  const auth = req.headers.authorization || ''
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
+  if (!token) return { allow: false, reason: 'unauthorized' }
+
+  const { createClient } = await import('@supabase/supabase-js')
+  const admin = createClient(url, serviceRole)
+  const {
+    data: { user },
+    error,
+  } = await admin.auth.getUser(token)
+  if (error || !user) return { allow: false, reason: 'unauthorized' }
+
+  const { data: profile } = await admin.from('profiles').select('plan').eq('user_id', user.id).maybeSingle()
+  if ((profile?.plan || 'free') === 'pro') return { allow: true } // unlimited
+
+  const month = new Date().toISOString().slice(0, 7)
+  const { data: usage } = await admin
+    .from('scan_usage')
+    .select('count')
+    .eq('user_id', user.id)
+    .eq('month', month)
+    .maybeSingle()
+  if ((usage?.count || 0) >= FREE_SCAN_LIMIT) return { allow: false, reason: 'scan_limit_reached' }
+  return { allow: true, uid: user.id, admin, month }
+}
+
 // Read + JSON-parse the request body, falling back to the raw stream if the
 // runtime didn't pre-parse req.body.
 async function readBody(req) {
@@ -213,6 +252,18 @@ export default async function handler(req, res) {
     return
   }
 
+  // Plan-limit gate (opt-in; no-op unless ENFORCE_PLAN_LIMITS=true).
+  let gate
+  try {
+    gate = await scanGate(req)
+  } catch {
+    gate = { allow: true } // never block scanning on a limit-check failure
+  }
+  if (!gate.allow) {
+    res.status(gate.reason === 'unauthorized' ? 401 : 429).json({ error: gate.reason })
+    return
+  }
+
   try {
     // Gemini handles both images and PDFs through inlineData.
     const parts = [
@@ -230,6 +281,12 @@ export default async function handler(req, res) {
     }
 
     const parsed = parseJsonLoose(text) || {}
+
+    // Count this scan against the free monthly quota (only when gating a free user).
+    if (gate.uid && gate.admin && gate.month) {
+      await gate.admin.rpc('record_scan', { uid: gate.uid, mon: gate.month }).catch(() => {})
+    }
+
     res.status(200).json({
       amount: toNumber(parsed.amount),
       tax: toNumber(parsed.tax),

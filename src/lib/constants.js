@@ -10,6 +10,12 @@ export const ASSET_TYPES = [
   'Yacht / Boat',
   'Aircraft',
   'Machinery / Equipment',
+  'Jewellery',
+  'Precious Metals — Gold / Silver',
+  'Stocks / Equity',
+  'Mutual Funds / Bonds',
+  'Cryptocurrency',
+  'Art / Collectibles',
   'Other',
 ]
 
@@ -82,6 +88,3 @@ export const INCOME_COLORS = {
 
 export const colorForSource = (s, i = 0) =>
   INCOME_COLORS[s] || CHART_PALETTE[i % CHART_PALETTE.length]
-
-// Semantic colours for income vs expense vs net.
-export const FLOW_COLORS = { income: '#2F8F6B', expense: '#C5A059', net: '#0A1828' }

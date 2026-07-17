@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
-import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Paperclip, X, Loader2, Sparkles, Camera, Upload, Wand2 } from 'lucide-react'
 import { CATEGORIES, PAYMENT_METHODS } from '../lib/constants'
+import { RECURRENCE_OPTIONS } from '../lib/recurring'
+import { buildVendorIndex, suggestCategory } from '../lib/categorize'
+import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
 import { Field, Input, Select, Textarea, Button } from './ui'
 
-export default function ExpenseForm({ initial, properties, vendors = [], defaultPropertyId, onSubmit, onCancel }) {
+export default function ExpenseForm({ initial, properties, vendors = [], history = [], defaultPropertyId, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     property_id: initial?.property_id || defaultPropertyId || (properties[0]?.id ?? ''),
     date: initial?.date || todayISO(),
@@ -17,6 +20,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
     payment_method: initial?.payment_method || '',
     status: initial?.status || 'paid',
     due_date: initial?.due_date || '',
+    recurrence: initial?.recurrence || 'none',
     description: initial?.description || '',
   })
   const [file, setFile] = useState(null)
@@ -27,9 +31,44 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
   const [scanning, setScanning] = useState(false)
   const [scanPct, setScanPct] = useState(0)
   const [scanMsg, setScanMsg] = useState(null)
+  const [nlText, setNlText] = useState('')
+  const [parsing, setParsing] = useState(false)
+  const [nlNote, setNlNote] = useState(null)
   const fileRef = useRef(null)
   const cameraRef = useRef(null)
   const plan = usePlan()
+
+  // Suggest a category from the vendor — learns from past entries, falls back to
+  // a built-in keyword map. Only offered while the category is still empty.
+  const vendorIndex = useMemo(() => buildVendorIndex(history), [history])
+  const suggestion = useMemo(
+    () => (form.category.trim() ? null : suggestCategory(form.vendor, vendorIndex)),
+    [form.vendor, form.category, vendorIndex],
+  )
+  const applySuggestion = () => suggestion && setForm((f) => ({ ...f, category: suggestion.category }))
+
+  const runParse = async () => {
+    if (!nlText.trim()) return
+    setParsing(true)
+    setNlNote(null)
+    try {
+      const r = await parseEntry(nlText, 'expense', properties)
+      setForm((f) => ({
+        ...f,
+        property_id: r.property_id || f.property_id,
+        amount: r.amount != null ? String(r.amount) : f.amount,
+        tax: r.tax != null ? String(r.tax) : f.tax,
+        date: r.date || f.date,
+        category: r.category || f.category,
+        vendor: r.vendor || f.vendor,
+      }))
+      setNlNote('Filled from your description — please double-check the fields.')
+    } catch (e) {
+      setNlNote(e?.code === 'not_configured' ? 'AI quick-add isn’t set up on this deployment.' : e?.message || 'Could not read that.')
+    } finally {
+      setParsing(false)
+    }
+  }
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
@@ -100,7 +139,6 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
     e.preventDefault()
     if (!form.property_id) return setError('Please choose a property.')
     if (!form.date) return setError('Please choose a date.')
-    if (!form.category) return setError('Please choose a category.')
     const amount = Number(form.amount)
     if (!amount || amount <= 0) return setError('Enter an amount greater than zero.')
 
@@ -115,11 +153,12 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
         date: form.date,
         amount,
         tax: form.tax === '' ? null : Number(form.tax),
-        category: form.category,
+        category: form.category.trim() || 'Other',
         vendor: form.vendor.trim(),
         payment_method: form.payment_method,
         status: form.status,
         due_date: form.status === 'unpaid' ? form.due_date || null : null,
+        recurrence: form.recurrence,
         description: form.description.trim(),
         receipt_url: receipt_url || null,
       })
@@ -131,6 +170,29 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="border border-dashed border-gold/40 bg-brand-light/40 p-3">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">
+          <Sparkles size={13} className="text-gold" /> Quick add with AI
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={nlText}
+            onChange={(e) => setNlText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                runParse()
+              }
+            }}
+            placeholder="e.g. paid 5000 to plumber for Sea View on 3 July"
+          />
+          <Button type="button" variant="ghost" onClick={runParse} loading={parsing} className="shrink-0">
+            Parse
+          </Button>
+        </div>
+        {nlNote && <p className="mt-1.5 text-xs text-slate-500">{nlNote}</p>}
+      </div>
+
       <div className="grid grid-cols-1 gap-4">
         <Field label="Property" required>
           <Select value={form.property_id} onChange={set('property_id')}>
@@ -182,7 +244,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
           </div>
         </Field>
 
-        <Field label="Category" required>
+        <Field label="Category" hint="Defaults to “Other” if left blank">
           <Input
             list="expense-categories"
             value={form.category}
@@ -194,6 +256,17 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
               <option key={c} value={c} />
             ))}
           </datalist>
+          {suggestion && (
+            <button
+              type="button"
+              onClick={applySuggestion}
+              className="mt-1.5 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-brand-light px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-gold hover:text-gold"
+            >
+              <Wand2 size={12} className="text-gold" />
+              Use <span className="font-semibold text-slate-800">{suggestion.category}</span>
+              {suggestion.source === 'history' && <span className="text-slate-400">· from past entries</span>}
+            </button>
+          )}
         </Field>
 
         <Field label="Vendor / Payee">
@@ -252,6 +325,16 @@ export default function ExpenseForm({ initial, properties, vendors = [], default
             <Input type="date" value={form.due_date} onChange={set('due_date')} />
           </Field>
         )}
+
+        <Field label="Repeats" hint="Recurring bills show a one-tap prompt on the dashboard when due">
+          <Select value={form.recurrence} onChange={set('recurrence')}>
+            {RECURRENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
       </div>
 
       <Field label="Description / Notes">

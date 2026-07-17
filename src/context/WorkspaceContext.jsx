@@ -38,6 +38,12 @@ export function WorkspaceProvider({ children }) {
     return list
   }, [shared, myId])
 
+  const isOwnWorkspace = activeOwner === myId
+  // Your role in the active workspace: owner (your own), or the membership role
+  // shared with you (editor can write, viewer is read-only).
+  const activeRole = isOwnWorkspace ? 'owner' : shared.find((m) => m.owner_id === activeOwner)?.role || 'viewer'
+  const canWriteActive = isOwnWorkspace || activeRole === 'editor'
+
   const value = useMemo(
     () => ({
       myId,
@@ -45,11 +51,13 @@ export function WorkspaceProvider({ children }) {
       setActiveOwner,
       workspaces,
       hasShared: shared.length > 0,
-      isOwnWorkspace: activeOwner === myId,
+      isOwnWorkspace,
+      activeRole,
+      canWriteActive,
       activeLabel: workspaces.find((w) => w.ownerId === activeOwner)?.label || 'Workspace',
       refresh,
     }),
-    [myId, activeOwner, workspaces, shared.length, refresh],
+    [myId, activeOwner, workspaces, shared, isOwnWorkspace, activeRole, canWriteActive, refresh],
   )
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>

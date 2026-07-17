@@ -15,13 +15,18 @@ import {
 import { startOfMonth, subMonths, format } from 'date-fns'
 import { ArrowLeft, Plus, Pencil, Trash2, MapPin, Wallet, Receipt, CalendarDays, Banknote, Scale } from 'lucide-react'
 import { useData } from '../context/DataContext'
-import { formatCurrency, formatCompact } from '../lib/format'
+import { useToast } from '../context/ToastContext'
+import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory } from '../lib/constants'
 import { totalsByCategory, monthlySeries } from '../lib/stats'
 import { sumAmount } from '../lib/filters'
+import { assetMetrics } from '../lib/metrics'
+import { loanSummary } from '../lib/loan'
+import { leaseStatus } from '../lib/lease'
 import { iconForAssetType } from '../lib/assetIcon'
 import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
+import DocumentsCard from '../components/DocumentsCard'
 import ExpenseTable from '../components/ExpenseTable'
 import IncomeTable from '../components/IncomeTable'
 
@@ -31,6 +36,8 @@ const tooltipStyle = {
   boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
   fontSize: 13,
 }
+
+const fmtPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`)
 
 function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   return (
@@ -51,7 +58,17 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
 export default function PropertyDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { properties, expenses, income, loading, propertyNameById, deleteProperty, deleteExpense, deleteIncome, canWrite } = useData()
+  const { properties, expenses, income, documents, loading, propertyNameById, deleteProperty, deleteExpense, restoreExpense, deleteIncome, restoreIncome, addDocument, deleteDocument, canWrite } = useData()
+  const toast = useToast()
+
+  const removeExpense = async (e) => {
+    await deleteExpense(e.id)
+    toast('Expense moved to bin', { action: { label: 'Undo', onClick: () => restoreExpense(e) } })
+  }
+  const removeIncome = async (e) => {
+    await deleteIncome(e.id)
+    toast('Income moved to bin', { action: { label: 'Undo', onClick: () => restoreIncome(e) } })
+  }
 
   const property = useMemo(() => properties.find((p) => p.id === id), [properties, id])
   const items = useMemo(() => expenses.filter((e) => e.property_id === id), [expenses, id])
@@ -78,8 +95,13 @@ export default function PropertyDetail() {
   const netYield = assetValue ? (ttm.net / assetValue) * 100 : null
   const totalRoi = assetValue ? (net / assetValue) * 100 : null
 
+  const metrics = useMemo(() => assetMetrics(property, items, incomeItems), [property, items, incomeItems])
+
   const byCategory = useMemo(() => totalsByCategory(items), [items])
   const monthly = useMemo(() => monthlySeries(items, 12), [items])
+  const loan = useMemo(() => loanSummary(property), [property])
+  const lease = useMemo(() => leaseStatus(property), [property])
+  const docs = useMemo(() => documents.filter((d) => d.property_id === id), [documents, id])
 
   if (loading) return <Spinner />
 
@@ -205,6 +227,32 @@ export default function PropertyDetail() {
               <div className="text-[0.65rem] text-slate-400">income − expenses</div>
             </div>
           </div>
+
+          {/* Operating performance (trailing 12 months) */}
+          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
+            {[
+              { label: 'Cap rate', value: fmtPct(metrics.capRate), hint: 'NOI ÷ value', tone: metrics.capRate },
+              { label: 'NOI', value: formatCurrency(metrics.noi), hint: 'last 12 mo operating', tone: metrics.noi },
+              { label: 'Expense ratio', value: fmtPct(metrics.expenseRatio), hint: 'opex ÷ income' },
+              {
+                label: 'Cash flow / mo',
+                value: formatCurrency(metrics.monthlyCashFlow),
+                hint: metrics.hasLoan ? 'after loan' : 'operating',
+                tone: metrics.monthlyCashFlow,
+              },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div
+                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-slate-900' : ''}`}
+                  style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
+                >
+                  {m.value}
+                </div>
+                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+              </div>
+            ))}
+          </div>
         </Card>
       ) : (
         <Card className="flex items-center justify-between p-4 text-sm">
@@ -212,6 +260,88 @@ export default function PropertyDetail() {
           <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand hover:underline">
             Set value
           </Link>
+        </Card>
+      )}
+
+      {/* Loan / mortgage */}
+      {loan && (
+        <Card className="p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-700">Loan / mortgage</h3>
+            <span className="text-xs text-slate-400">
+              {loan.rate}% · {loan.months} mo · payoff {formatDate(loan.payoffDate)}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+            {[
+              { label: 'Monthly EMI', value: formatCurrency(loan.emi), hint: `${loan.paid} of ${loan.months} paid` },
+              { label: 'Outstanding', value: formatCurrency(loan.outstanding), hint: `${loan.remaining} mo left`, accent: '#C0492F' },
+              { label: 'Total interest', value: formatCurrency(loan.totalInterest), hint: 'over full tenure' },
+              { label: 'Loan amount', value: formatCurrency(loan.principal), hint: 'original principal' },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div className="font-serif text-2xl font-bold" style={{ color: m.accent || '#0A1828' }}>
+                  {m.value}
+                </div>
+                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4">
+            <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+              <span>Repaid</span>
+              <span className="font-semibold text-slate-700">{loan.progressPct}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-gold" style={{ width: `${loan.progressPct}%` }} />
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Tenancy / lease */}
+      {lease && (
+        <Card className="p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-700">Tenancy / lease</h3>
+            {lease.daysLeft != null && (
+              <span
+                className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                style={
+                  lease.state === 'expired'
+                    ? { background: '#fee2e2', color: '#b91c1c' }
+                    : lease.state === 'ending'
+                    ? { background: '#fef3c7', color: '#b45309' }
+                    : { background: '#dcfce7', color: '#15803d' }
+                }
+              >
+                {lease.state === 'expired'
+                  ? `Expired ${Math.abs(lease.daysLeft)}d ago`
+                  : lease.state === 'upcoming'
+                  ? 'Starts soon'
+                  : `${lease.daysLeft}d left`}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Tenant</div>
+              <div className="truncate font-serif text-lg font-bold text-slate-900">{lease.tenant || '—'}</div>
+            </div>
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Lease start</div>
+              <div className="font-serif text-lg font-bold text-slate-900">{lease.start ? formatDate(lease.start) : '—'}</div>
+            </div>
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Lease end</div>
+              <div className="font-serif text-lg font-bold text-slate-900">{lease.end ? formatDate(lease.end) : '—'}</div>
+            </div>
+            <div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Deposit held</div>
+              <div className="font-serif text-lg font-bold text-slate-900">{lease.deposit ? formatCurrency(lease.deposit) : '—'}</div>
+            </div>
+          </div>
         </Card>
       )}
 
@@ -263,6 +393,9 @@ export default function PropertyDetail() {
         </Card>
       </div>
 
+      {/* Documents */}
+      <DocumentsCard propertyId={property.id} documents={docs} canWrite={canWrite} onAdd={addDocument} onDelete={deleteDocument} />
+
       {/* Expenses */}
       <div>
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Expenses ({items.length})</h3>
@@ -282,7 +415,7 @@ export default function PropertyDetail() {
             expenses={items}
             propertyNameById={propertyNameById}
             onEdit={(e) => navigate(`/expenses/${e.id}/edit`)}
-            onDelete={deleteExpense}
+            onDelete={removeExpense}
             readOnly={!canWrite}
           />
         )}
@@ -314,7 +447,7 @@ export default function PropertyDetail() {
             income={incomeItems}
             propertyNameById={propertyNameById}
             onEdit={(e) => navigate(`/income/${e.id}/edit`)}
-            onDelete={deleteIncome}
+            onDelete={removeIncome}
             readOnly={!canWrite}
           />
         )}

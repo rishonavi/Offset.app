@@ -52,8 +52,6 @@ export async function connectDrive() {
   })
 }
 
-export const isDriveConnected = () => Boolean(accessToken)
-
 async function withToken() {
   if (!accessToken) await connectDrive()
   return accessToken

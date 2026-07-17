@@ -1,5 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
-import { FileSpreadsheet, FileText, FileType, Upload, Download, CheckCircle2, AlertCircle, Cloud, UploadCloud, DownloadCloud, Landmark } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTableImport from 'jspdf-autotable'
+// jspdf-autotable ships as CJS; under Vite's interop the default import can be
+// the module wrapper rather than the function itself, so unwrap defensively.
+const autoTable = autoTableImport?.default || autoTableImport
+import { FileSpreadsheet, FileText, FileType, Upload, Download, CheckCircle2, AlertCircle, Cloud, UploadCloud, DownloadCloud, Landmark, Calculator } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { applyFilters, emptyFilters, sumAmount } from '../lib/filters'
 import { formatCurrency, formatDate } from '../lib/format'
@@ -13,9 +18,11 @@ import {
   parseSpreadsheet,
   rowToExpenseInput,
 } from '../lib/exports'
+import { toTallyXML, parseTallyXML } from '../lib/tally'
 import { cloudProviders } from '../lib/cloud'
 import { Card, Button, Spinner, EmptyState, Badge } from '../components/ui'
 import PageHeader from '../components/PageHeader'
+import AskCard from '../components/AskCard'
 import FilterBar from '../components/FilterBar'
 
 const PREVIEW_LIMIT = 100
@@ -26,6 +33,7 @@ export default function Reports() {
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState(null)
   const fileRef = useRef(null)
+  const tallyRef = useRef(null)
   const backupFileRef = useRef(null)
   const [cloudBusy, setCloudBusy] = useState(false)
   const [cloudMsg, setCloudMsg] = useState(null)
@@ -74,9 +82,22 @@ export default function Reports() {
     return [...m.values()].sort((a, b) => b.year.localeCompare(a.year))
   }, [filtered, incomeFiltered])
 
-  const downloadYearEndPDF = async () => {
-    const { default: jsPDF } = await import('jspdf')
-    const { default: autoTable } = await import('jspdf-autotable')
+  // Deductible expenses grouped by category — the view tax returns (Schedule E /
+  // SA105) are actually built from.
+  const byCategoryTax = useMemo(() => {
+    const m = new Map()
+    for (const e of filtered) {
+      const k = e.category || 'Other'
+      if (!m.has(k)) m.set(k, { category: k, total: 0, tax: 0, count: 0 })
+      const r = m.get(k)
+      r.total += Number(e.amount) || 0
+      r.tax += Number(e.tax) || 0
+      r.count += 1
+    }
+    return [...m.values()].sort((a, b) => b.total - a.total)
+  }, [filtered])
+
+  const downloadYearEndPDF = () => {
     const doc = new jsPDF()
     doc.setFontSize(16)
     doc.text('Offset — Year-end & tax summary', 14, 18)
@@ -107,6 +128,22 @@ export default function Reports() {
       headStyles: { fillColor: [10, 24, 40] },
       footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
     })
+
+    if (byCategoryTax.length > 0) {
+      const y = doc.lastAutoTable.finalY + 10
+      doc.setFontSize(12)
+      doc.setTextColor(20)
+      doc.text('Expenses by category (deductible)', 14, y)
+      autoTable(doc, {
+        startY: y + 4,
+        head: [['Category', 'Entries', 'Tax', 'Amount']],
+        body: byCategoryTax.map((r) => [r.category, String(r.count), formatCurrency(r.tax), formatCurrency(r.total)]),
+        foot: [['Total', String(filtered.length), formatCurrency(taxPaid), formatCurrency(total)]],
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [10, 24, 40] },
+        footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
+      })
+    }
     doc.save(`${baseName}-year-end.pdf`)
   }
 
@@ -119,6 +156,18 @@ export default function Reports() {
       exportWorkbook({ expenses: rows, income: toIncomeRows(incomeFiltered, propertyNameById) }, baseName)
     if (kind === 'csv') exportCSV(rows, baseName)
     if (kind === 'pdf') exportPDF(rows, { title: 'Offset — Expense Report', subtitle })
+  }
+
+  // Tally-importable XML (Payment vouchers for expenses, Receipt for income).
+  const exportTally = () => {
+    const xml = toTallyXML({ expenses: filtered, income: incomeFiltered, propertyNameById, company: 'Offset' })
+    const blob = new Blob([xml], { type: 'application/xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${baseName}-tally.xml`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleImport = async (file) => {
@@ -166,6 +215,67 @@ export default function Reports() {
     } finally {
       setImporting(false)
       if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  // Import a Tally XML export — Payment/Purchase vouchers become expenses,
+  // Receipt/Sales become income. Each voucher is matched to an asset named in
+  // its narration, else filed under a single "Imported from Tally" asset.
+  const handleTallyImport = async (file) => {
+    if (!file) return
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const vouchers = parseTallyXML(await file.text())
+      if (vouchers.length === 0) {
+        setImportMsg({ ok: false, text: 'No vouchers found in that Tally file.' })
+        return
+      }
+      const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
+      const matchAsset = (narration) => {
+        for (const seg of (narration || '').split('·').map((s) => s.trim().toLowerCase())) {
+          if (seg && nameToId.has(seg)) return nameToId.get(seg)
+        }
+        return null
+      }
+      let fallbackId = nameToId.get('imported from tally') || null
+      const ensureFallback = async () => {
+        if (fallbackId) return fallbackId
+        const created = await addProperty({ name: 'Imported from Tally', type: 'Other', address: '', notes: '' })
+        fallbackId = created.id
+        nameToId.set('imported from tally', fallbackId)
+        return fallbackId
+      }
+      // Skip entries that already exist so re-importing the same day book is safe.
+      const expSeen = new Set(expenses.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.category}`))
+      const incSeen = new Set(income.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.source}`))
+      let addedE = 0
+      let addedI = 0
+      let skipped = 0
+      for (const v of vouchers) {
+        const pid = matchAsset(v.narration) || (await ensureFallback())
+        const key = `${pid}|${v.date}|${v.amount}|${v.ledger}`
+        if (v.kind === 'income') {
+          if (incSeen.has(key)) { skipped++; continue }
+          incSeen.add(key)
+          await addIncome({ property_id: pid, date: v.date, amount: v.amount, source: v.ledger, payer: '', payment_method: v.payment_method, status: 'received', description: v.narration, receipt_url: null })
+          addedI++
+        } else {
+          if (expSeen.has(key)) { skipped++; continue }
+          expSeen.add(key)
+          await addExpense({ property_id: pid, date: v.date, amount: v.amount, category: v.ledger, vendor: '', payment_method: v.payment_method, status: 'paid', description: v.narration, receipt_url: null })
+          addedE++
+        }
+      }
+      setImportMsg({
+        ok: true,
+        text: `Imported ${addedE} expense${addedE === 1 ? '' : 's'} and ${addedI} income from Tally${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}` : ''}.`,
+      })
+    } catch (err) {
+      setImportMsg({ ok: false, text: `Tally import failed: ${err?.message || err}` })
+    } finally {
+      setImporting(false)
+      if (tallyRef.current) tallyRef.current.value = ''
     }
   }
 
@@ -319,6 +429,8 @@ export default function Reports() {
         subtitle="Filter your expenses, then export or import as Excel, CSV or PDF."
       />
 
+      <AskCard />
+
       <FilterBar properties={properties} value={filters} onChange={setFilters} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -336,9 +448,14 @@ export default function Reports() {
             <Button variant="ghost" onClick={() => doExport('pdf')} disabled={filtered.length === 0}>
               <FileText size={16} className="text-red-600" /> PDF
             </Button>
+            <Button variant="ghost" onClick={exportTally} disabled={filtered.length === 0 && incomeFiltered.length === 0}>
+              <Calculator size={16} className="text-indigo-600" /> Tally (XML)
+            </Button>
           </div>
           <p className="mt-3 text-[0.7rem] text-slate-400">
-            Excel includes a separate <strong>Income</strong> sheet. CSV/PDF cover expenses; the year-end PDF below covers income, expenses &amp; tax by year.
+            Excel includes a separate <strong>Income</strong> sheet. CSV/PDF cover expenses; the year-end PDF below covers income, expenses &amp; tax by year and a deductible breakdown by category.
+            <br />
+            <strong>Tally</strong> exports the filtered income &amp; expenses as import-ready vouchers — in TallyPrime: Gateway of Tally → Import → Vouchers.
           </p>
         </Card>
 
@@ -362,6 +479,26 @@ export default function Reports() {
               {!importing && <Upload size={16} />} Choose file…
             </Button>
           </div>
+
+          <div className="mt-4 border-t border-slate-200 pt-4">
+            <p className="text-xs text-slate-500">
+              Or import a <strong>Tally XML</strong> export (Day Book / Voucher Register). Payment/Purchase vouchers become
+              expenses and Receipt/Sales become income, matched to the asset named in each voucher. Duplicates are skipped.
+            </p>
+            <input
+              ref={tallyRef}
+              type="file"
+              accept=".xml,text/xml,application/xml"
+              className="hidden"
+              onChange={(e) => handleTallyImport(e.target.files?.[0])}
+            />
+            <div className="mt-3">
+              <Button variant="ghost" onClick={() => tallyRef.current?.click()} loading={importing}>
+                {!importing && <Calculator size={16} className="text-indigo-600" />} Import Tally XML
+              </Button>
+            </div>
+          </div>
+
           {importMsg && (
             <div
               className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
@@ -435,6 +572,46 @@ export default function Reports() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {byCategoryTax.length > 0 && (
+          <div className="mt-6">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[1px] text-slate-500">
+              Deductible expenses by category
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="py-2 pr-3 font-semibold">Category</th>
+                    <th className="px-3 py-2 text-right font-semibold">Entries</th>
+                    <th className="px-3 py-2 text-right font-semibold">Tax</th>
+                    <th className="py-2 pl-3 text-right font-semibold">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {byCategoryTax.map((r) => (
+                    <tr key={r.category}>
+                      <td className="py-2 pr-3">
+                        <Badge color={colorForCategory(r.category)}>{r.category}</Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right text-slate-600">{r.count}</td>
+                      <td className="px-3 py-2 text-right text-slate-600">{formatCurrency(r.tax)}</td>
+                      <td className="py-2 pl-3 text-right font-semibold text-slate-800">{formatCurrency(r.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-slate-200 font-semibold text-slate-900">
+                    <td className="py-2 pr-3">Total</td>
+                    <td className="px-3 py-2 text-right">{filtered.length}</td>
+                    <td className="px-3 py-2 text-right">{formatCurrency(taxPaid)}</td>
+                    <td className="py-2 pl-3 text-right">{formatCurrency(total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         )}
       </Card>

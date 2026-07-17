@@ -15,7 +15,7 @@ export async function listTeam() {
   }
 }
 
-export async function inviteMember(email) {
+export async function inviteMember(email, role = 'viewer') {
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -24,7 +24,7 @@ export async function inviteMember(email) {
   const r = await fetch('/api/team/invite', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, role }),
   })
   const d = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error(d?.error || 'Could not share.')

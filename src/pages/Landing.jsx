@@ -41,14 +41,14 @@ export default function Landing() {
           Track what every asset <span className="text-gold">earns and costs.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-white/70">
-          Properties, vehicles, machinery — log income and expenses, scan receipts with AI, and see profit, budgets and
-          tax at a glance.
+          Properties, vehicles, jewellery, stocks and more — log income and expenses, scan receipts with AI, and see
+          profit, budgets and tax at a glance.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Link to={user ? '/' : '/login'} className="btn-primary">
             {user ? 'Open app' : 'Get started free'} <ArrowRight size={16} />
           </Link>
-          <Link to="/pricing" className="btn-ghost border-white/30 text-white hover:text-gold">
+          <Link to="/pricing" className="btn-ghost border-white/30 bg-transparent text-white hover:text-gold">
             See pricing
           </Link>
         </div>
@@ -87,7 +87,7 @@ export default function Landing() {
                     </li>
                   ))}
                 </ul>
-                <Link to={user ? '/' : '/login'} className={`mt-5 ${pro ? 'btn-primary' : 'btn-ghost border-white/30 text-white hover:text-gold'} w-full`}>
+                <Link to={user ? '/' : '/login'} className={`mt-5 ${pro ? 'btn-primary' : 'btn-ghost border-white/30 bg-transparent text-white hover:text-gold'} w-full`}>
                   {pro ? (billingEnabled ? 'Go Pro' : 'Get Pro') : 'Start free'}
                 </Link>
               </div>

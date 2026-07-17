@@ -67,3 +67,93 @@ create policy "read shared income" on public.income
 
 -- Let the function be called by signed-in users.
 grant execute on function public.can_read_workspace(uuid) to authenticated;
+
+-- ════════════════════════════════════════════════════════════════
+--  Editor (write) sharing — additive. Members whose role = 'editor' may
+--  WRITE into the owner's workspace; 'viewer' members stay read-only. The
+--  existing owner "own …" policies are untouched, so owners keep full control.
+--  Safe to re-run.
+-- ════════════════════════════════════════════════════════════════
+
+create or replace function public.can_write_workspace(owner uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select owner = auth.uid()
+      or exists (
+        select 1 from public.memberships m
+        where m.owner_id = owner
+          and m.member_id = auth.uid()
+          and m.role = 'editor'
+      );
+$$;
+grant execute on function public.can_write_workspace(uuid) to authenticated;
+
+-- Additive insert/update/delete policies for editors. Postgres OR-combines
+-- these with the owner "own …" policies, so both owner and editor can write.
+-- properties
+drop policy if exists "write shared properties" on public.properties;
+create policy "write shared properties" on public.properties
+  for insert with check (public.can_write_workspace(user_id));
+drop policy if exists "update shared properties" on public.properties;
+create policy "update shared properties" on public.properties
+  for update using (public.can_write_workspace(user_id)) with check (public.can_write_workspace(user_id));
+drop policy if exists "delete shared properties" on public.properties;
+create policy "delete shared properties" on public.properties
+  for delete using (public.can_write_workspace(user_id));
+
+-- expenses
+drop policy if exists "write shared expenses" on public.expenses;
+create policy "write shared expenses" on public.expenses
+  for insert with check (public.can_write_workspace(user_id));
+drop policy if exists "update shared expenses" on public.expenses;
+create policy "update shared expenses" on public.expenses
+  for update using (public.can_write_workspace(user_id)) with check (public.can_write_workspace(user_id));
+drop policy if exists "delete shared expenses" on public.expenses;
+create policy "delete shared expenses" on public.expenses
+  for delete using (public.can_write_workspace(user_id));
+
+-- income
+drop policy if exists "write shared income" on public.income;
+create policy "write shared income" on public.income
+  for insert with check (public.can_write_workspace(user_id));
+drop policy if exists "update shared income" on public.income;
+create policy "update shared income" on public.income
+  for update using (public.can_write_workspace(user_id)) with check (public.can_write_workspace(user_id));
+drop policy if exists "delete shared income" on public.income;
+create policy "delete shared income" on public.income
+  for delete using (public.can_write_workspace(user_id));
+
+-- documents: members need read access too (the base schema grants only the
+-- owner), plus editor writes.
+drop policy if exists "read shared documents" on public.documents;
+create policy "read shared documents" on public.documents
+  for select using (public.can_read_workspace(user_id));
+drop policy if exists "write shared documents" on public.documents;
+create policy "write shared documents" on public.documents
+  for insert with check (public.can_write_workspace(user_id));
+drop policy if exists "update shared documents" on public.documents;
+create policy "update shared documents" on public.documents
+  for update using (public.can_write_workspace(user_id)) with check (public.can_write_workspace(user_id));
+drop policy if exists "delete shared documents" on public.documents;
+create policy "delete shared documents" on public.documents
+  for delete using (public.can_write_workspace(user_id));
+
+-- Receipt / document files live under <owner_uid>/<name>. Let members read and
+-- editors write files in workspaces they can access (owners already can, via
+-- the per-uid policies in schema.sql).
+drop policy if exists "receipts read shared" on storage.objects;
+create policy "receipts read shared" on storage.objects
+  for select using (
+    bucket_id = 'receipts'
+    and public.can_read_workspace(nullif((storage.foldername(name))[1], '')::uuid)
+  );
+drop policy if exists "receipts write shared" on storage.objects;
+create policy "receipts write shared" on storage.objects
+  for insert with check (
+    bucket_id = 'receipts'
+    and public.can_write_workspace(nullif((storage.foldername(name))[1], '')::uuid)
+  );

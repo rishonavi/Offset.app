@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Receipt, Building2, Eye } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { Card, EmptyState, Spinner } from '../components/ui'
@@ -9,6 +9,7 @@ import ExpenseForm from '../components/ExpenseForm'
 export default function ExpenseFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [params] = useSearchParams()
   const { expenses, properties, loading, addExpense, updateExpense, canWrite } = useData()
 
@@ -42,7 +43,7 @@ export default function ExpenseFormPage() {
   }
 
   const editing = id ? expenses.find((e) => e.id === id) : null
-  const goBack = () => navigate(-1)
+  const goBack = () => (location.key === 'default' ? navigate('/expenses') : navigate(-1))
 
   if (id && !editing) {
     return (
@@ -95,6 +96,7 @@ export default function ExpenseFormPage() {
           initial={editing}
           properties={properties}
           vendors={vendors}
+          history={expenses}
           defaultPropertyId={params.get('asset') || ''}
           onSubmit={onSubmit}
           onCancel={goBack}

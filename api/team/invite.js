@@ -49,6 +49,7 @@ export default async function handler(req, res) {
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
     const email = String(body.email || '').trim().toLowerCase()
+    const role = body.role === 'editor' ? 'editor' : 'viewer'
     if (!email) {
       res.status(400).json({ error: 'missing_email' })
       return
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
         member_id: invitee.id,
         owner_email: owner.email,
         member_email: invitee.email,
-        role: 'viewer',
+        role,
       },
       { onConflict: 'owner_id,member_id' },
     )
@@ -78,7 +79,7 @@ export default async function handler(req, res) {
       res.status(500).json({ error: error.message })
       return
     }
-    res.status(200).json({ ok: true, member_email: invitee.email })
+    res.status(200).json({ ok: true, member_email: invitee.email, role })
   } catch (err) {
     res.status(500).json({ error: err?.message || 'invite_failed' })
   }

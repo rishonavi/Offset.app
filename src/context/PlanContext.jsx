@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { db } from '../lib/storage'
 import { billingEnabled, planById } from '../lib/plans'
 import { useAuth } from './AuthContext'
+import { useConfig } from './ConfigContext'
 
 const PlanContext = createContext(null)
 export const usePlan = () => useContext(PlanContext)
@@ -12,6 +13,7 @@ const monthKey = () => `pl_scans_${new Date().toISOString().slice(0, 7)}`
 
 export function PlanProvider({ children }) {
   const { user } = useAuth()
+  const { plans: planCfg } = useConfig()
   // Billing off → everyone is "pro" so the app behaves exactly as before.
   const [plan, setPlan] = useState(billingEnabled ? 'free' : 'pro')
   const [scanCount, setScanCount] = useState(() => Number(localStorage.getItem(monthKey()) || 0))
@@ -37,7 +39,21 @@ export function PlanProvider({ children }) {
     })
   }, [])
 
-  const info = planById(plan)
+  // Apply admin-editable overrides (price, free-plan caps) from app_config.
+  const base = planById(plan)
+  const info = useMemo(() => {
+    const limits = { ...base.limits }
+    let price = base.price
+    if (planCfg) {
+      if (plan === 'free') {
+        if (planCfg.free_assets != null) limits.assets = Number(planCfg.free_assets)
+        if (planCfg.free_scans != null) limits.scansPerMonth = Number(planCfg.free_scans)
+      }
+      if (plan === 'pro' && planCfg.pro_price != null) price = Number(planCfg.pro_price)
+    }
+    return { ...base, price, limits }
+  }, [base, planCfg, plan])
+
   const value = useMemo(() => {
     const scanLimit = info.limits.scansPerMonth
     return {

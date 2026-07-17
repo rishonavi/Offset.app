@@ -27,15 +27,24 @@ import {
   Plus,
   ArrowRight,
   AlertTriangle,
+  Repeat,
+  CalendarClock,
+  FileText,
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useToast } from '../context/ToastContext'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory, CHART_PALETTE } from '../lib/constants'
 import { totalsByCategory, totalsByProperty, monthlySeries, monthlyIncomeExpense } from '../lib/stats'
+import { portfolioMetrics } from '../lib/metrics'
 import { sumAmount } from '../lib/filters'
 import { monthSpendByProperty, budgetStatus } from '../lib/budget'
 import { outstandingTotal, isOverdue } from '../lib/payments'
-import { Card, EmptyState, Skeleton } from '../components/ui'
+import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/recurring'
+import { leasesNeedingAttention } from '../lib/lease'
+import { expiringDocuments } from '../lib/documents'
+import { spendingAnomalies } from '../lib/anomalies'
+import { Card, Button, EmptyState, Skeleton } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 
 const RANGES = [
@@ -48,6 +57,8 @@ const greeting = () => {
   const h = new Date().getHours()
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 }
+
+const fmtPct = (v) => (v == null ? '—' : `${v.toFixed(1)}%`)
 
 function DeltaChip({ delta }) {
   if (delta == null) return null
@@ -125,9 +136,32 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const { expenses, income, properties, loading, propertyNameById } = useData()
+  const { expenses, income, properties, documents, loading, propertyNameById, canWrite, addExpense, addIncome } = useData()
+  const toast = useToast()
   const [propertyId, setPropertyId] = useState('')
   const [range, setRange] = useState('all')
+
+  const recurringDue = useMemo(
+    () =>
+      [...dueRecurring(expenses, 'expense'), ...dueRecurring(income, 'income')].sort((a, b) =>
+        a.dueDate.localeCompare(b.dueDate),
+      ),
+    [expenses, income],
+  )
+  const logDue = async (d) => {
+    try {
+      const payload = nextOccurrencePayload(d.template, d.kind, d.dueDate)
+      if (d.kind === 'income') await addIncome(payload)
+      else await addExpense(payload)
+      toast(`Logged ${d.kind === 'income' ? 'income' : 'expense'} for ${formatDate(d.dueDate)}.`)
+    } catch (e) {
+      toast(e?.message || 'Could not log it.', { type: 'error' })
+    }
+  }
+
+  const leaseAlerts = useMemo(() => leasesNeedingAttention(properties), [properties])
+  const docAlerts = useMemo(() => expiringDocuments(documents), [documents])
+  const anomalies = useMemo(() => spendingAnomalies(expenses), [expenses])
 
   const propertyScoped = useMemo(
     () => (propertyId ? expenses.filter((e) => e.property_id === propertyId) : expenses),
@@ -194,6 +228,15 @@ export default function Dashboard() {
     () => monthlyIncomeExpense(propertyScoped, incomePropertyScoped, 12),
     [propertyScoped, incomePropertyScoped],
   )
+
+  // Portfolio performance (cap rate, NOI, yield, occupancy…) over the assets in
+  // the current property filter. Computed from the full income/expense history.
+  const perfProps = useMemo(
+    () => (propertyId ? properties.filter((p) => p.id === propertyId) : properties),
+    [properties, propertyId],
+  )
+  const perf = useMemo(() => portfolioMetrics(perfProps, expenses, income), [perfProps, expenses, income])
+  const showPerf = perfProps.length > 0 && (perf.totalValue > 0 || perf.ttmIncome > 0)
 
   const monthSpend = useMemo(() => monthSpendByProperty(expenses), [expenses])
   const budgeted = useMemo(
@@ -305,6 +348,179 @@ export default function Dashboard() {
         <StatCard icon={Scale} label={`Net (${rangeLabel})`} value={formatCurrency(netScoped)} accent={netScoped >= 0 ? '#2F8F6B' : '#C0492F'} />
         <StatCard icon={Receipt} label="Expense entries" value={String(scoped.length)} accent="#0A1828" />
       </div>
+
+      {/* Portfolio performance */}
+      {showPerf && (
+        <Card className="p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-700">Portfolio performance</h3>
+            <span className="text-xs text-slate-400">
+              {formatCurrency(perf.totalValue)} value · trailing 12 months
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              { label: 'Cap rate', value: fmtPct(perf.capRate), hint: 'NOI ÷ value', tone: perf.capRate },
+              { label: 'NOI', value: formatCurrency(perf.noi), hint: 'net operating income', tone: perf.noi },
+              { label: 'Gross yield', value: fmtPct(perf.grossYield), hint: 'income ÷ value' },
+              { label: 'Expense ratio', value: fmtPct(perf.expenseRatio), hint: 'opex ÷ income' },
+              { label: 'Cash flow / mo', value: formatCurrency(perf.monthlyCashFlow), hint: 'after loan', tone: perf.monthlyCashFlow },
+              {
+                label: 'Occupancy',
+                value: perf.occupancyPct == null ? '—' : `${perf.occupancyPct}%`,
+                hint: perf.lettable ? `${perf.occupied}/${perf.lettable} let` : 'no let assets',
+              },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div
+                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-slate-900' : ''}`}
+                  style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
+                >
+                  {m.value}
+                </div>
+                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Recurring due to log */}
+      {canWrite && recurringDue.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Repeat size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Recurring — due to log</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {recurringDue.map((d) => (
+              <div key={`${d.kind}-${d.template.id}`} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">
+                    {propertyNameById(d.template.property_id) || '—'} ·{' '}
+                    {(d.kind === 'income' ? d.template.source : d.template.category) || (d.kind === 'income' ? 'Income' : 'Expense')}
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {RECURRENCE_LABEL[d.template.recurrence]} · due {formatDate(d.dueDate)}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="text-sm font-semibold" style={{ color: d.kind === 'income' ? '#2F8F6B' : '#0A1828' }}>
+                    {d.kind === 'income' ? '+' : ''}
+                    {formatCurrency(d.template.amount)}
+                  </span>
+                  <Button onClick={() => logDue(d)} className="px-3 py-1.5">
+                    <Plus size={15} /> Log
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Lease renewals */}
+      {leaseAlerts.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <CalendarClock size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Lease renewals</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {leaseAlerts.map(({ property, lease }) => (
+              <Link
+                key={property.id}
+                to={`/properties/${property.id}`}
+                className="flex items-center justify-between gap-3 py-2.5 transition hover:opacity-80"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">{property.name}</div>
+                  <div className="text-xs text-slate-400">
+                    {lease.tenant ? `${lease.tenant} · ` : ''}ends {formatDate(lease.end)}
+                  </div>
+                </div>
+                <span
+                  className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={
+                    lease.state === 'expired'
+                      ? { background: '#fee2e2', color: '#b91c1c' }
+                      : { background: '#fef3c7', color: '#b45309' }
+                  }
+                >
+                  {lease.state === 'expired' ? `Expired ${Math.abs(lease.daysLeft)}d ago` : `${lease.daysLeft}d left`}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Documents expiring */}
+      {docAlerts.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <FileText size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Documents expiring</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {docAlerts.map(({ doc, exp }) => (
+              <Link
+                key={doc.id}
+                to={`/properties/${doc.property_id}`}
+                className="flex items-center justify-between gap-3 py-2.5 transition hover:opacity-80"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-800">
+                    {doc.title} <span className="text-slate-400">· {doc.doc_type}</span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {propertyNameById(doc.property_id) || '—'} · expires {formatDate(doc.expiry_date)}
+                  </div>
+                </div>
+                <span
+                  className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={
+                    exp.state === 'expired'
+                      ? { background: '#fee2e2', color: '#b91c1c' }
+                      : { background: '#fef3c7', color: '#b45309' }
+                  }
+                >
+                  {exp.state === 'expired' ? `Expired ${Math.abs(exp.daysLeft)}d ago` : `${exp.daysLeft}d left`}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Unusual spending */}
+      {anomalies.length > 0 && (
+        <Card className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <TrendingUp size={16} className="text-gold" />
+            <h3 className="text-sm font-semibold text-slate-700">Unusual spending</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {anomalies.map((a) => (
+              <div key={a.category} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorForCategory(a.category) }} />
+                    <span className="truncate">{a.category}</span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    {formatCurrency(a.current)} this month · vs {formatCurrency(a.average)} average
+                  </div>
+                </div>
+                <span className="shrink-0 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700">
+                  +{a.changePct}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Budgets */}
       {budgeted.length > 0 && (

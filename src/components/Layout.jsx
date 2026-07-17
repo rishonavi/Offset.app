@@ -1,5 +1,5 @@
-import { Suspense, useState } from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { Suspense, useEffect, useState } from 'react'
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   Boxes,
@@ -18,28 +18,41 @@ import {
   Sun,
   Moon,
   Eye,
+  ShieldCheck,
+  PiggyBank,
+  Trash2,
+  Search,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
+import { useConfig } from '../context/ConfigContext'
+import ErrorBoundary from './ErrorBoundary'
+import QuickAddExpense from './QuickAddExpense'
+import CommandPalette from './CommandPalette'
+import ShortcutsHelp from './ShortcutsHelp'
+import { checkIsAdmin } from '../lib/admin'
 import { Spinner } from './ui'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/personal', label: 'Personal', icon: PiggyBank },
   { to: '/properties', label: 'Assets', icon: Boxes },
-  { to: '/expenses', label: 'Expenses', icon: Receipt },
   { to: '/income', label: 'Income', icon: Banknote },
+  { to: '/expenses', label: 'Expenses', icon: Receipt },
   { to: '/bills', label: 'Bills', icon: FileText },
-  { to: '/import', label: 'Import from Gmail', icon: MailPlus },
+  { to: '/import', label: 'Import', icon: MailPlus },
   { to: '/reports', label: 'Reports & Export', icon: PieChart },
+  { to: '/bin', label: 'Bin', icon: Trash2 },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
-function NavItems({ onNavigate }) {
+function NavItems({ onNavigate, isAdmin }) {
+  const items = isAdmin ? [...NAV, { to: '/admin', label: 'Admin', icon: ShieldCheck }] : NAV
   return (
     <nav className="flex flex-col gap-1">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
+      {items.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}
@@ -89,11 +102,11 @@ function ThemeToggle({ className = '' }) {
   )
 }
 
-function QuickAdd({ onNavigate }) {
+function QuickAdd({ onClick }) {
   return (
-    <Link to="/expenses/new" onClick={onNavigate} className="btn-primary mt-6 w-full">
+    <button onClick={onClick} className="btn-primary mt-6 w-full">
       <Plus size={15} /> Add expense
-    </Link>
+    </button>
   )
 }
 
@@ -116,22 +129,83 @@ function WorkspaceSwitcher() {
   )
 }
 
+// Hides the mobile floating quick-add on the very form it would link to
+// (/properties/new, /expenses/:id/edit, etc.) — otherwise it's a redundant
+// shortcut to the current page, floating over the form's own fields.
+const ON_ADD_EDIT_FORM = /^\/(properties|expenses|income)\/(new|[^/]+\/edit)$/
+
 export default function Layout() {
   const { user, signOut, isCloud } = useAuth()
   const { canWrite } = useData()
+  const { announcement, maintenance } = useConfig()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [quickAdd, setQuickAdd] = useState(false)
+  const [cmdOpen, setCmdOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const location = useLocation()
+  const showFab = canWrite && !ON_ADD_EDIT_FORM.test(location.pathname)
+
+  useEffect(() => {
+    let active = true
+    checkIsAdmin().then((ok) => active && setIsAdmin(ok))
+    return () => {
+      active = false
+    }
+  }, [user])
+
+  // Keyboard: ⌘K / Ctrl-K opens the command palette anywhere; "n" quick-adds an
+  // expense (but not while typing in a field).
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        setCmdOpen((v) => !v)
+        return
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      const t = e.target
+      const typing = t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.tagName === 'SELECT' || t?.isContentEditable
+      if (typing) return
+      if (e.key === '?') {
+        e.preventDefault()
+        setHelpOpen(true)
+        return
+      }
+      if (e.key !== 'n' && e.key !== 'N') return
+      if (!canWrite) return
+      e.preventDefault()
+      setQuickAdd(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [canWrite])
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded focus:bg-gold focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy"
+      >
+        Skip to content
+      </a>
       <div className="noise-overlay" />
 
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-navy-dark bg-navy px-4 py-5 lg:flex">
         <Brand />
         <WorkspaceSwitcher />
-        {canWrite && <QuickAdd />}
+        {canWrite && <QuickAdd onClick={() => setQuickAdd(true)} />}
+        <button
+          onClick={() => setCmdOpen(true)}
+          className="mt-3 flex w-full items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/50 transition hover:border-gold/40 hover:text-white/80"
+        >
+          <Search size={14} />
+          <span className="flex-1 text-left">Search…</span>
+          <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem]">⌘K</kbd>
+        </button>
         <div className="mt-6 flex-1">
-          <NavItems />
+          <NavItems isAdmin={isAdmin} />
         </div>
         <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
       </aside>
@@ -140,6 +214,13 @@ export default function Layout() {
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-dark bg-navy px-4 py-3 lg:hidden">
         <Brand />
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCmdOpen(true)}
+            className="grid h-10 w-10 place-items-center text-white/70 hover:text-gold"
+            aria-label="Search"
+          >
+            <Search size={20} />
+          </button>
           <ThemeToggle />
           <button
             onClick={() => setMobileOpen(true)}
@@ -167,9 +248,9 @@ export default function Layout() {
               </button>
             </div>
             <WorkspaceSwitcher />
-            {canWrite && <QuickAdd onNavigate={() => setMobileOpen(false)} />}
+            {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
             <div className="mt-6 flex-1">
-              <NavItems onNavigate={() => setMobileOpen(false)} />
+              <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
             </div>
             <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
           </div>
@@ -177,7 +258,19 @@ export default function Layout() {
       )}
 
       {/* Main content */}
-      <main className="min-w-0">
+      <main id="main-content" className="min-w-0">
+        {maintenance?.active && (
+          <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-700 lg:px-8">
+            <Info size={14} className="shrink-0" />
+            <span>{maintenance.message || 'Offset is undergoing brief maintenance.'}</span>
+          </div>
+        )}
+        {announcement?.active && announcement.text && (
+          <div className="flex items-center gap-2 border-b border-gold/30 bg-brand-light px-4 py-2 text-xs font-medium text-slate-700 lg:px-8">
+            <Info size={14} className="shrink-0 text-gold" />
+            <span>{announcement.text}</span>
+          </div>
+        )}
         {!canWrite && (
           <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs text-slate-600 lg:px-8">
             <Eye size={14} className="shrink-0" />
@@ -196,22 +289,33 @@ export default function Layout() {
           </div>
         )}
         <div className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-10">
-          <Suspense fallback={<Spinner />}>
-            <Outlet />
-          </Suspense>
+          <ErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<Spinner />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
 
       {/* Mobile floating quick-add */}
-      {canWrite && (
-        <Link
-          to="/expenses/new"
+      {showFab && (
+        <button
+          onClick={() => setQuickAdd(true)}
           className="fixed bottom-5 right-5 z-30 grid h-14 w-14 place-items-center bg-gold text-navy shadow-lg shadow-navy/40 transition active:scale-95 lg:hidden"
           aria-label="Add expense"
         >
           <Plus size={26} />
-        </Link>
+        </button>
       )}
+
+      <QuickAddExpense open={quickAdd} onClose={() => setQuickAdd(false)} />
+      <CommandPalette
+        open={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+        onQuickAdd={() => setQuickAdd(true)}
+        onHelp={() => setHelpOpen(true)}
+      />
+      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   )
 }

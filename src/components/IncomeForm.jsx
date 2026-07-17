@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
 import { INCOME_SOURCES, PAYMENT_METHODS } from '../lib/constants'
+import { RECURRENCE_OPTIONS } from '../lib/recurring'
+import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
@@ -17,6 +19,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
     payment_method: initial?.payment_method || '',
     status: initial?.status || 'received',
     due_date: initial?.due_date || '',
+    recurrence: initial?.recurrence || 'none',
     description: initial?.description || '',
   })
   const [file, setFile] = useState(null)
@@ -27,9 +30,35 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
   const [scanning, setScanning] = useState(false)
   const [scanPct, setScanPct] = useState(0)
   const [scanMsg, setScanMsg] = useState(null)
+  const [nlText, setNlText] = useState('')
+  const [parsing, setParsing] = useState(false)
+  const [nlNote, setNlNote] = useState(null)
   const fileRef = useRef(null)
   const cameraRef = useRef(null)
   const plan = usePlan()
+
+  const runParse = async () => {
+    if (!nlText.trim()) return
+    setParsing(true)
+    setNlNote(null)
+    try {
+      const r = await parseEntry(nlText, 'income', properties)
+      setForm((f) => ({
+        ...f,
+        property_id: r.property_id || f.property_id,
+        amount: r.amount != null ? String(r.amount) : f.amount,
+        tax: r.tax != null ? String(r.tax) : f.tax,
+        date: r.date || f.date,
+        source: r.source || f.source,
+        payer: r.payer || f.payer,
+      }))
+      setNlNote('Filled from your description — please double-check the fields.')
+    } catch (e) {
+      setNlNote(e?.code === 'not_configured' ? 'AI quick-add isn’t set up on this deployment.' : e?.message || 'Could not read that.')
+    } finally {
+      setParsing(false)
+    }
+  }
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
@@ -116,6 +145,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
         payment_method: form.payment_method,
         status: form.status,
         due_date: form.status === 'pending' ? form.due_date || null : null,
+        recurrence: form.recurrence,
         description: form.description.trim(),
         receipt_url: receipt_url || null,
       })
@@ -127,6 +157,29 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="border border-dashed border-gold/40 bg-brand-light/40 p-3">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">
+          <Sparkles size={13} className="text-gold" /> Quick add with AI
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={nlText}
+            onChange={(e) => setNlText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                runParse()
+              }
+            }}
+            placeholder="e.g. received 45000 rent from Rahul for Sea View on 1 July"
+          />
+          <Button type="button" variant="ghost" onClick={runParse} loading={parsing} className="shrink-0">
+            Parse
+          </Button>
+        </div>
+        {nlNote && <p className="mt-1.5 text-xs text-slate-500">{nlNote}</p>}
+      </div>
+
       <div className="grid grid-cols-1 gap-4">
         <Field label="Property" required>
           <Select value={form.property_id} onChange={set('property_id')}>
@@ -248,6 +301,16 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
             <Input type="date" value={form.due_date} onChange={set('due_date')} />
           </Field>
         )}
+
+        <Field label="Repeats" hint="Recurring income shows a one-tap prompt on the dashboard when due">
+          <Select value={form.recurrence} onChange={set('recurrence')}>
+            {RECURRENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
       </div>
 
       <Field label="Description / Notes">
