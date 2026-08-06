@@ -8,10 +8,12 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
+import { LanguageProvider } from './context/LanguageContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
+      <LanguageProvider>
       <ThemeProvider>
         <ToastProvider>
           <ConfigProvider>
@@ -23,6 +25,7 @@ createRoot(document.getElementById('root')).render(
           </ConfigProvider>
         </ToastProvider>
       </ThemeProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

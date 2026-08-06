@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon } from 'lucide-react'
+import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { usePlan } from '../context/PlanContext'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
+import { useLanguage } from '../context/LanguageContext'
 import { startCheckout, openBillingPortal } from '../lib/billing'
 import { listTeam, inviteMember, removeMembership } from '../lib/team'
 import { formatCurrency } from '../lib/format'
@@ -13,6 +14,12 @@ import PageHeader from '../components/PageHeader'
 
 export default function Settings() {
   const { user, isCloud, signOut } = useAuth()
+  const { t, lang, chosen, setLanguage, languages, coverage } = useLanguage()
+  const changeLanguage = (code) => {
+    setLanguage(code)
+    const picked = languages.find((l) => l.code === code)
+    toast(picked ? `${picked.name} · ${picked.english}` : t('language.systemDefault'))
+  }
   const { theme, toggle } = useTheme()
   const { info, isPro, billingEnabled, scanCount, scanLimit } = usePlan()
   const { properties, expenses, income, loading, deleteProperty } = useData()
@@ -109,7 +116,45 @@ export default function Settings() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader title="Settings" subtitle="Your account, plan and data." />
+      <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
+
+      {/* Language */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-gold">
+              <Languages size={20} />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-slate-700">{t('language.title')}</h3>
+              <p className="mt-1 text-xs text-slate-500">{t('language.description')}</p>
+            </div>
+          </div>
+          <label className="min-w-[13rem]">
+            <span className="sr-only">{t('language.label')}</span>
+            <select
+              className="field-input"
+              value={chosen}
+              onChange={(e) => changeLanguage(e.target.value)}
+              aria-label={t('language.label')}
+            >
+              {/* '' keeps following the browser if that changes later, which is
+                  a different thing from picking English once. */}
+              <option value="">{t('language.systemDefault')}</option>
+              {languages.map((l) => (
+                <option key={l.code} value={l.code} lang={l.code}>
+                  {l.name}
+                  {l.english === l.name ? '' : ` · ${l.english}`}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p className="mt-3 text-xs text-slate-400">
+          {t('language.amounts')}
+          {lang !== 'en' && coverage.percent < 100 && <> {t('language.partial')} ({t('language.coverage', { percent: coverage.percent })})</>}
+        </p>
+      </Card>
 
       {/* Plan */}
       <Card className="p-5">
