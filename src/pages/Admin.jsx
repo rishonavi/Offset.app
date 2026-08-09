@@ -159,7 +159,8 @@ export default function Admin() {
 
   if (!allowed) {
     return (
-      <div className="animate-fade-in">
+      <div className="animate-fade-in space-y-6">
+        <PageHeader title="Admin" subtitle="Platform operations." />
         <EmptyState
           icon={ShieldAlert}
           title="Not authorised"
@@ -201,12 +202,12 @@ export default function Admin() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Billing</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Billing</h2>
             <a
               href="https://dashboard.stripe.com"
               target="_blank"
               rel="noreferrer"
-              className="text-xs font-medium text-brand hover:underline"
+              className="inline-flex min-h-6 items-center text-xs font-medium text-brand hover:underline"
             >
               Open Stripe ↗
             </a>
@@ -233,7 +234,7 @@ export default function Admin() {
         </Card>
 
         <Card className="p-5">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">Endpoint health</h3>
+          <h2 className="mb-3 text-sm font-semibold text-slate-700">Endpoint health</h2>
           <div className="divide-y divide-slate-100">
             {[
               { key: 'scan', label: 'Receipt scanning (/api/scan-receipt)' },
@@ -264,7 +265,7 @@ export default function Admin() {
       {/* App config */}
       {canConfig && (
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">App configuration</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">App configuration</h2>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Announcement */}
             <div>
@@ -344,7 +345,7 @@ export default function Admin() {
       {/* Users */}
       <Card className="p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-slate-700">Users</h3>
+          <h2 className="text-sm font-semibold text-slate-700">Users</h2>
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -402,7 +403,7 @@ export default function Admin() {
                       <button
                         onClick={() => setPlan(u, 'free')}
                         disabled={busyId === u.user_id}
-                        className="text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                        className="inline-flex min-h-6 items-center text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
                       >
                         Downgrade
                       </button>
@@ -410,7 +411,7 @@ export default function Admin() {
                       <button
                         onClick={() => setPlan(u, 'pro')}
                         disabled={busyId === u.user_id}
-                        className="text-xs font-medium text-brand hover:underline disabled:opacity-50"
+                        className="inline-flex min-h-6 items-center text-xs font-medium text-brand hover:underline disabled:opacity-50"
                       >
                         Grant Pro
                       </button>
@@ -433,7 +434,7 @@ export default function Admin() {
       {/* Admins (superadmin only) */}
       {isSuper && (
         <Card className="p-5">
-          <h3 className="mb-1 text-sm font-semibold text-slate-700">Admins</h3>
+          <h2 className="mb-1 text-sm font-semibold text-slate-700">Admins</h2>
           <p className="mb-3 text-xs text-slate-500">Manage who can access this area. The user must already have an Offset account.</p>
           <form onSubmit={addAdmin} className="flex flex-wrap gap-2">
             <input
@@ -477,7 +478,7 @@ export default function Admin() {
 
       {/* Audit log */}
       <Card className="p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Admin audit log</h3>
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">Admin audit log</h2>
         {audit.length === 0 ? (
           <p className="text-sm text-slate-400">No admin actions recorded yet.</p>
         ) : (

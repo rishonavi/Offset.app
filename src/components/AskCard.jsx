@@ -39,7 +39,7 @@ export default function AskCard() {
     <Card className="p-5">
       <div className="mb-3 flex items-center gap-2">
         <Sparkles size={16} className="text-gold" />
-        <h3 className="text-sm font-semibold text-slate-700">Ask about your finances</h3>
+        <h2 className="text-sm font-semibold text-slate-700">Ask about your finances</h2>
       </div>
       <div className="flex gap-2">
         <Input
@@ -51,6 +51,7 @@ export default function AskCard() {
               ask()
             }
           }}
+          aria-label="Ask a question about your finances"
           placeholder="e.g. how much on maintenance last year?"
         />
         <Button type="button" onClick={() => ask()} loading={loading} className="shrink-0">

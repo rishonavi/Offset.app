@@ -184,6 +184,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
                 runParse()
               }
             }}
+            aria-label="Describe the expense in your own words"
             placeholder="e.g. paid 5000 to plumber for Sea View on 3 July"
           />
           <Button type="button" variant="ghost" onClick={runParse} loading={parsing} className="shrink-0">

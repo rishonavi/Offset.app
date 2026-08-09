@@ -171,6 +171,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 runParse()
               }
             }}
+            aria-label="Describe the income in your own words"
             placeholder="e.g. received 45000 rent from Rahul for Sea View on 1 July"
           />
           <Button type="button" variant="ghost" onClick={runParse} loading={parsing} className="shrink-0">

@@ -18,14 +18,16 @@ const emptyForm = { date: todayISO(), amount: '', category: PERSONAL_CATEGORIES[
 
 function Stat({ icon: Icon, label, value, accent }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: `${accent}1a`, color: accent }}>
+    <Card className="min-w-0 p-3 sm:p-4">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* The icon is the first thing to go when there is no room for it —
+            three of these have to fit across a phone. */}
+        <span className="hidden h-11 w-11 shrink-0 place-items-center rounded-xl sm:grid" style={{ background: `${accent}1a`, color: accent }}>
           <Icon size={20} />
         </span>
         <div className="min-w-0">
           <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{label}</div>
-          <div className="truncate font-serif text-xl font-bold text-slate-900">{value}</div>
+          <div className="truncate font-serif text-lg font-bold text-slate-900 sm:text-xl">{value}</div>
         </div>
       </div>
     </Card>
@@ -128,13 +130,14 @@ export default function Personal() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Personal" subtitle="Everyday budgeting & spending — separate from your assets." />
         <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
-          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100">
+          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100">
             <ChevronLeft size={16} />
           </button>
           <span className="min-w-36 text-center text-sm font-medium text-slate-700">{monthLabel(month)}</span>
           <button
             onClick={() => setMonth((m) => shiftMonth(m, 1))}
             disabled={month >= monthKey()}
+            aria-label="Next month"
             className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30"
           >
             <ChevronRight size={16} />
@@ -143,7 +146,7 @@ export default function Personal() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <Stat icon={Receipt} label="Spent" value={formatCurrency(spent)} accent="#C5A059" />
         <Stat icon={Wallet} label="Budget" value={totalBudget ? formatCurrency(totalBudget) : '—'} accent="#3B5A7A" />
         <Stat icon={Scale} label="Remaining" value={totalBudget ? formatCurrency(totalBudget - spent) : '—'} accent={totalBudget - spent >= 0 ? '#2F8F6B' : '#C0492F'} />
@@ -153,8 +156,8 @@ export default function Personal() {
         {/* Budgets */}
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Category budgets</h3>
-            <button onClick={editBudgets ? () => setEditBudgets(false) : openBudgets} className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
+            <h2 className="text-sm font-semibold text-slate-700">Category budgets</h2>
+            <button onClick={editBudgets ? () => setEditBudgets(false) : openBudgets} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand hover:underline">
               {editBudgets ? (<><X size={13} /> Close</>) : (<><SlidersHorizontal size={13} /> Manage</>)}
             </button>
           </div>
@@ -199,7 +202,7 @@ export default function Personal() {
 
         {/* Spending by category */}
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">Spending by category</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">Spending by category</h2>
           {byCategory.length === 0 ? (
             <div className="grid h-64 place-items-center text-sm text-slate-400">No spending this month</div>
           ) : (
@@ -222,7 +225,7 @@ export default function Personal() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Add / edit */}
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">{editingId ? 'Edit expense' : 'Add personal expense'}</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">{editingId ? 'Edit expense' : 'Add personal expense'}</h2>
           <form onSubmit={submit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date" required>
@@ -268,7 +271,7 @@ export default function Personal() {
 
         {/* This month's list */}
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">{monthLabel(month)} · {monthExpenses.length} entries</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">{monthLabel(month)} · {monthExpenses.length} entries</h2>
           {monthExpenses.length === 0 ? (
             <div className="py-8 text-center text-sm text-slate-400">No personal expenses this month yet.</div>
           ) : (

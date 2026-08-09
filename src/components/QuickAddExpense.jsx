@@ -69,7 +69,7 @@ export default function QuickAddExpense({ open, onClose }) {
     >
       <div className="card w-full max-w-md animate-fade-in p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-serif text-lg font-bold text-slate-900">Quick add expense</h3>
+          <h2 className="font-serif text-lg font-bold text-slate-900">Quick add expense</h2>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Close">
             <X size={18} />
           </button>

@@ -127,10 +127,10 @@ export default function Trash() {
                   </div>
                 </div>
                 <span className="shrink-0 text-xs font-medium text-amber-600">{daysLeft(it.deleted_at)}d left</span>
-                <button onClick={() => restore(it)} disabled={busy} className="shrink-0 text-slate-400 hover:text-emerald-600 disabled:opacity-50" title="Restore">
+                <button onClick={() => restore(it)} disabled={busy} className="shrink-0 text-slate-400 hover:text-emerald-600 disabled:opacity-50" title="Restore" aria-label="Restore this item">
                   <RotateCcw size={16} />
                 </button>
-                <button onClick={() => purge(it)} disabled={busy} className="shrink-0 text-slate-400 hover:text-red-600 disabled:opacity-50" title="Delete forever">
+                <button onClick={() => purge(it)} disabled={busy} className="shrink-0 text-slate-400 hover:text-red-600 disabled:opacity-50" title="Delete forever" aria-label="Delete this item for good">
                   <Trash2 size={16} />
                 </button>
               </div>

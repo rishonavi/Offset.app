@@ -97,7 +97,7 @@ function ChartCard({ title, children, empty, action }) {
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+        <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
         {action}
       </div>
       {empty ? (
@@ -287,7 +287,10 @@ export default function Dashboard() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <select className="field-input h-9 w-auto py-1" value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
+          {/* w-auto sizes the control to its widest option, and an option is an
+              asset name the user chose — a long one would drag the page
+              sideways. Cap it and let the native popup show the full text. */}
+          <select className="field-input h-9 w-auto max-w-[12rem] py-1 sm:max-w-[18rem]" aria-label="Filter dashboard by asset" value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
             <option value="">All assets</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -353,7 +356,7 @@ export default function Dashboard() {
       {showPerf && (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-700">Portfolio performance</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Portfolio performance</h2>
             <span className="text-xs text-slate-400">
               {formatCurrency(perf.totalValue)} value · trailing 12 months
             </span>
@@ -391,7 +394,7 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <Repeat size={16} className="text-gold" />
-            <h3 className="text-sm font-semibold text-slate-700">Recurring — due to log</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Recurring — due to log</h2>
           </div>
           <div className="divide-y divide-slate-100">
             {recurringDue.map((d) => (
@@ -425,7 +428,7 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <CalendarClock size={16} className="text-gold" />
-            <h3 className="text-sm font-semibold text-slate-700">Lease renewals</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Lease renewals</h2>
           </div>
           <div className="divide-y divide-slate-100">
             {leaseAlerts.map(({ property, lease }) => (
@@ -461,7 +464,7 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <FileText size={16} className="text-gold" />
-            <h3 className="text-sm font-semibold text-slate-700">Documents expiring</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Documents expiring</h2>
           </div>
           <div className="divide-y divide-slate-100">
             {docAlerts.map(({ doc, exp }) => (
@@ -499,7 +502,7 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <TrendingUp size={16} className="text-gold" />
-            <h3 className="text-sm font-semibold text-slate-700">Unusual spending</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Unusual spending</h2>
           </div>
           <div className="divide-y divide-slate-100">
             {anomalies.map((a) => (
@@ -526,7 +529,7 @@ export default function Dashboard() {
       {budgeted.length > 0 && (
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Monthly budgets</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Monthly budgets</h2>
             {budgetAlerts > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                 <AlertTriangle size={12} /> {budgetAlerts} need attention
@@ -547,7 +550,7 @@ export default function Dashboard() {
       {/* Payments due */}
       {(payables > 0 || receivables > 0) && (
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">Payments due</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">Payments due</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="border-l-2 border-gold pl-3">
               <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">You owe · unpaid expenses</div>
@@ -661,8 +664,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Recent activity</h3>
-            <Link to="/expenses" className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
+            <h2 className="text-sm font-semibold text-slate-700">Recent activity</h2>
+            <Link to="/expenses" className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand hover:underline">
               View all <ArrowRight size={13} />
             </Link>
           </div>
@@ -688,7 +691,7 @@ export default function Dashboard() {
 
         {byCategory.length > 0 ? (
           <Card className="p-5">
-            <h3 className="mb-4 text-sm font-semibold text-slate-700">Category breakdown</h3>
+            <h2 className="mb-4 text-sm font-semibold text-slate-700">Category breakdown</h2>
             <div className="space-y-3">
               {byCategory.slice(0, 6).map((c) => {
                 const pct = total ? Math.round((c.value / total) * 100) : 0

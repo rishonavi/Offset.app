@@ -126,7 +126,7 @@ export default function Settings() {
               <Languages size={20} />
             </span>
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-slate-700">{t('language.title')}</h3>
+              <h2 className="text-sm font-semibold text-slate-700">{t('language.title')}</h2>
               <p className="mt-1 text-xs text-slate-500">{t('language.description')}</p>
             </div>
           </div>
@@ -203,7 +203,7 @@ export default function Settings() {
 
       {/* Account */}
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-slate-700">Account</h3>
+        <h2 className="text-sm font-semibold text-slate-700">Account</h2>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-light text-sm font-semibold text-brand">
@@ -226,7 +226,7 @@ export default function Settings() {
 
       {/* Appearance */}
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-slate-700">Appearance</h3>
+        <h2 className="text-sm font-semibold text-slate-700">Appearance</h2>
         <p className="mt-1 text-xs text-slate-500">Choose how Offset looks — saved to this browser.</p>
         <div className="mt-4 inline-flex rounded-xl border border-border-light bg-white p-0.5">
           {[
@@ -253,7 +253,7 @@ export default function Settings() {
       {/* Team / sharing (cloud only) */}
       {isCloud && (
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-slate-700">Team &amp; sharing</h3>
+          <h2 className="text-sm font-semibold text-slate-700">Team &amp; sharing</h2>
           <p className="mt-1 text-xs text-slate-500">
             Invite someone (e.g. your accountant or partner) to your workspace. A <strong>viewer</strong> is read-only;
             an <strong>editor</strong> can add and change records. They’ll need an Offset account.
@@ -307,7 +307,7 @@ export default function Settings() {
 
       {/* Data */}
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-slate-700">Your data</h3>
+        <h2 className="text-sm font-semibold text-slate-700">Your data</h2>
         <p className="mt-1 text-xs text-slate-500">Download everything as JSON, or permanently delete it.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="ghost" onClick={exportData}>

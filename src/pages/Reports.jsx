@@ -436,7 +436,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Export */}
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-slate-700">Export</h3>
+          <h2 className="text-sm font-semibold text-slate-700">Export</h2>
           <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="ghost" onClick={() => doExport('xlsx')} disabled={filtered.length === 0}>
@@ -461,7 +461,7 @@ export default function Reports() {
 
         {/* Import */}
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-slate-700">Import from spreadsheet</h3>
+          <h2 className="text-sm font-semibold text-slate-700">Import from spreadsheet</h2>
           <p className="mt-1 text-xs text-slate-500">
             Upload an <strong>.xlsx</strong> or <strong>.csv</strong> with columns:
             <span className="font-medium text-slate-600"> Date, Property, Category, Vendor, Payment Method, Description, Amount</span>.
@@ -517,7 +517,7 @@ export default function Reports() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Landmark size={16} className="text-slate-500" />
-            <h3 className="text-sm font-semibold text-slate-700">Tax &amp; year-end summary</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Tax &amp; year-end summary</h2>
           </div>
           <Button variant="ghost" onClick={downloadYearEndPDF} disabled={byYear.length === 0}>
             <FileText size={16} className="text-red-600" /> Year-end PDF
@@ -620,7 +620,7 @@ export default function Reports() {
       <Card className="p-5">
         <div className="flex items-center gap-2">
           <Cloud size={16} className="text-slate-500" />
-          <h3 className="text-sm font-semibold text-slate-700">Backup &amp; restore</h3>
+          <h2 className="text-sm font-semibold text-slate-700">Backup &amp; restore</h2>
         </div>
 
         {cloudProviders.length > 0 ? (
@@ -630,7 +630,7 @@ export default function Reports() {
               on any device. (Receipts stay in Supabase.)
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <select className="field-input w-auto" value={providerId} onChange={(e) => setProviderId(e.target.value)}>
+              <select className="field-input w-auto" aria-label="Accounting format" value={providerId} onChange={(e) => setProviderId(e.target.value)}>
                 {cloudProviders.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.label}
@@ -692,7 +692,7 @@ export default function Reports() {
       ) : (
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-            <h3 className="text-sm font-semibold text-slate-700">Preview</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Preview</h2>
             <span className="text-xs text-slate-400">
               {preview.length < filtered.length ? `Showing ${preview.length} of ${filtered.length}` : `${filtered.length} rows`}
             </span>
