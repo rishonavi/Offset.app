@@ -53,7 +53,8 @@ export default function ShortcutsHelp({ open, onClose }) {
           ))}
         </ul>
         <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-400">
-          Tip: click any table column header to sort by it.
+          Tip: click any table column header to sort by it. Something not working? “Report a problem” is at
+          the bottom of the sidebar, and in the command palette.
         </p>
       </div>
     </div>

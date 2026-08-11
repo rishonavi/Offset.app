@@ -8,6 +8,11 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
+import { installErrorLog } from './lib/errorLog.js'
+
+// Before the first render, so an error thrown on the way up is still caught and
+// available to a bug report.
+installErrorLog()
 import { LanguageProvider } from './context/LanguageContext.jsx'
 
 createRoot(document.getElementById('root')).render(

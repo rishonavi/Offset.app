@@ -23,12 +23,14 @@ import {
   Trash2,
   Search,
   Building2,
+  Bug,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { useConfig } from '../context/ConfigContext'
+import { useReport } from '../context/ReportContext'
 import { useT } from '../context/LanguageContext'
 import { useEntity } from '../context/EntityContext'
 import ErrorBoundary from './ErrorBoundary'
@@ -142,6 +144,21 @@ function CompanySwitcher() {
   )
 }
 
+// Sits under the nav in both the sidebar and the drawer. Quiet enough not to
+// compete with the destinations above it, present enough that nobody has to go
+// hunting through Settings at the exact moment the app has annoyed them.
+function ReportLink({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="mt-2 flex w-full items-center gap-3 px-3 py-2 text-[0.7rem] font-medium uppercase tracking-[1px] text-white/45 transition hover:text-gold"
+    >
+      <Bug size={15} />
+      Report a problem
+    </button>
+  )
+}
+
 function WorkspaceSwitcher() {
   const { workspaces, activeOwner, setActiveOwner, hasShared } = useWorkspace()
   const t = useT()
@@ -171,6 +188,7 @@ export default function Layout() {
   const { user, signOut, isCloud } = useAuth()
   const { canWrite } = useData()
   const { announcement, maintenance } = useConfig()
+  const { openReport } = useReport()
   const t = useT()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState(false)
@@ -241,6 +259,7 @@ export default function Layout() {
         </button>
         <div className="mt-6 flex-1">
           <NavItems isAdmin={isAdmin} />
+          <ReportLink onClick={() => openReport({})} />
         </div>
         <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
       </aside>
@@ -287,6 +306,7 @@ export default function Layout() {
             {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
             <div className="mt-6 flex-1">
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
+              <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
             </div>
             <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
           </div>
@@ -324,7 +344,7 @@ export default function Layout() {
           </div>
         )}
         <div className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-10">
-          <ErrorBoundary resetKey={location.pathname}>
+          <ErrorBoundary resetKey={location.pathname} onReport={(error) => openReport({ error })}>
             <Suspense fallback={<Spinner />}>
               <Outlet />
             </Suspense>
@@ -349,6 +369,7 @@ export default function Layout() {
         onClose={() => setCmdOpen(false)}
         onQuickAdd={() => setQuickAdd(true)}
         onHelp={() => setHelpOpen(true)}
+        onReport={() => openReport({})}
       />
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>

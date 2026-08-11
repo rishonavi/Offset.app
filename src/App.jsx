@@ -5,6 +5,7 @@ import { DataProvider } from './context/DataContext'
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { PlanProvider } from './context/PlanContext'
 import { PersonalProvider } from './context/PersonalContext'
+import { ReportProvider } from './context/ReportContext'
 import { EntityProvider } from './context/EntityContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
@@ -93,7 +94,9 @@ export default function App() {
                 <PlanProvider>
                   <PersonalProvider>
                     <EntityProvider>
-                      <Layout />
+                      <ReportProvider>
+                        <Layout />
+                      </ReportProvider>
                     </EntityProvider>
                   </PersonalProvider>
                 </PlanProvider>

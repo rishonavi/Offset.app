@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages } from 'lucide-react'
+import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { usePlan } from '../context/PlanContext'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { useLanguage } from '../context/LanguageContext'
+import { useReport } from '../context/ReportContext'
+import { listReports, deleteReport, formatReportText, mailtoLink, kindLabel, SUPPORT_EMAIL } from '../lib/reports'
 import { startCheckout, openBillingPortal } from '../lib/billing'
 import { listTeam, inviteMember, removeMembership } from '../lib/team'
 import { formatCurrency } from '../lib/format'
@@ -29,6 +31,25 @@ export default function Settings() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('viewer')
   const [inviting, setInviting] = useState(false)
+  const { openReport, filedCount } = useReport()
+  // Newest first, and refreshed whenever a report is filed from the dialog.
+  const [reports, setReports] = useState([])
+  useEffect(() => setReports(listReports().slice().reverse()), [filedCount])
+
+  const copyReport = async (r) => {
+    try {
+      await navigator.clipboard.writeText(formatReportText(r))
+      toast('Report copied.')
+    } catch {
+      toast('Couldn’t reach the clipboard.')
+    }
+  }
+  const removeReport = (r) => {
+    // Only clears your local copy — anything already sent is gone from here.
+    if (!window.confirm(`Delete report ${r.reference}? Anything you already sent has been sent.`)) return
+    deleteReport(r.id)
+    setReports((prev) => prev.filter((x) => x.id !== r.id))
+  }
 
   const loadTeam = async () => {
     try {
@@ -304,6 +325,76 @@ export default function Settings() {
           )}
         </Card>
       )}
+
+      {/* Problem reports */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-700">Report a problem</h2>
+          <Button variant="ghost" onClick={() => openReport({})}>
+            <Bug size={16} /> New report
+          </Button>
+        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          Found a bug, a number that looks wrong, or something you can’t work out? Tell the developer.
+          {SUPPORT_EMAIL ? ' Reports go to ' : ' Reports are kept here so you can copy or send them on.'}
+          {SUPPORT_EMAIL && <span className="font-medium">{SUPPORT_EMAIL}</span>}
+          {SUPPORT_EMAIL && '.'}
+        </p>
+
+        {reports.length > 0 && (
+          <div className="mt-4">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">
+              Reports you’ve filed
+            </div>
+            <div className="mt-1 divide-y divide-border-subtle">
+              {reports.map((r) => (
+                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-semibold text-slate-700">{r.reference}</span>
+                      <span className="text-xs text-slate-500">{kindLabel(r.kind)}</span>
+                      {r.status === 'sent' && (
+                        <span className="bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-emerald-700">
+                          {{ email: 'Emailed', copied: 'Copied' }[r.sent_how] || 'Sent'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 truncate text-sm text-slate-600">{r.message}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {SUPPORT_EMAIL && (
+                      <a
+                        href={mailtoLink(r)}
+                        className="grid h-8 w-8 place-items-center text-slate-400 hover:text-brand"
+                        title={`Email report ${r.reference}`}
+                        aria-label={`Email report ${r.reference}`}
+                      >
+                        <Mail size={15} />
+                      </a>
+                    )}
+                    <button
+                      onClick={() => copyReport(r)}
+                      className="grid h-8 w-8 place-items-center text-slate-400 hover:text-brand"
+                      title={`Copy report ${r.reference}`}
+                      aria-label={`Copy report ${r.reference}`}
+                    >
+                      <Copy size={15} />
+                    </button>
+                    <button
+                      onClick={() => removeReport(r)}
+                      className="grid h-8 w-8 place-items-center text-slate-400 hover:text-red-600"
+                      title={`Delete report ${r.reference}`}
+                      aria-label={`Delete report ${r.reference}`}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Data */}
       <Card className="p-5">

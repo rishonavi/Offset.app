@@ -18,6 +18,7 @@ import {
   Building2,
   CornerDownLeft,
   Keyboard,
+  Bug,
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -39,7 +40,7 @@ const NAV_COMMANDS = [
 // A ⌘K / Ctrl-K palette: jump to any page, run a quick action, or search across
 // assets, income, expenses and documents. Everything is local — no navigation
 // round-trips until you pick a result.
-export default function CommandPalette({ open, onClose, onQuickAdd, onHelp }) {
+export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onReport }) {
   const navigate = useNavigate()
   const { properties, expenses, income, documents, propertyNameById, canWrite } = useData()
   const { theme, toggle } = useTheme()
@@ -78,6 +79,9 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp }) {
       push('Actions', dark ? 'Switch to light mode' : 'Switch to dark mode', '', dark ? Sun : Moon, () => { toggle(); onClose() })
     if (match('keyboard shortcuts') || match('help'))
       push('Actions', 'Keyboard shortcuts', '', Keyboard, () => { onClose(); onHelp?.() })
+    // "bug" and "feedback" are what people actually type when something is wrong.
+    if (match('report a problem') || match('bug') || match('feedback') || match('support'))
+      push('Actions', 'Report a problem', 'Tell the developer about a bug', Bug, () => { onClose(); onReport?.() })
 
     for (const n of NAV_COMMANDS) if (match(n.label)) push('Go to', n.label, '', n.icon, go(n.to))
 

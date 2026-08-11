@@ -84,6 +84,36 @@ export async function adminHealth() {
   return { scan, parse, ask }
 }
 
+// ── Problem reports ──
+// Needs supabase/reports.sql. Missing on a deployment that hasn't applied it,
+// so callers treat a failure as "no inbox yet" rather than an error worth
+// shouting about.
+export async function adminListReports(status = '', limit = 50) {
+  const { data, error } = await supabase.rpc('admin_list_reports', {
+    p_status: status,
+    p_limit: limit,
+    p_offset: 0,
+  })
+  if (error) throw error
+  return data || []
+}
+
+export async function adminReportCounts() {
+  const { data, error } = await supabase.rpc('admin_report_counts')
+  if (error) throw error
+  return data || {}
+}
+
+export async function adminSetReportStatus(id, status, note = null) {
+  const { data, error } = await supabase.rpc('admin_set_report_status', {
+    p_id: id,
+    p_status: status,
+    p_note: note,
+  })
+  if (error) throw error
+  return data
+}
+
 // ── App config ──
 export async function adminSetConfig(key, value) {
   const { data, error } = await supabase.rpc('admin_set_config', { p_key: key, p_value: value })
