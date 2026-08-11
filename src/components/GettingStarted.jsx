@@ -71,14 +71,24 @@ export default function GettingStarted() {
               {s.done && <Check size={12} />}
             </span>
             <div className="min-w-0 flex-1">
-              <p className={`text-sm ${s.done ? 'text-slate-400 line-through' : 'font-medium text-slate-700'}`}>
+              {/* A finished step is struck through and dimmed, but only to
+                  slate-500 — slate-400 comes out at 3.97:1 on the dark card,
+                  and "done" is still text someone may want to read. */}
+              <p className={`text-sm ${s.done ? 'text-slate-500 line-through' : 'font-medium text-slate-700'}`}>
                 {s.title}
                 <span className="sr-only">{s.done ? ' — done' : ' — still to do'}</span>
               </p>
               {!s.done && (
                 <p className="mt-0.5 text-xs text-slate-500">
                   {s.why}{' '}
-                  <Link to={s.to} className="inline-flex items-center gap-1 font-medium text-brand hover:underline">
+                  {/* Underlined rather than gold-on-white: the brand gold is
+                      2.5:1 against a white card, which is below the 4.5:1 a
+                      body-sized link needs, and colour alone should not be
+                      what marks a link anyway. */}
+                  <Link
+                    to={s.to}
+                    className="inline-flex items-center gap-1 font-medium text-slate-700 underline underline-offset-2 hover:text-brand"
+                  >
                     {s.cta} <ArrowRight size={12} />
                   </Link>
                 </p>
