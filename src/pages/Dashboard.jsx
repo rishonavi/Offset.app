@@ -33,6 +33,8 @@ import {
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
+import GettingStarted from '../components/GettingStarted'
+import { shouldShow as shouldShowOnboarding } from '../lib/onboarding'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory, CHART_PALETTE } from '../lib/constants'
 import { totalsByCategory, totalsByProperty, monthlySeries, monthlyIncomeExpense } from '../lib/stats'
@@ -264,19 +266,27 @@ export default function Dashboard() {
   if (loading) return <DashboardSkeleton />
 
   if (properties.length === 0 && expenses.length === 0) {
+    // The checklist is a better first screen than a single line of welcome —
+    // it says all four steps and can load a portfolio to look around. Once it
+    // has been dismissed, fall back to the plain greeting rather than showing
+    // an empty page.
     return (
       <div className="animate-fade-in">
         <h1 className="mb-6 text-2xl font-bold text-slate-900">Dashboard</h1>
-        <EmptyState
-          icon={Building2}
-          title="Welcome to Offset"
-          subtitle="Start by adding an asset — property, vehicle, yacht and more — then log its income & expenses. Your charts and totals appear here."
-          action={
-            <Link to="/properties" className="btn-primary">
-              <Plus size={16} /> Add your first asset
-            </Link>
-          }
-        />
+        {shouldShowOnboarding({ properties, expenses, income }) ? (
+          <GettingStarted />
+        ) : (
+          <EmptyState
+            icon={Building2}
+            title="Welcome to Offset"
+            subtitle="Start by adding an asset — property, vehicle, yacht and more — then log its income & expenses. Your charts and totals appear here."
+            action={
+              <Link to="/properties" className="btn-primary">
+                <Plus size={16} /> Add your first asset
+              </Link>
+            }
+          />
+        )}
       </div>
     )
   }
@@ -313,6 +323,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Removes itself once the books can answer something */}
+      <GettingStarted />
 
       {/* Hero */}
       <div className="relative overflow-hidden border border-gold/30 bg-gradient-to-br from-navy via-[#0d2747] to-navy-dark p-6 text-white shadow-lg sm:p-8">

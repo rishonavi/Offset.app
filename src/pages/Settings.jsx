@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail } from 'lucide-react'
+import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail, Sparkles } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { usePlan } from '../context/PlanContext'
@@ -7,6 +7,7 @@ import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useReport } from '../context/ReportContext'
+import { hasSampleData, removeSampleData } from '../lib/sampleData'
 import { listReports, deleteReport, formatReportText, mailtoLink, kindLabel, SUPPORT_EMAIL } from '../lib/reports'
 import { startCheckout, openBillingPortal } from '../lib/billing'
 import { listTeam, inviteMember, removeMembership } from '../lib/team'
@@ -24,7 +25,7 @@ export default function Settings() {
   }
   const { theme, toggle } = useTheme()
   const { info, isPro, billingEnabled, scanCount, scanLimit } = usePlan()
-  const { properties, expenses, income, loading, deleteProperty } = useData()
+  const { properties, expenses, income, loading, deleteProperty, deleteExpense, deleteIncome, refresh } = useData()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
   const [team, setTeam] = useState({ sharedByMe: [], sharedWithMe: [] })
@@ -134,6 +135,22 @@ export default function Settings() {
       setBusy(false)
     }
   }
+
+  const clearSample = async () => {
+    if (!window.confirm('Remove the sample portfolio? Only the demo rows go — anything you have added yourself stays.')) return
+    setBusy(true)
+    try {
+      const n = await removeSampleData({ properties, expenses, income, deleteProperty, deleteExpense, deleteIncome })
+      await refresh()
+      toast(`Removed ${n} sample ${n === 1 ? 'row' : 'rows'}.`)
+    } catch (e) {
+      toast(e?.message || 'Could not remove the sample data.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const sampleLoaded = hasSampleData({ properties, expenses, income })
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -404,6 +421,13 @@ export default function Settings() {
           <Button variant="ghost" onClick={exportData}>
             <Download size={16} /> Export my data
           </Button>
+          {/* Only offered when there is sample data to remove, so it isn't a
+              button that does nothing on a real set of books. */}
+          {sampleLoaded && (
+            <Button variant="ghost" onClick={clearSample} loading={busy}>
+              <Sparkles size={16} /> Remove sample data
+            </Button>
+          )}
           <Button variant="ghost" onClick={deleteAll} loading={busy} className="text-red-600 hover:bg-red-50">
             <Trash2 size={16} /> Delete all my data
           </Button>
