@@ -24,6 +24,24 @@ export function Card({ className, children, ...props }) {
   )
 }
 
+// A card's heading, with room for a control on the right. An <h2> because
+// cards sit under the page's single <h1> — the level is part of the component
+// so a new card can't quietly break the document outline.
+export function CardTitle({ title, description, icon: Icon, action }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="min-w-0">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          {Icon && <Icon size={16} className="shrink-0 text-slate-400" />}
+          {title}
+        </h2>
+        {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  )
+}
+
 export function Field({ label, children, hint, required }) {
   return (
     <label className="block">

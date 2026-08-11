@@ -24,6 +24,7 @@ import {
   Search,
   Building2,
   Bug,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -48,6 +49,7 @@ const NAV = [
   { to: '/expenses', key: 'nav.expenses', icon: Receipt },
   { to: '/bills', key: 'nav.bills', icon: FileText },
   { to: '/import', key: 'nav.import', icon: MailPlus },
+  { to: '/invoices', key: 'nav.invoices', icon: FileSpreadsheet },
   { to: '/reports', key: 'nav.reports', icon: PieChart },
   { to: '/bin', key: 'nav.bin', icon: Trash2 },
   { to: '/settings', key: 'nav.settings', icon: SettingsIcon },
