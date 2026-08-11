@@ -34,7 +34,7 @@ export function SortTh({ label, k, sort, onSort, align = 'left', className = '' 
   const active = sort.key === k
   const Icon = active ? (sort.dir === 'asc' ? ChevronUp : ChevronDown) : ChevronsUpDown
   return (
-    <th className={`px-4 py-3 font-semibold ${align === 'right' ? 'text-right' : ''} ${className}`}>
+    <th className={`px-4 py-3 font-semibold ${align === 'right' ? 'text-end' : ''} ${className}`}>
       <button
         type="button"
         onClick={() => onSort(k)}

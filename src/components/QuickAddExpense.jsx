@@ -88,8 +88,8 @@ export default function QuickAddExpense({ open, onClose }) {
           <form onSubmit={submit} className="space-y-4">
             <Field label="Amount" required>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">{currencySymbol}</span>
-                <Input autoFocus type="number" inputMode="decimal" step="0.01" min="0" className="pl-8" value={form.amount} onChange={set('amount')} placeholder="0" />
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">{currencySymbol}</span>
+                <Input autoFocus type="number" inputMode="decimal" step="0.01" min="0" className="ps-8" value={form.amount} onChange={set('amount')} placeholder="0" />
               </div>
             </Field>
             <div className="grid grid-cols-2 gap-3">

@@ -158,7 +158,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
           </p>
         )}
         {delivery && !delivery.ok && (
-          <p className="mt-4 border-l-2 border-amber-400 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+          <p className="mt-4 border-s-2 border-amber-400 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
             Saved here, but it couldn’t be sent: {delivery.why}
           </p>
         )}
@@ -202,7 +202,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
     <Shell dialogRef={dialogRef} onClose={onClose} title="Report a problem">
       <form onSubmit={submit} noValidate>
         {prefill?.error && (
-          <p className="mb-4 border-l-2 border-red-400 bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
+          <p className="mb-4 border-s-2 border-red-400 bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
             Reporting the error that just appeared: <span className="font-mono">{String(prefill.error.message || prefill.error).slice(0, 120)}</span>
           </p>
         )}

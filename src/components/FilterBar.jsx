@@ -10,7 +10,7 @@ export default function FilterBar({ properties, value, onChange, categories = CA
     <Card className="p-3">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-12">
         <div className="relative lg:col-span-3">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             className="field-input pl-9"
             aria-label="Search expenses"

@@ -528,15 +528,15 @@ export default function Reports() {
         </p>
 
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <div className="border-l-2 border-emerald-500 pl-3">
+          <div className="border-s-2 border-emerald-500 pl-3">
             <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Tax collected</div>
             <div className="font-serif text-xl font-bold text-emerald-700">{formatCurrency(taxCollected)}</div>
           </div>
-          <div className="border-l-2 border-gold pl-3">
+          <div className="border-s-2 border-gold pl-3">
             <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Tax paid</div>
             <div className="font-serif text-xl font-bold text-slate-900">{formatCurrency(taxPaid)}</div>
           </div>
-          <div className="border-l-2 border-navy pl-3">
+          <div className="border-s-2 border-navy pl-3">
             <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Net tax</div>
             <div className="font-serif text-xl font-bold" style={{ color: netTax >= 0 ? '#2F8F6B' : '#C0492F' }}>
               {formatCurrency(netTax)}
@@ -548,26 +548,26 @@ export default function Reports() {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-slate-200 text-start text-xs uppercase tracking-wide text-slate-500">
                   <th className="py-2 pr-3 font-semibold">Year</th>
-                  <th className="px-3 py-2 text-right font-semibold">Income</th>
-                  <th className="px-3 py-2 text-right font-semibold">Expenses</th>
-                  <th className="px-3 py-2 text-right font-semibold">Net</th>
-                  <th className="px-3 py-2 text-right font-semibold">Tax coll.</th>
-                  <th className="py-2 pl-3 text-right font-semibold">Tax paid</th>
+                  <th className="px-3 py-2 text-end font-semibold">Income</th>
+                  <th className="px-3 py-2 text-end font-semibold">Expenses</th>
+                  <th className="px-3 py-2 text-end font-semibold">Net</th>
+                  <th className="px-3 py-2 text-end font-semibold">Tax coll.</th>
+                  <th className="py-2 pl-3 text-end font-semibold">Tax paid</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {byYear.map((r) => (
                   <tr key={r.year}>
                     <td className="py-2 pr-3 font-medium text-slate-800">{r.year}</td>
-                    <td className="px-3 py-2 text-right text-emerald-700">{formatCurrency(r.income)}</td>
-                    <td className="px-3 py-2 text-right text-slate-700">{formatCurrency(r.expense)}</td>
-                    <td className="px-3 py-2 text-right font-semibold" style={{ color: r.income - r.expense >= 0 ? '#2F8F6B' : '#C0492F' }}>
+                    <td className="px-3 py-2 text-end text-emerald-700">{formatCurrency(r.income)}</td>
+                    <td className="px-3 py-2 text-end text-slate-700">{formatCurrency(r.expense)}</td>
+                    <td className="px-3 py-2 text-end font-semibold" style={{ color: r.income - r.expense >= 0 ? '#2F8F6B' : '#C0492F' }}>
                       {formatCurrency(r.income - r.expense)}
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-600">{formatCurrency(r.taxCollected)}</td>
-                    <td className="py-2 pl-3 text-right text-slate-600">{formatCurrency(r.taxPaid)}</td>
+                    <td className="px-3 py-2 text-end text-slate-600">{formatCurrency(r.taxCollected)}</td>
+                    <td className="py-2 pl-3 text-end text-slate-600">{formatCurrency(r.taxPaid)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -583,11 +583,11 @@ export default function Reports() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-slate-200 text-start text-xs uppercase tracking-wide text-slate-500">
                     <th className="py-2 pr-3 font-semibold">Category</th>
-                    <th className="px-3 py-2 text-right font-semibold">Entries</th>
-                    <th className="px-3 py-2 text-right font-semibold">Tax</th>
-                    <th className="py-2 pl-3 text-right font-semibold">Amount</th>
+                    <th className="px-3 py-2 text-end font-semibold">Entries</th>
+                    <th className="px-3 py-2 text-end font-semibold">Tax</th>
+                    <th className="py-2 pl-3 text-end font-semibold">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -596,18 +596,18 @@ export default function Reports() {
                       <td className="py-2 pr-3">
                         <Badge color={colorForCategory(r.category)}>{r.category}</Badge>
                       </td>
-                      <td className="px-3 py-2 text-right text-slate-600">{r.count}</td>
-                      <td className="px-3 py-2 text-right text-slate-600">{formatCurrency(r.tax)}</td>
-                      <td className="py-2 pl-3 text-right font-semibold text-slate-800">{formatCurrency(r.total)}</td>
+                      <td className="px-3 py-2 text-end text-slate-600">{r.count}</td>
+                      <td className="px-3 py-2 text-end text-slate-600">{formatCurrency(r.tax)}</td>
+                      <td className="py-2 pl-3 text-end font-semibold text-slate-800">{formatCurrency(r.total)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-slate-200 font-semibold text-slate-900">
                     <td className="py-2 pr-3">Total</td>
-                    <td className="px-3 py-2 text-right">{filtered.length}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(taxPaid)}</td>
-                    <td className="py-2 pl-3 text-right">{formatCurrency(total)}</td>
+                    <td className="px-3 py-2 text-end">{filtered.length}</td>
+                    <td className="px-3 py-2 text-end">{formatCurrency(taxPaid)}</td>
+                    <td className="py-2 pl-3 text-end">{formatCurrency(total)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -700,12 +700,12 @@ export default function Reports() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-slate-200 bg-slate-50 text-start text-xs uppercase tracking-wide text-slate-500">
                   <th className="px-5 py-2.5 font-semibold">Date</th>
                   <th className="px-5 py-2.5 font-semibold">Property</th>
                   <th className="px-5 py-2.5 font-semibold">Category</th>
                   <th className="px-5 py-2.5 font-semibold">Vendor</th>
-                  <th className="px-5 py-2.5 text-right font-semibold">Amount</th>
+                  <th className="px-5 py-2.5 text-end font-semibold">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -717,14 +717,14 @@ export default function Reports() {
                       <Badge color={colorForCategory(e.category)}>{e.category}</Badge>
                     </td>
                     <td className="px-5 py-2.5 text-slate-600">{e.vendor || '—'}</td>
-                    <td className="whitespace-nowrap px-5 py-2.5 text-right font-semibold text-slate-900">{formatCurrency(e.amount)}</td>
+                    <td className="whitespace-nowrap px-5 py-2.5 text-end font-semibold text-slate-900">{formatCurrency(e.amount)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-900">
                   <td className="px-5 py-2.5" colSpan={4}>Total</td>
-                  <td className="px-5 py-2.5 text-right">{formatCurrency(total)}</td>
+                  <td className="px-5 py-2.5 text-end">{formatCurrency(total)}</td>
                 </tr>
               </tfoot>
             </table>

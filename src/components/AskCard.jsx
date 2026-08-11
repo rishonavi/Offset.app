@@ -74,7 +74,7 @@ export default function AskCard() {
 
       {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
       {answer && (
-        <div className="mt-3 whitespace-pre-wrap border-l-2 border-gold bg-brand-light/40 p-3 text-sm text-slate-700">
+        <div className="mt-3 whitespace-pre-wrap border-s-2 border-gold bg-brand-light/40 p-3 text-sm text-slate-700">
           {answer}
         </div>
       )}

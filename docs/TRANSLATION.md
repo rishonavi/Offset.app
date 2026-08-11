@@ -46,6 +46,20 @@ Two steps.
    can only read ਪੰਜਾਬੀ. Set `dir: 'rtl'` for a right-to-left language; the
    document direction follows it.
 
+   The list is ordered by number of speakers rather than alphabetically, which
+   is why the ten most spoken languages in the world come first. Alphabetical
+   order buries Mandarin under Gujarati.
+
+### Right-to-left
+
+Arabic and Urdu read right to left, and the layout follows `dir` on the
+document. Components use **logical** properties — `ps-`/`pe-`, `ms-`/`me-`,
+`start-`/`end-`, `border-s`/`border-e`, `text-start`/`text-end` — rather than
+`pl-`, `left-` and `text-left`. They render identically in a left-to-right
+language and correctly in a right-to-left one, so there is no reason to reach
+for the physical version. The one place that needs an explicit `[dir='rtl']`
+rule is the select chevron, because `background-position` has no logical form.
+
 Then add the file to the `switch` in `loadDictionary()`. Only English is in the
 main bundle; every other language is fetched when it's chosen, so adding one
 costs nothing to users who don't pick it.
@@ -57,6 +71,13 @@ costs nothing to users who don't pick it.
 - **Plurals** can be split into `key_one` / `key_other` (and `_zero`, `_two`,
   `_few`, `_many` where a language needs them). `Intl.PluralRules` picks the
   form, so this isn't limited to English's two-way split.
+
+  Write the forms your language actually has, not the ones English has.
+  Chinese needs only `_other`; Russian needs `_one`, `_few`, `_many`, `_other`
+  (1 запись, 2 записи, 5 записей); Arabic uses all six, and they are different
+  words rather than the same word after a different number. Coverage counts a
+  counted string **once, by its stem** — a language is not incomplete for
+  having fewer plural forms than English.
 - **Don't translate** "Offset", "Supabase", or `.env`.
 
 ## Checking your work

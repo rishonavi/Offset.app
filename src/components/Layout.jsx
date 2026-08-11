@@ -72,7 +72,7 @@ function NavItems({ onNavigate, isAdmin }) {
           end={end}
           onClick={onNavigate}
           className={({ isActive }) =>
-            `flex items-center gap-3 border-l-2 px-3 py-2.5 text-[0.78rem] font-medium uppercase tracking-[1px] transition ${
+            `flex items-center gap-3 border-s-2 px-3 py-2.5 text-[0.78rem] font-medium uppercase tracking-[1px] transition ${
               isActive
                 ? 'border-gold bg-gold/15 text-gold'
                 : 'border-transparent text-white/65 hover:bg-white/5 hover:text-gold'
@@ -150,13 +150,14 @@ function CompanySwitcher() {
 // compete with the destinations above it, present enough that nobody has to go
 // hunting through Settings at the exact moment the app has annoyed them.
 function ReportLink({ onClick }) {
+  const t = useT()
   return (
     <button
       onClick={onClick}
       className="mt-2 flex w-full items-center gap-3 px-3 py-2 text-[0.7rem] font-medium uppercase tracking-[1px] text-white/45 transition hover:text-gold"
     >
       <Bug size={15} />
-      Report a problem
+      {t('chrome.reportProblem')}
     </button>
   )
 }
@@ -246,7 +247,7 @@ export default function Layout() {
       <div className="noise-overlay" />
 
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen flex-col border-r border-navy-dark bg-navy px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 py-5 lg:flex">
         <Brand />
         <CompanySwitcher />
         <WorkspaceSwitcher />
@@ -256,7 +257,7 @@ export default function Layout() {
           className="mt-3 flex w-full items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/50 transition hover:border-gold/40 hover:text-white/80"
         >
           <Search size={14} />
-          <span className="flex-1 text-left">{t('chrome.search')}</span>
+          <span className="flex-1 text-start">{t('chrome.search')}</span>
           <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem]">⌘K</kbd>
         </button>
         <div className="mt-6 flex-1">
@@ -292,7 +293,7 @@ export default function Layout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 flex h-full w-72 flex-col border-r-2 border-gold bg-navy px-4 py-5 shadow-xl animate-fade-in">
+          <div className="absolute start-0 top-0 flex h-full w-72 flex-col border-e-2 border-gold bg-navy px-4 py-5 shadow-xl animate-fade-in">
             <div className="flex items-center justify-between">
               <Brand />
               <button

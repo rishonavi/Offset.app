@@ -61,7 +61,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
       <div className="hidden overflow-hidden border border-border-light bg-white md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-slate-200 bg-slate-50 text-start text-xs uppercase tracking-wide text-slate-500">
               {canSelect && (
                 <th className="w-10 px-4 py-3">
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" />
@@ -72,7 +72,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
               <SortTh label="Source" k="source" sort={sort} onSort={onSort} />
               <SortTh label="From" k="from" sort={sort} onSort={onSort} />
               <SortTh label="Amount" k="amount" sort={sort} onSort={onSort} align="right" />
-              <th className="px-4 py-3 text-right font-semibold">Actions</th>
+              <th className="px-4 py-3 text-end font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -101,7 +101,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                     )}
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-emerald-700">
+                <td className="whitespace-nowrap px-4 py-3 text-end font-semibold text-emerald-700">
                   +{formatCurrency(e.amount)}
                 </td>
                 <td className="px-4 py-3">
@@ -160,7 +160,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                   <div className="mt-0.5 text-xs text-slate-500">{formatDate(e.date)}</div>
                 </div>
               </div>
-              <div className="text-right font-bold text-emerald-700">+{formatCurrency(e.amount)}</div>
+              <div className="text-end font-bold text-emerald-700">+{formatCurrency(e.amount)}</div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge color={colorForSource(e.source)}>{e.source}</Badge>

@@ -419,7 +419,7 @@ export default function Admin() {
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <button
                         onClick={() => setOpenReportId(expanded ? null : r.id)}
-                        className="min-w-0 flex-1 text-left"
+                        className="min-w-0 flex-1 text-start"
                         aria-expanded={expanded}
                       >
                         <span className="flex flex-wrap items-center gap-2">
@@ -464,7 +464,7 @@ export default function Admin() {
                     </div>
 
                     {expanded && (
-                      <div className="mt-3 space-y-3 border-l-2 border-gold/40 pl-3">
+                      <div className="mt-3 space-y-3 border-s-2 border-gold/40 pl-3">
                         {r.expected && (
                           <div>
                             <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-400">Expected</div>
@@ -519,7 +519,7 @@ export default function Admin() {
             }}
             className="relative"
           >
-            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={15} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               className="field-input h-9 w-64 max-w-full pl-9"
               placeholder="Search email…"
@@ -531,7 +531,7 @@ export default function Admin() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-[0.65rem] uppercase tracking-wide text-slate-400">
+              <tr className="border-b border-slate-200 text-start text-[0.65rem] uppercase tracking-wide text-slate-400">
                 <th className="py-2 pr-3 font-semibold">Email</th>
                 <th className="py-2 pr-3 font-semibold">Joined</th>
                 <th className="py-2 pr-3 font-semibold">Assets</th>

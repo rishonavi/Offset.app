@@ -329,7 +329,7 @@ export default function Dashboard() {
 
       {/* Hero */}
       <div className="relative overflow-hidden border border-gold/30 bg-gradient-to-br from-navy via-[#0d2747] to-navy-dark p-6 text-white shadow-lg sm:p-8">
-        <span className="absolute left-0 top-0 h-full w-[3px] bg-gold" />
+        <span className="absolute start-0 top-0 h-full w-[3px] bg-gold" />
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="eyebrow">{greeting()}</p>
@@ -565,11 +565,11 @@ export default function Dashboard() {
         <Card className="p-5">
           <h2 className="mb-4 text-sm font-semibold text-slate-700">Payments due</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="border-l-2 border-gold pl-3">
+            <div className="border-s-2 border-gold pl-3">
               <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">You owe · unpaid expenses</div>
               <div className="font-serif text-2xl font-bold text-slate-900">{formatCurrency(payables)}</div>
             </div>
-            <div className="border-l-2 border-emerald-500 pl-3">
+            <div className="border-s-2 border-emerald-500 pl-3">
               <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Owed to you · pending income</div>
               <div className="font-serif text-2xl font-bold text-emerald-700">{formatCurrency(receivables)}</div>
             </div>

@@ -292,7 +292,7 @@ export default function Invoices() {
         </div>
 
         {analysis.unknown.length > 0 && (
-          <div className="mt-3 flex items-start gap-2 border-l-2 border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <div className="mt-3 flex items-start gap-2 border-s-2 border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             <span>
               This format uses {analysis.unknown.length} token{analysis.unknown.length === 1 ? '' : 's'} Offset

@@ -12,14 +12,26 @@ export const DEFAULT_LANG = 'en'
 // `name` is the endonym — a language picker that lists "Hindi" is no use to
 // someone who can only read हिन्दी. `english` is for the sighted-in-English
 // operator reading a bug report.
+// The ten most spoken languages in the world by total speakers (Ethnologue's
+// L1+L2 count), then the Indian languages Offset started with. Ordered that way
+// deliberately: a picker sorted alphabetically buries Mandarin under Gujarati.
 export const LANGUAGES = [
   { code: 'en', name: 'English', english: 'English', dir: 'ltr' },
+  { code: 'zh', name: '简体中文', english: 'Chinese (Simplified)', dir: 'ltr' },
   { code: 'hi', name: 'हिन्दी', english: 'Hindi', dir: 'ltr' },
+  { code: 'es', name: 'Español', english: 'Spanish', dir: 'ltr' },
+  { code: 'fr', name: 'Français', english: 'French', dir: 'ltr' },
+  { code: 'ar', name: 'العربية', english: 'Arabic', dir: 'rtl' },
+  { code: 'bn', name: 'বাংলা', english: 'Bengali', dir: 'ltr' },
+  { code: 'pt', name: 'Português', english: 'Portuguese', dir: 'ltr' },
+  { code: 'ru', name: 'Русский', english: 'Russian', dir: 'ltr' },
+  { code: 'ur', name: 'اردو', english: 'Urdu', dir: 'rtl' },
   { code: 'mr', name: 'मराठी', english: 'Marathi', dir: 'ltr' },
   { code: 'gu', name: 'ગુજરાતી', english: 'Gujarati', dir: 'ltr' },
-  { code: 'bn', name: 'বাংলা', english: 'Bengali', dir: 'ltr' },
   { code: 'ta', name: 'தமிழ்', english: 'Tamil', dir: 'ltr' },
 ]
+
+export const isRTL = (code) => languageFor(code).dir === 'rtl'
 
 export const isSupported = (code) => LANGUAGES.some((l) => l.code === code)
 export const languageFor = (code) => LANGUAGES.find((l) => l.code === code) || LANGUAGES[0]
@@ -86,16 +98,25 @@ export function translate({ dict = {}, base = {}, lang = DEFAULT_LANG }, key, va
 // ── Coverage ───────────────────────────────────────────────────────
 // What a translation has and hasn't reached, so the picker can be honest about
 // it rather than letting someone discover the gaps one screen at a time.
+const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/
+
 export function coverage(dict = {}, base = {}) {
-  const keys = Object.keys(base)
-  if (!keys.length) return { done: 0, total: 0, percent: 100, missing: [] }
-  const missing = keys.filter((k) => {
-    if (dict[k] != null) return false
-    // A pluralised key counts as covered if any of its forms is present.
-    return !Object.keys(dict).some((d) => d.startsWith(`${k}_`))
+  // Count a pluralised string once, by its stem, rather than once per form.
+  //
+  // English needs two forms; Chinese needs one, Russian four, Arabic six. If
+  // each English form had to be matched individually, Chinese would be scored
+  // as incomplete for having a grammar with no plural — which is not a gap in
+  // the translation, and telling the user "97% translated" because of it would
+  // be a lie.
+  const stems = [...new Set(Object.keys(base).map((k) => k.replace(PLURAL_SUFFIX, '')))]
+  if (!stems.length) return { done: 0, total: 0, percent: 100, missing: [] }
+  const dictKeys = Object.keys(dict)
+  const missing = stems.filter((stem) => {
+    if (dict[stem] != null) return false
+    return !dictKeys.some((d) => d === stem || (d.startsWith(`${stem}_`) && PLURAL_SUFFIX.test(d)))
   })
-  const done = keys.length - missing.length
-  return { done, total: keys.length, percent: Math.round((done / keys.length) * 100), missing }
+  const done = stems.length - missing.length
+  return { done, total: stems.length, percent: Math.round((done / stems.length) * 100), missing }
 }
 
 // ── Loading ────────────────────────────────────────────────────────
@@ -104,10 +125,17 @@ export function coverage(dict = {}, base = {}) {
 export async function loadDictionary(code) {
   if (!isSupported(code) || code === DEFAULT_LANG) return {}
   switch (code) {
+    case 'zh': return (await import('../locales/zh.js')).default
     case 'hi': return (await import('../locales/hi.js')).default
+    case 'es': return (await import('../locales/es.js')).default
+    case 'fr': return (await import('../locales/fr.js')).default
+    case 'ar': return (await import('../locales/ar.js')).default
+    case 'bn': return (await import('../locales/bn.js')).default
+    case 'pt': return (await import('../locales/pt.js')).default
+    case 'ru': return (await import('../locales/ru.js')).default
+    case 'ur': return (await import('../locales/ur.js')).default
     case 'mr': return (await import('../locales/mr.js')).default
     case 'gu': return (await import('../locales/gu.js')).default
-    case 'bn': return (await import('../locales/bn.js')).default
     case 'ta': return (await import('../locales/ta.js')).default
     default: return {}
   }

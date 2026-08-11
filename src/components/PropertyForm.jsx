@@ -120,7 +120,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
 
       <Field label="Asset value" hint="Optional — purchase price or current value, used for ROI & yield">
         <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
             {currencySymbol}
           </span>
           <Input
@@ -128,7 +128,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
             inputMode="decimal"
             step="0.01"
             min="0"
-            className="pl-8"
+            className="ps-8"
             value={form.value}
             onChange={set('value')}
             placeholder="0"
@@ -138,7 +138,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
 
       <Field label="Monthly budget" hint="Optional — used for budget alerts on this property">
         <div className="relative">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
             {currencySymbol}
           </span>
           <Input
@@ -146,7 +146,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
             inputMode="decimal"
             step="0.01"
             min="0"
-            className="pl-8"
+            className="ps-8"
             value={form.monthly_budget}
             onChange={set('monthly_budget')}
             placeholder="0"
@@ -208,7 +208,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
 
             <Field label="Market rate" hint={`${metalDef.label} ${quoteLabel(form.metal)} — optional`}>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
                   {currencySymbol}
                 </span>
                 <Input
@@ -216,7 +216,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
                   inputMode="decimal"
                   step="0.01"
                   min="0"
-                  className="pl-8"
+                  className="ps-8"
                   value={form.metal_rate}
                   onChange={set('metal_rate')}
                   placeholder="0"
@@ -270,10 +270,10 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Loan amount">
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+              <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
                 {currencySymbol}
               </span>
-              <Input type="number" inputMode="decimal" step="0.01" min="0" className="pl-8"
+              <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"
                 value={form.loan_principal} onChange={set('loan_principal')} placeholder="0" />
             </div>
           </Field>
@@ -303,10 +303,10 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
           </Field>
           <Field label="Deposit held">
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+              <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
                 {currencySymbol}
               </span>
-              <Input type="number" inputMode="decimal" step="0.01" min="0" className="pl-8"
+              <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"
                 value={form.deposit} onChange={set('deposit')} placeholder="0" />
             </div>
           </Field>
