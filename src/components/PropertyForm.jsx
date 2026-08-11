@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { ASSET_TYPES } from '../lib/constants'
-import { currencySymbol } from '../lib/format'
+import { currencySymbol, formatCurrency } from '../lib/format'
+import {
+  METALS, METAL_KEYS, PURITIES, UNITS, UNIT_KEYS,
+  holdsMetal, defaultMetalFor, quoteLabel, valueMetalHolding, describeHolding,
+} from '../lib/metals'
 import { Field, Input, Select, Textarea, Button } from './ui'
 
 export default function PropertyForm({ initial, onSubmit, onCancel }) {
@@ -18,6 +22,11 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
     lease_start: initial?.lease_start || '',
     lease_end: initial?.lease_end || '',
     deposit: initial?.deposit ?? '',
+    metal: initial?.metal || defaultMetalFor(initial?.type || ASSET_TYPES[0]) || 'gold',
+    metal_quantity: initial?.metal_quantity ?? '',
+    metal_unit: initial?.metal_unit || 'g',
+    metal_fineness: initial?.metal_fineness ?? '',
+    metal_rate: initial?.metal_rate ?? '',
     notes: initial?.notes || '',
   })
   const [saving, setSaving] = useState(false)
@@ -25,10 +34,36 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
 
+  // Switching to Jewellery should land on a sensible metal rather than an
+  // empty picker; switching away leaves the numbers alone so they survive a
+  // mis-click.
+  const setType = (e) => {
+    const type = e.target.value
+    setForm((f) => ({ ...f, type, metal: f.metal || defaultMetalFor(type) || 'gold' }))
+  }
+
+  const isMetal = holdsMetal(form.type)
+  const metalDef = METALS[form.metal] || METALS.gold
+  const fineness = form.metal_fineness === '' ? metalDef.defaultFineness : Number(form.metal_fineness)
+  const holding =
+    isMetal && form.metal_quantity !== ''
+      ? valueMetalHolding({
+          metal: form.metal,
+          quantity: form.metal_quantity,
+          unit: form.metal_unit,
+          fineness,
+          rate: form.metal_rate === '' ? null : form.metal_rate,
+        })
+      : null
+
   const submit = async (e) => {
     e.preventDefault()
     if (!form.name.trim()) {
       setError('Property name is required.')
+      return
+    }
+    if (holding?.error) {
+      setError(holding.error)
       return
     }
     setSaving(true)
@@ -37,6 +72,14 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
       const num = (v) => (v === '' || v == null ? null : Number(v))
       await onSubmit({
         ...form,
+        // Metal details belong only to assets that are a quantity of metal.
+        // Clearing them on other types stops a stale gram count trailing an
+        // asset that was briefly mis-typed as jewellery.
+        metal: isMetal ? form.metal : null,
+        metal_quantity: isMetal ? num(form.metal_quantity) : null,
+        metal_unit: isMetal ? form.metal_unit : null,
+        metal_fineness: isMetal ? num(fineness) : null,
+        metal_rate: isMetal ? num(form.metal_rate) : null,
         name: form.name.trim(),
         value: num(form.value),
         monthly_budget: num(form.monthly_budget),
@@ -62,7 +105,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
       </Field>
 
       <Field label="Type">
-        <Select value={form.type} onChange={set('type')}>
+        <Select value={form.type} onChange={setType}>
           {ASSET_TYPES.map((t) => (
             <option key={t} value={t}>
               {t}
@@ -110,6 +153,113 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
           />
         </div>
       </Field>
+
+      {/* How much metal, and how pure — only for assets that are a quantity
+          of metal rather than a single thing with a price. */}
+      {isMetal && (
+        <div className="border-t border-border-light pt-5">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">The metal itself</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Weight and purity, so the value follows the market instead of being retyped. A rate buys fine metal, so a
+            22K piece is worth 91.6% of it.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Metal">
+              <Select value={form.metal} onChange={set('metal')}>
+                {METAL_KEYS.map((k) => (
+                  <option key={k} value={k}>
+                    {METALS[k].label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Purity" hint="As stamped on the piece">
+              <Select value={String(form.metal_fineness || metalDef.defaultFineness)} onChange={set('metal_fineness')}>
+                {(PURITIES[form.metal] || PURITIES.gold).map((p) => (
+                  <option key={p.fineness} value={p.fineness}>
+                    {p.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="How much you hold">
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.001"
+                min="0"
+                value={form.metal_quantity}
+                onChange={set('metal_quantity')}
+                placeholder="e.g. 22.5"
+              />
+            </Field>
+
+            <Field label="Measured in">
+              <Select value={form.metal_unit} onChange={set('metal_unit')}>
+                {UNIT_KEYS.map((u) => (
+                  <option key={u} value={u}>
+                    {UNITS[u].label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Market rate" hint={`${metalDef.label} ${quoteLabel(form.metal)} — optional`}>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                  {currencySymbol}
+                </span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  className="pl-8"
+                  value={form.metal_rate}
+                  onChange={set('metal_rate')}
+                  placeholder="0"
+                />
+              </div>
+            </Field>
+          </div>
+
+          {/* What the numbers above actually come to, before it is saved. */}
+          {holding && !holding.error && (
+            <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs dark:bg-slate-800/50">
+              <p className="text-slate-600 dark:text-slate-300">
+                {describeHolding({
+                  metal: form.metal,
+                  quantity: form.metal_quantity,
+                  unit: form.metal_unit,
+                  fineness,
+                })}
+              </p>
+              {holding.value == null ? (
+                <p className="mt-1 text-slate-400">Add a rate to see what that is worth today.</p>
+              ) : (
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-300">
+                  <span>
+                    Metal value <strong className="text-slate-800 dark:text-slate-100">{formatCurrency(holding.value)}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    className="min-h-6 rounded border border-border-light px-2 py-0.5 font-medium text-brand hover:bg-white dark:hover:bg-slate-700"
+                    onClick={() => setForm((f) => ({ ...f, value: String(holding.value) }))}
+                  >
+                    Use as asset value
+                  </button>
+                </p>
+              )}
+              <p className="mt-1 text-slate-400">
+                Metal only — making charges and GST on jewellery are not recovered on resale.
+              </p>
+            </div>
+          )}
+          {holding?.error && <p className="mt-2 text-sm text-red-600">{holding.error}</p>}
+        </div>
+      )}
 
       {/* Loan / mortgage (optional) */}
       <div className="border-t border-border-light pt-5">

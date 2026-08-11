@@ -26,6 +26,16 @@ alter table public.properties add column if not exists loan_rate          numeri
 alter table public.properties add column if not exists loan_tenure_months integer;
 alter table public.properties add column if not exists loan_start         date;
 
+-- Gold, silver and jewellery are a weight at a purity, not a single price.
+-- Fineness is millesimal (916 = 22K), quantity is in metal_unit, and metal_rate
+-- is the market quote in the unit the exchange prints (gold per 10 g, silver
+-- per kg) — converted in the app, stored as quoted. All optional; safe to re-run.
+alter table public.properties add column if not exists metal          text;
+alter table public.properties add column if not exists metal_quantity numeric(14,4);
+alter table public.properties add column if not exists metal_unit     text;
+alter table public.properties add column if not exists metal_fineness integer;
+alter table public.properties add column if not exists metal_rate     numeric(14,2);
+
 -- Tenancy / lease for rented assets (all optional; safe to re-run).
 alter table public.properties add column if not exists tenant_name text;
 alter table public.properties add column if not exists lease_start date;
