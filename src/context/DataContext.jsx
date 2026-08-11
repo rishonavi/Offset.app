@@ -73,10 +73,15 @@ export function DataProvider({ children }) {
   const scopedDocuments = useMemo(() => inScope(documents), [documents, inScope])
   const scopedComments = useMemo(() => inScope(comments), [comments, inScope])
 
-  const propertyNameById = useCallback(
-    (id) => scopedProperties.find((p) => p.id === id)?.name,
+  // Every expense and income row asks for its asset's name while rendering, so
+  // a linear scan here is a scan per row — 400 entries over 30 assets is 12,000
+  // comparisons on each render of a table that also sorts and filters. Build
+  // the index once instead.
+  const propertyNames = useMemo(
+    () => new Map(scopedProperties.map((p) => [p.id, p.name])),
     [scopedProperties],
   )
+  const propertyNameById = useCallback((id) => propertyNames.get(id), [propertyNames])
 
   // ── Properties ──
   const addProperty = async (data) => {
