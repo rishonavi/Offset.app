@@ -10,6 +10,9 @@ export default {
   'nav.invoices': 'बीजके',
   'nav.reports': 'अहवाल व निर्यात',
   'nav.bin': 'कचरापेटी',
+  'nav.companies': 'कंपन्या',
+  'company.switch': 'कंपनी बदला',
+  'company.all': 'सर्व कंपन्या',
   'nav.settings': 'सेटिंग्ज',
   'nav.admin': 'प्रशासन',
 

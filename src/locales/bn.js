@@ -10,6 +10,9 @@ export default {
   'nav.invoices': 'চালান',
   'nav.reports': 'প্রতিবেদন ও রপ্তানি',
   'nav.bin': 'আবর্জনা',
+  'nav.companies': 'কোম্পানি',
+  'company.switch': 'কোম্পানি বদলান',
+  'company.all': 'সব কোম্পানি',
   'nav.settings': 'সেটিংস',
   'nav.admin': 'প্রশাসন',
 

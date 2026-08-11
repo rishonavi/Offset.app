@@ -117,15 +117,24 @@ costs is not what they are paid.
 - audit events
 - inventory valuation, due-payment ageing, advances, payroll
 
+**Done and verified** — storage and the switcher, 106 more assertions:
+
+- companies created, edited and archived (never deleted — that would orphan
+  the books); the creator becomes the owner automatically
+- the company switcher in the sidebar, and the consolidated option once there
+  is more than one company
+- members with roles, departments with nesting, the approval policy, and the
+  audit log on screen
+- **the whole layer stays dormant until the first company exists**: a personal
+  install shows no Companies nav, no switcher, and writes no `pl_corp_*` keys
+
 **Next**, in order:
 
-1. Storage + an entity switcher, so the app runs inside an entity
-2. Departments on entry forms; budgets and reports per cost centre
-3. The approvals queue
-4. Inventory, payables, advances and payroll screens
-5. Audit log view
-6. Supabase schema and row-level security for all of the above *(unverifiable
+1. Departments on entry forms; budgets and reports per cost centre
+2. The approvals queue
+3. Inventory, payables, advances and payroll screens
+4. Supabase schema and row-level security for all of the above *(unverifiable
    here — it will ship as its own `[unverified]` commit)*
-7. SSO (Google Workspace / SAML) *(likewise)*
+5. SSO (Google Workspace / SAML) *(likewise)*
 
 Billing for the corporate tier is deliberately not built yet.

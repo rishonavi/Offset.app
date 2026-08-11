@@ -10,6 +10,9 @@ export default {
   'nav.invoices': 'ઇન્વોઇસ',
   'nav.reports': 'અહેવાલ અને નિકાસ',
   'nav.bin': 'કચરાપેટી',
+  'nav.companies': 'કંપનીઓ',
+  'company.switch': 'કંપની બદલો',
+  'company.all': 'બધી કંપનીઓ',
   'nav.settings': 'સેટિંગ્સ',
   'nav.admin': 'વહીવટ',
 

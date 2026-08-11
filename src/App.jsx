@@ -5,6 +5,7 @@ import { DataProvider } from './context/DataContext'
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { PlanProvider } from './context/PlanContext'
 import { PersonalProvider } from './context/PersonalContext'
+import { EntityProvider } from './context/EntityContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import { Spinner } from './components/ui'
@@ -25,6 +26,7 @@ const IncomeFormPage = lazy(() => import('./pages/IncomeFormPage'))
 const Bills = lazy(() => import('./pages/Bills'))
 const ImportBills = lazy(() => import('./pages/ImportBills'))
 const Reports = lazy(() => import('./pages/Reports'))
+const Companies = lazy(() => import('./pages/Companies'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Personal = lazy(() => import('./pages/Personal'))
@@ -90,7 +92,9 @@ export default function App() {
               <DataProvider>
                 <PlanProvider>
                   <PersonalProvider>
-                    <Layout />
+                    <EntityProvider>
+                      <Layout />
+                    </EntityProvider>
                   </PersonalProvider>
                 </PlanProvider>
               </DataProvider>
@@ -112,6 +116,7 @@ export default function App() {
         <Route path="bills" element={<Bills />} />
         <Route path="import" element={<ImportBills />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="companies" element={<Companies />} />
         <Route path="settings" element={<Settings />} />
         <Route path="personal" element={<Personal />} />
         <Route path="bin" element={<Trash />} />

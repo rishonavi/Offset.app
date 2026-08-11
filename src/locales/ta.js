@@ -10,6 +10,9 @@ export default {
   'nav.invoices': 'விலைப்பட்டியல்',
   'nav.reports': 'அறிக்கைகள் & ஏற்றுமதி',
   'nav.bin': 'குப்பைத் தொட்டி',
+  'nav.companies': 'நிறுவனங்கள்',
+  'company.switch': 'நிறுவனத்தை மாற்று',
+  'company.all': 'அனைத்து நிறுவனங்களும்',
   'nav.settings': 'அமைப்புகள்',
   'nav.admin': 'நிர்வாகம்',
 

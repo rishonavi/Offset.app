@@ -22,6 +22,7 @@ import {
   PiggyBank,
   Trash2,
   Search,
+  Building2,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
@@ -29,6 +30,7 @@ import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { useConfig } from '../context/ConfigContext'
 import { useT } from '../context/LanguageContext'
+import { useEntity } from '../context/EntityContext'
 import ErrorBoundary from './ErrorBoundary'
 import QuickAddExpense from './QuickAddExpense'
 import CommandPalette from './CommandPalette'
@@ -49,9 +51,14 @@ const NAV = [
   { to: '/settings', key: 'nav.settings', icon: SettingsIcon },
 ]
 
+// Only shown once a company exists — a personal install never sees it.
+const CORPORATE_NAV = { to: '/companies', key: 'nav.companies', icon: Building2 }
+
 function NavItems({ onNavigate, isAdmin }) {
   const t = useT()
-  const items = isAdmin ? [...NAV, { to: '/admin', key: 'nav.admin', icon: ShieldCheck }] : NAV
+  const { enabled: corporate } = useEntity()
+  const base = corporate ? [...NAV.slice(0, 2), CORPORATE_NAV, ...NAV.slice(2)] : NAV
+  const items = isAdmin ? [...base, { to: '/admin', key: 'nav.admin', icon: ShieldCheck }] : base
   return (
     <nav className="flex flex-col gap-1">
       {items.map(({ to, key, icon: Icon, end }) => (
@@ -111,6 +118,27 @@ function QuickAdd({ onClick }) {
     <button onClick={onClick} className="btn-primary mt-6 w-full">
       <Plus size={15} /> {t('chrome.addExpense')}
     </button>
+  )
+}
+
+// Which company's books you are looking at. Absent until there is one.
+function CompanySwitcher() {
+  const { enabled, entities, activeId, switchTo, consolidated } = useEntity()
+  const t = useT()
+  if (!enabled) return null
+  return (
+    <select
+      value={consolidated ? '__all__' : activeId}
+      onChange={(e) => switchTo(e.target.value)}
+      className="mt-4 w-full border border-white/15 bg-white/5 px-2 py-2 text-xs text-white/90"
+      aria-label={t('company.switch')}
+      title={t('company.switch')}
+    >
+      {entities.map((e) => (
+        <option key={e.id} value={e.id} className="text-slate-900">{e.name}</option>
+      ))}
+      {entities.length > 1 && <option value="__all__" className="text-slate-900">{t('company.all')}</option>}
+    </select>
   )
 }
 
@@ -200,6 +228,7 @@ export default function Layout() {
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-navy-dark bg-navy px-4 py-5 lg:flex">
         <Brand />
+        <CompanySwitcher />
         <WorkspaceSwitcher />
         {canWrite && <QuickAdd onClick={() => setQuickAdd(true)} />}
         <button
@@ -253,6 +282,7 @@ export default function Layout() {
                 <X size={20} />
               </button>
             </div>
+            <CompanySwitcher />
             <WorkspaceSwitcher />
             {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
             <div className="mt-6 flex-1">
