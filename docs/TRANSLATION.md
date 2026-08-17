@@ -1,6 +1,7 @@
 # Language
 
-Offset can speak English, हिन्दी, मराठी, ગુજરાતી, বাংলা and தமிழ். The choice
+Offset can speak thirteen languages: English, 简体中文, हिन्दी, Español, Français,
+العربية, বাংলা, Português, Русский, اردو, मराठी, ગુજરાતી and தமிழ். The choice
 lives in **Settings → Language**, and with nothing chosen the app follows the
 browser's own preference — so someone whose browser is set to Marathi gets
 Marathi without having to find the setting.
