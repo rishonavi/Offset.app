@@ -10,16 +10,17 @@ export default function FilterBar({ properties, value, onChange, categories = CA
     <Card className="p-3">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-12">
         <div className="relative lg:col-span-3">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             className="field-input pl-9"
+            aria-label="Search expenses"
             placeholder="Search vendor, note…"
             value={value.q}
             onChange={set('q')}
           />
         </div>
 
-        <select className="field-input lg:col-span-3" value={value.propertyId} onChange={set('propertyId')}>
+        <select className="field-input lg:col-span-3" aria-label="Filter by asset" value={value.propertyId} onChange={set('propertyId')}>
           <option value="">All properties</option>
           {properties.map((p) => (
             <option key={p.id} value={p.id}>
@@ -28,7 +29,7 @@ export default function FilterBar({ properties, value, onChange, categories = CA
           ))}
         </select>
 
-        <select className="field-input lg:col-span-2" value={value.category} onChange={set('category')}>
+        <select className="field-input lg:col-span-2" aria-label="Filter by category" value={value.category} onChange={set('category')}>
           <option value="">All categories</option>
           {categories.map((c) => (
             <option key={c} value={c}>
@@ -38,11 +39,11 @@ export default function FilterBar({ properties, value, onChange, categories = CA
         </select>
 
         <label className="flex min-w-0 flex-col gap-1 lg:col-span-2">
-          <span className="text-xs font-medium text-slate-500 lg:hidden">From date</span>
+          <span className="inline-flex min-h-6 items-center text-xs font-medium text-slate-500 lg:hidden">From date</span>
           <input type="date" className="field-input min-w-0" value={value.from} onChange={set('from')} title="From date" />
         </label>
         <label className="flex min-w-0 flex-col gap-1 lg:col-span-2">
-          <span className="text-xs font-medium text-slate-500 lg:hidden">To date</span>
+          <span className="inline-flex min-h-6 items-center text-xs font-medium text-slate-500 lg:hidden">To date</span>
           <input type="date" className="field-input min-w-0" value={value.to} onChange={set('to')} title="To date" />
         </label>
       </div>

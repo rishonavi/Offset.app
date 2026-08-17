@@ -79,15 +79,16 @@ export default function Bills() {
       <Card className="p-3">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div className="relative">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               className="field-input pl-9"
+              aria-label="Search bills"
               placeholder="Search vendor, category, asset…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <select className="field-input" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
+          <select className="field-input" aria-label="Filter by asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
             <option value="">All assets</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -147,7 +148,7 @@ export default function Bills() {
                         <div className="flex w-full items-center gap-2 px-5 py-3 transition hover:bg-slate-50/70">
                           <button
                             onClick={() => setViewing(b.receipt_url)}
-                            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                            className="flex min-w-0 flex-1 items-center gap-3 text-start"
                             title="View bill"
                           >
                             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500">
@@ -242,7 +243,7 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
                   {canWrite && (
                     <button
                       onClick={() => onDelete(c.id)}
-                      className="ml-auto shrink-0 text-slate-300 transition hover:text-red-600"
+                      className="ms-auto shrink-0 text-slate-300 transition hover:text-red-600"
                       title="Delete comment"
                       aria-label="Delete comment"
                     >

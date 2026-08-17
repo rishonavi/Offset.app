@@ -97,10 +97,10 @@ export default function Income() {
           <Card className="p-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-12">
               <div className="relative lg:col-span-4">
-                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input className="field-input pl-9" placeholder="Search source, payer, note…" value={filters.q} onChange={set('q')} />
+                <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input className="field-input pl-9" aria-label="Search income" placeholder="Search source, payer, note…" value={filters.q} onChange={set('q')} />
               </div>
-              <select className="field-input lg:col-span-4" value={filters.propertyId} onChange={set('propertyId')}>
+              <select className="field-input lg:col-span-4" aria-label="Filter by asset" value={filters.propertyId} onChange={set('propertyId')}>
                 <option value="">All assets</option>
                 {properties.map((p) => (
                   <option key={p.id} value={p.id}>

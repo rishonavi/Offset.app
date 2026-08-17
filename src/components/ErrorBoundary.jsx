@@ -1,5 +1,6 @@
 import { Component } from 'react'
-import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { AlertTriangle, RotateCcw, Bug } from 'lucide-react'
+import { recordError } from '../lib/errorLog'
 
 // Catches render/runtime errors in its subtree so one broken component can't
 // blank the entire app. When `resetKey` changes (e.g. the route path), a
@@ -10,6 +11,12 @@ export default class ErrorBoundary extends Component {
 
   static getDerivedStateFromError(error) {
     return { error }
+  }
+
+  // React swallows the error once it's caught, so put it somewhere a report can
+  // still reach it.
+  componentDidCatch(error, info) {
+    recordError('render', error?.message || String(error), info?.componentStack || error?.stack)
   }
 
   componentDidUpdate(prevProps) {
@@ -32,7 +39,7 @@ export default class ErrorBoundary extends Component {
             This part of the app hit an unexpected error. Your data is safe — try again, and if it keeps
             happening, reload the page.
           </p>
-          <div className="mt-6 flex items-center justify-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button onClick={() => this.setState({ error: null })} className="btn-primary">
               <RotateCcw size={16} /> Try again
             </button>
@@ -40,6 +47,16 @@ export default class ErrorBoundary extends Component {
               Reload
             </button>
           </div>
+          {/* The one moment a bug report is easiest to write and most likely to
+              be worth reading — so ask for it here, with the error attached. */}
+          {this.props.onReport && (
+            <button
+              onClick={() => this.props.onReport(this.state.error)}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
+            >
+              <Bug size={13} /> Tell the developer what happened
+            </button>
+          )}
         </div>
       </div>
     )

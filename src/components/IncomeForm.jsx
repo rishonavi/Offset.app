@@ -171,6 +171,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 runParse()
               }
             }}
+            aria-label="Describe the income in your own words"
             placeholder="e.g. received 45000 rent from Rahul for Sea View on 1 July"
           />
           <Button type="button" variant="ghost" onClick={runParse} loading={parsing} className="shrink-0">
@@ -197,7 +198,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
 
         <Field label="Amount received" required>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
               {currencySymbol}
             </span>
             <Input
@@ -205,7 +206,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
               inputMode="decimal"
               step="0.01"
               min="0"
-              className="pl-8"
+              className="ps-8"
               value={form.amount}
               onChange={set('amount')}
               placeholder="0"
@@ -215,7 +216,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
 
         <Field label="Tax / GST" hint="Optional — already part of the amount">
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
               {currencySymbol}
             </span>
             <Input
@@ -223,7 +224,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
               inputMode="decimal"
               step="0.01"
               min="0"
-              className="pl-8"
+              className="ps-8"
               value={form.tax}
               onChange={set('tax')}
               placeholder="0"

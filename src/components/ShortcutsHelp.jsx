@@ -30,7 +30,7 @@ export default function ShortcutsHelp({ open, onClose }) {
     >
       <div className="card w-full max-w-md animate-fade-in p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-serif text-lg font-bold text-slate-900">Keyboard shortcuts</h3>
+          <h2 className="font-serif text-lg font-bold text-slate-900">Keyboard shortcuts</h2>
           <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100">
             <X size={18} />
           </button>
@@ -53,7 +53,8 @@ export default function ShortcutsHelp({ open, onClose }) {
           ))}
         </ul>
         <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-400">
-          Tip: click any table column header to sort by it.
+          Tip: click any table column header to sort by it. Something not working? “Report a problem” is at
+          the bottom of the sidebar, and in the command palette.
         </p>
       </div>
     </div>

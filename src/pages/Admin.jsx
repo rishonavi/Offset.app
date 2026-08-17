@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Crown, TrendingUp, Activity, Boxes, Receipt, Banknote, ScanLine, Search, ShieldAlert, UserPlus, Trash2 } from 'lucide-react'
+import { Users, Crown, TrendingUp, Activity, Boxes, Receipt, Banknote, ScanLine, Search, ShieldAlert, UserPlus, Trash2, Bug } from 'lucide-react'
 import { useToast } from '../context/ToastContext'
 import { useConfig } from '../context/ConfigContext'
 import {
@@ -15,7 +15,11 @@ import {
   adminRemoveAdmin,
   adminSetConfig,
   adminHealth,
+  adminListReports,
+  adminReportCounts,
+  adminSetReportStatus,
 } from '../lib/admin'
+import { kindLabel, describeDiagnostics } from '../lib/reports'
 import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button, Spinner, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -51,6 +55,12 @@ export default function Admin() {
   const [admins, setAdmins] = useState([])
   const [newAdmin, setNewAdmin] = useState({ email: '', role: 'admin' })
   const [addingAdmin, setAddingAdmin] = useState(false)
+  // null until the first load; stays null on a deployment without reports.sql,
+  // which is what hides the card rather than showing a permanently empty inbox.
+  const [reports, setReports] = useState(null)
+  const [reportCounts, setReportCounts] = useState({})
+  const [reportFilter, setReportFilter] = useState('new')
+  const [openReportId, setOpenReportId] = useState(null)
 
   const canWrite = role === 'superadmin' || role === 'admin' || role === 'support'
   const canConfig = role === 'superadmin' || role === 'admin'
@@ -89,10 +99,33 @@ export default function Admin() {
       setRole(rl)
       if (rl === 'superadmin') setAdmins(await adminListAdmins().catch(() => []))
       adminHealth().then(setHealth).catch(() => {})
+      loadReports(reportFilter)
     } catch (e) {
       toast(e?.message || 'Could not load admin data.', { type: 'error' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Reports are optional: an operator who hasn't run reports.sql shouldn't see
+  // an error, just no inbox.
+  const loadReports = async (status) => {
+    try {
+      const [list, counts] = await Promise.all([adminListReports(status), adminReportCounts()])
+      setReports(list)
+      setReportCounts(counts)
+    } catch {
+      setReports(null)
+    }
+  }
+
+  const setReportStatus = async (r, status) => {
+    try {
+      await adminSetReportStatus(r.id, status)
+      await loadReports(reportFilter)
+      toast(`${r.reference} marked ${status}.`)
+    } catch (e) {
+      toast(e?.message || 'Could not update the report.', { type: 'error' })
     }
   }
 
@@ -159,7 +192,8 @@ export default function Admin() {
 
   if (!allowed) {
     return (
-      <div className="animate-fade-in">
+      <div className="animate-fade-in space-y-6">
+        <PageHeader title="Admin" subtitle="Platform operations." />
         <EmptyState
           icon={ShieldAlert}
           title="Not authorised"
@@ -201,12 +235,12 @@ export default function Admin() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Billing</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Billing</h2>
             <a
               href="https://dashboard.stripe.com"
               target="_blank"
               rel="noreferrer"
-              className="text-xs font-medium text-brand hover:underline"
+              className="inline-flex min-h-6 items-center text-xs font-medium text-brand hover:underline"
             >
               Open Stripe ↗
             </a>
@@ -233,7 +267,7 @@ export default function Admin() {
         </Card>
 
         <Card className="p-5">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">Endpoint health</h3>
+          <h2 className="mb-3 text-sm font-semibold text-slate-700">Endpoint health</h2>
           <div className="divide-y divide-slate-100">
             {[
               { key: 'scan', label: 'Receipt scanning (/api/scan-receipt)' },
@@ -264,7 +298,7 @@ export default function Admin() {
       {/* App config */}
       {canConfig && (
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">App configuration</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">App configuration</h2>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Announcement */}
             <div>
@@ -341,10 +375,143 @@ export default function Admin() {
         </Card>
       )}
 
+      {/* Problem reports */}
+      {reports !== null && (
+        <Card className="p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <CardTitle
+              title="Problem reports"
+              icon={Bug}
+              description="What users have told you is broken. Newest unread first."
+            />
+            <div className="flex flex-wrap gap-1">
+              {[
+                ['new', 'New'],
+                ['triaged', 'Triaged'],
+                ['fixed', 'Fixed'],
+                ['wontfix', 'Won’t fix'],
+                ['', 'All'],
+              ].map(([id, label]) => (
+                <button
+                  key={id || 'all'}
+                  onClick={() => { setReportFilter(id); loadReports(id) }}
+                  className={`px-2.5 py-1 text-xs font-medium transition ${
+                    reportFilter === id ? 'bg-navy text-gold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {label}
+                  {id && reportCounts[id] ? ` (${reportCounts[id]})` : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {reports.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              {reportFilter === 'new' ? 'Nothing new — the inbox is clear.' : 'No reports with this status.'}
+            </p>
+          ) : (
+            <div className="divide-y divide-border-subtle">
+              {reports.map((r) => {
+                const expanded = openReportId === r.id
+                return (
+                  <div key={r.id} className="py-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <button
+                        onClick={() => setOpenReportId(expanded ? null : r.id)}
+                        className="min-w-0 flex-1 text-start"
+                        aria-expanded={expanded}
+                      >
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-xs font-semibold text-slate-700">{r.reference}</span>
+                          <span className="text-xs text-slate-500">{kindLabel(r.kind)}</span>
+                          <span
+                            className="px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide"
+                            style={
+                              {
+                                new: { background: '#fef3c7', color: '#92400e' },
+                                triaged: { background: '#e0e7ff', color: '#3730a3' },
+                                fixed: { background: '#dcfce7', color: '#166534' },
+                                wontfix: { background: '#f1f5f9', color: '#64748b' },
+                              }[r.status] || {}
+                            }
+                          >
+                            {r.status}
+                          </span>
+                          <span className="text-[0.65rem] text-slate-400">{formatDate(r.created_at)}</span>
+                        </span>
+                        <span className={`mt-0.5 block text-sm text-slate-700 ${expanded ? '' : 'truncate'}`}>{r.message}</span>
+                      </button>
+                      {canWrite && (
+                        <div className="flex shrink-0 flex-wrap gap-1">
+                          {[
+                            ['triaged', 'Triage'],
+                            ['fixed', 'Fixed'],
+                            ['wontfix', 'Won’t fix'],
+                          ]
+                            .filter(([id]) => id !== r.status)
+                            .map(([id, label]) => (
+                              <button
+                                key={id}
+                                onClick={() => setReportStatus(r, id)}
+                                className="border border-border-light px-2 py-0.5 text-[0.65rem] font-medium text-slate-500 transition hover:border-gold hover:text-slate-800"
+                              >
+                                {label}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {expanded && (
+                      <div className="mt-3 space-y-3 border-s-2 border-gold/40 pl-3">
+                        {r.expected && (
+                          <div>
+                            <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-400">Expected</div>
+                            <p className="text-sm text-slate-600">{r.expected}</p>
+                          </div>
+                        )}
+                        <div>
+                          <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-400">Reply to</div>
+                          {r.email ? (
+                            <a href={`mailto:${r.email}?subject=Offset ${r.reference}`} className="text-sm text-brand hover:underline">
+                              {r.email}
+                            </a>
+                          ) : (
+                            <p className="text-sm text-slate-400">Not given</p>
+                          )}
+                        </div>
+                        {r.diagnostics ? (
+                          <dl className="space-y-0.5">
+                            {describeDiagnostics(r.diagnostics).map((d) => (
+                              <div key={d.label} className="flex gap-3 text-xs">
+                                <dt className="w-32 shrink-0 text-slate-400">{d.label}</dt>
+                                <dd className="min-w-0 break-words font-medium text-slate-600">{d.value}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        ) : (
+                          <p className="text-xs text-slate-400">No diagnostics — the reporter chose not to attach them.</p>
+                        )}
+                        {r.diagnostics?.crash?.stack && (
+                          <pre className="overflow-x-auto bg-slate-50 p-2 text-[0.65rem] leading-relaxed text-slate-600">
+                            {r.diagnostics.crash.stack}
+                          </pre>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </Card>
+      )}
+
       {/* Users */}
       <Card className="p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-slate-700">Users</h3>
+          <h2 className="text-sm font-semibold text-slate-700">Users</h2>
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -352,7 +519,7 @@ export default function Admin() {
             }}
             className="relative"
           >
-            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={15} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               className="field-input h-9 w-64 max-w-full pl-9"
               placeholder="Search email…"
@@ -364,7 +531,7 @@ export default function Admin() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-[0.65rem] uppercase tracking-wide text-slate-400">
+              <tr className="border-b border-slate-200 text-start text-[0.65rem] uppercase tracking-wide text-slate-400">
                 <th className="py-2 pr-3 font-semibold">Email</th>
                 <th className="py-2 pr-3 font-semibold">Joined</th>
                 <th className="py-2 pr-3 font-semibold">Assets</th>
@@ -402,7 +569,7 @@ export default function Admin() {
                       <button
                         onClick={() => setPlan(u, 'free')}
                         disabled={busyId === u.user_id}
-                        className="text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                        className="inline-flex min-h-6 items-center text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
                       >
                         Downgrade
                       </button>
@@ -410,7 +577,7 @@ export default function Admin() {
                       <button
                         onClick={() => setPlan(u, 'pro')}
                         disabled={busyId === u.user_id}
-                        className="text-xs font-medium text-brand hover:underline disabled:opacity-50"
+                        className="inline-flex min-h-6 items-center text-xs font-medium text-brand hover:underline disabled:opacity-50"
                       >
                         Grant Pro
                       </button>
@@ -433,7 +600,7 @@ export default function Admin() {
       {/* Admins (superadmin only) */}
       {isSuper && (
         <Card className="p-5">
-          <h3 className="mb-1 text-sm font-semibold text-slate-700">Admins</h3>
+          <h2 className="mb-1 text-sm font-semibold text-slate-700">Admins</h2>
           <p className="mb-3 text-xs text-slate-500">Manage who can access this area. The user must already have an Offset account.</p>
           <form onSubmit={addAdmin} className="flex flex-wrap gap-2">
             <input
@@ -477,7 +644,7 @@ export default function Admin() {
 
       {/* Audit log */}
       <Card className="p-5">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Admin audit log</h3>
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">Admin audit log</h2>
         {audit.length === 0 ? (
           <p className="text-sm text-slate-400">No admin actions recorded yet.</p>
         ) : (

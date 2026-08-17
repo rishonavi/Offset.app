@@ -79,7 +79,7 @@ export default function Properties() {
                       <Icon size={18} />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="truncate font-semibold text-slate-900">{p.name}</h3>
+                      <h2 className="truncate font-semibold text-slate-900">{p.name}</h2>
                       {p.type && <span className="text-xs text-slate-400">{p.type}</span>}
                     </div>
                   </div>

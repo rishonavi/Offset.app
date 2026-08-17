@@ -59,7 +59,7 @@ export default function DocumentsCard({ propertyId, documents, canWrite, onAdd, 
     <Card className="p-5">
       <div className="mb-3 flex items-center gap-2">
         <FileText size={16} className="text-gold" />
-        <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
+        <h2 className="text-sm font-semibold text-slate-700">Documents</h2>
       </div>
 
       {sorted.length === 0 ? (

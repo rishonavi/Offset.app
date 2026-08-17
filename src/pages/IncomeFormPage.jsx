@@ -87,7 +87,7 @@ export default function IncomeFormPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <Link to="/income" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
+      <Link to="/income" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
         <ArrowLeft size={15} /> Back to income
       </Link>
       <PageHeader title={editing ? 'Edit income' : 'Add income'} />

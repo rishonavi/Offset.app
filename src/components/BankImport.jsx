@@ -173,7 +173,7 @@ export default function BankImport() {
     <Card className="p-5">
       <div className="flex items-center gap-2">
         <Landmark size={16} className="text-slate-500" />
-        <h3 className="text-sm font-semibold text-slate-700">Bank &amp; UPI statement</h3>
+        <h2 className="text-sm font-semibold text-slate-700">Bank &amp; UPI statement</h2>
       </div>
       <p className="mt-1 text-xs text-slate-500">
         Export your transactions from your bank or Google Pay / PhonePe (CSV or Excel) and upload here. Offset finds which of
@@ -280,7 +280,7 @@ export default function BankImport() {
               {addNew && (
                 <div className="mt-3">
                   <span className="mb-1 block text-[0.65rem] font-semibold uppercase tracking-wide text-slate-400">Add them to asset</span>
-                  <select className="field-input w-full sm:w-auto" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
+                  <select className="field-input w-full sm:w-auto" aria-label="Assign imported rows to asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
                     {properties.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}

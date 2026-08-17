@@ -136,7 +136,7 @@ export default function PropertyDetail() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <Link to="/properties" className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
+      <Link to="/properties" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
         <ArrowLeft size={15} /> All assets
       </Link>
 
@@ -199,7 +199,7 @@ export default function PropertyDetail() {
       {assetValue > 0 ? (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-700">Value &amp; returns</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Value &amp; returns</h2>
             <span className="text-xs text-slate-400">Asset value · {formatCurrency(assetValue)}</span>
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
@@ -267,7 +267,7 @@ export default function PropertyDetail() {
       {loan && (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-700">Loan / mortgage</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Loan / mortgage</h2>
             <span className="text-xs text-slate-400">
               {loan.rate}% · {loan.months} mo · payoff {formatDate(loan.payoffDate)}
             </span>
@@ -304,7 +304,7 @@ export default function PropertyDetail() {
       {lease && (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-700">Tenancy / lease</h3>
+            <h2 className="text-sm font-semibold text-slate-700">Tenancy / lease</h2>
             {lease.daysLeft != null && (
               <span
                 className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
@@ -348,7 +348,7 @@ export default function PropertyDetail() {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">Spending over the last 12 months</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">Spending over the last 12 months</h2>
           {monthly.every((m) => m.total === 0) ? (
             <div className="grid h-64 place-items-center text-sm text-slate-400">No data yet</div>
           ) : (
@@ -373,7 +373,7 @@ export default function PropertyDetail() {
         </Card>
 
         <Card className="p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700">Spending by category</h3>
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">Spending by category</h2>
           {byCategory.length === 0 ? (
             <div className="grid h-64 place-items-center text-sm text-slate-400">No data yet</div>
           ) : (
@@ -398,7 +398,7 @@ export default function PropertyDetail() {
 
       {/* Expenses */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Expenses ({items.length})</h3>
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">Expenses ({items.length})</h2>
         {items.length === 0 ? (
           <EmptyState
             icon={Receipt}
@@ -424,7 +424,7 @@ export default function PropertyDetail() {
       {/* Income */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-700">Income ({incomeItems.length})</h3>
+          <h2 className="text-sm font-semibold text-slate-700">Income ({incomeItems.length})</h2>
           {canWrite && (
             <Link to={`/income/new?asset=${property.id}`} className="btn-ghost">
               <Plus size={15} /> Add income

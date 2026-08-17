@@ -62,7 +62,7 @@ export default function Landing() {
             <span className="grid h-10 w-10 place-items-center bg-gold/15 text-gold">
               <f.icon size={18} />
             </span>
-            <h3 className="mt-3 font-semibold">{f.title}</h3>
+            <h2 className="mt-3 font-semibold">{f.title}</h2>
             <p className="mt-1 text-sm text-white/60">{f.body}</p>
           </div>
         ))}
@@ -75,7 +75,7 @@ export default function Landing() {
             const pro = p.id === 'pro'
             return (
               <div key={p.id} className={`flex flex-col border p-6 ${pro ? 'border-gold bg-white/5' : 'border-white/15'}`}>
-                <h3 className="font-serif text-2xl font-bold">{p.name}</h3>
+                <h2 className="font-serif text-2xl font-bold">{p.name}</h2>
                 <div className="mt-2 font-serif text-3xl font-bold">
                   {p.price === 0 ? 'Free' : formatCurrency(p.price)}
                   {p.price !== 0 && <span className="text-base font-normal text-white/50"> / mo</span>}

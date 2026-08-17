@@ -69,7 +69,7 @@ export default function QuickAddExpense({ open, onClose }) {
     >
       <div className="card w-full max-w-md animate-fade-in p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-serif text-lg font-bold text-slate-900">Quick add expense</h3>
+          <h2 className="font-serif text-lg font-bold text-slate-900">Quick add expense</h2>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Close">
             <X size={18} />
           </button>
@@ -88,8 +88,8 @@ export default function QuickAddExpense({ open, onClose }) {
           <form onSubmit={submit} className="space-y-4">
             <Field label="Amount" required>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">{currencySymbol}</span>
-                <Input autoFocus type="number" inputMode="decimal" step="0.01" min="0" className="pl-8" value={form.amount} onChange={set('amount')} placeholder="0" />
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">{currencySymbol}</span>
+                <Input autoFocus type="number" inputMode="decimal" step="0.01" min="0" className="ps-8" value={form.amount} onChange={set('amount')} placeholder="0" />
               </div>
             </Field>
             <div className="grid grid-cols-2 gap-3">

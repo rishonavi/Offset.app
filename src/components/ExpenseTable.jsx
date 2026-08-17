@@ -49,7 +49,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
         <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-brand-light px-4 py-2.5">
           <span className="text-sm font-medium text-slate-700">{selected.size} selected</span>
           <div className="flex items-center gap-3">
-            <button onClick={clearSel} className="text-xs font-medium text-slate-500 hover:text-slate-800">Clear</button>
+            <button onClick={clearSel} className="inline-flex min-h-6 items-center text-xs font-medium text-slate-500 hover:text-slate-800">Clear</button>
             <button onClick={bulkDelete} className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline">
               <Trash2 size={14} /> Delete {selected.size}
             </button>
@@ -61,7 +61,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
       <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-slate-200 bg-slate-50 text-start text-xs uppercase tracking-wide text-slate-500">
               {canSelect && (
                 <th className="w-10 px-4 py-3">
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" />
@@ -72,7 +72,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
               <SortTh label="Category" k="category" sort={sort} onSort={onSort} />
               <SortTh label="Vendor" k="vendor" sort={sort} onSort={onSort} />
               <SortTh label="Amount" k="amount" sort={sort} onSort={onSort} align="right" />
-              <th className="px-4 py-3 text-right font-semibold">Actions</th>
+              <th className="px-4 py-3 text-end font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -105,7 +105,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
                     )}
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-slate-900">
+                <td className="whitespace-nowrap px-4 py-3 text-end font-semibold text-slate-900">
                   {formatCurrency(e.amount)}
                 </td>
                 <td className="px-4 py-3">
@@ -164,7 +164,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
                   <div className="mt-0.5 text-xs text-slate-500">{formatDate(e.date)}</div>
                 </div>
               </div>
-              <div className="text-right font-bold text-slate-900">{formatCurrency(e.amount)}</div>
+              <div className="text-end font-bold text-slate-900">{formatCurrency(e.amount)}</div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge color={colorForCategory(e.category)}>{e.category}</Badge>
@@ -182,19 +182,19 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
             {e.description && <p className="mt-2 text-sm text-slate-500">{e.description}</p>}
             <div className={`mt-3 flex-wrap justify-end gap-3 border-t border-slate-100 pt-3 ${readOnly ? 'hidden' : 'flex'}`}>
               {onMarkSettled && !isSettled(e, 'expense') && (
-                <button onClick={() => onMarkSettled(e)} className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                <button onClick={() => onMarkSettled(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-emerald-600">
                   <CheckCircle2 size={13} /> Mark paid
                 </button>
               )}
               {onDuplicate && (
-                <button onClick={() => onDuplicate(e)} className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
+                <button onClick={() => onDuplicate(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-slate-600">
                   <Copy size={13} /> Duplicate
                 </button>
               )}
-              <button onClick={() => onEdit(e)} className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
+              <button onClick={() => onEdit(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-slate-600">
                 <Pencil size={13} /> Edit
               </button>
-              <button onClick={() => onDelete(e)} className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
+              <button onClick={() => onDelete(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-red-600">
                 <Trash2 size={13} /> Delete
               </button>
             </div>

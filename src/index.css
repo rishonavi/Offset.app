@@ -107,6 +107,15 @@ select.field-input {
   padding-right: 2.25rem;
 }
 
+/* Arabic and Urdu read right-to-left, so the chevron and the space made for it
+   have to move to the other side. background-position has no logical form, so
+   this is one of the few places that needs an explicit direction rule. */
+[dir='rtl'] select.field-input {
+  background-position: left 0.65rem center;
+  padding-right: 0.9rem;
+  padding-left: 2.25rem;
+}
+
 /* Keep native date inputs from overflowing their box (iOS Safari sizes them
    to their intrinsic content otherwise, pushing them outside the card). */
 input[type='date'].field-input {
@@ -234,6 +243,10 @@ button:focus-visible,
   outline: 2px solid var(--color-gold);
   outline-offset: 2px;
   border-radius: 2px;
+  /* The ring has to be there the instant focus lands. The button classes use
+     transition-all, which otherwise fades the outline in over 300ms — long
+     enough that someone tabbing quickly never sees where they are. */
+  transition-property: none;
 }
 
 /* Honour a reduced-motion preference — kill the fade/stagger/shimmer motion. */

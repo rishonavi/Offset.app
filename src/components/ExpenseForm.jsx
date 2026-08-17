@@ -184,6 +184,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
                 runParse()
               }
             }}
+            aria-label="Describe the expense in your own words"
             placeholder="e.g. paid 5000 to plumber for Sea View on 3 July"
           />
           <Button type="button" variant="ghost" onClick={runParse} loading={parsing} className="shrink-0">
@@ -210,7 +211,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
         <Field label="Amount" required>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
               {currencySymbol}
             </span>
             <Input
@@ -218,7 +219,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
               inputMode="decimal"
               step="0.01"
               min="0"
-              className="pl-8"
+              className="ps-8"
               value={form.amount}
               onChange={set('amount')}
               placeholder="0"
@@ -228,7 +229,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
         <Field label="Tax / GST" hint="Optional — already part of the amount">
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
               {currencySymbol}
             </span>
             <Input
@@ -236,7 +237,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
               inputMode="decimal"
               step="0.01"
               min="0"
-              className="pl-8"
+              className="ps-8"
               value={form.tax}
               onChange={set('tax')}
               placeholder="0"

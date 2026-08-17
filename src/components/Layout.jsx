@@ -22,12 +22,18 @@ import {
   PiggyBank,
   Trash2,
   Search,
+  Building2,
+  Bug,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { useConfig } from '../context/ConfigContext'
+import { useReport } from '../context/ReportContext'
+import { useT } from '../context/LanguageContext'
+import { useEntity } from '../context/EntityContext'
 import ErrorBoundary from './ErrorBoundary'
 import QuickAddExpense from './QuickAddExpense'
 import CommandPalette from './CommandPalette'
@@ -36,30 +42,37 @@ import { checkIsAdmin } from '../lib/admin'
 import { Spinner } from './ui'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/personal', label: 'Personal', icon: PiggyBank },
-  { to: '/properties', label: 'Assets', icon: Boxes },
-  { to: '/income', label: 'Income', icon: Banknote },
-  { to: '/expenses', label: 'Expenses', icon: Receipt },
-  { to: '/bills', label: 'Bills', icon: FileText },
-  { to: '/import', label: 'Import', icon: MailPlus },
-  { to: '/reports', label: 'Reports & Export', icon: PieChart },
-  { to: '/bin', label: 'Bin', icon: Trash2 },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/', key: 'nav.dashboard', icon: LayoutDashboard, end: true },
+  { to: '/personal', key: 'nav.personal', icon: PiggyBank },
+  { to: '/properties', key: 'nav.assets', icon: Boxes },
+  { to: '/income', key: 'nav.income', icon: Banknote },
+  { to: '/expenses', key: 'nav.expenses', icon: Receipt },
+  { to: '/bills', key: 'nav.bills', icon: FileText },
+  { to: '/import', key: 'nav.import', icon: MailPlus },
+  { to: '/invoices', key: 'nav.invoices', icon: FileSpreadsheet },
+  { to: '/reports', key: 'nav.reports', icon: PieChart },
+  { to: '/bin', key: 'nav.bin', icon: Trash2 },
+  { to: '/settings', key: 'nav.settings', icon: SettingsIcon },
 ]
 
+// Only shown once a company exists — a personal install never sees it.
+const CORPORATE_NAV = { to: '/companies', key: 'nav.companies', icon: Building2 }
+
 function NavItems({ onNavigate, isAdmin }) {
-  const items = isAdmin ? [...NAV, { to: '/admin', label: 'Admin', icon: ShieldCheck }] : NAV
+  const t = useT()
+  const { enabled: corporate } = useEntity()
+  const base = corporate ? [...NAV.slice(0, 2), CORPORATE_NAV, ...NAV.slice(2)] : NAV
+  const items = isAdmin ? [...base, { to: '/admin', key: 'nav.admin', icon: ShieldCheck }] : base
   return (
     <nav className="flex flex-col gap-1">
-      {items.map(({ to, label, icon: Icon, end }) => (
+      {items.map(({ to, key, icon: Icon, end }) => (
         <NavLink
           key={to}
           to={to}
           end={end}
           onClick={onNavigate}
           className={({ isActive }) =>
-            `flex items-center gap-3 border-l-2 px-3 py-2.5 text-[0.78rem] font-medium uppercase tracking-[1px] transition ${
+            `flex items-center gap-3 border-s-2 px-3 py-2.5 text-[0.78rem] font-medium uppercase tracking-[1px] transition ${
               isActive
                 ? 'border-gold bg-gold/15 text-gold'
                 : 'border-transparent text-white/65 hover:bg-white/5 hover:text-gold'
@@ -67,7 +80,7 @@ function NavItems({ onNavigate, isAdmin }) {
           }
         >
           <Icon size={17} />
-          {label}
+          {t(key)}
         </NavLink>
       ))}
     </nav>
@@ -89,13 +102,14 @@ function Brand() {
 
 function ThemeToggle({ className = '' }) {
   const { theme, toggle } = useTheme()
+  const t = useT()
   const dark = theme === 'dark'
   return (
     <button
       onClick={toggle}
       className={`grid h-9 w-9 place-items-center text-white/60 transition hover:bg-white/10 hover:text-gold ${className}`}
-      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      aria-label="Toggle theme"
+      title={dark ? t('chrome.switchToLight') : t('chrome.switchToDark')}
+      aria-label={t('chrome.toggleTheme')}
     >
       {dark ? <Sun size={18} /> : <Moon size={18} />}
     </button>
@@ -103,26 +117,65 @@ function ThemeToggle({ className = '' }) {
 }
 
 function QuickAdd({ onClick }) {
+  const t = useT()
   return (
     <button onClick={onClick} className="btn-primary mt-6 w-full">
-      <Plus size={15} /> Add expense
+      <Plus size={15} /> {t('chrome.addExpense')}
+    </button>
+  )
+}
+
+// Which company's books you are looking at. Absent until there is one.
+function CompanySwitcher() {
+  const { enabled, entities, activeId, switchTo, consolidated } = useEntity()
+  const t = useT()
+  if (!enabled) return null
+  return (
+    <select
+      value={consolidated ? '__all__' : activeId}
+      onChange={(e) => switchTo(e.target.value)}
+      className="mt-4 w-full border border-white/15 bg-white/5 px-2 py-2 text-xs text-white/90"
+      aria-label={t('company.switch')}
+      title={t('company.switch')}
+    >
+      {entities.map((e) => (
+        <option key={e.id} value={e.id} className="text-slate-900">{e.name}</option>
+      ))}
+      {entities.length > 1 && <option value="__all__" className="text-slate-900">{t('company.all')}</option>}
+    </select>
+  )
+}
+
+// Sits under the nav in both the sidebar and the drawer. Quiet enough not to
+// compete with the destinations above it, present enough that nobody has to go
+// hunting through Settings at the exact moment the app has annoyed them.
+function ReportLink({ onClick }) {
+  const t = useT()
+  return (
+    <button
+      onClick={onClick}
+      className="mt-2 flex w-full items-center gap-3 px-3 py-2 text-[0.7rem] font-medium uppercase tracking-[1px] text-white/45 transition hover:text-gold"
+    >
+      <Bug size={15} />
+      {t('chrome.reportProblem')}
     </button>
   )
 }
 
 function WorkspaceSwitcher() {
   const { workspaces, activeOwner, setActiveOwner, hasShared } = useWorkspace()
+  const t = useT()
   if (!hasShared) return null
   return (
     <select
       value={activeOwner}
       onChange={(e) => setActiveOwner(e.target.value)}
       className="mt-4 w-full border border-white/15 bg-white/5 px-2 py-2 text-xs text-white/90"
-      title="Switch workspace"
+      title={t('chrome.switchWorkspace')}
     >
       {workspaces.map((w) => (
         <option key={w.ownerId} value={w.ownerId} className="text-slate-900">
-          {w.own ? 'My workspace' : `Shared · ${w.label}`}
+          {w.own ? t('chrome.myWorkspace') : t('chrome.sharedWorkspace', { name: w.label })}
         </option>
       ))}
     </select>
@@ -138,6 +191,8 @@ export default function Layout() {
   const { user, signOut, isCloud } = useAuth()
   const { canWrite } = useData()
   const { announcement, maintenance } = useConfig()
+  const { openReport } = useReport()
+  const t = useT()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
@@ -187,13 +242,14 @@ export default function Layout() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded focus:bg-gold focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-navy"
       >
-        Skip to content
+        {t('chrome.skipToContent')}
       </a>
       <div className="noise-overlay" />
 
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen flex-col border-r border-navy-dark bg-navy px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 py-5 lg:flex">
         <Brand />
+        <CompanySwitcher />
         <WorkspaceSwitcher />
         {canWrite && <QuickAdd onClick={() => setQuickAdd(true)} />}
         <button
@@ -201,11 +257,12 @@ export default function Layout() {
           className="mt-3 flex w-full items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/50 transition hover:border-gold/40 hover:text-white/80"
         >
           <Search size={14} />
-          <span className="flex-1 text-left">Search…</span>
+          <span className="flex-1 text-start">{t('chrome.search')}</span>
           <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem]">⌘K</kbd>
         </button>
         <div className="mt-6 flex-1">
           <NavItems isAdmin={isAdmin} />
+          <ReportLink onClick={() => openReport({})} />
         </div>
         <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
       </aside>
@@ -217,7 +274,7 @@ export default function Layout() {
           <button
             onClick={() => setCmdOpen(true)}
             className="grid h-10 w-10 place-items-center text-white/70 hover:text-gold"
-            aria-label="Search"
+            aria-label={t('chrome.searchLabel')}
           >
             <Search size={20} />
           </button>
@@ -225,7 +282,7 @@ export default function Layout() {
           <button
             onClick={() => setMobileOpen(true)}
             className="grid h-10 w-10 place-items-center text-white/70 hover:text-gold"
-            aria-label="Open menu"
+            aria-label={t('chrome.openMenu')}
           >
             <Menu size={22} />
           </button>
@@ -236,21 +293,23 @@ export default function Layout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 flex h-full w-72 flex-col border-r-2 border-gold bg-navy px-4 py-5 shadow-xl animate-fade-in">
+          <div className="absolute start-0 top-0 flex h-full w-72 flex-col border-e-2 border-gold bg-navy px-4 py-5 shadow-xl animate-fade-in">
             <div className="flex items-center justify-between">
               <Brand />
               <button
                 onClick={() => setMobileOpen(false)}
                 className="grid h-9 w-9 place-items-center text-white/60 hover:text-gold"
-                aria-label="Close menu"
+                aria-label={t('chrome.closeMenu')}
               >
                 <X size={20} />
               </button>
             </div>
+            <CompanySwitcher />
             <WorkspaceSwitcher />
             {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
             <div className="mt-6 flex-1">
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
+              <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
             </div>
             <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
           </div>
@@ -262,7 +321,7 @@ export default function Layout() {
         {maintenance?.active && (
           <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-700 lg:px-8">
             <Info size={14} className="shrink-0" />
-            <span>{maintenance.message || 'Offset is undergoing brief maintenance.'}</span>
+            <span>{maintenance.message || t('banner.maintenance')}</span>
           </div>
         )}
         {announcement?.active && announcement.text && (
@@ -275,7 +334,7 @@ export default function Layout() {
           <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs text-slate-600 lg:px-8">
             <Eye size={14} className="shrink-0" />
             <span>
-              You’re viewing a <strong>shared workspace</strong> — read-only.
+              {t('banner.readOnlyLead')} <strong>{t('banner.readOnlyStrong')}</strong> {t('banner.readOnlyTail')}
             </span>
           </div>
         )}
@@ -283,13 +342,12 @@ export default function Layout() {
           <div className="flex items-center gap-2 border-b border-gold/20 bg-amber-50 px-4 py-2 text-xs text-amber-800 lg:px-8">
             <Info size={14} className="shrink-0" />
             <span>
-              <strong>Demo mode</strong> — data is saved only in this browser. Add your Supabase keys
-              in <code className="bg-amber-100 px-1">.env</code> for cloud sync, login &amp; receipt storage.
+              <strong>{t('banner.demoStrong')}</strong> {t('banner.demoBody')}
             </span>
           </div>
         )}
         <div className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-10">
-          <ErrorBoundary resetKey={location.pathname}>
+          <ErrorBoundary resetKey={location.pathname} onReport={(error) => openReport({ error })}>
             <Suspense fallback={<Spinner />}>
               <Outlet />
             </Suspense>
@@ -302,7 +360,7 @@ export default function Layout() {
         <button
           onClick={() => setQuickAdd(true)}
           className="fixed bottom-5 right-5 z-30 grid h-14 w-14 place-items-center bg-gold text-navy shadow-lg shadow-navy/40 transition active:scale-95 lg:hidden"
-          aria-label="Add expense"
+          aria-label={t('chrome.addExpense')}
         >
           <Plus size={26} />
         </button>
@@ -314,6 +372,7 @@ export default function Layout() {
         onClose={() => setCmdOpen(false)}
         onQuickAdd={() => setQuickAdd(true)}
         onHelp={() => setHelpOpen(true)}
+        onReport={() => openReport({})}
       />
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
@@ -321,6 +380,7 @@ export default function Layout() {
 }
 
 function UserFooter({ user, isCloud, onSignOut }) {
+  const t = useT()
   return (
     <div className="mt-4 border-t border-white/10 pt-4">
       <div className="flex items-center gap-3 px-1">
@@ -328,15 +388,15 @@ function UserFooter({ user, isCloud, onSignOut }) {
           {(user?.email || 'U')[0].toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-white">{user?.email || 'Local user'}</div>
-          <div className="text-[10px] uppercase tracking-[1.5px] text-gold/60">{isCloud ? 'Signed in' : 'Demo mode'}</div>
+          <div className="truncate text-sm font-medium text-white">{user?.email || t('chrome.localUser')}</div>
+          <div className="text-[10px] uppercase tracking-[1.5px] text-gold/60">{isCloud ? t('chrome.signedIn') : t('chrome.demoMode')}</div>
         </div>
         <ThemeToggle />
         {isCloud && (
           <button
             onClick={onSignOut}
             className="grid h-9 w-9 place-items-center text-white/50 transition hover:bg-red-500/15 hover:text-red-400"
-            title="Sign out"
+            title={t('chrome.signOut')}
           >
             <LogOut size={17} />
           </button>
