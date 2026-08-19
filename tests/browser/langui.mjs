@@ -163,6 +163,22 @@ await p.waitForTimeout(400)
 const drawer = await p.locator('[role="dialog"], aside, div').filter({ hasText: 'ড্যাশবোর্ড' }).first().isVisible().catch(() => false)
 ok('the mobile menu is translated too', drawer)
 
+console.log('\n── HOW HONEST THE COVERAGE NOTE IS ──')
+// Every shipped dictionary is complete, so coverage() reports 100% for all of
+// them — but the dictionary is the app's chrome, and the forms, tables and
+// reports are still English. The notice has to appear on a 100% language or it
+// only ever appears on a language nobody ships.
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await picker().selectOption('hi')
+await p.waitForTimeout(900)
+let note = await p.locator('#main-content').innerText()
+ok('a fully-translated language still warns that parts stay English', /अनुवाद|अंग्रेज़ी|English/i.test(note), note.slice(0, 200).replace(/\n/g, ' | '))
+ok('and does not claim a bare 100%', !/\b100% /.test(note), (note.match(/.{0,40}100%.{0,40}/) || [''])[0])
+await picker().selectOption('en')
+await p.waitForTimeout(700)
+note = await p.locator('#main-content').innerText()
+ok('English itself is told nothing about translation gaps', !/stay in English/i.test(note))
+
 console.log(`\n${pass} passed, ${fail} failed`)
 console.log('errors:', errs.length ? errs.slice(0, 4) : 'none')
 await b.close()

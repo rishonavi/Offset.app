@@ -18,16 +18,31 @@ their `dd MMM yyyy` shape. That is deliberate — a landlord filing Indian
 accounts wants ₹ and Indian digit grouping whichever language the buttons are
 in.
 
+## What is translated today
+
+The dictionary is 66 strings, and they are the app's chrome: the sidebar and
+navigation, the top bar, the banners, the shared button labels, and the
+Settings language card itself. **The entry forms, the tables, the dashboard,
+reports and invoices are still English**, because their wording was written
+straight into the components and never moved into a dictionary.
+
+This matters for how the coverage figure reads. `coverage()` compares one
+dictionary against the English one, so it measures *the dictionary*, not the
+app — a language with all 66 strings scores 100% while most of what someone
+actually looks at is still English. The Settings card therefore always tells a
+non-English speaker that untranslated parts stay in English, rather than only
+when the dictionary has holes; a 100% that appears next to an English expense
+form is worse than no number at all.
+
+Moving a screen into the dictionary is the work that raises real coverage.
+Start with the entry forms — they are the most-used screens in the app.
+
 ## Partial translation is normal
 
 English is the source of truth. Anything a translation hasn't covered falls back
 to English rather than showing a blank or a raw key, which is what makes it safe
-to translate the app in pieces. Settings says so, with the percentage covered,
-rather than letting you discover the gaps one screen at a time.
-
-Currently translated: the sidebar and navigation, the app chrome (search,
-menus, theme toggle, workspace switcher, sign-out), the banners, and the
-Settings headings. The rest of the app is still English.
+to translate the app in pieces. Settings says so, rather than letting you
+discover the gaps one screen at a time.
 
 ## Adding a language
 

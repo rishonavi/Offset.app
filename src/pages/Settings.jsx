@@ -190,7 +190,19 @@ export default function Settings() {
         </div>
         <p className="mt-3 text-xs text-slate-400">
           {t('language.amounts')}
-          {lang !== 'en' && coverage.percent < 100 && <> {t('language.partial')} ({t('language.coverage', { percent: coverage.percent })})</>}
+          {/* Always true for a non-English language, not only when the dictionary
+              has holes: the dictionary covers the menus, buttons and messages,
+              while the entry forms, tables and reports are still English. Gating
+              this on coverage meant a fully-translated dictionary reported 100%
+              and said nothing, which read as "the whole app is in your
+              language". The percentage is still shown when it adds something. */}
+          {lang !== 'en' && (
+            <>
+              {' '}
+              {t('language.partial')}
+              {coverage.percent < 100 && <> ({t('language.coverage', { percent: coverage.percent })})</>}
+            </>
+          )}
         </p>
       </Card>
 

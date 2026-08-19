@@ -320,7 +320,7 @@ npx vite-node tests/logic/metals.test.mjs      # logic: 10 suites, 804 assertion
 ```
 
 ```sh
-VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 320
+VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 323
 npx vite preview --port 4188 &
 node tests/browser/flows.mjs
 ```
