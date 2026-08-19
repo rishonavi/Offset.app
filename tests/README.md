@@ -18,6 +18,7 @@ for Vite's resolver.
 | Suite | Assertions | Covers |
 |---|---|---|
 | `apiguard.test.mjs` | 25 | what the endpoints refuse, and the rate ceiling |
+| `assettypes.test.mjs` | 22 | which fields an asset type actually has |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
 | `corp.test.mjs` | 106 | entities, control, ledgers, audit events |
@@ -29,7 +30,7 @@ for Vite's resolver.
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **865** | |
+| | **887** | |
 
 ## Browser — `tests/browser/`
 
@@ -43,6 +44,7 @@ node tests/browser/rtlui.mjs
 
 | Suite | Assertions | Covers |
 |---|---|---|
+| `assetformui.mjs` | 16 | the asset form showing only the fields its type has |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
@@ -53,7 +55,7 @@ node tests/browser/rtlui.mjs
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
-| | **338** | |
+| | **354** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

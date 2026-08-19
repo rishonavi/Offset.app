@@ -19,6 +19,26 @@ export const ASSET_TYPES = [
   'Other',
 ]
 
+// An address identifies the asset for anything fixed to a place, and is noise
+// for anything that isn't: a car, a gold chain, a holding of stock and a
+// cryptocurrency wallet do not have one, and asking for it invites someone to
+// type where the thing happens to be kept — which is not the same fact and is
+// not what any of the reports mean by "address".
+//
+// "Other" is on the list because it is the unknown case. Someone filing a
+// warehouse or a leased plot under Other should still be able to record where
+// it is; showing a field nobody fills is a smaller cost than hiding one
+// somebody needs.
+export const ADDRESSABLE_ASSET_TYPES = [
+  'Real Estate — Apartment / Flat',
+  'Real Estate — Villa / House',
+  'Real Estate — Commercial',
+  'Land / Plot',
+  'Other',
+]
+
+export const hasAddress = (type) => ADDRESSABLE_ASSET_TYPES.includes(type)
+
 export const CATEGORIES = [
   'Materials',
   'Labor / Contractors',

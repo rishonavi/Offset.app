@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ASSET_TYPES } from '../lib/constants'
+import { ASSET_TYPES, hasAddress } from '../lib/constants'
 import { currencySymbol, formatCurrency } from '../lib/format'
 import {
   METALS, METAL_KEYS, PURITIES, UNITS, UNIT_KEYS,
@@ -43,6 +43,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
   }
 
   const isMetal = holdsMetal(form.type)
+  const addressable = hasAddress(form.type)
   const metalDef = METALS[form.metal] || METALS.gold
   const fineness = form.metal_fineness === '' ? metalDef.defaultFineness : Number(form.metal_fineness)
   const holding =
@@ -75,6 +76,10 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
         // Metal details belong only to assets that are a quantity of metal.
         // Clearing them on other types stops a stale gram count trailing an
         // asset that was briefly mis-typed as jewellery.
+        // An address on a car or a holding of gold is a field nobody meant to
+        // fill; clearing it stops one trailing an asset that was briefly typed
+        // as a flat.
+        address: addressable ? form.address : null,
         metal: isMetal ? form.metal : null,
         metal_quantity: isMetal ? num(form.metal_quantity) : null,
         metal_unit: isMetal ? form.metal_unit : null,
@@ -114,9 +119,16 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
         </Select>
       </Field>
 
-      <Field label="Address">
-        <Input value={form.address} onChange={set('address')} placeholder="Street, area, city" />
-      </Field>
+      {/* Only for assets that are fixed to a place — see hasAddress. The
+          value is kept in form state rather than dropped the moment the type
+          changes, so a mis-click and a correction does not lose what was
+          typed; it is nulled on submit instead, the same way the metal
+          fields are. */}
+      {addressable && (
+        <Field label="Address">
+          <Input value={form.address} onChange={set('address')} placeholder="Street, area, city" />
+        </Field>
+      )}
 
       <Field label="Asset value" hint="Optional — purchase price or current value, used for ROI & yield">
         <div className="relative">
