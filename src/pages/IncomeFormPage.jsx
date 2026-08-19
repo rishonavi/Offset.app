@@ -5,8 +5,10 @@ import { useData } from '../context/DataContext'
 import { Card, EmptyState, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import IncomeForm from '../components/IncomeForm'
+import { useT } from '../context/LanguageContext'
 
 export default function IncomeFormPage() {
+  const t = useT()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -30,11 +32,11 @@ export default function IncomeFormPage() {
       <div className="animate-fade-in">
         <EmptyState
           icon={Eye}
-          title="Read-only workspace"
-          subtitle="You’re viewing a shared workspace. Switch to your own workspace to add or edit records."
+          title={t('entry.readOnly')}
+          subtitle={t('entry.readOnlyBody')}
           action={
             <Link to="/income" className="btn-primary">
-              Back to income
+              {t('entry.backToIncome')}
             </Link>
           }
         />
@@ -54,7 +56,7 @@ export default function IncomeFormPage() {
           subtitle="It may have been deleted."
           action={
             <Link to="/income" className="btn-primary">
-              Back to income
+              {t('entry.backToIncome')}
             </Link>
           }
         />
@@ -67,7 +69,7 @@ export default function IncomeFormPage() {
       <div className="animate-fade-in">
         <EmptyState
           icon={Building2}
-          title="Add an asset first"
+          title={t('entry.needAssetFirst')}
           subtitle="Income is tracked per asset, so create one before logging rent."
           action={
             <Link to="/properties/new" className="btn-primary">
@@ -88,9 +90,9 @@ export default function IncomeFormPage() {
   return (
     <div className="animate-fade-in space-y-6">
       <Link to="/income" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
-        <ArrowLeft size={15} /> Back to income
+        <ArrowLeft size={15} /> {t('entry.backToIncome')}
       </Link>
-      <PageHeader title={editing ? 'Edit income' : 'Add income'} />
+      <PageHeader title={editing ? t('entry.editIncome') : t('income.add')} />
       <Card className="max-w-2xl p-5 sm:p-7">
         <IncomeForm
           initial={editing}

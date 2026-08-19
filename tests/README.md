@@ -47,13 +47,13 @@ node tests/browser/rtlui.mjs
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
-| `langui.mjs` | 56 | the language picker, what it changes, and how honest coverage is |
+| `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
 | `metalsui.mjs` | 27 | metal holdings on screen |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
-| | **330** | |
+| | **338** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

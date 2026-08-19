@@ -67,14 +67,25 @@ ok('losing every form of a counted string is a gap',
 console.log('\n── NOTHING IS LEFT IN ENGLISH BY ACCIDENT ──')
 // A "translation" that is character-for-character the English is usually a
 // forgotten key. Proper nouns and format strings are the honest exceptions.
-// Words that legitimately survive translation unchanged.
+// Words that legitimately survive translation unchanged. Scoped to the language
+// that earns the exemption: "Date" is the correct French word, which says
+// nothing about whether the Hindi is still sitting in English, and a bare key
+// here would excuse both.
 const ALLOWED_SAME = new Set([
   'language.coverage', 'chrome.sharedWorkspace',
-  'nav.personal',   // "Personal" is the Spanish word as well
+  'es:nav.personal',   // "Personal" is the Spanish word as well
+  'fr:entry.date',     // as is "Date" in French
+  'fr:entry.notes',    // and "Description / Notes"
+  'fr:income.source',  // and "Source"
 ])
 for (const [code, dict] of Object.entries(dicts)) {
   const untouched = Object.keys(en).filter(
-    (k) => dict[k] != null && dict[k] === en[k] && !ALLOWED_SAME.has(k) && !/^\{/.test(en[k]),
+    (k) =>
+      dict[k] != null &&
+      dict[k] === en[k] &&
+      !ALLOWED_SAME.has(k) &&
+      !ALLOWED_SAME.has(`${code}:${k}`) &&
+      !/^\{/.test(en[k]),
   )
   ok(`${code}: no string is a verbatim copy of the English`, untouched.length === 0, untouched.join(', '))
 }

@@ -115,7 +115,9 @@ silent zero drags a total down and looks like an answer.
   Português, Русский, اردو, मराठी, ગુજરાતી, தமிழ். Arabic and Urdu render
   right-to-left. Language changes **wording only** — amounts and dates stay in
   the currency and locale you configured, which is what someone filing Indian
-  accounts wants whatever language the buttons are in.
+  accounts wants whatever language the buttons are in. The chrome and the
+  add/edit screens are translated; the tables, dashboard and reports are still
+  English and fall back to it (see [`docs/TRANSLATION.md`](./docs/TRANSLATION.md)).
 - **Installable app (PWA)** — add to your home screen; runs full-screen and
   works offline.
 - **Payment reminders** *(optional)* — daily email digest of overdue and
@@ -327,7 +329,7 @@ npx vite-node tests/logic/metals.test.mjs      # logic: 12 suites, 865 assertion
 ```
 
 ```sh
-VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 330
+VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 338
 npx vite preview --port 4188 &
 node tests/browser/flows.mjs
 ```

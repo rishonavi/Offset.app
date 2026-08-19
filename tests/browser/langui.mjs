@@ -179,6 +179,46 @@ await p.waitForTimeout(700)
 note = await p.locator('#main-content').innerText()
 ok('English itself is told nothing about translation gaps', !/stay in English/i.test(note))
 
+console.log('\n── THE BUSIEST SCREEN, IN YOUR LANGUAGE ──')
+// The expense form is where most of the app's use happens and it was English
+// for every language until its wording moved into the dictionary.
+await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
+await p.locator('input').first().fill('Sea View Villa')
+await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
+await p.waitForTimeout(700)
+
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await picker().selectOption('hi')
+await p.waitForTimeout(900)
+await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+let form = await p.locator('#main-content').innerText()
+ok('the expense form is in Hindi', /राशि|तिथि|श्रेणी/.test(form), form.slice(0, 200).replace(/\n/g, ' | '))
+ok('and its labels are not left in English', !/\bAmount\b|\bCategory\b|\bVendor\b/.test(form), form.slice(0, 200).replace(/\n/g, ' | '))
+ok('the submit button too', /व्यय जोड़ें/.test(form), form.slice(-160).replace(/\n/g, ' | '))
+// The page around the form counts as part of the screen: a Hindi form under an
+// English heading and an English back-link is not a translated screen.
+ok('so are the heading and the back link', !/Back to expenses|Add expense|Quick add with AI/.test(form),
+  form.slice(0, 220).replace(/\n/g, ' | '))
+
+await p.goto(`${B}/income/new`, { waitUntil: 'networkidle' })
+form = await p.locator('#main-content').innerText()
+ok('so is the income form', /प्राप्त राशि|स्रोत/.test(form), form.slice(0, 200).replace(/\n/g, ' | '))
+
+// Arabic reads right to left, and the form is the densest layout in the app.
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await picker().selectOption('ar')
+await p.waitForTimeout(900)
+await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+form = await p.locator('#main-content').innerText()
+ok('the form is in Arabic', /المبلغ|التاريخ|الفئة/.test(form), form.slice(0, 200).replace(/\n/g, ' | '))
+ok('and the document is right-to-left', await p.evaluate(() => document.documentElement.dir) === 'rtl')
+const formOverflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+ok('with no sideways scroll', formOverflow <= 2, `${formOverflow}px`)
+
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await picker().selectOption('en')
+await p.waitForTimeout(700)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 console.log('errors:', errs.length ? errs.slice(0, 4) : 'none')
 await b.close()

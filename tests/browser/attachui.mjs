@@ -15,7 +15,7 @@ let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
 
 const picker = () => p.locator('input[type=file]:not([capture])').first()
-const clearAttachment = async () => { await p.locator('button[title="Remove receipt"]').first().click(); await p.waitForTimeout(400) }
+const clearAttachment = async () => { await p.locator('button[title="Remove attachment"]').first().click(); await p.waitForTimeout(400) }
 
 // An expense form needs an asset to exist before it will render.
 await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })

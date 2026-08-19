@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
 import { INCOME_SOURCES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
+import { useT } from '../context/LanguageContext'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
@@ -9,6 +10,7 @@ import { usePlan } from '../context/PlanContext'
 import { Field, Input, Select, Textarea, Button } from './ui'
 
 export default function IncomeForm({ initial, properties, payers = [], defaultPropertyId, onSubmit, onCancel }) {
+  const t = useT()
   const [form, setForm] = useState({
     property_id: initial?.property_id || defaultPropertyId || (properties[0]?.id ?? ''),
     date: initial?.date || todayISO(),
@@ -54,7 +56,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
       }))
       setNlNote('Filled from your description — please double-check the fields.')
     } catch (e) {
-      setNlNote(e?.code === 'not_configured' ? 'AI quick-add isn’t set up on this deployment.' : e?.message || 'Could not read that.')
+      setNlNote(e?.code === 'not_configured' ? t('entry.aiUnavailable') : e?.message || t('entry.couldNotRead'))
     } finally {
       setParsing(false)
     }
@@ -113,10 +115,10 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
       ].filter(Boolean)
       const base = got.length
         ? `Filled ${got.join(', ')} — please double-check.`
-        : 'Couldn’t read the details — please enter them manually.'
+        : t('entry.scanNothing')
       setScanMsg(`${base} ${scanSourceNote(parsed)}`)
     } catch {
-      setScanMsg('Scan failed — please enter details manually.')
+      setScanMsg(t('entry.scanFailed'))
     } finally {
       setScanning(false)
     }
@@ -124,11 +126,11 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.property_id) return setError('Please choose a property.')
-    if (!form.date) return setError('Please choose a date.')
+    if (!form.property_id) return setError(t('entry.needProperty'))
+    if (!form.date) return setError(t('entry.needDate'))
     if (!form.source) return setError('Please choose a source.')
     const amount = Number(form.amount)
-    if (!amount || amount <= 0) return setError('Enter an amount greater than zero.')
+    if (!amount || amount <= 0) return setError(t('entry.needAmount'))
 
     setSaving(true)
     setError(null)
@@ -159,7 +161,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
     <form onSubmit={submit} className="space-y-5">
       <div className="border border-dashed border-gold/40 bg-brand-light/40 p-3">
         <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">
-          <Sparkles size={13} className="text-gold" /> Quick add with AI
+          <Sparkles size={13} className="text-gold" /> {t('entry.quickAdd')}
         </div>
         <div className="flex gap-2">
           <Input
@@ -171,18 +173,18 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 runParse()
               }
             }}
-            aria-label="Describe the income in your own words"
-            placeholder="e.g. received 45000 rent from Rahul for Sea View on 1 July"
+            aria-label={t('income.describe')}
+            placeholder={t('income.describePlaceholder')}
           />
           <Button type="button" variant="ghost" onClick={runParse} loading={parsing} className="shrink-0">
-            Parse
+            {t('entry.parse')}
           </Button>
         </div>
         {nlNote && <p className="mt-1.5 text-xs text-slate-500">{nlNote}</p>}
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        <Field label="Property" required>
+        <Field label={t('entry.property')} required>
           <Select value={form.property_id} onChange={set('property_id')}>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -192,11 +194,11 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           </Select>
         </Field>
 
-        <Field label="Date" required>
+        <Field label={t('entry.date')} required>
           <Input type="date" value={form.date} onChange={set('date')} max={todayISO()} />
         </Field>
 
-        <Field label="Amount received" required>
+        <Field label={t('income.amount')} required>
           <div className="relative">
             <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
               {currencySymbol}
@@ -214,7 +216,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           </div>
         </Field>
 
-        <Field label="Tax / GST" hint="Optional — already part of the amount">
+        <Field label={t('entry.tax')} hint={t('entry.taxHint')}>
           <div className="relative">
             <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
               {currencySymbol}
@@ -232,12 +234,12 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           </div>
         </Field>
 
-        <Field label="Source" required>
+        <Field label={t('income.source')} required>
           <Input
             list="income-sources"
             value={form.source}
             onChange={set('source')}
-            placeholder="Select or type a source"
+            placeholder={t('income.sourcePlaceholder')}
           />
           <datalist id="income-sources">
             {INCOME_SOURCES.map((s) => (
@@ -246,12 +248,12 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           </datalist>
         </Field>
 
-        <Field label="Received from (tenant / payer)">
+        <Field label={t('income.payer')}>
           <Input
             list="income-payers"
             value={form.payer}
             onChange={set('payer')}
-            placeholder="e.g. Mr. Sharma"
+            placeholder={t('income.payerPlaceholder')}
           />
           {payers.length > 0 && (
             <datalist id="income-payers">
@@ -262,7 +264,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           )}
         </Field>
 
-        <Field label="Payment method">
+        <Field label={t('entry.paymentMethod')}>
           <Select value={form.payment_method} onChange={set('payment_method')}>
             <option value="">—</option>
             {PAYMENT_METHODS.map((m) => (
@@ -273,7 +275,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           </Select>
         </Field>
 
-        <Field label="Status">
+        <Field label={t('income.status')}>
           <div className="flex gap-2">
             {[
               { v: 'received', label: 'Received' },
@@ -298,12 +300,12 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
         </Field>
 
         {form.status === 'pending' && (
-          <Field label="Due date">
+          <Field label={t('entry.dueDate')}>
             <Input type="date" value={form.due_date} onChange={set('due_date')} />
           </Field>
         )}
 
-        <Field label="Repeats" hint="Recurring income shows a one-tap prompt on the dashboard when due">
+        <Field label={t('entry.repeats')} hint={t('income.recurringHint')}>
           <Select value={form.recurrence} onChange={set('recurrence')}>
             {RECURRENCE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -314,11 +316,11 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
         </Field>
       </div>
 
-      <Field label="Description / Notes">
-        <Textarea rows={2} value={form.description} onChange={set('description')} placeholder="e.g. June rent" />
+      <Field label={t('entry.notes')}>
+        <Textarea rows={2} value={form.description} onChange={set('description')} placeholder={t('income.notesPlaceholder')} />
       </Field>
 
-      <Field label="Proof / receipt" hint="Image, PDF, Word or Excel">
+      <Field label={t('income.proof')} hint={t('entry.attachmentHint')}>
         {receiptPreview || existingReceipt ? (
           <div className="space-y-2">
             <div className="flex items-center gap-3 border border-border-light bg-slate-50 px-3 py-2">
@@ -329,13 +331,13 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 rel="noreferrer"
                 className="flex-1 truncate text-sm font-medium text-gold hover:underline"
               >
-                {file ? file.name : 'View attached file'}
+                {file ? file.name : t('entry.viewAttachment')}
               </a>
               <button
                 type="button"
                 onClick={clearReceipt}
                 className="grid h-7 w-7 place-items-center text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-                title="Remove"
+                title={t('entry.removeAttachment')}
               >
                 <X size={15} />
               </button>
@@ -345,11 +347,11 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 {scanning ? (
                   <>
                     <Loader2 size={15} className="animate-spin" />
-                    {scanPct > 0 ? ` Reading… ${scanPct}%` : ' Reading…'}
+                    {scanPct > 0 ? ` ${t('entry.readingProgress', { percent: scanPct })}` : ` ${t('entry.reading')}`}
                   </>
                 ) : (
                   <>
-                    <Sparkles size={15} /> Scan to auto-fill
+                    <Sparkles size={15} /> {t('entry.scan')}
                   </>
                 )}
               </button>
@@ -360,10 +362,10 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           <div className="space-y-2">
             <div className="flex gap-2">
               <button type="button" onClick={() => cameraRef.current?.click()} className="btn-ghost flex-1">
-                <Camera size={15} /> Take photo
+                <Camera size={15} /> {t('entry.takePhoto')}
               </button>
               <button type="button" onClick={() => fileRef.current?.click()} className="btn-ghost flex-1">
-                <Upload size={15} /> Choose file
+                <Upload size={15} /> {t('entry.chooseFile')}
               </button>
             </div>
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPickFile} className="hidden" />
@@ -376,10 +378,10 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
 
       <div className="flex justify-end gap-3 border-t border-border-light pt-5">
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancel
+          {t('entry.cancel')}
         </Button>
         <Button type="submit" loading={saving}>
-          {initial ? 'Save changes' : 'Add income'}
+          {initial ? t('entry.save') : t('income.add')}
         </Button>
       </div>
     </form>

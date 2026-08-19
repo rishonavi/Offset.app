@@ -5,8 +5,10 @@ import { useData } from '../context/DataContext'
 import { Card, EmptyState, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import ExpenseForm from '../components/ExpenseForm'
+import { useT } from '../context/LanguageContext'
 
 export default function ExpenseFormPage() {
+  const t = useT()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -30,11 +32,11 @@ export default function ExpenseFormPage() {
       <div className="animate-fade-in">
         <EmptyState
           icon={Eye}
-          title="Read-only workspace"
-          subtitle="You’re viewing a shared workspace. Switch to your own workspace to add or edit records."
+          title={t('entry.readOnly')}
+          subtitle={t('entry.readOnlyBody')}
           action={
             <Link to="/expenses" className="btn-primary">
-              Back to expenses
+              {t('entry.backToExpenses')}
             </Link>
           }
         />
@@ -54,7 +56,7 @@ export default function ExpenseFormPage() {
           subtitle="It may have been deleted."
           action={
             <Link to="/expenses" className="btn-primary">
-              Back to expenses
+              {t('entry.backToExpenses')}
             </Link>
           }
         />
@@ -67,7 +69,7 @@ export default function ExpenseFormPage() {
       <div className="animate-fade-in">
         <EmptyState
           icon={Building2}
-          title="Add an asset first"
+          title={t('entry.needAssetFirst')}
           subtitle="Expenses are tracked per asset, so create one before logging expenses."
           action={
             <Link to="/properties/new" className="btn-primary">
@@ -88,9 +90,9 @@ export default function ExpenseFormPage() {
   return (
     <div className="animate-fade-in space-y-6">
       <Link to="/expenses" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
-        <ArrowLeft size={15} /> Back to expenses
+        <ArrowLeft size={15} /> {t('entry.backToExpenses')}
       </Link>
-      <PageHeader title={editing ? 'Edit expense' : 'Add expense'} />
+      <PageHeader title={editing ? t('entry.editExpense') : t('expense.add')} />
       <Card className="max-w-2xl p-5 sm:p-7">
         <ExpenseForm
           initial={editing}

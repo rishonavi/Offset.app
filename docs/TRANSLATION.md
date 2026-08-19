@@ -20,22 +20,30 @@ in.
 
 ## What is translated today
 
-The dictionary is 66 strings, and they are the app's chrome: the sidebar and
-navigation, the top bar, the banners, the shared button labels, and the
-Settings language card itself. **The entry forms, the tables, the dashboard,
-reports and invoices are still English**, because their wording was written
-straight into the components and never moved into a dictionary.
+127 strings: the app's chrome — sidebar, top bar, banners, shared buttons, the
+Settings language card — and **the add/edit screens for an expense and for
+income**, which are where most of the app's use happens. That includes the page
+around each form, because a translated form under an English heading and an
+English back-link is not a translated screen.
 
-This matters for how the coverage figure reads. `coverage()` compares one
-dictionary against the English one, so it measures *the dictionary*, not the
-app — a language with all 66 strings scores 100% while most of what someone
-actually looks at is still English. The Settings card therefore always tells a
-non-English speaker that untranslated parts stay in English, rather than only
-when the dictionary has holes; a 100% that appears next to an English expense
-form is worse than no number at all.
+**The tables, the dashboard, reports and invoices are still English**, their
+wording written straight into the components where no translation can reach it.
 
-Moving a screen into the dictionary is the work that raises real coverage.
-Start with the entry forms — they are the most-used screens in the app.
+This is why the coverage figure has to be read carefully. `coverage()` compares
+one dictionary against the English one, so it measures *the dictionary*, not the
+app — every shipped language is at 100% while several screens are still English.
+The Settings card therefore always tells a non-English speaker that untranslated
+parts stay in English, rather than only when the dictionary has holes; a 100%
+sitting next to an English screen is worse than no number at all.
+
+Moving a screen into the dictionary is the work that raises real coverage. The
+entry forms were the place to start because they are the most-used screens; the
+tables are the next largest surface.
+
+The entry-form translations were written alongside the code rather than by a
+native speaker of each language. They follow the terms these apps normally use,
+but the financial wording in particular — "Tax / GST", "Paid" / "Unpaid",
+"Received from" — is worth a native read before anyone relies on it.
 
 ## Partial translation is normal
 
