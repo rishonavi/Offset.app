@@ -179,13 +179,58 @@ export const CONDITIONS = {
 // usually the user's own file, but it may equally have been emailed to them by
 // their accountant, and a document that renders is not a document that should
 // be able to run.
+// Entities are decoded before a URL is judged, because `jav&#97;script:` and
+// `javascript:` are the same instruction to the browser and only one of them
+// looks like one here.
+const decodeEntities = (s) =>
+  String(s).replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, body) => {
+    if (body[0] !== '#') return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", tab: '\t', newline: '\n' }[body.toLowerCase()] ?? m
+    const code = body[1] === 'x' || body[1] === 'X' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10)
+    return Number.isFinite(code) ? String.fromCodePoint(code) : m
+  })
+
+// data: is not dangerous in itself — an embedded logo is the ordinary way a
+// letterhead travels in a single file, and blocking it breaks real templates.
+// What must not through is a data: URL carrying a *document*. Images are safe
+// here even as SVG, because <img> is a scripting-disabled context and the
+// elements that would make SVG executable are stripped above.
+const DANGEROUS_URL = /^\s*(javascript|vbscript)\s*:/i
+const DOCUMENT_DATA_URL = /^\s*data\s*:(?!image\/)/i
+const unsafeUrl = (value) => {
+  const url = decodeEntities(value).replace(/[\u0000-\u0020]/g, '')
+  return DANGEROUS_URL.test(url) || DOCUMENT_DATA_URL.test(url)
+}
+
+// An invoice layout is a document: text, tables, styling, images. None of the
+// elements below have any part in one, and each is a way to run code — an
+// iframe carries its own document in srcdoc, object and embed load one from a
+// URL. Stripping them outright is both safer and simpler than trying to decide
+// which attributes on them are acceptable.
+const EXECUTABLE_ELEMENTS = /<(script|iframe|object|embed|applet|frame|frameset)\b[\s\S]*?(<\/\1\s*>|$)/gi
+const EXECUTABLE_OPEN_TAGS = /<\/?(script|iframe|object|embed|applet|frame|frameset)\b[^>]*>/gi
+
+// The template is written into a same-origin iframe to be printed and
+// photographed for the PDF, so anything that executes there can read the whole
+// ledger and the session token out of localStorage. That frame is sandboxed
+// without allow-scripts, which is the control that actually holds; this pass is
+// the second layer, and it is deliberately blunt about what it removes.
 export function sanitiseTemplate(html) {
   return String(html)
-    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, '')
-    .replace(/<script\b[^>]*>/gi, '')
+    .replace(EXECUTABLE_ELEMENTS, '')
+    .replace(EXECUTABLE_OPEN_TAGS, '')
+    // Event handlers, quoted three ways.
     .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
     .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
     .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+    // Anything that carries a nested document, wherever it was smuggled.
+    .replace(/\ssrcdoc\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    // URL-bearing attributes are judged on what they decode to, not on how they
+    // are spelled.
+    .replace(/\s(href|src|data|action|formaction|poster|background)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
+      (match, attr, value) => {
+        const raw = /^["']/.test(value) ? value.slice(1, -1) : value
+        return unsafeUrl(raw) ? '' : match
+      })
     .replace(/javascript:/gi, '')
 }
 

@@ -20,14 +20,14 @@ for Vite's resolver.
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
 | `corp.test.mjs` | 106 | entities, control, ledgers, audit events |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
-| `invoice.test.mjs` | 66 | template language, GST, totals |
+| `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **804** | |
+| | **819** | |
 
 ## Browser — `tests/browser/`
 

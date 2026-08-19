@@ -25,6 +25,13 @@ async function withRenderedFrame(documentHtml, width, fn) {
   const frame = document.createElement('iframe')
   frame.setAttribute('aria-hidden', 'true')
   frame.setAttribute('title', 'Invoice render')
+  // A template is HTML somebody else wrote — imported from a colleague or a
+  // supplier — and this frame is same-origin, so anything that runs in it can
+  // read the ledger and the session out of localStorage. Omitting allow-scripts
+  // is what stops that. allow-same-origin has to stay: the capture below reads
+  // contentDocument, and without it the parent is locked out of its own frame.
+  // The two together are only dangerous when allow-scripts joins them.
+  frame.setAttribute('sandbox', 'allow-same-origin')
   // Offscreen rather than display:none — a hidden element has no layout, and
   // no layout means nothing to photograph.
   frame.style.cssText = `position:fixed;left:-10000px;top:0;width:${width}px;height:1200px;border:0;visibility:hidden;`
@@ -98,6 +105,10 @@ export async function invoiceToPDF(documentHtml, { filename = 'invoice.pdf', pap
 export function printInvoice(documentHtml) {
   const frame = document.createElement('iframe')
   frame.setAttribute('title', 'Invoice print')
+  // Same reasoning as the render frame. allow-modals is additionally required
+  // because a sandbox blocks print() outright, and printing is the entire point
+  // of this one.
+  frame.setAttribute('sandbox', 'allow-same-origin allow-modals')
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
   document.body.appendChild(frame)
   const doc = frame.contentDocument

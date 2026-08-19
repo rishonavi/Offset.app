@@ -157,5 +157,37 @@ ok('a sequence past the padding still fits',
   I.nextNumber('INV-{0001}', 12345, '2026-05-02').includes('12345'),
   I.nextNumber('INV-{0001}', 12345, '2026-05-02'))
 
+console.log('\n── WHAT A TEMPLATE MAY NOT DO ──')
+// A format is HTML somebody else wrote, and it is written into a same-origin
+// iframe to be printed and photographed for the PDF. Anything that executes
+// there can read the ledger and the session out of localStorage. The frame's
+// sandbox is the control that holds; this is the second layer.
+const blocked = {
+  'a script tag': '<script>steal()</script>',
+  'an inline handler': '<img src=x onerror=steal()>',
+  'a javascript: link': '<a href="javascript:steal()">x</a>',
+  'a javascript: link spelled in entities': '<a href="jav&#97;script:steal()">x</a>',
+  'a javascript: link broken up with a tab': '<a href="java&#9;script:steal()">x</a>',
+  'an iframe carrying its own document': '<iframe srcdoc="&lt;script&gt;steal()&lt;/script&gt;"></iframe>',
+  'an object loading a document': '<object data="data:text/html,%3Cscript%3E"></object>',
+  'an embed loading a document': '<embed src="data:text/html,%3Cscript%3E">',
+  'an html data: URL on an image': '<img src="data:text/html,%3Cscript%3E">',
+  'an svg animation handler': '<svg><animate onbegin=steal() attributeName=x></svg>',
+}
+for (const [what, html] of Object.entries(blocked)) {
+  const out = T.sanitiseTemplate(html)
+  ok(`${what} does not survive`, !/<script|<iframe|<object|<embed|srcdoc|on(error|begin)\s*=|javascript:|vbscript:|data:text\/html|jav&#97;|java&#9;/i.test(out), out.slice(0, 80))
+}
+
+// Blunt stripping is only acceptable if a real letterhead still comes through.
+const kept = [
+  '<img src="logo.png">',
+  '<img src="data:image/png;base64,iVBORw0KGgo=">',
+  '<a href="https://acme.example">acme.example</a>',
+  '<div style="color:#b45309;font-weight:600">Total due</div>',
+  '<table><tr><td>{{line.description}}</td><td>{{line.amount}}</td></tr></table>',
+]
+for (const html of kept) ok(`kept intact: ${html.slice(0, 42)}`, T.sanitiseTemplate(html) === html, T.sanitiseTemplate(html))
+
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1
