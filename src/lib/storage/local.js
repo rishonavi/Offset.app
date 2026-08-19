@@ -26,7 +26,35 @@ const read = (key) => {
     return []
   }
 }
-const write = (key, value) => localStorage.setItem(key, JSON.stringify(value))
+// localStorage is capped at about 5MB per origin, and attachments live in it as
+// data URLs, so this is a limit real use reaches — a few photographed bills is
+// enough. setItem throws rather than truncating, which means the previous value
+// survives intact and only the new entry is lost. Translate that into something
+// actionable: the browser's own message ("Setting the value of 'pl_expenses'
+// exceeded the quota") tells a user nothing about what to do next.
+const write = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch (err) {
+    if (isQuotaError(err)) {
+      throw new Error(
+        "This browser's storage is full, so that wasn't saved. Demo mode keeps " +
+          'everything — including attachments — in this browser. Remove a large ' +
+          'attachment, or connect Supabase for cloud storage and sign-in.'
+      )
+    }
+    throw err
+  }
+}
+
+// Browsers disagree on the name and code; Safari in private mode reports a plain
+// QuotaExceededError with code 22, Firefox uses NS_ERROR_DOM_QUOTA_REACHED.
+const isQuotaError = (err) =>
+  err instanceof Error &&
+  (err.name === 'QuotaExceededError' ||
+    err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    err.code === 22 ||
+    err.code === 1014)
 
 // ── Auth (no-op: demo mode is always "signed in") ──────────────────
 export async function getCurrentUser() {
@@ -99,7 +127,20 @@ export async function deleteExpense(id) {
 }
 
 // ── Receipts (stored inline as data URLs) ──────────────────────────
+// Base64 inflates a file by roughly a third, and the whole ledger shares one
+// ~5MB origin quota, so a single large attachment can make every later save
+// fail. Refuse it up front naming the file, rather than letting the entry be
+// filled in and then rejected at save time.
+const MAX_ATTACHMENT_BYTES = 1.5 * 1024 * 1024
+
 export async function uploadReceipt(file) {
+  if (file && file.size > MAX_ATTACHMENT_BYTES) {
+    throw new Error(
+      `"${file.name}" is ${(file.size / 1048576).toFixed(1)}MB. Demo mode stores ` +
+        'attachments in this browser, which allows about 5MB in total, so files ' +
+        'over 1.5MB are refused. Connect Supabase for full-size receipt storage.'
+    )
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result) // data: URL stored in receipt_url

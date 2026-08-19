@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Paperclip, X, Loader2, Sparkles, Camera, Upload, Wand2 } from 'lucide-react'
-import { CATEGORIES, PAYMENT_METHODS } from '../lib/constants'
+import { CATEGORIES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { buildVendorIndex, suggestCategory } from '../lib/categorize'
 import { parseEntry } from '../lib/ai'
@@ -342,7 +342,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         <Textarea rows={2} value={form.description} onChange={set('description')} placeholder="Optional details" />
       </Field>
 
-      <Field label="Receipt / bill photo" hint="JPG, PNG or PDF">
+      <Field label="Receipt / bill photo" hint="Image, PDF, Word or Excel">
         {receiptPreview || existingReceipt ? (
           <div className="space-y-2">
             <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
@@ -364,7 +364,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
                 <X size={15} />
               </button>
             </div>
-            {file && (
+            {isScannable(file) && (
               <button type="button" onClick={runScan} disabled={scanning} className="btn-ghost w-full">
                 {scanning ? (
                   <>
@@ -391,7 +391,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
               </button>
             </div>
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPickFile} className="hidden" />
-            <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={onPickFile} className="hidden" />
+            <input ref={fileRef} type="file" accept={ATTACHMENT_ACCEPT} onChange={onPickFile} className="hidden" />
           </div>
         )}
       </Field>

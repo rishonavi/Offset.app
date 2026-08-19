@@ -3,6 +3,7 @@ import { FileText, Trash2, Upload, ExternalLink } from 'lucide-react'
 import { db } from '../lib/storage'
 import { DOC_TYPES, docExpiry } from '../lib/documents'
 import { formatDate } from '../lib/format'
+import { ATTACHMENT_ACCEPT } from '../lib/constants'
 import { Card, Field, Input, Select, Button } from './ui'
 import ReceiptViewer from './ReceiptViewer'
 
@@ -140,7 +141,7 @@ export default function DocumentsCard({ propertyId, documents, canWrite, onAdd, 
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*,.pdf"
+                accept={ATTACHMENT_ACCEPT}
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="hidden"
               />

@@ -47,7 +47,10 @@ it was built the way it was:
   method, notes, tax.
 - **Bills** — due dates, paid/unpaid status, one-tap *mark paid*, and a comment
   thread per bill.
-- **Receipts** — attach a photo or PDF to any entry.
+- **Receipts** — attach a photo, PDF, Word or Excel file to any entry. Bills
+  often arrive as a `.docx` or `.xlsx` rather than a scan, so those are stored
+  and handed back on download; only images and PDFs can be *scanned*, so the
+  scan button appears for those alone.
 - **Recurring entries** — duplicate any entry to re-log rent, EMI or utilities
   quickly.
 - **Bin** — deleted entries are recoverable rather than gone.
@@ -135,6 +138,13 @@ npm run dev
 
 A yellow "Demo mode" banner reminds you that nothing is synced. Every feature
 works in demo mode; that is how they are developed and tested.
+
+Two consequences worth knowing before using it for anything real. Data lives in
+**one browser on one device** — it does not follow you to a phone, another
+browser, or a private window, and iOS Safari discards it after about a week of
+not visiting. And the whole ledger shares that browser's **~5MB** of storage, so
+attachments over 1.5MB are refused with a message saying so rather than
+silently failing later. Cloud mode has neither limit.
 
 ### 2. Cloud mode (login + sync + receipt storage)
 
@@ -309,7 +319,7 @@ npx vite-node tests/logic/metals.test.mjs      # logic: 9 suites, 786 assertions
 ```
 
 ```sh
-VITE_OPEN_ACCESS=true npx vite build           # browser: 9 suites, 303
+VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 316
 npx vite preview --port 4188 &
 node tests/browser/flows.mjs
 ```

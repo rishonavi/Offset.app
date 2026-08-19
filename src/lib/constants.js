@@ -88,3 +88,25 @@ export const INCOME_COLORS = {
 
 export const colorForSource = (s, i = 0) =>
   INCOME_COLORS[s] || CHART_PALETTE[i % CHART_PALETTE.length]
+
+// What the attachment pickers accept — receipts on an entry, and the files on
+// the Documents card. Office formats are here because a bill often arrives as
+// a Word or Excel file rather than a scan, and rejecting it forces someone to
+// print-to-PDF before they can file it. Nothing parses these; they are stored
+// and handed back on download, so the list can grow without touching any
+// reading code.
+export const ATTACHMENT_ACCEPT = [
+  'image/*',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.csv',
+].join(',')
+
+// Only images and PDFs can be read by the scanner (AI vision or on-device OCR).
+// A Word or Excel attachment is stored and handed back, but offering "Scan to
+// auto-fill" on one is a button that can only fail, so the callers hide it.
+export const isScannable = (file) =>
+  Boolean(file) && (/^image\//.test(file.type) || file.type === 'application/pdf' || /\.pdf$/i.test(file.name || ''))

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
-import { INCOME_SOURCES, PAYMENT_METHODS } from '../lib/constants'
+import { INCOME_SOURCES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
@@ -318,7 +318,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
         <Textarea rows={2} value={form.description} onChange={set('description')} placeholder="e.g. June rent" />
       </Field>
 
-      <Field label="Proof / receipt" hint="JPG, PNG or PDF">
+      <Field label="Proof / receipt" hint="Image, PDF, Word or Excel">
         {receiptPreview || existingReceipt ? (
           <div className="space-y-2">
             <div className="flex items-center gap-3 border border-border-light bg-slate-50 px-3 py-2">
@@ -340,7 +340,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 <X size={15} />
               </button>
             </div>
-            {file && (
+            {isScannable(file) && (
               <button type="button" onClick={runScan} disabled={scanning} className="btn-ghost w-full">
                 {scanning ? (
                   <>
@@ -367,7 +367,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
               </button>
             </div>
             <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPickFile} className="hidden" />
-            <input ref={fileRef} type="file" accept="image/*,.pdf" onChange={onPickFile} className="hidden" />
+            <input ref={fileRef} type="file" accept={ATTACHMENT_ACCEPT} onChange={onPickFile} className="hidden" />
           </div>
         )}
       </Field>
