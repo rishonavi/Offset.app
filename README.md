@@ -140,12 +140,14 @@ npm run dev
 A yellow "Demo mode" banner reminds you that nothing is synced. Every feature
 works in demo mode; that is how they are developed and tested.
 
-Two consequences worth knowing before using it for anything real. Data lives in
-**one browser on one device** — it does not follow you to a phone, another
+One consequence worth knowing before using it for anything real: data lives in
+**one browser on one device**. It does not follow you to a phone, another
 browser, or a private window, and iOS Safari discards it after about a week of
-not visiting. And the whole ledger shares that browser's **~5MB** of storage, so
-attachments over 1.5MB are refused with a message saying so rather than
-silently failing later. Cloud mode has neither limit.
+not visiting. Cloud mode has neither limit.
+
+Attachments go to IndexedDB rather than into the ledger itself, so a receipt is
+limited by that browser's quota — hundreds of megabytes — rather than by the
+~5MB the records share. A backup inlines them, so it stays openable anywhere.
 
 ### 2. Cloud mode (login + sync + receipt storage)
 
@@ -325,7 +327,7 @@ npx vite-node tests/logic/metals.test.mjs      # logic: 12 suites, 865 assertion
 ```
 
 ```sh
-VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 323
+VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 330
 npx vite preview --port 4188 &
 node tests/browser/flows.mjs
 ```

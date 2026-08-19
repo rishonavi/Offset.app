@@ -8,6 +8,7 @@ import { FileSpreadsheet, FileText, FileType, Upload, Download, CheckCircle2, Al
 import { useData } from '../context/DataContext'
 import { applyFilters, emptyFilters, sumAmount } from '../lib/filters'
 import { formatCurrency, formatDate } from '../lib/format'
+import { isBlobToken, blobToDataUrl } from '../lib/storage/blobs'
 import { colorForCategory } from '../lib/constants'
 import {
   toExportRows,
@@ -279,12 +280,25 @@ export default function Reports() {
     }
   }
 
-  const buildPayload = () => ({
+  // Attachments live in IndexedDB and the rows carry only a token, which means
+  // nothing on the device a backup is restored to. So the files travel with it,
+  // inlined the way they used to be stored — a backup that quietly leaves the
+  // receipts behind is worse than one that is honestly large.
+  const withAttachments = async (rows) =>
+    Promise.all(
+      rows.map(async (row) => {
+        if (!isBlobToken(row.receipt_url)) return row
+        const inlined = await blobToDataUrl(row.receipt_url).catch(() => null)
+        return { ...row, receipt_url: inlined || null }
+      }),
+    )
+
+  const buildPayload = async () => ({
     version: 1,
     exportedAt: new Date().toISOString(),
     properties,
-    expenses,
-    income,
+    expenses: await withAttachments(expenses),
+    income: await withAttachments(income),
   })
 
   // Recreate assets/expenses/income from a backup object (matches assets by
@@ -357,7 +371,7 @@ export default function Reports() {
     setCloudBusy(true)
     setCloudMsg(null)
     try {
-      await provider.backup(buildPayload())
+      await provider.backup(await buildPayload())
       setCloudMsg({ ok: true, text: `Backed up your data to ${provider.label}.` })
     } catch (err) {
       setCloudMsg({ ok: false, text: err?.message || String(err) })
@@ -389,8 +403,8 @@ export default function Reports() {
     }
   }
 
-  const downloadBackup = () => {
-    const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], { type: 'application/json' })
+  const downloadBackup = async () => {
+    const blob = new Blob([JSON.stringify(await buildPayload(), null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

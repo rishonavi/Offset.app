@@ -10,12 +10,20 @@ export default function ReceiptViewer({ stored, onClose }) {
 
   useEffect(() => {
     let active = true
+    // In demo mode this is now an object URL minted from IndexedDB rather than
+    // a data URL. Those hold their blob in memory until revoked, so opening a
+    // few receipts and closing them again would otherwise keep every one.
+    let objectUrl = null
     setState('loading')
     setUrl(null)
     db.getReceiptUrl(stored)
       .then((u) => {
-        if (!active) return
+        if (!active) {
+          if (u?.startsWith('blob:')) URL.revokeObjectURL(u)
+          return
+        }
         if (u) {
+          if (u.startsWith('blob:')) objectUrl = u
           setUrl(u)
           setState('ready')
         } else {
@@ -25,6 +33,7 @@ export default function ReceiptViewer({ stored, onClose }) {
       .catch(() => active && setState('error'))
     return () => {
       active = false
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
   }, [stored])
 

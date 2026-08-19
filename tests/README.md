@@ -43,7 +43,7 @@ node tests/browser/rtlui.mjs
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `attachui.mjs` | 13 | what the attachment pickers take, and full browser storage |
+| `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
@@ -53,7 +53,7 @@ node tests/browser/rtlui.mjs
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
-| | **323** | |
+| | **330** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

@@ -9,6 +9,8 @@ const PEXP_KEY = 'pl_personal_expenses'
 const PBUD_KEY = 'pl_personal_budgets'
 const COMMENT_KEY = 'pl_comments'
 
+import { putBlob, getBlob, deleteBlob, isBlobToken } from './blobs'
+
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
 // No-op in demo mode — there are no shared workspaces without a cloud backend.
@@ -103,9 +105,15 @@ export async function updateProperty(id, payload) {
 export async function deleteProperty(id) {
   write(PROPS_KEY, read(PROPS_KEY).filter((p) => p.id !== id))
   // cascade: remove this property's expenses, income and documents too
+  const orphaned = [
+    ...read(EXP_KEY).filter((e) => e.property_id === id),
+    ...read(INC_KEY).filter((e) => e.property_id === id),
+    ...read(DOC_KEY).filter((d) => d.property_id === id),
+  ]
   write(EXP_KEY, read(EXP_KEY).filter((e) => e.property_id !== id))
   write(INC_KEY, read(INC_KEY).filter((e) => e.property_id !== id))
   write(DOC_KEY, read(DOC_KEY).filter((d) => d.property_id !== id))
+  for (const row of orphaned) await deleteBlob(row.receipt_url || row.file_url)
 }
 
 // ── Expenses ───────────────────────────────────────────────────────
@@ -126,30 +134,26 @@ export async function deleteExpense(id) {
   write(EXP_KEY, read(EXP_KEY).map((e) => (e.id === id ? { ...e, deleted_at: new Date().toISOString() } : e)))
 }
 
-// ── Receipts (stored inline as data URLs) ──────────────────────────
-// Base64 inflates a file by roughly a third, and the whole ledger shares one
-// ~5MB origin quota, so a single large attachment can make every later save
-// fail. Refuse it up front naming the file, rather than letting the entry be
-// filled in and then rejected at save time.
-const MAX_ATTACHMENT_BYTES = 1.5 * 1024 * 1024
-
+// ── Receipts (stored in IndexedDB, referenced by token) ────────────
+// The row keeps a short `idb:` token and the file itself lives in IndexedDB —
+// see storage/blobs.js for why. The 1.5MB cap that used to be here is gone with
+// it; the limit is now the browser's IndexedDB quota, which is measured in
+// hundreds of megabytes.
 export async function uploadReceipt(file) {
-  if (file && file.size > MAX_ATTACHMENT_BYTES) {
-    throw new Error(
-      `"${file.name}" is ${(file.size / 1048576).toFixed(1)}MB. Demo mode stores ` +
-        'attachments in this browser, which allows about 5MB in total, so files ' +
-        'over 1.5MB are refused. Connect Supabase for full-size receipt storage.'
-    )
-  }
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result) // data: URL stored in receipt_url
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
+  return putBlob(file)
 }
+
+// Three shapes arrive here. A token, for anything saved since; a data URL, for
+// everything saved before, which must keep working — someone's receipts are not
+// worth losing to a storage change they never asked for; and a plain string
+// from some other backend, which is handed straight back.
 export async function getReceiptUrl(stored) {
-  return stored || null // already a data URL
+  if (!stored) return null
+  if (isBlobToken(stored)) {
+    const blob = await getBlob(stored)
+    return blob ? URL.createObjectURL(blob) : null
+  }
+  return stored
 }
 
 // ── Income ─────────────────────────────────────────────────────────
@@ -212,10 +216,19 @@ export async function restoreTrash(kind, id) {
 }
 export async function purgeTrash(kind, id) {
   const key = TRASH[kind]
+  const going = read(key).find((e) => e.id === id)
   write(key, read(key).filter((e) => e.id !== id))
+  // Destroying the row makes its attachment unreachable, so it goes too.
+  // Deleting to the bin deliberately does not: a restore has to bring the
+  // receipt back with the entry.
+  await deleteBlob(going?.receipt_url)
 }
 export async function emptyTrash() {
-  for (const key of Object.values(TRASH)) write(key, read(key).filter((e) => !e.deleted_at))
+  for (const key of Object.values(TRASH)) {
+    const going = read(key).filter((e) => e.deleted_at)
+    write(key, read(key).filter((e) => !e.deleted_at))
+    for (const row of going) await deleteBlob(row.receipt_url)
+  }
 }
 export async function getPersonalBudgets() {
   return read(PBUD_KEY)
@@ -244,7 +257,9 @@ export async function addDocument(payload) {
   return row
 }
 export async function deleteDocument(id) {
+  const going = read(DOC_KEY).find((d) => d.id === id)
   write(DOC_KEY, read(DOC_KEY).filter((d) => d.id !== id))
+  await deleteBlob(going?.receipt_url || going?.file_url)
 }
 
 // ── Comments (notes people leave on a bill / expense / income) ─────
