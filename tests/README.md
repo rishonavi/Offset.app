@@ -23,10 +23,11 @@ for Vite's resolver.
 | `invoice.test.mjs` | 66 | template language, GST, totals |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
+| `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **786** | |
+| | **804** | |
 
 ## Browser — `tests/browser/`
 
@@ -43,14 +44,14 @@ node tests/browser/rtlui.mjs
 | `attachui.mjs` | 13 | what the attachment pickers take, and full browser storage |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
-| `invoiceui.mjs` | 32 | default and imported templates, GST, PDF download |
+| `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `langui.mjs` | 53 | the language picker and what it changes |
 | `metalsui.mjs` | 27 | metal holdings on screen |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
-| | **316** | |
+| | **320** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

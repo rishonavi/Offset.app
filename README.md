@@ -74,8 +74,9 @@ silent zero drags a total down and looks like an answer.
 ### Getting things out
 
 - **Invoices** — build an invoice from entries already in your ledger and print
-  it in **your** format. A format is an HTML file with `{{tokens}}`; import it
-  once and it sits alongside the built-in one. GST is applied properly: same
+  it in **your** format. A format is an HTML file with `{{tokens}}`, or the
+  Word (`.docx`) or Excel (`.xlsx`) draft you already have — import it once and
+  it sits alongside the built-in one. GST is applied properly: same
   state gives CGST + SGST, different states gives IGST, and when neither party
   is registered there are no tax lines at all — not a zero row.
 - **Tally** — export income and expenses as import-ready Tally XML vouchers,
@@ -315,11 +316,11 @@ script that asserts, prints a line per assertion, and exits non-zero if anything
 failed — so it works in CI as-is.
 
 ```sh
-npx vite-node tests/logic/metals.test.mjs      # logic: 9 suites, 786 assertions
+npx vite-node tests/logic/metals.test.mjs      # logic: 10 suites, 804 assertions
 ```
 
 ```sh
-VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 316
+VITE_OPEN_ACCESS=true npx vite build           # browser: 10 suites, 320
 npx vite preview --port 4188 &
 node tests/browser/flows.mjs
 ```

@@ -3,6 +3,7 @@
 import { chromium } from './_playwright.mjs'
 import { readFileSync, existsSync, rmSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { deflateRawSync } from 'node:zlib'
 const B = process.env.OFFSET_TEST_URL || 'http://localhost:4188'
 const DL = mkdtempSync(`${tmpdir()}/offset-invoice-`)
 const b = await chromium.launch({ args: ['--no-sandbox', '--no-proxy-server'] })
@@ -160,6 +161,45 @@ const unlabelled = await p.evaluate(() =>
     .filter((el) => !(el.getAttribute('aria-label') || el.closest('label') || (el.id && document.querySelector(`label[for="${el.id}"]`))))
     .map((el) => el.outerHTML.slice(0, 70)))
 ok('every control is labelled', unlabelled.length === 0, unlabelled.join(' | '))
+
+console.log('\n── A WORD DRAFT AS A FORMAT ──')
+// Built here rather than committed: the case worth testing is Word splitting a
+// token across runs, which is invisible inside a binary fixture.
+const zip = (entries) => {
+  const chunks = [], central = []; let offset = 0
+  for (const [name, content] of entries) {
+    const nb = Buffer.from(name, 'utf8'), raw = Buffer.from(content, 'utf8'), df = deflateRawSync(raw)
+    const local = Buffer.alloc(30)
+    local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(8, 8)
+    local.writeUInt32LE(df.length, 18); local.writeUInt32LE(raw.length, 22); local.writeUInt16LE(nb.length, 26)
+    const cen = Buffer.alloc(46)
+    cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(20, 6); cen.writeUInt16LE(8, 10)
+    cen.writeUInt32LE(df.length, 20); cen.writeUInt32LE(raw.length, 24)
+    cen.writeUInt16LE(nb.length, 28); cen.writeUInt32LE(offset, 42)
+    central.push(Buffer.concat([cen, nb])); chunks.push(local, nb, df)
+    offset += local.length + nb.length + df.length
+  }
+  const cd = Buffer.concat(central), eocd = Buffer.alloc(22)
+  eocd.writeUInt32LE(0x06054b50, 0); eocd.writeUInt16LE(entries.length, 8); eocd.writeUInt16LE(entries.length, 10)
+  eocd.writeUInt32LE(cd.length, 12); eocd.writeUInt32LE(offset, 16)
+  return Buffer.concat([...chunks, cd, eocd])
+}
+const wp = (runs) => `<w:p>${runs.map((r) => `<w:r><w:t>${r}</w:t></w:r>`).join('')}</w:p>`
+const docx = zip([
+  ['[Content_Types].xml', '<Types/>'],
+  ['word/document.xml', `<?xml version="1.0"?><w:document><w:body>${wp(['DRAFTED IN WORD']) + wp(['Invoice ', '{{invoice.', 'number}}'])}</w:body></w:document>`],
+])
+
+const formatPicker = p.locator('input[aria-label="Import an invoice format"]')
+ok('the format picker offers Word and Excel', /\.docx/.test(await formatPicker.getAttribute('accept') || '') && /\.xlsx/.test(await formatPicker.getAttribute('accept') || ''), await formatPicker.getAttribute('accept'))
+await formatPicker.setInputFiles({ name: 'drafted.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: docx })
+await p.waitForTimeout(1500)
+const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('pl_invoice_templates') || '[]'))
+const fromWord = stored.find((t) => t.name === 'drafted')
+ok('the Word draft is stored as a format', Boolean(fromWord), stored.map((t) => t.name).join(', '))
+ok('its wording comes through', (fromWord?.html || '').includes('DRAFTED IN WORD'), fromWord?.html?.slice(0, 120))
+// The point of the whole module: Word had split this across two runs.
+ok('a token split across runs is whole again', (fromWord?.html || '').includes('{{invoice.number}}'), fromWord?.html?.slice(0, 160))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 console.log('errors:', errs.length ? errs.slice(0, 5) : 'none')

@@ -11,6 +11,7 @@ import {
   parseTemplateFile, templateToFile, analyseTemplate, renderDocument,
   DEFAULT_TEMPLATE_HTML, DEFAULT_TEMPLATE_CSS, TEMPLATE_EXTENSIONS, TOKENS, LINE_TOKENS, CONDITIONS,
 } from '../lib/invoiceTemplate'
+import { isOfficeTemplate, officeTemplateToHtml, OFFICE_TEMPLATE_EXTENSIONS } from '../lib/officeTemplate'
 import { invoiceToPDF, printInvoice, downloadHtml } from '../lib/invoicePdf'
 import { Card, Button, CardTitle, Field, Input, Select, Textarea, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -105,8 +106,12 @@ export default function Invoices() {
   const importTemplate = async (file) => {
     if (!file) return
     try {
-      const text = await file.text()
-      const parsed = parseTemplateFile(file.name, text)
+      // A Word or Excel draft is converted to HTML first; from there it is the
+      // same import path as a hand-written layout, tokens and all.
+      const text = isOfficeTemplate(file.name)
+        ? await officeTemplateToHtml(file.name, await file.arrayBuffer())
+        : await file.text()
+      const parsed = parseTemplateFile(file.name.replace(/\.(docx|xlsx)$/i, '.html'), text)
       const found = analyseTemplate(parsed.html)
       const row = saveTemplate(parsed)
       setTemplates(listTemplates())
@@ -213,13 +218,13 @@ export default function Invoices() {
         <CardTitle
           title="Your format"
           icon={FileText}
-          description="Import your own invoice layout as an HTML file. Offset fills in the numbers."
+          description="Import your own invoice layout — an HTML file, or the Word or Excel draft you already have. Offset fills in the numbers."
           action={
             <>
               <input
                 ref={fileRef}
                 type="file"
-                accept={TEMPLATE_EXTENSIONS.join(',')}
+                accept={[...TEMPLATE_EXTENSIONS, ...OFFICE_TEMPLATE_EXTENSIONS].join(',')}
                 className="hidden"
                 aria-label="Import an invoice format"
                 onChange={(e) => importTemplate(e.target.files?.[0])}
