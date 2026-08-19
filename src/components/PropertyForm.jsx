@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ASSET_TYPES, hasAddress } from '../lib/constants'
+import { ASSET_TYPES, hasAddress, canBeFinanced, canBeLeased } from '../lib/constants'
 import { currencySymbol, formatCurrency } from '../lib/format'
 import {
   METALS, METAL_KEYS, PURITIES, UNITS, UNIT_KEYS,
@@ -44,6 +44,8 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
 
   const isMetal = holdsMetal(form.type)
   const addressable = hasAddress(form.type)
+  const financeable = canBeFinanced(form.type)
+  const leasable = canBeLeased(form.type)
   const metalDef = METALS[form.metal] || METALS.gold
   const fineness = form.metal_fineness === '' ? metalDef.defaultFineness : Number(form.metal_fineness)
   const holding =
@@ -88,14 +90,17 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
         name: form.name.trim(),
         value: num(form.value),
         monthly_budget: num(form.monthly_budget),
-        loan_principal: num(form.loan_principal),
-        loan_rate: num(form.loan_rate),
-        loan_tenure_months: num(form.loan_tenure_months),
-        loan_start: form.loan_start || null,
-        tenant_name: form.tenant_name.trim() || null,
-        lease_start: form.lease_start || null,
-        lease_end: form.lease_end || null,
-        deposit: num(form.deposit),
+        // Same split as the address and the metal fields: kept while editing so
+        // a mis-click survives, dropped on save so a mortgage does not trail a
+        // holding of stock that was briefly typed as a flat.
+        loan_principal: financeable ? num(form.loan_principal) : null,
+        loan_rate: financeable ? num(form.loan_rate) : null,
+        loan_tenure_months: financeable ? num(form.loan_tenure_months) : null,
+        loan_start: (financeable && form.loan_start) || null,
+        tenant_name: (leasable && form.tenant_name.trim()) || null,
+        lease_start: (leasable && form.lease_start) || null,
+        lease_end: (leasable && form.lease_end) || null,
+        deposit: leasable ? num(form.deposit) : null,
       })
     } catch (err) {
       setError(err?.message || String(err))
@@ -273,63 +278,69 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
         </div>
       )}
 
-      {/* Loan / mortgage (optional) */}
-      <div className="border-t border-border-light pt-5">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">Loan / mortgage</p>
-        <p className="mt-1 text-xs text-slate-400">
-          Optional — fill all four to see EMI, outstanding balance and payoff date on the asset page.
-        </p>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Loan amount">
-            <div className="relative">
-              <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
-                {currencySymbol}
-              </span>
-              <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"
-                value={form.loan_principal} onChange={set('loan_principal')} placeholder="0" />
-            </div>
-          </Field>
-          <Field label="Interest rate" hint="Annual %">
-            <Input type="number" inputMode="decimal" step="0.001" min="0"
-              value={form.loan_rate} onChange={set('loan_rate')} placeholder="e.g. 8.5" />
-          </Field>
-          <Field label="Tenure" hint="Total months">
-            <Input type="number" inputMode="numeric" step="1" min="0"
-              value={form.loan_tenure_months} onChange={set('loan_tenure_months')} placeholder="e.g. 240" />
-          </Field>
-          <Field label="Start date">
-            <Input type="date" value={form.loan_start} onChange={set('loan_start')} />
-          </Field>
+      {/* A loan against a holding of stock is a facility against the portfolio, not
+          an EMI on one line of it — see canBeFinanced. */}
+      {financeable && (
+        <div className="border-t border-border-light pt-5">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">Loan / mortgage</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Optional — fill all four to see EMI, outstanding balance and payoff date on the asset page.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Loan amount">
+              <div className="relative">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                  {currencySymbol}
+                </span>
+                <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"
+                  value={form.loan_principal} onChange={set('loan_principal')} placeholder="0" />
+              </div>
+            </Field>
+            <Field label="Interest rate" hint="Annual %">
+              <Input type="number" inputMode="decimal" step="0.001" min="0"
+                value={form.loan_rate} onChange={set('loan_rate')} placeholder="e.g. 8.5" />
+            </Field>
+            <Field label="Tenure" hint="Total months">
+              <Input type="number" inputMode="numeric" step="1" min="0"
+                value={form.loan_tenure_months} onChange={set('loan_tenure_months')} placeholder="e.g. 240" />
+            </Field>
+            <Field label="Start date">
+              <Input type="date" value={form.loan_start} onChange={set('loan_start')} />
+            </Field>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Tenancy / lease (optional) */}
-      <div className="border-t border-border-light pt-5">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">Tenancy / lease</p>
-        <p className="mt-1 text-xs text-slate-400">
-          Optional — for rented assets. You'll get a renewal nudge on the dashboard as the lease end nears.
-        </p>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Tenant name">
-            <Input value={form.tenant_name} onChange={set('tenant_name')} placeholder="e.g. Rahul Mehta" />
-          </Field>
-          <Field label="Deposit held">
-            <div className="relative">
-              <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
-                {currencySymbol}
-              </span>
-              <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"
-                value={form.deposit} onChange={set('deposit')} placeholder="0" />
-            </div>
-          </Field>
-          <Field label="Lease start">
-            <Input type="date" value={form.lease_start} onChange={set('lease_start')} />
-          </Field>
-          <Field label="Lease end">
-            <Input type="date" value={form.lease_end} onChange={set('lease_end')} />
-          </Field>
+      {/* Letting something out for someone else's use — see canBeLeased. Gold and
+          a painting are owned, not tenanted. */}
+      {leasable && (
+        <div className="border-t border-border-light pt-5">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">Tenancy / lease</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Optional — for rented assets. You'll get a renewal nudge on the dashboard as the lease end nears.
+          </p>
+          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Tenant name">
+              <Input value={form.tenant_name} onChange={set('tenant_name')} placeholder="e.g. Rahul Mehta" />
+            </Field>
+            <Field label="Deposit held">
+              <div className="relative">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                  {currencySymbol}
+                </span>
+                <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"
+                  value={form.deposit} onChange={set('deposit')} placeholder="0" />
+              </div>
+            </Field>
+            <Field label="Lease start">
+              <Input type="date" value={form.lease_start} onChange={set('lease_start')} />
+            </Field>
+            <Field label="Lease end">
+              <Input type="date" value={form.lease_end} onChange={set('lease_end')} />
+            </Field>
+          </div>
         </div>
-      </div>
+      )}
 
       <Field label="Notes">
         <Textarea rows={3} value={form.notes} onChange={set('notes')} placeholder="Anything worth remembering" />

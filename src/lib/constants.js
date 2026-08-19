@@ -39,6 +39,57 @@ export const ADDRESSABLE_ASSET_TYPES = [
 
 export const hasAddress = (type) => ADDRESSABLE_ASSET_TYPES.includes(type)
 
+// A loan block asks for a principal, a rate, a tenure and a start date, and
+// puts an EMI and a payoff date on the asset page. That shape fits anything
+// bought on finance or pledged as security — which in India very much includes
+// jewellery and bullion, gold loans being among the most common secured
+// borrowing there is. Leaving them out would be a Western default applied to an
+// India-first app.
+//
+// What it does not fit is a financial holding. Borrowing against a portfolio is
+// a facility against the portfolio, drawn and repaid at will; it has no EMI and
+// no payoff date, and recording it against one line of stock would misstate
+// both. So the list is everything physical, plus Other for the unknown case.
+export const FINANCEABLE_ASSET_TYPES = [
+  'Real Estate — Apartment / Flat',
+  'Real Estate — Villa / House',
+  'Real Estate — Commercial',
+  'Land / Plot',
+  'Vehicle / Car',
+  'Yacht / Boat',
+  'Aircraft',
+  'Machinery / Equipment',
+  'Jewellery',
+  'Precious Metals — Gold / Silver',
+  'Art / Collectibles',
+  'Other',
+]
+
+export const canBeFinanced = (type) => FINANCEABLE_ASSET_TYPES.includes(type)
+
+// Tenancy is narrower than finance. The fields are a tenant, a deposit held and
+// a lease running between two dates — the shape of letting something out for
+// someone else's use. That covers property, land, and the large movable things
+// that are chartered or leased rather than sold: vehicles, boats, aircraft,
+// plant.
+//
+// It does not cover gold, bullion or a painting. You can lend a painting to a
+// gallery, but "tenant name" and "deposit held" are not how that is recorded,
+// and a field that nearly fits is worse than one that is absent.
+export const LEASABLE_ASSET_TYPES = [
+  'Real Estate — Apartment / Flat',
+  'Real Estate — Villa / House',
+  'Real Estate — Commercial',
+  'Land / Plot',
+  'Vehicle / Car',
+  'Yacht / Boat',
+  'Aircraft',
+  'Machinery / Equipment',
+  'Other',
+]
+
+export const canBeLeased = (type) => LEASABLE_ASSET_TYPES.includes(type)
+
 export const CATEGORIES = [
   'Materials',
   'Labor / Contractors',

@@ -3,7 +3,10 @@
 // Not every asset is a place. A car, a gold chain, a holding of stock and a
 // wallet have no address, and a form that asks for one invites someone to type
 // where the thing is kept — a different fact from the one the field means.
-import { ASSET_TYPES, ADDRESSABLE_ASSET_TYPES, hasAddress } from '../../src/lib/constants.js'
+import {
+  ASSET_TYPES, ADDRESSABLE_ASSET_TYPES, hasAddress,
+  FINANCEABLE_ASSET_TYPES, canBeFinanced, LEASABLE_ASSET_TYPES, canBeLeased,
+} from '../../src/lib/constants.js'
 import { METAL_ASSET_TYPES, holdsMetal } from '../../src/lib/metals.js'
 
 let pass = 0, fail = 0
@@ -43,6 +46,51 @@ ok('nor does an empty one', !hasAddress(''))
 ok('nor undefined', !hasAddress(undefined))
 ok('every shipped type gives a straight yes or no',
   ASSET_TYPES.every((t) => typeof hasAddress(t) === 'boolean'))
+
+console.log('\n── WHAT CAN CARRY A LOAN ──')
+for (const type of ['Real Estate — Apartment / Flat', 'Land / Plot', 'Vehicle / Car', 'Yacht / Boat',
+                    'Aircraft', 'Machinery / Equipment', 'Art / Collectibles', 'Other']) {
+  ok(`${type} can`, canBeFinanced(type))
+}
+// India-first: a gold loan is among the most common secured borrowing there is,
+// so leaving bullion and jewellery out would be a Western default.
+ok('Jewellery can — gold loans are ordinary here', canBeFinanced('Jewellery'))
+ok('and so can bullion', canBeFinanced('Precious Metals — Gold / Silver'))
+// A facility against a portfolio has no EMI and no payoff date, so recording
+// one against a single line would misstate both.
+for (const type of ['Stocks / Equity', 'Mutual Funds / Bonds', 'Cryptocurrency']) {
+  ok(`${type} cannot — a portfolio facility is not an EMI`, !canBeFinanced(type))
+}
+
+console.log('\n── WHAT CAN BE LET OUT ──')
+for (const type of ['Real Estate — Commercial', 'Real Estate — Villa / House', 'Land / Plot',
+                    'Vehicle / Car', 'Yacht / Boat', 'Aircraft', 'Machinery / Equipment', 'Other']) {
+  ok(`${type} can be leased`, canBeLeased(type))
+}
+for (const type of ['Jewellery', 'Precious Metals — Gold / Silver', 'Stocks / Equity',
+                    'Mutual Funds / Bonds', 'Cryptocurrency', 'Art / Collectibles']) {
+  ok(`${type} cannot have a tenant`, !canBeLeased(type))
+}
+
+console.log('\n── THE TWO ARE NOT THE SAME QUESTION ──')
+// Tenancy is the narrower of the two: everything you can let out, you could
+// have financed, but not the reverse — a gold loan does not come with a tenant.
+const leasableButNotFinanceable = ASSET_TYPES.filter((t) => canBeLeased(t) && !canBeFinanced(t))
+ok('anything lettable could also have been financed', leasableButNotFinanceable.length === 0,
+  leasableButNotFinanceable.join(', '))
+ok('but not the other way round', ASSET_TYPES.some((t) => canBeFinanced(t) && !canBeLeased(t)))
+
+const strayFinance = FINANCEABLE_ASSET_TYPES.filter((t) => !ASSET_TYPES.includes(t))
+ok('every financeable type is a real asset type', strayFinance.length === 0, strayFinance.join(', '))
+const strayLease = LEASABLE_ASSET_TYPES.filter((t) => !ASSET_TYPES.includes(t))
+ok('every leasable type is too', strayLease.length === 0, strayLease.join(', '))
+
+// A purely financial holding is name, type, value and notes — nothing else on
+// the form applies to it.
+for (const type of ['Stocks / Equity', 'Mutual Funds / Bonds', 'Cryptocurrency']) {
+  ok(`${type} shows none of the three blocks`,
+    !hasAddress(type) && !canBeFinanced(type) && !canBeLeased(type))
+}
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

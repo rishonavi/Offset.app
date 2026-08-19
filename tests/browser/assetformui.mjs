@@ -71,5 +71,67 @@ const shown = await p.locator('#main-content').innerText()
 ok('the address shows on the asset list', shown.includes('12 Marine Drive'), shown.slice(0, 200).replace(/\n/g, ' | '))
 ok('and the car is listed without one', shown.includes('Family Car'))
 
+console.log('\n── A LOAN ONLY WHERE ONE CAN EXIST ──')
+const loanBlock = () => p.locator('text=Loan / mortgage')
+const leaseBlock = () => p.locator('text=Tenancy / lease')
+await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
+for (const type of ['Real Estate — Apartment / Flat', 'Vehicle / Car', 'Machinery / Equipment']) {
+  await setType(type)
+  ok(`${type} can carry one`, await loanBlock().count() > 0)
+}
+// A gold loan is ordinary here, so bullion and jewellery keep the block.
+for (const type of ['Jewellery', 'Precious Metals — Gold / Silver']) {
+  await setType(type)
+  ok(`${type} keeps it — gold loans are ordinary`, await loanBlock().count() > 0)
+}
+for (const type of ['Stocks / Equity', 'Mutual Funds / Bonds', 'Cryptocurrency']) {
+  await setType(type)
+  ok(`${type} does not`, await loanBlock().count() === 0)
+}
+
+console.log('\n── A TENANT ONLY WHERE ONE CAN EXIST ──')
+for (const type of ['Real Estate — Commercial', 'Land / Plot', 'Aircraft']) {
+  await setType(type)
+  ok(`${type} can be let out`, await leaseBlock().count() > 0)
+}
+for (const type of ['Jewellery', 'Art / Collectibles', 'Cryptocurrency']) {
+  await setType(type)
+  ok(`${type} cannot`, await leaseBlock().count() === 0)
+}
+
+console.log('\n── A FINANCIAL HOLDING IS A SHORT FORM ──')
+await setType('Cryptocurrency')
+ok('no address, no loan, no tenancy',
+  (await addressField().count()) === 0 && (await loanBlock().count()) === 0 && (await leaseBlock().count()) === 0)
+ok('but it still has a value field', await p.locator('#main-content input[type=number]').count() > 0)
+
+console.log('\n── AND NEITHER TRAILS THE WRONG ASSET ──')
+await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
+await p.locator('#main-content input').first().fill('Rented Flat')
+await setType('Real Estate — Apartment / Flat')
+await p.locator('input[placeholder="e.g. 240"]').fill('240')
+await p.locator('input[placeholder="e.g. Rahul Mehta"]').fill('Rahul Mehta')
+// Retype it as something that can have neither, and save.
+await setType('Cryptocurrency')
+await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
+await p.waitForTimeout(1200)
+const coin = await p.evaluate(() =>
+  (JSON.parse(localStorage.getItem('pl_properties') || '[]').find((x) => x.name === 'Rented Flat') || {}))
+ok('the holding saved', coin.name === 'Rented Flat', JSON.stringify(coin).slice(0, 120))
+ok('with no loan tenure on it', !coin.loan_tenure_months, JSON.stringify(coin.loan_tenure_months))
+ok('and no tenant', !coin.tenant_name, JSON.stringify(coin.tenant_name))
+
+await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
+await p.locator('#main-content input').first().fill('Let Shop')
+await setType('Real Estate — Commercial')
+await p.locator('input[placeholder="e.g. 240"]').fill('180')
+await p.locator('input[placeholder="e.g. Rahul Mehta"]').fill('Rahul Mehta')
+await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
+await p.waitForTimeout(1200)
+const shop = await p.evaluate(() =>
+  (JSON.parse(localStorage.getItem('pl_properties') || '[]').find((x) => x.name === 'Let Shop') || {}))
+ok('a shop keeps the loan it was given', Number(shop.loan_tenure_months) === 180, JSON.stringify(shop.loan_tenure_months))
+ok('and the tenant it was given', shop.tenant_name === 'Rahul Mehta', JSON.stringify(shop.tenant_name))
+
 console.log(`\n${pass} passed, ${fail} failed`); console.log('errors:', errs.length ? errs.slice(0, 4) : 'none')
 await b.close(); if (fail) process.exitCode = 1
