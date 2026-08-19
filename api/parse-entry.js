@@ -5,6 +5,9 @@
 //
 // Env: GEMINI_API_KEY (required), SCAN_MODEL (optional; defaults gemini-2.0-flash).
 
+import { requireUserIfConfigured } from './_auth.js'
+import { rateLimited } from './_rate.js'
+
 export const config = { maxDuration: 30 }
 
 const MODEL = process.env.SCAN_MODEL || 'gemini-2.0-flash'
@@ -95,6 +98,18 @@ export default async function handler(req, res) {
     res.status(501).json({ error: 'ai_not_configured' })
     return
   }
+
+  // Every call past here spends the operator's Gemini quota, and this endpoint
+  // was reachable by anyone who knew the URL. Where the deployment has accounts
+  // the caller must be signed in; where it has none — a demo deployment, with
+  // nobody to sign in as — the rate limit is what stands between the key and a
+  // script pointed at it.
+  const auth = await requireUserIfConfigured(req)
+  if (!auth.ok) {
+    res.status(auth.status).json({ error: auth.error })
+    return
+  }
+  if (rateLimited(req, res, auth.user, { max: 60 })) return
 
   let body
   try {

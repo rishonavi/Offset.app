@@ -5,6 +5,8 @@
 //
 // Env: see api/bank/link.js.
 
+import { requireUser } from '../_auth.js'
+
 export const config = { maxDuration: 30 }
 
 const provider = () => (process.env.BANK_PROVIDER || 'plaid').toLowerCase()
@@ -105,6 +107,16 @@ export default async function handler(req, res) {
   }
   if (!configured()) {
     res.status(501).json({ error: 'bank_sync_not_configured', provider: provider() })
+    return
+  }
+
+  // Linking a bank and pulling its transactions is not something an anonymous
+  // caller should ever do, so this is requireUser rather than the "if
+  // configured" variant: a deployment with a bank provider but no accounts has
+  // no way to say who is asking, and the safe answer there is nobody.
+  const auth = await requireUser(req)
+  if (!auth.ok) {
+    res.status(auth.status).json({ error: auth.error })
     return
   }
   let body = {}

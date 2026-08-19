@@ -316,7 +316,7 @@ script that asserts, prints a line per assertion, and exits non-zero if anything
 failed — so it works in CI as-is.
 
 ```sh
-npx vite-node tests/logic/metals.test.mjs      # logic: 11 suites, 840 assertions
+npx vite-node tests/logic/metals.test.mjs      # logic: 12 suites, 865 assertions
 ```
 
 ```sh

@@ -1,15 +1,30 @@
 // Client helpers for the AI serverless endpoints (Gemini). Both degrade
 // gracefully: a 501 means AI isn't configured on this deployment.
 
+import { authHeaders } from './authHeader'
+
 async function postJSON(url, payload) {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // These calls spend the operator's Gemini quota, so the server counts them
+    // against whoever made them. Without the token every signed-in user is
+    // indistinguishable from every anonymous one and they all share one bucket.
+    headers: await authHeaders(),
     body: JSON.stringify(payload),
   })
   if (res.status === 501) {
     const e = new Error('AI isn’t set up on this deployment yet.')
     e.code = 'not_configured'
+    throw e
+  }
+  if (res.status === 429) {
+    const e = new Error('That’s a lot of requests in one go — please try again later.')
+    e.code = 'rate_limited'
+    throw e
+  }
+  if (res.status === 401) {
+    const e = new Error('Please sign in to use this.')
+    e.code = 'unauthorized'
     throw e
   }
   if (!res.ok) throw new Error('The AI request failed — please try again.')

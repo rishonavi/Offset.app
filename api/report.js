@@ -15,6 +15,7 @@
 // as "email delivery isn't set up here" rather than as a failure.
 
 import { requireUserIfConfigured } from './_auth.js'
+import { rateLimited } from './_rate.js'
 
 export const config = { maxDuration: 15 }
 
@@ -31,20 +32,6 @@ async function readBody(req) {
   for await (const c of req) chunks.push(typeof c === 'string' ? Buffer.from(c) : c)
   if (!chunks.length) return {}
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
-}
-
-// A cheap ceiling on how much mail one caller can cause. Serverless instances
-// come and go, so this is a speed bump, not the real limit — that lives in
-// submit_report() in Postgres, which counts across every instance.
-const seen = new Map()
-const RATE = { max: 10, windowMs: 60 * 60 * 1000 }
-function overRate(key) {
-  const now = Date.now()
-  const hits = (seen.get(key) || []).filter((t) => now - t < RATE.windowMs)
-  hits.push(now)
-  seen.set(key, hits)
-  if (seen.size > 500) for (const [k, v] of seen) if (!v.some((t) => now - t < RATE.windowMs)) seen.delete(k)
-  return hits.length > RATE.max
 }
 
 const escape = (s) =>
@@ -88,11 +75,10 @@ export default async function handler(req, res) {
     return
   }
 
-  const who = auth.user?.id || req.headers['x-forwarded-for'] || 'anon'
-  if (overRate(String(who))) {
-    res.status(429).json({ error: 'rate_limited' })
-    return
-  }
+  // A cheap ceiling on how much mail one caller can cause. The real limit lives
+  // in submit_report() in Postgres, which counts across every instance; this
+  // only stops one script from filling an inbox before Postgres is consulted.
+  if (rateLimited(req, res, auth.user, { max: 10 })) return
 
   // The reporter's address goes in Reply-To, never in From — From must stay a
   // sender the domain actually authorises, or the mail gets filed as spam.

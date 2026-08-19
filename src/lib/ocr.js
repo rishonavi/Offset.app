@@ -1,5 +1,11 @@
 // On-device receipt reading (OCR) for images + PDFs. The heavy libraries are
 // imported dynamically so they only download when the user actually scans.
+//
+// authHeader is a static import rather than a dynamic one because it is a few
+// lines and defers Supabase itself; this whole module is already behind a
+// dynamic import from the forms, so nothing here loads before a scan anyway.
+
+import { authHeaders } from './authHeader'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -239,20 +245,10 @@ async function prepareForUpload(file) {
 async function scanWithAI(file) {
   const payload = await prepareForUpload(file)
   if (!payload) return { data: null, error: 'too_big' } // file too large → OCR
-  const headers = { 'Content-Type': 'application/json' }
-  // Include the auth token so the server can attribute the scan to the user
-  // when plan limits are enforced (harmless otherwise).
-  try {
-    const { supabase } = await import('./supabaseClient')
-    if (supabase) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
-    }
-  } catch {
-    /* no cloud session — proceed unauthenticated */
-  }
+  // The token lets the server attribute the scan to the user where plan limits
+  // are enforced, and is harmless otherwise. This was a hand-rolled copy of
+  // authHeaders() — two versions of "how do we authenticate" is one too many.
+  const headers = await authHeaders()
   const res = await fetch(AI_ENDPOINT, {
     method: 'POST',
     headers,

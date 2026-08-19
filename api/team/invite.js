@@ -5,6 +5,7 @@
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 
 import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '../_auth.js'
 
 async function findUserByEmail(admin, email) {
   for (let page = 1; page <= 10; page++) {
@@ -29,24 +30,15 @@ export default async function handler(req, res) {
     return
   }
 
-  const authHeader = req.headers.authorization || ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  if (!token) {
-    res.status(401).json({ error: 'unauthorized' })
+  const auth = await requireUser(req)
+  if (!auth.ok) {
+    res.status(auth.status).json({ error: auth.error })
     return
   }
+  const owner = auth.user
 
   const admin = createClient(url, serviceRole)
   try {
-    const {
-      data: { user: owner },
-      error: uerr,
-    } = await admin.auth.getUser(token)
-    if (uerr || !owner) {
-      res.status(401).json({ error: 'unauthorized' })
-      return
-    }
-
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
     const email = String(body.email || '').trim().toLowerCase()
     const role = body.role === 'editor' ? 'editor' : 'viewer'

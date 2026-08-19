@@ -14,6 +14,8 @@
 //   GEMINI_API_KEY  (required for AI scanning — free key from aistudio.google.com)
 //   SCAN_MODEL      (optional; defaults to gemini-2.0-flash)
 
+import { requireUser } from './_auth.js'
+
 export const config = { maxDuration: 30 }
 
 const MODEL = process.env.SCAN_MODEL || 'gemini-2.0-flash'
@@ -115,17 +117,14 @@ async function scanGate(req) {
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!enforce || !url || !serviceRole) return { allow: true }
 
-  const auth = req.headers.authorization || ''
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
-  if (!token) return { allow: false, reason: 'unauthorized' }
+  // The token check is the shared one in _auth.js — this used to be a third
+  // hand-written copy of it, and copies drift.
+  const identified = await requireUser(req)
+  if (!identified.ok) return { allow: false, reason: identified.error }
+  const user = identified.user
 
   const { createClient } = await import('@supabase/supabase-js')
   const admin = createClient(url, serviceRole)
-  const {
-    data: { user },
-    error,
-  } = await admin.auth.getUser(token)
-  if (error || !user) return { allow: false, reason: 'unauthorized' }
 
   const { data: profile } = await admin.from('profiles').select('plan').eq('user_id', user.id).maybeSingle()
   if ((profile?.plan || 'free') === 'pro') return { allow: true } // unlimited
