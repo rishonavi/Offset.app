@@ -128,13 +128,32 @@ costs is not what they are paid.
 - **the whole layer stays dormant until the first company exists**: a personal
   install shows no Companies nav, no switcher, and writes no `pl_corp_*` keys
 
+**Done and verified** — the Supabase schema and row-level security,
+`supabase/corporate.sql`, 50 assertions against a real PostgreSQL:
+
+- every table, and the file applying cleanly twice over
+- the permission matrix as policies, mirroring `PERMISSIONS` role by role
+- both invariants as triggers rather than UI rules: an entity keeps at least
+  one owner, and nobody approves their own entry
+- an approved entry is editable only by someone who may edit anyone's
+- the audit log has no update or delete policy at all
+- an entity can be archived but not deleted
+- a personal install, which has no entity, behaves exactly as before
+
+This was going to ship `[unverified]`. It did not need to: PostgreSQL runs
+anywhere, and running it is what found the two policies that were wrong. See
+`tests/README.md`. What remains unverified is only the Supabase-specific
+surface — `auth.uid()` and friends are stood in for by the runner.
+
 **Next**, in order:
 
 1. Departments on entry forms; budgets and reports per cost centre
 2. The approvals queue
 3. Inventory, payables, advances and payroll screens
-4. Supabase schema and row-level security for all of the above *(unverifiable
-   here — it will ship as its own `[unverified]` commit)*
-5. SSO (Google Workspace / SAML) *(likewise)*
+4. The client storage layer talking to those tables — `storage/corporate.js` is
+   still browser-only under both backends, and is synchronous throughout, so
+   this is an async refactor of `EntityContext` and `Companies.jsx` rather than
+   a swap of one backend for another
+5. SSO (Google Workspace / SAML) *(unverifiable here)*
 
 Billing for the corporate tier is deliberately not built yet.

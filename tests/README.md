@@ -66,3 +66,29 @@ the environment. Override either default if your machine differs:
 **Do not remove `serviceWorkers: 'block'`** from any browser context. The PWA
 worker serves stale chunks and will make a fixed bug look unfixed. This cost
 hours twice.
+
+## Schema — `tests/sql/`
+
+Row-level security is evaluated by PostgreSQL or not at all, so these run
+against a real one. Reading the policies is no substitute: two in
+`corporate.sql` looked correct and were not, and one of them let a stranger
+walk into somebody else's company as its owner.
+
+```sh
+createdb offset_test
+OFFSET_TEST_PG='postgresql:///offset_test' node tests/sql/run.mjs
+```
+
+Without `OFFSET_TEST_PG` it prints how to run it and exits 0 — most machines
+have no PostgreSQL, and a suite that fails for want of a server is one people
+learn to ignore.
+
+| Suite | Assertions | Covers |
+|---|---|---|
+| `corporate.sql` | 50 | schema applies and re-applies; who may see and change what; the two invariants; founding; that a personal install is untouched |
+
+The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
+Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`
+files stay exactly what you paste into the Supabase SQL editor. Checks run as
+an unprivileged role: superusers and table owners bypass RLS, so a test running
+as `postgres` proves nothing.

@@ -178,7 +178,8 @@ silently failing later. Cloud mode has neither limit.
 
 Optional SQL, each applied after `schema.sql`: `teams.sql` (read-only sharing),
 `admin.sql` (the admin panel), `reports.sql` (problem reports), `limits.sql`
-(plan limits).
+(plan limits), `corporate.sql` (entities, roles, departments, approvals and the
+four ledgers).
 
 > `VITE_OPEN_ACCESS=true` skips login entirely and runs on browser storage even
 > when Supabase keys are present — that is how the public demo is deployed.
@@ -278,11 +279,15 @@ at least one owner** so it can never be locked out. `__all__` is a read-only
 consolidated view; entities reporting in another currency are listed as excluded
 rather than converted at an invented rate.
 
-> **Current limitation.** The corporate layer stores in the browser under
-> **both** backends — the Supabase schema and row-level security for entities,
-> departments, members and the ledgers are not written yet. A company's books
-> are local to the device until they are. The app says so rather than pretending
-> to sync. What is built, and what is next, is tracked at the bottom of
+The Supabase side is [`supabase/corporate.sql`](./supabase/corporate.sql) —
+tables, row-level security, and the two invariants as database triggers. Apply
+it after `schema.sql`; it is additive and safe to re-run.
+
+> **Current limitation.** The *client* still keeps company data in the browser
+> under both backends: `src/lib/storage/corporate.js` is synchronous throughout
+> and has no Supabase implementation yet, so a company's books are local to the
+> device even once the schema exists. The app says so rather than pretending to
+> sync. Progress is tracked at the bottom of
 > [`docs/CORPORATE.md`](./docs/CORPORATE.md).
 
 ---
