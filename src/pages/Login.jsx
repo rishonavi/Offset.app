@@ -23,8 +23,26 @@ function AppleIcon() {
   )
 }
 
+// Supabase reports a provider nobody switched on as "Unsupported provider",
+// which reads like the app asked for something that does not exist. It is
+// nearly always the one setting still turned off, and saying which one is the
+// difference between a two-minute fix and an afternoon.
+function explain(message) {
+  const text = String(message || '')
+  if (/unsupported provider|provider is not enabled|not enabled/i.test(text)) {
+    return 'That provider isn’t switched on in this project’s Supabase. Enable it under Authentication → Providers, and paste in the client ID and secret from Google Cloud.'
+  }
+  if (/redirect|requested path is invalid|not allowed|invalid.*url/i.test(text)) {
+    return `Supabase refused the return address. Add ${window.location.origin} to Authentication → URL Configuration → Redirect URLs, and set Site URL to the same thing.`
+  }
+  if (/exchange external code|invalid.*code|bad_oauth/i.test(text)) {
+    return 'Google accepted the sign-in but Supabase could not complete it — usually a client ID or secret that does not match the one in Google Cloud, or a redirect URI there that is not https://<your-project>.supabase.co/auth/v1/callback.'
+  }
+  return text
+}
+
 export default function Login() {
-  const { user, signIn, signUp, signInWithProvider } = useAuth()
+  const { user, signIn, signUp, signInWithProvider, isCloud, redirectError } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState('signin')
   const [email, setEmail] = useState('')
@@ -37,13 +55,18 @@ export default function Login() {
     if (user) navigate('/', { replace: true })
   }, [user, navigate])
 
+  // A provider that refused says so on the way back rather than by throwing.
+  useEffect(() => {
+    if (redirectError) setError(explain(redirectError))
+  }, [redirectError])
+
   const oauth = async (provider) => {
     setError(null)
     setInfo(null)
     try {
       await signInWithProvider(provider) // redirects to the provider
     } catch (err) {
-      setError(err?.message || String(err))
+      setError(explain(err?.message || String(err)))
     }
   }
 
@@ -85,18 +108,29 @@ export default function Login() {
         </div>
 
         <div className="card p-6">
-          <div className="space-y-2.5">
-            <button type="button" onClick={() => oauth('google')} className="btn-ghost w-full">
-              <GoogleIcon /> Continue with Google
-            </button>
-            <button type="button" onClick={() => oauth('apple')} className="btn-ghost w-full">
-              <AppleIcon /> Continue with Apple
-            </button>
-          </div>
+          {/* Without Supabase there are no accounts, and these buttons could
+              only ever throw. Reaching this page in that state is already
+              unlikely — the demo backend reports a signed-in user, so /login
+              redirects away — but "unlikely" is not a reason to render a
+              control that cannot work. The README has always said these appear
+              in cloud mode; now they do. Anyone in that state sees the demo
+              banner in the app itself, which says what is missing. */}
+          {isCloud ? (
+            <>
+              <div className="space-y-2.5">
+                <button type="button" onClick={() => oauth('google')} className="btn-ghost w-full">
+                  <GoogleIcon /> Continue with Google
+                </button>
+                <button type="button" onClick={() => oauth('apple')} className="btn-ghost w-full">
+                  <AppleIcon /> Continue with Apple
+                </button>
+              </div>
 
-          <div className="my-5 flex items-center gap-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-slate-400">
-            <span className="h-px flex-1 bg-border-light" /> or <span className="h-px flex-1 bg-border-light" />
-          </div>
+              <div className="my-5 flex items-center gap-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-slate-400">
+                <span className="h-px flex-1 bg-border-light" /> or <span className="h-px flex-1 bg-border-light" />
+              </div>
+            </>
+          ) : null}
 
           <form onSubmit={submit} className="space-y-4">
             <Field label="Email">

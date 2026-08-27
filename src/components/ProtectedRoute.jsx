@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { Spinner } from './ui'
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading, isCloud } = useAuth()
+  const { user, loading, isCloud, redirectError } = useAuth()
 
   if (loading) {
     return (
@@ -14,7 +14,11 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (isCloud && !user) {
-    return <Navigate to="/welcome" replace />
+    // Somebody who has just come back from a sign-in that failed does not need
+    // the landing page: they need to know what went wrong, and the reason is
+    // only rendered on the login screen. Sending them to /welcome swallows it
+    // and the whole round trip looks like a button that did nothing.
+    return <Navigate to={redirectError ? '/login' : '/welcome'} replace />
   }
 
   return children

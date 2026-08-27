@@ -195,17 +195,33 @@ four ledgers).
 
 ## Logins (Google, Apple, email) & backup
 
-**Sign-in** is Supabase Auth. Email + password works out of the box. For the
-social buttons:
+**Sign-in needs Supabase.** Without `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` there are no accounts at all: the app runs on browser
+storage, signs you in as a demo user, and `/login` redirects away. If you are
+looking for a sign-in screen and cannot find one, that is why — the yellow
+"Demo mode" banner in the app is the symptom.
 
-1. **Google** — create an *OAuth 2.0 Web client* in Google Cloud, then paste the
-   Client ID + secret into **Authentication → Providers → Google**.
-2. **Apple** — needs a paid Apple Developer account: a Services ID + key, into
+Email + password works as soon as the keys are set. For the social buttons:
+
+1. **Google** — in Google Cloud create an *OAuth 2.0 Web client*, then paste its
+   Client ID and secret into **Authentication → Providers → Google** in Supabase
+   and switch the provider **on**.
+2. In that same Google Cloud client, set the **Authorised redirect URI** to
+   **`https://<your-project-ref>.supabase.co/auth/v1/callback`** — Supabase's
+   address, not your app's. This is the single most common reason Google
+   sign-in fails: the flow goes to Google, comes back to Supabase, and only
+   then returns to your site.
+3. In Supabase, **Authentication → URL Configuration**: set **Site URL** to your
+   deployed URL and add it (and `http://localhost:5173`) to **Redirect URLs**.
+   The app returns to its own origin after signing in, so that origin has to be
+   allowed here.
+4. **Apple** — needs a paid Apple Developer account: a Services ID and key, into
    **Authentication → Providers → Apple**.
-3. In **Authentication → URL Configuration** set your **Site URL** and add your
-   deployed URL (and `http://localhost:5173`) to **Redirect URLs**.
 
-The buttons appear automatically in cloud mode once configured.
+The buttons appear only in cloud mode, since that is the only mode they can work
+in. If a sign-in comes back without signing you in, the login screen now says
+which of the three settings above is the one that refused, rather than showing
+the provider's own wording.
 
 **Backup & restore** lives on the **Reports** page. Receipts stay in Supabase;
 the backup is your data as JSON:

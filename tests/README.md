@@ -49,6 +49,7 @@ node tests/browser/rtlui.mjs
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
+| `loginui.mjs` | 12 | the sign-in screen, and what it says when a provider refuses |
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
 | `metalsui.mjs` | 27 | metal holdings on screen |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
@@ -64,6 +65,17 @@ the environment. Override either default if your machine differs:
   (default `/opt/node22/lib/node_modules/playwright/index.mjs`)
 - `OFFSET_TEST_URL` — where the preview server is listening
   (default `http://localhost:4188`)
+
+`loginui.mjs` is the one suite that needs a **different build**: there is no
+sign-in screen under `VITE_OPEN_ACCESS=true`, because the demo backend reports
+a signed-in user and `/login` redirects away. Give it Supabase keys — they can
+point at nothing, since every call to them is intercepted:
+
+```sh
+VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_ANON_KEY=anything npx vite build
+```
+
+Run against the ordinary build it prints that and exits 0 rather than failing.
 
 **Do not remove `serviceWorkers: 'block'`** from any browser context. The PWA
 worker serves stale chunks and will make a fixed bug look unfixed. This cost
