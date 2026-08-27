@@ -242,9 +242,10 @@ async function prepareForUpload(file) {
 // Returns { data, error }: data is the parsed fields (or null), error is a
 // short reason code when the AI reader couldn't be used (so the UI can explain
 // why it fell back to OCR).
-async function scanWithAI(file) {
+async function scanWithAI(file, kind) {
   const payload = await prepareForUpload(file)
   if (!payload) return { data: null, error: 'too_big' } // file too large → OCR
+  if (kind) payload.kind = kind
   // The token lets the server attribute the scan to the user where plan limits
   // are enforced, and is harmless otherwise. This was a hand-rolled copy of
   // authHeaders() — two versions of "how do we authenticate" is one too many.
@@ -259,8 +260,14 @@ async function scanWithAI(file) {
   if (!res.ok) return { data: null, error: `http_${res.status}` }
   const d = await res.json().catch(() => null)
   if (!d) return { data: null, error: 'bad_response' }
-  const hit = d.amount != null || d.tax != null || d.date || d.vendor || d.category
+  const hit = kind === 'metal'
+    ? d.metal || d.net_weight_g != null || d.gross_weight_g != null || d.rate_amount != null || d.total != null
+    : d.amount != null || d.tax != null || d.date || d.vendor || d.category
   if (!hit) return { data: null, error: 'no_fields' }
+  // A metal bill's fields are a different set entirely, and narrowing them to
+  // the expense shape here would drop every one of them — leaving a reading
+  // that looks successful and contains no metal.
+  if (kind === 'metal') return { data: d, error: null }
   return {
     data: {
       amount: d.amount ?? null,
@@ -303,5 +310,40 @@ export function scanSourceNote(parsed) {
       return 'AI couldn’t read this one — used basic OCR.'
     default:
       return 'AI reader unavailable — used basic OCR.'
+  }
+}
+
+// Reading a jeweller's or bullion bill, for the metal fields on an asset.
+//
+// Unlike scanReceipt there is no on-device fallback. The OCR path parses an
+// expense receipt — a total, a date, a vendor — and has no notion of a net
+// weight or a rate basis. Handing back a confident-looking half answer from it
+// would be worse than saying the reader is not available, because the numbers
+// it does produce would look like metal facts.
+export async function scanMetalBill(file) {
+  try {
+    const { data, error } = await scanWithAI(file, 'metal')
+    if (data) return { data, error: null }
+    return { data: null, error: error || 'no_fields' }
+  } catch {
+    return { data: null, error: 'network' }
+  }
+}
+
+// Why a metal bill could not be read, in words someone can act on.
+export function metalScanNote(error) {
+  switch (error) {
+    case 'not_configured':
+      return 'Reading bills needs the Gemini key set on the deployment. Fill the metal fields in by hand for now.'
+    case 'too_big':
+      return 'That file is too large to read. Try a smaller photo.'
+    case 'scan_limit_reached':
+      return 'You have used this month’s AI scans — upgrade to Pro for unlimited (Settings).'
+    case 'network':
+      return 'The reader could not be reached. Fill the metal fields in by hand.'
+    case 'no_fields':
+      return 'Nothing on that looked like a metal purchase. Fill the fields in by hand.'
+    default:
+      return 'That bill could not be read. Fill the metal fields in by hand.'
   }
 }

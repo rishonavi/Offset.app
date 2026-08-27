@@ -39,6 +39,12 @@ it was built the way it was:
   only what the chosen type can have: an address for things fixed to a place, a
   loan for things that can be financed or pledged, a tenancy for things that can
   be let out. A holding of stock is a short form; a let shop is a long one.
+- **Precious metals from the bill** — add a jeweller's or bullion bill and the
+  weight, purity, rate and what you paid come off it into the holding. The
+  conversions that go wrong by hand are done for you: a bill quoting per gram
+  becomes the per-10-gram rate the app stores, 22K becomes 916, and the net
+  weight is used so a diamond ring is not valued as though the stones were gold.
+  Making charges are shown next to the metal value rather than folded into it.
 - **Precious metals** — gold and silver held by weight and purity, valued
   correctly: MCX quotes gold per **10 grams** and silver per **kilogram**, and
   purity is millesimal fineness (916 = 22K), so a 22K piece is worth 91.6% of
@@ -349,7 +355,7 @@ script that asserts, prints a line per assertion, and exits non-zero if anything
 failed — so it works in CI as-is.
 
 ```sh
-npx vite-node tests/logic/metals.test.mjs      # logic: 13 suites, 921 assertions
+npx vite-node tests/logic/metals.test.mjs      # logic: 15 suites, 964 assertions
 ```
 
 ```sh

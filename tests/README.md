@@ -25,12 +25,13 @@ for Vite's resolver.
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
+| `metalbill.test.mjs` | 43 | reading a jeweller's bill into a metal holding |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **921** | |
+| | **964** | |
 
 ## Browser — `tests/browser/`
 
@@ -52,6 +53,7 @@ node tests/browser/rtlui.mjs
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 12 | the sign-in screen, and what it says when a provider refuses |
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
+| `metalbillui.mjs` | 15 | filling a holding from a purchase bill |
 | `metalsui.mjs` | 27 | metal holdings on screen |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |

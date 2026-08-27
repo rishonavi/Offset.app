@@ -1,11 +1,54 @@
-import { useState } from 'react'
-import { ASSET_TYPES, hasAddress, canBeFinanced, canBeLeased } from '../lib/constants'
+import { useRef, useState } from 'react'
+import { Sparkles, Loader2 } from 'lucide-react'
+import { ASSET_TYPES, hasAddress, canBeFinanced, canBeLeased, ATTACHMENT_ACCEPT } from '../lib/constants'
 import { currencySymbol, formatCurrency } from '../lib/format'
 import {
   METALS, METAL_KEYS, PURITIES, UNITS, UNIT_KEYS,
   holdsMetal, defaultMetalFor, quoteLabel, valueMetalHolding, describeHolding,
 } from '../lib/metals'
 import { Field, Input, Select, Textarea, Button } from './ui'
+
+
+// What a read actually found, and what it left out. The making charges are the
+// point: they are on the bill and they are not part of what the metal is
+// worth, so showing the two side by side is the difference between an honest
+// valuation and a flattering one.
+const NOTE_TEXT = {
+  bill_rate_basis_unknown:
+    'The bill did not say what the rate is per, so it was left blank — a per-gram rate entered as per-10-grams is wrong by ten.',
+  weight_is_gross:
+    'Only a gross weight was on the bill. If the piece has stones, reduce it to the metal weight.',
+  weight_from_gross_less_stones: 'Weight taken as gross less the stones listed.',
+  making_charges_excluded_from_metal:
+    'Making charges are part of what you paid but not of what the metal is worth — they are not recovered on resale.',
+  no_weight: 'No weight could be read; enter it by hand.',
+  no_purity: 'No purity could be read; check the picker above.',
+}
+
+function BillSummary({ read }) {
+  const { breakdown } = read
+  return (
+    <div className="mt-3 rounded-lg border border-gold/40 bg-gold/10 p-3 text-xs text-slate-700">
+      <p className="font-semibold">Read from the bill</p>
+      <dl className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1">
+        {breakdown.metalValue != null && (
+          <><dt className="text-slate-500">Metal</dt><dd className="text-end">{formatCurrency(breakdown.metalValue)}</dd></>
+        )}
+        {breakdown.making != null && (
+          <><dt className="text-slate-500">Making</dt><dd className="text-end">{formatCurrency(breakdown.making)}</dd></>
+        )}
+        {breakdown.tax != null && (
+          <><dt className="text-slate-500">Tax</dt><dd className="text-end">{formatCurrency(breakdown.tax)}</dd></>
+        )}
+        {breakdown.total != null && (
+          <><dt className="font-medium text-slate-600">Paid</dt><dd className="text-end font-medium">{formatCurrency(breakdown.total)}</dd></>
+        )}
+      </dl>
+      {read.notes.map((n) => NOTE_TEXT[n] && <p key={n} className="mt-1.5 text-slate-500">{NOTE_TEXT[n]}</p>)}
+      <p className="mt-1.5 text-slate-500">Check every figure against the bill before saving.</p>
+    </div>
+  )
+}
 
 export default function PropertyForm({ initial, onSubmit, onCancel }) {
   const [form, setForm] = useState({
@@ -40,6 +83,46 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
   const setType = (e) => {
     const type = e.target.value
     setForm((f) => ({ ...f, type, metal: f.metal || defaultMetalFor(type) || 'gold' }))
+  }
+
+  const billRef = useRef(null)
+  const [reading, setReading] = useState(false)
+  const [billNote, setBillNote] = useState(null)
+
+  // Read a purchase bill and fill the metal fields from it. Only fields the
+  // bill actually stated are written — anything it did not say is left alone
+  // rather than blanked, so a partial read adds to what is there instead of
+  // wiping it.
+  const readBill = async (file) => {
+    if (!file) return
+    setReading(true)
+    setBillNote(null)
+    try {
+      const { scanMetalBill, metalScanNote } = await import('../lib/ocr')
+      const { data, error } = await scanMetalBill(file)
+      if (!data) {
+        setBillNote({ ok: false, text: metalScanNote(error) })
+        return
+      }
+      const { fromBill } = await import('../lib/metalBill')
+      const read = fromBill(data)
+      setForm((f) => ({
+        ...f,
+        metal: read.metal || f.metal,
+        metal_quantity: read.metal_quantity ?? f.metal_quantity,
+        metal_unit: read.metal_quantity != null ? 'g' : f.metal_unit,
+        metal_fineness: read.metal_fineness ?? f.metal_fineness,
+        metal_rate: read.metal_rate ?? f.metal_rate,
+        value: read.value ?? f.value,
+        name: f.name || [read.vendor, METALS[read.metal || 'gold']?.label].filter(Boolean).join(' — '),
+      }))
+      setBillNote({ ok: true, read })
+    } catch (err) {
+      setBillNote({ ok: false, text: err?.message || String(err) })
+    } finally {
+      setReading(false)
+      if (billRef.current) billRef.current.value = ''
+    }
   }
 
   const isMetal = holdsMetal(form.type)
@@ -180,6 +263,25 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
             Weight and purity, so the value follows the market instead of being retyped. A rate buys fine metal, so a
             22K piece is worth 91.6% of it.
           </p>
+
+          {/* The weight, purity and rate are all printed on the bill you were
+              given, so typing them again is work the bill has already done. */}
+          <div className="mt-3">
+            <button type="button" onClick={() => billRef.current?.click()} disabled={reading} className="btn-ghost">
+              {reading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+              {reading ? ' Reading the bill…' : ' Fill from a purchase bill'}
+            </button>
+            <input
+              ref={billRef}
+              type="file"
+              accept={ATTACHMENT_ACCEPT}
+              className="hidden"
+              aria-label="Purchase bill to read"
+              onChange={(e) => readBill(e.target.files?.[0])}
+            />
+            {billNote?.ok === false && <p className="mt-2 text-xs text-red-600">{billNote.text}</p>}
+            {billNote?.ok && <BillSummary read={billNote.read} />}
+          </div>
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Metal">
               <Select value={form.metal} onChange={set('metal')}>

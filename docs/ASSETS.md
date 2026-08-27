@@ -30,6 +30,37 @@ down. Unpriced holdings are counted and named separately.
 Jewellery is told plainly that **making charges and the GST on them are not
 recovered on resale**. A valuation that ignores them flatters the asset.
 
+### Reading the purchase bill
+
+The weight, the purity and the rate are all printed on the bill you were handed,
+so **Fill from a purchase bill** on a metal asset reads them off it. Three of
+the conversions are the ones that go wrong when they are done by hand, and they
+are the reason this is not just an OCR pass:
+
+- **What the rate is per.** A jeweller quotes per gram; the app stores gold per
+  10 grams and silver per kilogram. Carried across unchanged, the valuation is
+  out by ten, or by a thousand. If the bill does not say what the rate is per,
+  the rate is **left blank** rather than guessed — the two readings differ by an
+  order of magnitude and there is no safe default.
+- **Which weight.** A jewellery bill carries a gross weight and a net weight,
+  and only the net is metal. Reading the larger number values a diamond ring as
+  though the diamond were gold. Where only a gross is given and stones are
+  itemised, the difference is used and said to have been used.
+- **Karat is not fineness.** 22/24 is 0.91666…, and the number stamped on the
+  piece is 916 — which is what the purity picker has to match.
+
+What the bill states is used; what it does not state stays null rather than
+becoming zero. Making charges and the tax on them are recorded as their own
+lines beside the metal value rather than folded into it, because the asset's
+value is what was paid while its worth is computed from weight, purity and rate.
+The gap between those two is the making charges, and that is the honest picture
+rather than a flattering one.
+
+The reader is the same Gemini call as receipt scanning, pointed at a different
+prompt. There is no on-device fallback: the OCR path looks for a total and a
+vendor and has no notion of a net weight, so a confident-looking half answer
+from it would be worse than saying the reader is unavailable.
+
 ### Dating a price
 
 A rate read at 2am on a Sunday is Friday's close. Valuations are dated to the

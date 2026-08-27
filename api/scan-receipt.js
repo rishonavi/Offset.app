@@ -49,6 +49,55 @@ Return a JSON object with exactly these keys:
 
 All five keys must always be present. Use the JSON value null (never "", "N/A" or 0) for anything you cannot determine.`
 
+// A jeweller's or bullion bill is a different document from an expense
+// receipt, and asking one prompt to do both makes it worse at each. What
+// matters here is the metal, and three fields decide whether the valuation is
+// right or out by an order of magnitude: which weight, which purity, and — the
+// one that is nearly always misread — what the rate is per.
+const METAL_SYSTEM = `You are reading a single purchase bill for gold, silver or platinum — a jeweller's invoice, a bullion dealer's bill, or a coin receipt. It may be photographed at an angle, handwritten, thermal-printed, or in an Indian language. Read it as carefully as a jeweller's own accountant would.
+
+Return a JSON object with exactly these keys:
+
+- "metal": "gold", "silver" or "platinum" — whichever the item is made of. Use null if it genuinely cannot be told.
+- "net_weight_g": the NET weight of metal in grams, as a plain number. On a jewellery bill this is the metal alone, excluding stones — it may be labelled "Net Wt", "Net Weight" or "Metal Wt". Use null if not shown.
+- "gross_weight_g": the GROSS weight in grams, including any stones ("Gross Wt", "Total Wt"). Use null if not shown.
+- "stone_weight_g": the weight of stones or beads in grams if itemised separately, otherwise null.
+- "purity_karat": the karat as a plain number if the bill states karat — 22 for "22K", "22 KT", "22 carat". Use null if the bill gives fineness instead.
+- "purity_fineness": the millesimal fineness as a plain number if the bill states it — 916, 750, 999, 925. Use null if the bill gives karat instead.
+- "rate_amount": the rate charged for the metal, as a plain number with no currency symbol. This is the price of the metal itself, NOT the total and NOT the making charges.
+- "rate_basis": what that rate is PER. Exactly one of "per_gram", "per_10_gram", "per_100_gram", "per_kg", "per_tola", "per_ozt". Indian jewellery bills usually quote per gram; bullion is often per 10 grams. Read the label next to the rate — "Rate/g", "Rate per 10 gm", "₹/gram". If the bill does not say what the rate is per, return null rather than assuming: a per-gram rate treated as per-10-gram is wrong by a factor of ten.
+- "metal_value": the value of the metal alone before making charges and tax, if the bill shows it as its own line. Use null if not shown.
+- "making_charges": making, wastage or labour charges as a plain number, summed if itemised in several lines. Use null if not shown.
+- "tax": total GST or other tax on the bill, summing CGST and SGST if itemised. Use null if not shown.
+- "total": the final grand total actually paid or payable. Use null if no total can be found.
+- "vendor": the shop or dealer that issued the bill. Use null if not shown.
+- "date": the bill date in strict YYYY-MM-DD format, inferring day/month order from context (Indian bills are usually DD/MM/YYYY). Use null if absent.
+
+All keys must always be present. Use the JSON value null (never "", "N/A" or 0) for anything the bill does not state. Do not calculate a field from the others — if the bill does not say it, it is null.`
+
+const METAL_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    metal: { type: 'STRING', nullable: true },
+    net_weight_g: { type: 'NUMBER', nullable: true },
+    gross_weight_g: { type: 'NUMBER', nullable: true },
+    stone_weight_g: { type: 'NUMBER', nullable: true },
+    purity_karat: { type: 'NUMBER', nullable: true },
+    purity_fineness: { type: 'NUMBER', nullable: true },
+    rate_amount: { type: 'NUMBER', nullable: true },
+    rate_basis: { type: 'STRING', nullable: true },
+    metal_value: { type: 'NUMBER', nullable: true },
+    making_charges: { type: 'NUMBER', nullable: true },
+    tax: { type: 'NUMBER', nullable: true },
+    total: { type: 'NUMBER', nullable: true },
+    vendor: { type: 'STRING', nullable: true },
+    date: { type: 'STRING', nullable: true },
+  },
+  required: ['metal', 'net_weight_g', 'gross_weight_g', 'stone_weight_g', 'purity_karat',
+    'purity_fineness', 'rate_amount', 'rate_basis', 'metal_value', 'making_charges',
+    'tax', 'total', 'vendor', 'date'],
+}
+
 // Gemini structured-output schema (OpenAPI-subset; nullable so the model can
 // honestly report missing fields instead of inventing them).
 const RESPONSE_SCHEMA = {
@@ -152,14 +201,14 @@ async function readBody(req) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
 
-async function callGemini(apiKey, parts, useSchema) {
+async function callGemini(apiKey, parts, useSchema, metalMode = false) {
   const generationConfig = { temperature: 0, responseMimeType: 'application/json' }
-  if (useSchema) generationConfig.responseSchema = RESPONSE_SCHEMA
+  if (useSchema) generationConfig.responseSchema = metalMode ? METAL_SCHEMA : RESPONSE_SCHEMA
   const r = await fetch(`${API}/models/${MODEL}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM }] },
+      systemInstruction: { parts: [{ text: metalMode ? METAL_SYSTEM : SYSTEM }] },
       contents: [{ role: 'user', parts }],
       generationConfig,
     }),
@@ -271,12 +320,18 @@ export default async function handler(req, res) {
     ]
 
     let text
+
+  // The same reader, pointed at a different kind of document. A jeweller's bill
+  // and an expense receipt want different questions asked of them, and one
+  // prompt trying to cover both is worse at each.
+  const metalMode = String(body?.kind || '') === 'metal'
+
     try {
-      text = await callGemini(apiKey, parts, true)
+      text = await callGemini(apiKey, parts, true, metalMode)
     } catch {
       // Retry without the schema (responseMimeType still forces JSON, and the
       // system prompt defines the shape) in case the schema is rejected.
-      text = await callGemini(apiKey, parts, false)
+      text = await callGemini(apiKey, parts, false, metalMode)
     }
 
     const parsed = parseJsonLoose(text) || {}
@@ -284,6 +339,30 @@ export default async function handler(req, res) {
     // Count this scan against the free monthly quota (only when gating a free user).
     if (gate.uid && gate.admin && gate.month) {
       await gate.admin.rpc('record_scan', { uid: gate.uid, mon: gate.month }).catch(() => {})
+    }
+
+    if (metalMode) {
+      // Passed through as the bill stated it. Converting a rate to the app's
+      // quote basis, or choosing between net and gross, is the client's job —
+      // it is arithmetic with rules worth testing, and it does not belong in a
+      // place that can only be exercised with an API key and a photograph.
+      res.status(200).json({
+        metal: toStr(parsed.metal),
+        net_weight_g: toNumber(parsed.net_weight_g),
+        gross_weight_g: toNumber(parsed.gross_weight_g),
+        stone_weight_g: toNumber(parsed.stone_weight_g),
+        purity_karat: toNumber(parsed.purity_karat),
+        purity_fineness: toNumber(parsed.purity_fineness),
+        rate_amount: toNumber(parsed.rate_amount),
+        rate_basis: toStr(parsed.rate_basis),
+        metal_value: toNumber(parsed.metal_value),
+        making_charges: toNumber(parsed.making_charges),
+        tax: toNumber(parsed.tax),
+        total: toNumber(parsed.total),
+        vendor: toStr(parsed.vendor),
+        date: toDate(parsed.date),
+      })
+      return
     }
 
     res.status(200).json({
