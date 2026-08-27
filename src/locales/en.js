@@ -150,4 +150,7 @@ export default {
   'entry.readOnly': 'Read-only workspace',
   'entry.readOnlyBody': 'You’re viewing a shared workspace. Switch to your own workspace to add or edit records.',
   'entry.needAssetFirst': 'Add an asset first',
+
+  'entry.draftRestored': 'Picked up what you had already typed here.',
+  'entry.draftDiscard': 'Start fresh',
 }

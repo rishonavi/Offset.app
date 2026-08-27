@@ -138,4 +138,6 @@ export default {
   'entry.readOnly': 'Espacio de solo lectura',
   'entry.readOnlyBody': 'Estás viendo un espacio compartido. Cambia al tuyo para añadir o editar registros.',
   'entry.needAssetFirst': 'Añade primero un activo',
+  'entry.draftRestored': 'Hemos recuperado lo que ya habías escrito aquí.',
+  'entry.draftDiscard': 'Empezar de cero',
 }

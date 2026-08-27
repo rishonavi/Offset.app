@@ -56,6 +56,11 @@ it was built the way it was:
   scan button appears for those alone.
 - **Recurring entries** — duplicate any entry to re-log rent, EMI or utilities
   quickly.
+- **Half-typed entries survive** — leave the expense or income form to go and
+  check something, or let a phone reclaim the tab, and what you had typed is
+  waiting when you come back. It says so rather than filling itself in
+  silently, and offers a blank form in one click. Saving or cancelling throws
+  the draft away.
 - **Bin** — deleted entries are recoverable rather than gone.
 
 **"Unknown" is never rendered as zero.** A metal holding with no rate, or a

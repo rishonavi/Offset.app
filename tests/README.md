@@ -47,6 +47,7 @@ node tests/browser/rtlui.mjs
 | `assetformui.mjs` | 37 | the asset form showing only the fields its type has |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
+| `draftui.mjs` | 17 | a half-typed entry surviving the screen being left |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 12 | the sign-in screen, and what it says when a provider refuses |

@@ -134,4 +134,6 @@ export default {
   'entry.readOnly': 'শুধু-পড়ার কর্মক্ষেত্র',
   'entry.readOnlyBody': 'আপনি একটি ভাগ করা কর্মক্ষেত্র দেখছেন। যোগ বা সম্পাদনা করতে নিজের কর্মক্ষেত্রে যান।',
   'entry.needAssetFirst': 'আগে একটি সম্পত্তি যোগ করুন',
+  'entry.draftRestored': 'আপনি এখানে যা লিখেছিলেন তা ফিরিয়ে আনা হয়েছে।',
+  'entry.draftDiscard': 'নতুন করে শুরু করুন',
 }

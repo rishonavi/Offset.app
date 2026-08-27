@@ -147,4 +147,6 @@ export default {
   'entry.readOnly': 'مساحة عمل للقراءة فقط',
   'entry.readOnlyBody': 'أنت تطالع مساحة عمل مشتركة. انتقل إلى مساحتك لإضافة السجلات أو تعديلها.',
   'entry.needAssetFirst': 'أضف أصلاً أولاً',
+  'entry.draftRestored': 'استعدنا ما كنت قد كتبته هنا.',
+  'entry.draftDiscard': 'ابدأ من جديد',
 }

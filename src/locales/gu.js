@@ -134,4 +134,6 @@ export default {
   'entry.readOnly': 'ફક્ત-વાંચન કાર્યક્ષેત્ર',
   'entry.readOnlyBody': 'તમે વહેંચાયેલું કાર્યક્ષેત્ર જુઓ છો. ઉમેરવા કે સંપાદિત કરવા તમારા કાર્યક્ષેત્ર પર જાઓ.',
   'entry.needAssetFirst': 'પહેલાં એક મિલકત ઉમેરો',
+  'entry.draftRestored': 'તમે અહીં જે લખ્યું હતું તે પાછું લાવ્યા છીએ.',
+  'entry.draftDiscard': 'નવેસરથી શરૂ કરો',
 }

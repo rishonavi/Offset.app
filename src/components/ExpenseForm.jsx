@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Paperclip, X, Loader2, Sparkles, Camera, Upload, Wand2 } from 'lucide-react'
 import { CATEGORIES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
 import { useT } from '../context/LanguageContext'
+import { draftKey, readDraft, writeDraft, clearDraft, draftDiffers } from '../lib/draft'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { buildVendorIndex, suggestCategory } from '../lib/categorize'
 import { parseEntry } from '../lib/ai'
@@ -12,7 +13,10 @@ import { Field, Input, Select, Textarea, Button } from './ui'
 
 export default function ExpenseForm({ initial, properties, vendors = [], history = [], defaultPropertyId, onSubmit, onCancel }) {
   const t = useT()
-  const [form, setForm] = useState({
+  // A draft only ever fills what the blank form would have left empty or
+  // default; it never overwrites the record being edited.
+  const key = draftKey('expense', initial?.id)
+  const blank = {
     property_id: initial?.property_id || defaultPropertyId || (properties[0]?.id ?? ''),
     date: initial?.date || todayISO(),
     amount: initial?.amount ?? '',
@@ -24,7 +28,13 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
     due_date: initial?.due_date || '',
     recurrence: initial?.recurrence || 'none',
     description: initial?.description || '',
+  }
+  const [restored] = useState(() => {
+    const draft = readDraft(key)
+    return draftDiffers(draft, blank) ? draft : null
   })
+  const [form, setForm] = useState(() => ({ ...blank, ...(restored || {}) }))
+  const [draftNoticed, setDraftNoticed] = useState(Boolean(restored))
   const [file, setFile] = useState(null)
   const [existingReceipt, setExistingReceipt] = useState(initial?.receipt_url || null)
   const [receiptPreview, setReceiptPreview] = useState(null)
@@ -36,6 +46,50 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
   const [nlText, setNlText] = useState('')
   const [parsing, setParsing] = useState(false)
   const [nlNote, setNlNote] = useState(null)
+  // Written on a timer rather than on every keystroke: this is a rescue for a
+  // tab that goes away, not a live sync, and a write per character would be a
+  // lot of JSON for no benefit.
+  // Only once something has actually been changed. Without this, merely opening
+  // the form and leaving would leave a draft of the defaults behind — and
+  // pressing "start fresh" would immediately write back the draft it just
+  // removed, since blanking the form is itself a change.
+  const worthKeeping = draftDiffers(form, blank)
+  useEffect(() => {
+    if (!worthKeeping) return undefined
+    const id = setTimeout(() => writeDraft(key, form), 400)
+    return () => clearTimeout(id)
+  }, [key, form, worthKeeping])
+
+  // Leaving the page is the moment the draft matters most, and it is also the
+  // moment the timer above gets cancelled — so the last state is written on the
+  // way out. Skipped once the entry has been saved or deliberately abandoned,
+  // or this would put back the draft that was just cleared.
+  const latest = useRef(form)
+  latest.current = form
+  const settled = useRef(false)
+  useEffect(
+    () => () => {
+      if (!settled.current && draftDiffers(latest.current, blank)) writeDraft(key, latest.current)
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [key],
+  )
+
+  // React's unmount does not run when the page itself goes away — a closed tab,
+  // a typed URL, a phone reclaiming the browser. pagehide does, and is the one
+  // event that fires reliably on mobile Safari, where this is needed most.
+  useEffect(() => {
+    const save = () => {
+      if (!settled.current && draftDiffers(latest.current, blank)) writeDraft(key, latest.current)
+    }
+    window.addEventListener('pagehide', save)
+    document.addEventListener('visibilitychange', save)
+    return () => {
+      window.removeEventListener('pagehide', save)
+      document.removeEventListener('visibilitychange', save)
+    }
+  }, [key])
+
   const fileRef = useRef(null)
   const cameraRef = useRef(null)
   const plan = usePlan()
@@ -164,6 +218,10 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         description: form.description.trim(),
         receipt_url: receipt_url || null,
       })
+      // The entry exists now; the draft of it is only a way to lose track of
+      // which is which.
+      settled.current = true
+      clearDraft(key)
     } catch (err) {
       setError(err?.message || String(err))
       setSaving(false)
@@ -172,6 +230,21 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      {/* Restoring silently is unnerving — a form that fills itself in looks
+          like a bug until you work out why. Say it happened, and offer the
+          blank form back in one click. */}
+      {draftNoticed && (
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-slate-700">
+          <span>{t('entry.draftRestored')}</span>
+          <button
+            type="button"
+            className="shrink-0 font-semibold text-brand underline"
+            onClick={() => { clearDraft(key); setForm(blank); setDraftNoticed(false) }}
+          >
+            {t('entry.draftDiscard')}
+          </button>
+        </div>
+      )}
       <div className="border border-dashed border-gold/40 bg-brand-light/40 p-3">
         <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">
           <Sparkles size={13} className="text-gold" /> {t('entry.quickAdd')}
@@ -401,7 +474,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex justify-end gap-3 border-t border-border-light pt-5">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={() => { settled.current = true; clearDraft(key); onCancel?.() }}>
           {t('entry.cancel')}
         </Button>
         <Button type="submit" loading={saving}>

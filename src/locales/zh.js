@@ -135,4 +135,6 @@ export default {
   'entry.readOnly': '只读工作区',
   'entry.readOnlyBody': '你正在查看共享的工作区。若要新增或编辑记录，请切换到自己的工作区。',
   'entry.needAssetFirst': '请先添加一项资产',
+  'entry.draftRestored': '已为你找回之前输入的内容。',
+  'entry.draftDiscard': '重新开始',
 }

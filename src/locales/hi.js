@@ -135,4 +135,6 @@ export default {
   'entry.readOnly': 'केवल-पठन कार्यक्षेत्र',
   'entry.readOnlyBody': 'आप एक साझा कार्यक्षेत्र देख रहे हैं। जोड़ने या संपादित करने के लिए अपने कार्यक्षेत्र पर जाएँ।',
   'entry.needAssetFirst': 'पहले एक संपत्ति जोड़ें',
+  'entry.draftRestored': 'यहाँ आपने जो लिखा था, वह वापस ले आए हैं।',
+  'entry.draftDiscard': 'नए सिरे से शुरू करें',
 }

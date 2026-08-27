@@ -137,4 +137,6 @@ export default {
   'entry.readOnly': 'Espace en lecture seule',
   'entry.readOnlyBody': 'Vous consultez un espace partagé. Basculez vers le vôtre pour ajouter ou modifier des enregistrements.',
   'entry.needAssetFirst': 'Ajoutez d’abord un actif',
+  'entry.draftRestored': 'Nous avons récupéré ce que vous aviez déjà saisi ici.',
+  'entry.draftDiscard': 'Recommencer',
 }

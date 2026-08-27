@@ -134,4 +134,6 @@ export default {
   'entry.readOnly': 'صرف-پڑھنے کا ورک اسپیس',
   'entry.readOnlyBody': 'آپ ایک مشترکہ ورک اسپیس دیکھ رہے ہیں۔ اندراج یا ترمیم کے لیے اپنے ورک اسپیس پر جائیں۔',
   'entry.needAssetFirst': 'پہلے ایک اثاثہ شامل کریں',
+  'entry.draftRestored': 'آپ نے یہاں جو لکھا تھا وہ واپس لے آئے ہیں۔',
+  'entry.draftDiscard': 'نئے سرے سے شروع کریں',
 }
