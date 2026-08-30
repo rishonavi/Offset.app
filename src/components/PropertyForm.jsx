@@ -193,66 +193,68 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={submit} className="space-y-5">
-      <Field label="Asset name" required>
-        <Input value={form.name} onChange={set('name')} placeholder="e.g. Sea View Apartment · BMW X5 · Sunseeker 60" autoFocus />
-      </Field>
-
-      <Field label="Type">
-        <Select value={form.type} onChange={setType}>
-          {ASSET_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </Select>
-      </Field>
-
-      {/* Only for assets that are fixed to a place — see hasAddress. The
-          value is kept in form state rather than dropped the moment the type
-          changes, so a mis-click and a correction does not lose what was
-          typed; it is nulled on submit instead, the same way the metal
-          fields are. */}
-      {addressable && (
-        <Field label="Address">
-          <Input value={form.address} onChange={set('address')} placeholder="Street, area, city" />
+      <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+        <Field className="sm:col-span-2" label="Asset name" required>
+          <Input value={form.name} onChange={set('name')} placeholder="e.g. Sea View Apartment · BMW X5 · Sunseeker 60" autoFocus />
         </Field>
-      )}
 
-      <Field label="Asset value" hint="Optional — purchase price or current value, used for ROI & yield">
-        <div className="relative">
-          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
-            {currencySymbol}
-          </span>
-          <Input
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min="0"
-            className="ps-8"
-            value={form.value}
-            onChange={set('value')}
-            placeholder="0"
-          />
-        </div>
-      </Field>
+        <Field className="sm:col-span-2" label="Type">
+          <Select value={form.type} onChange={setType}>
+            {ASSET_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </Select>
+        </Field>
 
-      <Field label="Monthly budget" hint="Optional — used for budget alerts on this property">
-        <div className="relative">
-          <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
-            {currencySymbol}
-          </span>
-          <Input
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min="0"
-            className="ps-8"
-            value={form.monthly_budget}
-            onChange={set('monthly_budget')}
-            placeholder="0"
-          />
-        </div>
-      </Field>
+        {/* Only for assets that are fixed to a place — see hasAddress. The
+            value is kept in form state rather than dropped the moment the type
+            changes, so a mis-click and a correction does not lose what was
+            typed; it is nulled on submit instead, the same way the metal
+            fields are. */}
+        {addressable && (
+          <Field className="sm:col-span-2" label="Address">
+            <Input value={form.address} onChange={set('address')} placeholder="Street, area, city" />
+          </Field>
+        )}
+
+        <Field label="Asset value" hint="Optional — purchase price or current value, used for ROI & yield">
+          <div className="relative">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+              {currencySymbol}
+            </span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              className="ps-8"
+              value={form.value}
+              onChange={set('value')}
+              placeholder="0"
+            />
+          </div>
+        </Field>
+
+        <Field label="Monthly budget" hint="Optional — used for budget alerts on this property">
+          <div className="relative">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+              {currencySymbol}
+            </span>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
+              className="ps-8"
+              value={form.monthly_budget}
+              onChange={set('monthly_budget')}
+              placeholder="0"
+            />
+          </div>
+        </Field>
+      </div>
 
       {/* How much metal, and how pure — only for assets that are a quantity
           of metal rather than a single thing with a price. */}

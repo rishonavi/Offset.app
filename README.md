@@ -355,11 +355,11 @@ script that asserts, prints a line per assertion, and exits non-zero if anything
 failed — so it works in CI as-is.
 
 ```sh
-npx vite-node tests/logic/metals.test.mjs      # logic: 15 suites, 964 assertions
+npx vite-node tests/logic/metals.test.mjs      # logic: 14 suites, 964 assertions
 ```
 
 ```sh
-VITE_OPEN_ACCESS=true npx vite build           # browser: 11 suites, 375
+VITE_OPEN_ACCESS=true npx vite build           # browser: 15 suites, 436
 npx vite preview --port 4188 &
 node tests/browser/flows.mjs
 ```

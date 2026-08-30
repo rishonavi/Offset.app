@@ -17,7 +17,12 @@
   --color-surface-subtle: #f3ede4;
   --color-border-light:   #e2d9cc;
 
-  --font-sans:  'Helvetica Neue', Arial, sans-serif;
+  /* The system's own interface font: SF Pro on Apple, Segoe UI on Windows,
+     Roboto on Android. Naming Helvetica Neue first meant everything outside
+     Apple fell through to Arial, which is why the app read as unstyled on most
+     of the machines it runs on. */
+  --font-sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+                'Noto Sans', Arial, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
 }
 
@@ -47,48 +52,90 @@ h1, h2, h3 {
   .eyebrow {
     @apply text-[0.625rem] font-semibold uppercase tracking-[3px] text-gold;
   }
+  /* Sentence case at a readable size. Everything was uppercase and letterspaced
+     — labels, buttons, section headings — so nothing stood out from anything
+     else and a form read as one long shout. Uppercase now marks a section, and
+     a field label is just a label. */
   .field-label {
-    @apply mb-1.5 block text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500;
+    @apply mb-1.5 block text-[0.8rem] font-medium text-slate-600;
   }
+  /* A control someone is meant to type into, rather than a table cell. The
+     resting fill is what does most of the work: a white box on a cream page has
+     no edge to speak of, and the field only appeared when you found its
+     hairline border. */
   .field-input {
-    @apply w-full border border-border-light bg-white px-3 py-2.5 text-sm text-slate-900
-           outline-none transition focus:border-gold placeholder:text-slate-400;
+    @apply w-full rounded-lg border border-border-light bg-surface-light px-3.5 py-2.5 text-sm
+           text-slate-900 outline-none transition-[background-color,border-color,box-shadow]
+           duration-150 placeholder:text-slate-400
+           hover:border-slate-300
+           focus:border-gold focus:bg-white;
+    min-height: 2.75rem;
   }
+  /* Numbers line up when they are tabular, and an amount is read as a quantity
+     rather than as prose. */
+  .field-input[type='number'],
+  .field-input[type='date'] {
+    font-variant-numeric: tabular-nums;
+  }
+  /* The one field a form is actually about. */
+  .field-input-lead {
+    @apply text-lg font-semibold;
+    min-height: 3.25rem;
+  }
+  /* 0.7rem uppercase with 1.5px of tracking is about as small as an interactive
+     label can get before it stops being read and starts being decoration. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-[0.7rem] font-semibold
-           uppercase tracking-[1.5px] transition-all duration-300 active:scale-[0.97]
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+           font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-[0.7rem] font-semibold
-           uppercase tracking-[1.5px] transition-all duration-300 active:scale-[0.97]
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+           font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
-           border border-gold bg-gold text-white hover:bg-transparent hover:text-gold;
+           border border-gold bg-gold text-navy shadow-sm hover:bg-gold-dark hover:border-gold-dark;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-[0.7rem] font-semibold
-           uppercase tracking-[1.5px] transition-all duration-300 active:scale-[0.97]
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+           font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-border-light bg-white text-slate-700 hover:border-gold hover:text-gold;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-[0.7rem] font-semibold
-           uppercase tracking-[1.5px] transition-all duration-300 active:scale-[0.97]
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+           font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
-           border border-red-600 bg-red-600 text-white hover:bg-transparent hover:text-red-600;
+           border border-red-600 bg-red-600 text-white hover:bg-red-700 hover:border-red-700;
   }
   .card {
-    @apply border border-border-light bg-white shadow-sm;
+    @apply rounded-xl border border-border-light bg-white shadow-[0_1px_2px_rgba(10,24,40,0.04),0_8px_24px_-12px_rgba(10,24,40,0.10)];
+  }
+  /* A labelled group of fields. A twelve-field form with no grouping is a list
+     to get through; the same fields in three named groups is three small
+     questions. */
+  .form-section {
+    @apply border-t border-border-light pt-5 first:border-t-0 first:pt-0;
+  }
+  .form-section-title {
+    @apply text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500;
   }
   .card-hover {
     @apply transition duration-300 hover:-translate-y-1 hover:border-gold hover:shadow-[0_15px_30px_rgba(197,160,89,0.15)];
   }
 }
 
-/* Gold focus glow on form fields (U.K. Builders signature) */
+/* Gold focus glow on form fields (U.K. Builders signature). Three pixels rather
+   than two, and a paired border change, because a 25%-opacity ring on a cream
+   page was easy to lose — and someone tabbing through a form has nothing else
+   telling them where they are. */
 input:focus, textarea:focus, select:focus {
-  box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.25);
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.28);
   outline: none !important;
+}
+/* Keyboard users get the same ring on buttons and links, which had none at all. */
+button:focus-visible, a:focus-visible, [role='button']:focus-visible {
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.35);
+  outline: none;
 }
 
 /* Make native date/select/number controls follow the theme */
@@ -190,7 +237,16 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 
 .dark .card { background-color: #0d2040; border-color: #1e3560; }
 .dark .field-input { background-color: #0a1a33; border-color: #2a4878; color: #e8dfc8; }
-.dark .field-input::placeholder { color: #5a6a86; }
+/* Was 3.2:1 against the field — legible only if you already knew what it said. */
+.dark .field-input::placeholder { color: #8593ad; }
+.dark .field-input:hover { border-color: #3a5c93; }
+.dark .field-input:focus { background-color: #0d2244; border-color: #C5A059; }
+/* Field labels and section headings take their colour through @apply, so the
+   utility-class overrides above cannot reach them. Without these they stayed
+   slate on navy: 1.9:1. */
+.dark .field-label { color: #c4ba9d; }
+.dark .form-section-title { color: #a99f85; }
+.dark .form-section { border-color: #1e3560; }
 .dark .btn-ghost { background-color: #0d2040; border-color: #1e3560; color: #e8dfc8; }
 .dark .btn-ghost:hover { border-color: #C5A059; color: #C5A059; }
 .dark .skeleton { background: #13294d; }

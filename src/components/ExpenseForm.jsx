@@ -9,7 +9,7 @@ import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
-import { Field, Input, Select, Textarea, Button } from './ui'
+import { Field, FormSection, Input, Select, Textarea, Button } from './ui'
 
 export default function ExpenseForm({ initial, properties, vendors = [], history = [], defaultPropertyId, onSubmit, onCancel }) {
   const t = useT()
@@ -245,7 +245,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
           </button>
         </div>
       )}
-      <div className="border border-dashed border-gold/40 bg-brand-light/40 p-3">
+      <div className="rounded-xl border border-gold/30 bg-gold/[0.07] p-4">
         <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">
           <Sparkles size={13} className="text-gold" /> {t('entry.quickAdd')}
         </div>
@@ -269,8 +269,8 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         {nlNote && <p className="mt-1.5 text-xs text-slate-500">{nlNote}</p>}
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        <Field label={t('entry.property')} required>
+      <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+        <Field className="sm:col-span-2" label={t('entry.property')} required>
           <Select value={form.property_id} onChange={set('property_id')}>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -279,6 +279,8 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
             ))}
           </Select>
         </Field>
+
+        <FormSection title="The cost" />
 
         <Field label={t('entry.date')} required>
           <Input type="date" value={form.date} onChange={set('date')} max={todayISO()} />
@@ -294,7 +296,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
               inputMode="decimal"
               step="0.01"
               min="0"
-              className="ps-8"
+              className="ps-8 field-input-lead"
               value={form.amount}
               onChange={set('amount')}
               placeholder="0"
@@ -319,6 +321,8 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
             />
           </div>
         </Field>
+
+        <FormSection title="What it was for" />
 
         <Field label={t('expense.category')} hint={t('expense.categoryHint')}>
           <Input
@@ -360,6 +364,8 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
             </datalist>
           )}
         </Field>
+
+        <FormSection title="Payment" />
 
         <Field label={t('entry.paymentMethod')}>
           <Select value={form.payment_method} onChange={set('payment_method')}>
@@ -413,7 +419,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         </Field>
       </div>
 
-      <Field label={t('entry.notes')}>
+      <Field className="sm:col-span-2" label={t('entry.notes')}>
         <Textarea rows={2} value={form.description} onChange={set('description')} placeholder={t('entry.notesPlaceholder')} />
       </Field>
 

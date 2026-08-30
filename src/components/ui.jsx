@@ -42,9 +42,9 @@ export function CardTitle({ title, description, icon: Icon, action }) {
   )
 }
 
-export function Field({ label, children, hint, required }) {
+export function Field({ label, children, hint, required, className }) {
   return (
-    <label className="block">
+    <label className={cx('block', className)}>
       {label && (
         <span className="field-label">
           {label} {required && <span className="text-red-500">*</span>}
@@ -53,6 +53,16 @@ export function Field({ label, children, hint, required }) {
       {children}
       {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
     </label>
+  )
+}
+
+// A labelled break in a field grid. Rendered as a full-width grid item so a
+// form can be grouped without the fields having to be re-nested.
+export function FormSection({ title, className }) {
+  return (
+    <div className={cx('form-section sm:col-span-2', className)}>
+      <p className="form-section-title">{title}</p>
+    </div>
   )
 }
 
