@@ -6,6 +6,7 @@
 // find it was to look. So it is measured now, everywhere, rather than looked at
 // on the pages someone happens to open.
 import { chromium } from './_playwright.mjs'
+import { installColour } from './_colour.mjs'
 const B = process.env.OFFSET_TEST_URL || 'http://localhost:4188'
 const b = await chromium.launch({ args: ['--no-sandbox', '--no-proxy-server'] })
 let pass = 0, fail = 0
@@ -14,21 +15,6 @@ const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : 
 const ROUTES = ['/', '/personal', '/properties', '/income', '/expenses', '/bills',
                 '/import', '/invoices', '/reports', '/bin', '/settings']
 
-// Everything is normalised through a canvas fillStyle: Tailwind v4 emits
-// oklch(), and reading digits out of the string gives confident nonsense.
-const HELPERS = () => {
-  const cv = document.createElement('canvas').getContext('2d')
-  window.__rgb = (c) => {
-    cv.fillStyle = '#000'; cv.fillStyle = c
-    const h = cv.fillStyle
-    if (h.startsWith('#')) return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
-    const m = h.match(/[\d.]+/g)
-    return m ? m.slice(0, 3).map(Number) : [0, 0, 0]
-  }
-  window.__lum = (c) => window.__rgb(c)
-    .map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 })
-    .reduce((a, v, i) => a + [0.2126, 0.7152, 0.0722][i] * v, 0)
-}
 
 const seed = async (p) => {
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
@@ -69,7 +55,7 @@ for (const theme of ['light', 'dark']) {
   for (const route of ROUTES) {
     await p.goto(B + route, { waitUntil: 'networkidle' })
     await p.waitForTimeout(600)
-    await p.evaluate(HELPERS)
+    await p.evaluate(installColour)
     const found = await p.evaluate((isDark) => {
       const out = { borders: [], fills: [], unnamed: [] }
       const seen = new Set()
@@ -81,8 +67,12 @@ for (const theme of ['light', 'dark']) {
           if (parseFloat(cs[`border${side}Width`]) < 0.5) continue
           const c = cs[`border${side}Color`]
           if (!c || c === 'rgba(0, 0, 0, 0)') continue
+          // A hairline of white at a tenth of an opacity is how a dark panel gets
+          // an edge at all — it is the fully-opaque light border that was left
+          // behind, which is why this asks the same alpha question as the fills
+          // below do.
           const l = window.__lum(c)
-          if (isDark && l > 0.6) {
+          if (isDark && l > 0.6 && window.__alpha(c) > 0.5) {
             const key = el.className + side
             if (!seen.has(key)) { seen.add(key); out.borders.push(`${String(el.className).slice(0, 46)} ${side.toLowerCase()}`) }
           }
@@ -90,7 +80,7 @@ for (const theme of ['light', 'dark']) {
         const bg = cs.backgroundColor
         if (bg && bg !== 'rgba(0, 0, 0, 0)') {
           const l = window.__lum(bg)
-          const alpha = Number((bg.match(/[\d.]+\)$/) || ['1'])[0].replace(')', ''))
+          const alpha = window.__alpha(bg)
           if (isDark && l > 0.75 && alpha > 0.5) {
             const key = 'bg' + el.className
             if (!seen.has(key)) { seen.add(key); out.fills.push(String(el.className).slice(0, 50)) }

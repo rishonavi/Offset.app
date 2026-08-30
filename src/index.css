@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* The theme is a class on <html>, toggled in Settings and remembered per
+   device. Tailwind v4's `dark:` variant defaults to prefers-color-scheme
+   instead, so every `dark:` utility in the app was dead unless the operating
+   system happened to agree with the setting. This points the variant at the
+   class the app actually sets. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* U.K. Builders luxury palette */
   --color-navy:       #0A1828;
@@ -32,10 +39,13 @@ html, body, #root { height: 100%; }
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: #f6f3ec;
+  /* A cooler, lighter ground than the old cream. The warmth now comes from the
+     gold wash rather than from the paper itself, which stops every white card
+     reading as a patch stuck on top of it. */
+  background-color: #f7f7f9;
   background-image:
-    radial-gradient(900px circle at 0% 0%, rgba(197, 160, 89, 0.10), transparent 45%),
-    radial-gradient(900px circle at 100% 0%, rgba(10, 24, 40, 0.05), transparent 40%);
+    radial-gradient(1100px circle at 15% -10%, rgba(197, 160, 89, 0.10), transparent 55%),
+    radial-gradient(900px circle at 100% 0%, rgba(10, 24, 40, 0.05), transparent 45%);
   background-attachment: fixed;
   color: #333333;
   -webkit-font-smoothing: antialiased;
@@ -45,7 +55,7 @@ body {
 h1, h2, h3 {
   font-family: var(--font-serif);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 @layer components {
@@ -64,9 +74,9 @@ h1, h2, h3 {
      no edge to speak of, and the field only appeared when you found its
      hairline border. */
   .field-input {
-    @apply w-full rounded-lg border border-border-light bg-surface-light px-3.5 py-2.5 text-sm
+    @apply w-full rounded-xl border border-border-light bg-surface-light px-3.5 py-2.5 text-sm
            text-slate-900 outline-none transition-[background-color,border-color,box-shadow]
-           duration-150 placeholder:text-slate-400
+           duration-150
            hover:border-slate-300
            focus:border-gold focus:bg-white;
     min-height: 2.75rem;
@@ -91,30 +101,35 @@ h1, h2, h3 {
   /* 0.7rem uppercase with 1.5px of tracking is about as small as an interactive
      label can get before it stops being read and starts being decoration. */
   .btn {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5
            text-[0.8rem] font-semibold uppercase tracking-[0.8px] transition-all duration-200
            active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[0.8rem]
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-gold bg-gold text-navy shadow-sm hover:bg-gold-dark hover:border-gold-dark;
   }
   .btn-ghost {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[0.8rem]
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-border-light bg-white text-slate-700 hover:border-gold hover:text-gold;
   }
   .btn-danger {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[0.8rem]
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-red-600 bg-red-600 text-white hover:bg-red-700 hover:border-red-700;
   }
+  /* Translucent rather than flat white, so a card reads as a sheet resting on
+     the page and picks up the gold wash beneath it. Two shadows: a tight one
+     for the edge, a wide soft one for the lift. */
   .card {
-    @apply rounded-xl border border-border-light bg-white shadow-[0_1px_2px_rgba(10,24,40,0.04),0_8px_24px_-12px_rgba(10,24,40,0.10)];
+    @apply rounded-2xl border bg-white/75 backdrop-blur-[14px]
+           shadow-[0_1px_1px_rgba(16,24,40,0.04),0_14px_36px_-18px_rgba(16,24,40,0.20)];
+    border-color: rgba(255, 255, 255, 0.9);
   }
   /* A labelled group of fields. A twelve-field form with no grouping is a list
      to get through; the same fields in three named groups is three small
@@ -251,16 +266,30 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 
 /* ─── Dark mode — U.K. Builders navy palette ─────────────────────── */
 .dark body {
-  background-color: #061124;
+  /* Deeper than before so the cards sit above the ground rather than beside it.
+     The gold wash stays, quietly, because it is what makes this look like a
+     considered dark theme rather than an inverted light one. */
+  background-color: #070f1d;
   background-image:
-    radial-gradient(900px circle at 0% 0%, rgba(197, 160, 89, 0.12), transparent 45%),
-    radial-gradient(900px circle at 100% 0%, rgba(30, 53, 96, 0.35), transparent 40%);
+    radial-gradient(1200px circle at 12% -10%, rgba(197, 160, 89, 0.10), transparent 55%),
+    radial-gradient(900px circle at 100% 0%, rgba(30, 53, 96, 0.28), transparent 45%);
   color: #e8dfc8;
 }
 
-.dark .card { background-color: #0d2040; border-color: #1e3560; }
+.dark .card {
+  background-color: #0e1c33;
+  border-color: #1b2c4d;
+  backdrop-filter: none;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), 0 22px 50px -30px rgba(0, 0, 0, 0.85);
+}
+/* A placeholder is hint text, so it wants to sit back from what someone types —
+   but it still has to be readable, and both themes had it too faint to measure
+   at 4.5:1. slate-400 came to 2.4:1 on the field's warm fill and slate-500 to
+   4.38:1, still short; these two clear it with margin while staying well
+   lighter than the near-black of an actual value. Declared here rather than
+   through @apply so one rule owns the colour in both themes. */
+.field-input::placeholder { color: #5d6b82; }
 .dark .field-input { background-color: #0a1a33; border-color: #2a4878; color: #e8dfc8; }
-/* Was 3.2:1 against the field — legible only if you already knew what it said. */
 .dark .field-input::placeholder { color: #8593ad; }
 .dark .field-input:hover { border-color: #3a5c93; }
 .dark .field-input:focus { background-color: #0d2244; border-color: #C5A059; }

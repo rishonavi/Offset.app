@@ -1,60 +1,53 @@
 // Whether the interface can actually be read, in both themes.
 //
-// Colours are normalised through a canvas fillStyle before anything is measured.
-// Tailwind v4 emits oklch(), and a checker that pulls the digits out of a colour
-// string produces confident nonsense — it once scored slate-900 on cream at
-// 1.89:1 when it is really about 15:1.
+// Colour measurement lives in _colour.mjs, which explains why it is not the
+// two lines it looks like it should be.
 import { chromium } from './_playwright.mjs'
+import { installColour, backdrops } from './_colour.mjs'
 const B = process.env.OFFSET_TEST_URL || 'http://localhost:4188'
 const b = await chromium.launch({ args: ['--no-sandbox', '--no-proxy-server'] })
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
 
-const MEASURE = () => {
-  const cv = document.createElement('canvas').getContext('2d')
-  const rgb = (c) => {
-    cv.fillStyle = '#000'
-    cv.fillStyle = c
-    const h = cv.fillStyle
-    if (h.startsWith('#')) return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
-    const m = h.match(/[\d.]+/g)
-    return m ? m.slice(0, 3).map(Number) : [0, 0, 0]
-  }
-  const lum = (c) =>
-    rgb(c)
-      .map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 })
-      .reduce((a, v, i) => a + [0.2126, 0.7152, 0.0722][i] * v, 0)
-  const ratio = (fg, bg) => { const a = lum(fg), c = lum(bg); const [hi, lo] = a > c ? [a, c] : [c, a]; return (hi + 0.05) / (lo + 0.05) }
-  // A gradient cannot be measured, so the nearest painted ancestor is used —
-  // and anything still transparent is skipped rather than guessed at.
-  const bgOf = (el) => {
-    let n = el
-    while (n) {
-      const c = getComputedStyle(n).backgroundColor
-      if (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') return c
-      n = n.parentElement
-    }
-    return null
-  }
-  const out = []
-  const add = (sel, name, pseudo) => {
+// Each entry is a selector, what to call it, and optionally the pseudo-element
+// carrying the colour.
+const TARGETS = [
+  ['.field-label', 'a field label'],
+  ['.field-input', 'text typed into a field'],
+  ['.field-input', 'a field placeholder', '::placeholder'],
+  ['.form-section-title', 'a section heading'],
+  ['#main-content .btn-primary', 'the primary button'],
+  ['#main-content .btn-ghost', 'a secondary button'],
+  ['#main-content h1', 'the page heading'],
+]
+
+const measure = async (p) => {
+  await p.evaluate(installColour)
+  // The centre of each element, in document coordinates, plus the colour of the
+  // text sitting there. A missing element is dropped rather than guessed at.
+  const found = await p.evaluate((targets) => targets.flatMap(([sel, name, pseudo]) => {
     const el = document.querySelector(sel)
-    if (!el) return
-    const bg = bgOf(el)
-    if (!bg) return
-    const cs = getComputedStyle(el, pseudo)
-    const px = parseFloat(getComputedStyle(el).fontSize)
-    const bold = Number(getComputedStyle(el).fontWeight) >= 700
-    out.push({ name, ratio: +ratio(cs.color, bg).toFixed(2), need: px >= 24 || (px >= 18.66 && bold) ? 3 : 4.5 })
-  }
-  add('.field-label', 'a field label')
-  add('.field-input', 'text typed into a field')
-  add('.field-input', 'a field placeholder', '::placeholder')
-  add('.form-section-title', 'a section heading')
-  add('#main-content .btn-primary', 'the primary button')
-  add('#main-content .btn-ghost', 'a secondary button')
-  add('#main-content h1', 'the page heading')
-  return out
+    if (!el) return []
+    const r = el.getBoundingClientRect()
+    if (r.width < 1 || r.height < 1) return []
+    const base = getComputedStyle(el)
+    const px = parseFloat(base.fontSize)
+    return [{
+      name,
+      colour: getComputedStyle(el, pseudo || null).color,
+      point: [r.left + scrollX + r.width / 2, r.top + scrollY + r.height / 2],
+      // WCAG lets large text sit at 3:1 — 24px, or 18.66px when bold.
+      need: px >= 24 || (px >= 18.66 && Number(base.fontWeight) >= 700) ? 3 : 4.5,
+    }]
+  }), TARGETS)
+  const bgs = await backdrops(p, found.map((f) => f.point))
+  // Text colour can itself be translucent, so it is painted over the backdrop
+  // that was measured rather than being read on its own.
+  return p.evaluate(({ found, bgs }) => found.map((f, i) => {
+    const bg = bgs[i]
+    const fg = window.__colour.srgb([`rgb(${bg.join(',')})`, f.colour])
+    return { name: f.name, need: f.need, ratio: +window.__colour.ratio(fg, bg).toFixed(2) }
+  }), { found, bgs })
 }
 
 for (const theme of ['light', 'dark']) {
@@ -69,7 +62,7 @@ for (const theme of ['light', 'dark']) {
   await p.evaluate((t) => localStorage.setItem('pl_theme', t), theme)
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
   await p.waitForTimeout(700)
-  for (const r of await p.evaluate(MEASURE)) {
+  for (const r of await measure(p)) {
     ok(`${r.name} is readable`, r.ratio >= r.need, `${r.ratio}:1, needs ${r.need}:1`)
   }
   await ctx.close()

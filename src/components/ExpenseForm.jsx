@@ -46,6 +46,13 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
   const [nlText, setNlText] = useState('')
   const [parsing, setParsing] = useState(false)
   const [nlNote, setNlNote] = useState(null)
+  // The three ways a draft gets written all consult these, so they are declared
+  // before the first of them: `latest` because an unmount handler closes over
+  // the form as it was when the effect ran, and `settled` because a saved or
+  // abandoned entry must not be written back as a draft.
+  const latest = useRef(form)
+  latest.current = form
+  const settled = useRef(false)
   // Written on a timer rather than on every keystroke: this is a rescue for a
   // tab that goes away, not a live sync, and a write per character would be a
   // lot of JSON for no benefit.
@@ -56,7 +63,10 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
   const worthKeeping = draftDiffers(form, blank)
   useEffect(() => {
     if (!worthKeeping) return undefined
-    const id = setTimeout(() => writeDraft(key, form), 400)
+    // The guard matters: saving clears the draft, and a write already queued
+    // when that happens would put it straight back — leaving the next blank
+    // form pre-filled with the entry you just saved.
+    const id = setTimeout(() => { if (!settled.current) writeDraft(key, form) }, 400)
     return () => clearTimeout(id)
   }, [key, form, worthKeeping])
 
@@ -64,9 +74,6 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
   // moment the timer above gets cancelled — so the last state is written on the
   // way out. Skipped once the entry has been saved or deliberately abandoned,
   // or this would put back the draft that was just cleared.
-  const latest = useRef(form)
-  latest.current = form
-  const settled = useRef(false)
   useEffect(
     () => () => {
       if (!settled.current && draftDiffers(latest.current, blank)) writeDraft(key, latest.current)

@@ -216,8 +216,8 @@ export default function BankImport() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wide text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" /> or import a file <span className="h-px flex-1 bg-slate-200" />
+          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /> or import a file <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
           </div>
 
           <Button variant="ghost" onClick={() => fileRef.current?.click()} loading={busy} disabled={!canWrite}>

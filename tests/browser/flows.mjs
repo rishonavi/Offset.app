@@ -1,6 +1,7 @@
 // The things a user actually does: create, edit, delete, filter, restore,
 // export, and the keyboard. Static sweeps miss all of it.
 import { chromium } from './_playwright.mjs'
+import { installColour, backdrops } from './_colour.mjs'
 import { readFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 const B = process.env.OFFSET_TEST_URL || 'http://localhost:4188'
@@ -198,41 +199,33 @@ ok('the theme toggles', (await p.evaluate(() => document.documentElement.classLi
 await p.reload({ waitUntil: 'networkidle' })
 ok('and is remembered', (await p.evaluate(() => document.documentElement.classList.contains('dark'))) !== wasDark)
 
-// Dark-mode readability, measured from pixels rather than assumed.
-const contrast = await p.evaluate(() => {
-  // Tailwind v4 emits oklch() for the slate palette, and scraping digits out of
-  // that with a regex produces nonsense — it scored slate-900 on cream at
-  // 1.89:1 when it is really about 15:1. Let the browser parse the colour.
-  const cv = document.createElement('canvas').getContext('2d')
-  const rgb = (c) => { cv.fillStyle = '#000'; cv.fillStyle = c; const h = cv.fillStyle
-    if (h.startsWith('#')) return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
-    return (h.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(Number) }
-  const lum = (c) => { const [r, g, b] = rgb(c).map((v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
-  // Returns null when the backdrop is a gradient or image — there is no single
-  // colour behind the text, so any ratio computed here would be invented. The
-  // navy hero is painted with a gradient, and treating it as the page's white
-  // was reporting 1.11:1 for text that is plainly legible.
-  const bgOf = (el) => { let n = el
-    while (n) { const cs = getComputedStyle(n)
-      if (cs.backgroundImage && cs.backgroundImage !== 'none') return null
-      const c = cs.backgroundColor
-      if (c && !c.includes('rgba(0, 0, 0, 0)')) return c
-      n = n.parentElement }
-    return 'rgb(255,255,255)' }
-  const out = []
-  for (const el of [...document.querySelectorAll('#main-content h1,#main-content h2,#main-content p,#main-content td,#main-content th')].slice(0, 40)) {
-    if (!el.innerText?.trim() || el.classList.contains('sr-only')) continue
-    const cs = getComputedStyle(el)
-    const size = parseFloat(cs.fontSize)
-    const large = size >= 24 || (size >= 18.66 && Number(cs.fontWeight) >= 700)
-    const bg = bgOf(el)
-    if (bg === null) continue
-    const [a, b] = [lum(bg), lum(cs.color)].sort((x, y) => y - x)
-    const ratio = (a + 0.05) / (b + 0.05)
-    if (ratio < (large ? 3 : 4.5)) out.push(`${el.tagName} "${el.innerText.trim().slice(0, 24)}" ${ratio.toFixed(2)}:1`)
-  }
-  return out
-})
+// Dark-mode readability, measured from pixels rather than assumed. The colour
+// work lives in _colour.mjs — it is not the two lines it looks like it is.
+await p.evaluate(installColour)
+const spots = await p.evaluate(() =>
+  [...document.querySelectorAll('#main-content h1,#main-content h2,#main-content p,#main-content td,#main-content th')]
+    .slice(0, 40)
+    .flatMap((el) => {
+      const text = el.innerText?.trim()
+      if (!text || el.classList.contains('sr-only')) return []
+      const r = el.getBoundingClientRect()
+      if (r.width < 1 || r.height < 1) return []
+      const cs = getComputedStyle(el)
+      const size = parseFloat(cs.fontSize)
+      return [{
+        label: `${el.tagName} "${text.slice(0, 24)}"`,
+        colour: cs.color,
+        point: [r.left + scrollX + r.width / 2, r.top + scrollY + r.height / 2],
+        need: size >= 24 || (size >= 18.66 && Number(cs.fontWeight) >= 700) ? 3 : 4.5,
+      }]
+    }))
+const grounds = await backdrops(p, spots.map((s) => s.point))
+const contrast = await p.evaluate(({ spots, grounds }) => spots.flatMap((s, i) => {
+  const bg = grounds[i]
+  const fg = window.__colour.srgb([`rgb(${bg.join(',')})`, s.colour])
+  const ratio = window.__colour.ratio(fg, bg)
+  return ratio < s.need ? [`${s.label} ${ratio.toFixed(2)}:1`] : []
+}), { spots, grounds })
 ok('dark-mode text meets 4.5:1', contrast.length === 0, contrast.slice(0, 3).join(' · '))
 await themeBtn.click()
 
