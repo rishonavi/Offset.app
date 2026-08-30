@@ -10,8 +10,16 @@ import PageHeader from '../components/PageHeader'
 import BudgetBar from '../components/BudgetBar'
 
 export default function Properties() {
-  const { properties, expenses, loading, deleteProperty } = useData()
+  const { properties, expenses, income, loading, deleteProperty } = useData()
   const navigate = useNavigate()
+
+  const earned = useMemo(() => {
+    const map = new Map()
+    for (const e of income || []) {
+      map.set(e.property_id, (map.get(e.property_id) || 0) + (Number(e.amount) || 0))
+    }
+    return map
+  }, [income])
 
   const totals = useMemo(() => {
     const sum = new Map()
@@ -114,16 +122,37 @@ export default function Properties() {
                   </div>
                 ) : null}
 
-                <div className="mt-auto flex items-end justify-between border-t border-slate-100 pt-4">
-                  <div>
-                    <div className="text-xs text-slate-400">
-                      Total spent · {count} {count === 1 ? 'entry' : 'entries'}
+                {/* What it is worth leads, because that is the question an asset
+                    card is asked first. Spend and income sit under it as the
+                    two figures that change it. A value nobody entered stays
+                    absent rather than being shown as zero — an asset worth
+                    nothing and an asset nobody valued are different claims. */}
+                <div className="mt-auto border-t border-slate-100 pt-4">
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs text-slate-400">{p.value ? 'Value' : 'Total spent'}</div>
+                      <div className="tabular text-lg font-bold text-slate-900">
+                        {p.value ? formatCurrency(p.value) : formatCurrency(totals.sum.get(p.id) || 0)}
+                      </div>
                     </div>
-                    <div className="text-lg font-bold text-slate-900">{formatCurrency(totals.sum.get(p.id) || 0)}</div>
+                    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand">
+                      Details <ArrowRight size={13} />
+                    </span>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-brand">
-                    Details <ArrowRight size={13} />
-                  </span>
+                  <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-xs">
+                    <div>
+                      <dt className="text-slate-400">Spent · {count}</dt>
+                      <dd className="tabular font-semibold text-slate-700">
+                        {formatCurrency(totals.sum.get(p.id) || 0)}
+                      </dd>
+                    </div>
+                    <div className="text-end">
+                      <dt className="text-slate-400">Earned</dt>
+                      <dd className="tabular font-semibold text-emerald-700">
+                        {formatCurrency(earned.get(p.id) || 0)}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               </Link>
             )

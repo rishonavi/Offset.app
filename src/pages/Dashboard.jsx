@@ -79,18 +79,23 @@ function DeltaChip({ delta }) {
   )
 }
 
+// The figure leads and the label explains it, rather than the two competing at
+// a similar size. Stacked rather than sitting beside the icon, so the number
+// gets the card's full width and does not truncate at the first long total.
 function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   return (
-    <Card className="card-hover p-4">
-      <div className="flex items-center gap-3">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: `${accent}1a`, color: accent }}>
-          <Icon size={20} />
-        </div>
-        <div className="min-w-0">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{label}</div>
-          <div className="truncate font-serif text-xl font-bold text-slate-900">{value}</div>
+    <Card className="card-hover p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{label}</div>
+        <div
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+          style={{ background: `${accent}1a`, color: accent }}
+          aria-hidden="true"
+        >
+          <Icon size={17} />
         </div>
       </div>
+      <div className="tabular mt-3 truncate font-serif text-2xl font-bold text-slate-900">{value}</div>
     </Card>
   )
 }
@@ -328,17 +333,17 @@ export default function Dashboard() {
       <GettingStarted />
 
       {/* Hero */}
-      <div className="relative overflow-hidden border border-gold/30 bg-gradient-to-br from-navy via-[#0d2747] to-navy-dark p-6 text-white shadow-lg sm:p-8">
-        <span className="absolute start-0 top-0 h-full w-[3px] bg-gold" />
+      <div className="relative overflow-hidden rounded-2xl border border-gold/30 bg-gradient-to-br from-navy via-[#0d2747] to-navy-dark p-6 text-white shadow-lg sm:p-8 lg:p-10">
+        <span className="absolute start-0 top-0 h-full w-[3px] bg-gold" aria-hidden="true" />
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="eyebrow">{greeting()}</p>
             <p className="mt-4 text-[0.7rem] font-semibold uppercase tracking-[2px] text-white/50">
               Net position · {properties.length} {properties.length === 1 ? 'asset' : 'assets'}
             </p>
-            <div className="mt-1 font-serif text-4xl font-bold tracking-tight sm:text-5xl">{formatCurrency(netAllTime)}</div>
+            <div className="tabular mt-1 font-serif text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">{formatCurrency(netAllTime)}</div>
             <p className="mt-2 text-xs text-white/60">
-              {formatCurrency(incomeAllTime)} income · {formatCurrency(allTimeTotal)} expenses
+              <span className="tabular">{formatCurrency(incomeAllTime)}</span> income · <span className="tabular">{formatCurrency(allTimeTotal)}</span> expenses
             </p>
             {portfolioValue > 0 && (
               <p className="mt-1 text-xs text-white/60">
@@ -347,9 +352,9 @@ export default function Dashboard() {
               </p>
             )}
           </div>
-          <div className="border border-white/10 bg-white/5 p-4 backdrop-blur sm:min-w-56">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur sm:min-w-56">
             <div className="text-[0.65rem] font-semibold uppercase tracking-[1.5px] text-white/50">Spent this month</div>
-            <div className="mt-1 font-serif text-2xl font-bold">{formatCurrency(thisMonth)}</div>
+            <div className="tabular mt-1 font-serif text-2xl font-bold">{formatCurrency(thisMonth)}</div>
             <div className="mt-2">
               <DeltaChip delta={delta} />
             </div>

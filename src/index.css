@@ -77,6 +77,12 @@ h1, h2, h3 {
   .field-input[type='date'] {
     font-variant-numeric: tabular-nums;
   }
+  /* The same for every figure on screen: amounts in a table, totals on a card,
+     the numbers in a stat tile. A column of proportional digits never aligns,
+     and comparing down a column is the whole reason the column exists. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
   /* The one field a form is actually about. */
   .field-input-lead {
     @apply text-lg font-semibold;
@@ -265,6 +271,18 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 .dark .form-section-title { color: #a99f85; }
 .dark .form-section { border-color: #1e3560; }
 .dark .form-actions { background-color: rgba(13, 32, 64, 0.88); border-color: #1e3560; }
+
+/* Scanning a table means tracking one row across several columns, which is
+   easier when the row you are on says so. */
+tbody tr {
+  transition: background-color 120ms ease;
+}
+tbody tr:hover {
+  background-color: rgba(197, 160, 89, 0.06);
+}
+.dark tbody tr:hover {
+  background-color: rgba(197, 160, 89, 0.10);
+}
 .dark .btn-ghost { background-color: #0d2040; border-color: #1e3560; color: #e8dfc8; }
 .dark .btn-ghost:hover { border-color: #C5A059; color: #C5A059; }
 .dark .skeleton { background: #13294d; }
@@ -292,7 +310,22 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 .dark .border-slate-300 { border-color: #274a86; }
 .dark .border-slate-100 { border-color: #16284a; }
 .dark .border-slate-200\/80 { border-color: #1e3560; }
-.dark .divide-slate-100 > * + * { border-color: #16284a !important; }
+/* Tailwind v4 hangs a divider on `> :not(:last-child)`, not on `* + *`. Written
+   the old way, this override missed the FIRST divider and pointlessly recoloured
+   the last row's absent one — so the top row of every table kept a near-white
+   line across it on the dark theme. Both shapes are listed so the rule survives
+   whichever the version emits.
+
+   These need naming one by one because `divide-slate-100` is a different class
+   from `border-slate-100`, and the override for the latter cannot reach it. */
+.dark .divide-slate-100 > * + *,
+.dark .divide-slate-100 > :not(:last-child) { border-color: #16284a !important; }
+.dark .divide-border-light > * + *,
+.dark .divide-border-light > :not(:last-child) { border-color: #1e3560 !important; }
+.dark .divide-border-subtle > * + *,
+.dark .divide-border-subtle > :not(:last-child) { border-color: #16284a !important; }
+.dark .divide-emerald-100\/70 > * + *,
+.dark .divide-emerald-100\/70 > :not(:last-child) { border-color: #14392c !important; }
 
 .dark .hover\:bg-slate-50:hover { background-color: #13294d; }
 .dark .hover\:bg-slate-100:hover { background-color: #13294d; }
@@ -306,6 +339,9 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 
 .dark .file\:bg-brand-light::file-selector-button { background-color: rgba(197, 160, 89, 0.15); }
 .dark .border-border-light { border-color: #1e3560; }
+/* Only the `divide-` form of this had an override, so a plain border using it
+   stayed a light hairline on the dark theme. */
+.dark .border-border-subtle { border-color: #16284a; }
 
 /* ─── Accessibility ──────────────────────────────────────────────── */
 /* Visible focus ring for keyboard users on interactive, non-field elements.
@@ -379,4 +415,29 @@ button:focus-visible,
   .card-hover:hover {
     transform: none !important;
   }
+}
+
+/* Chart tooltips come from recharts with its own inline styling, and the three
+   pages that draw charts each pass a hardcoded light `contentStyle`. On the
+   dark theme that is a white card appearing over a dark chart the moment you
+   hover. Styling it here fixes all three at once, and keeps working if a
+   fourth chart is added. */
+.dark .recharts-default-tooltip {
+  background-color: #0d2040 !important;
+  border-color: #1e3560 !important;
+  color: #e8dfc8 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+.dark .recharts-tooltip-label,
+.dark .recharts-tooltip-item,
+.dark .recharts-tooltip-item-name,
+.dark .recharts-tooltip-item-value {
+  color: #e8dfc8 !important;
+}
+/* The bar-hover highlight is a light wash passed inline for the same reason. */
+.dark .recharts-tooltip-cursor {
+  fill: rgba(197, 160, 89, 0.12) !important;
+}
+.dark .recharts-cartesian-grid line {
+  stroke: #1e3560;
 }

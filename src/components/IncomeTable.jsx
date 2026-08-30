@@ -101,7 +101,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                     )}
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-end font-semibold text-emerald-700">
+                <td className="tabular whitespace-nowrap px-4 py-3 text-end font-semibold text-emerald-700">
                   +{formatCurrency(e.amount)}
                 </td>
                 <td className="px-4 py-3">
@@ -160,7 +160,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                   <div className="mt-0.5 text-xs text-slate-500">{formatDate(e.date)}</div>
                 </div>
               </div>
-              <div className="text-end font-bold text-emerald-700">+{formatCurrency(e.amount)}</div>
+              <div className="tabular text-end font-bold text-emerald-700">+{formatCurrency(e.amount)}</div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge color={colorForSource(e.source)}>{e.source}</Badge>
