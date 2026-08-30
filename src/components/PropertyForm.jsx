@@ -281,7 +281,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
               aria-label="Purchase bill to read"
               onChange={(e) => readBill(e.target.files?.[0])}
             />
-            {billNote?.ok === false && <p className="mt-2 text-xs text-red-600">{billNote.text}</p>}
+            {billNote?.ok === false && <p role="alert" className="mt-2 text-xs text-red-600">{billNote.text}</p>}
             {billNote?.ok && <BillSummary read={billNote.read} />}
           </div>
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">

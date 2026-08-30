@@ -253,7 +253,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
             {t('entry.parse')}
           </Button>
         </div>
-        {nlNote && <p className="mt-1.5 text-xs text-slate-500">{nlNote}</p>}
+        {nlNote && <p role="status" aria-live="polite" className="mt-1.5 text-xs text-slate-500">{nlNote}</p>}
       </div>
 
       <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
@@ -269,8 +269,8 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
 
         <FormSection title="The receipt" />
 
-        <Field label={t('entry.date')} required>
-          <Input type="date" value={form.date} onChange={set('date')} max={todayISO()} />
+        <Field className="sm:col-span-2" label={t('entry.date')} required>
+          <Input type="date" className="field-input-compact" value={form.date} onChange={set('date')} max={todayISO()} />
         </Field>
 
         <Field label={t('income.amount')} required>
@@ -364,7 +364,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 type="button"
                 key={o.v}
                 onClick={() => setForm((f) => ({ ...f, status: o.v }))}
-                className={`flex-1 border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+                className={`flex-1 min-h-[2.75rem] rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition ${
                   form.status === o.v
                     ? o.v === 'received'
                       ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
@@ -379,13 +379,13 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
         </Field>
 
         {form.status === 'pending' && (
-          <Field label={t('entry.dueDate')}>
-            <Input type="date" value={form.due_date} onChange={set('due_date')} />
+          <Field className="sm:col-span-2" label={t('entry.dueDate')}>
+            <Input type="date" className="field-input-compact" value={form.due_date} onChange={set('due_date')} />
           </Field>
         )}
 
-        <Field label={t('entry.repeats')} hint={t('income.recurringHint')}>
-          <Select value={form.recurrence} onChange={set('recurrence')}>
+        <Field className="sm:col-span-2" label={t('entry.repeats')} hint={t('income.recurringHint')}>
+          <Select className="field-input-compact" value={form.recurrence} onChange={set('recurrence')}>
             {RECURRENCE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
@@ -435,7 +435,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
                 )}
               </button>
             )}
-            {scanMsg && <p className="text-xs text-slate-500">{scanMsg}</p>}
+            {scanMsg && <p role="status" aria-live="polite" className="text-xs text-slate-500">{scanMsg}</p>}
           </div>
         ) : (
           <div className="space-y-2">
@@ -453,9 +453,9 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
         )}
       </Field>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex justify-end gap-3 border-t border-border-light pt-5">
+      <div className="form-actions">
         <Button type="button" variant="ghost" onClick={() => { settled.current = true; clearDraft(key); onCancel?.() }}>
           {t('entry.cancel')}
         </Button>

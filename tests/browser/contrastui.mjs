@@ -103,5 +103,67 @@ console.log('\n── THE FORM ON A PHONE ──')
   await ctx.close()
 }
 
+console.log('\n── TARGETS BIG ENOUGH TO HIT ──')
+{
+  const ctx = await b.newContext({ viewport: { width: 390, height: 850 }, serviceWorkers: 'block' })
+  const p = await ctx.newPage()
+  await p.route('**/fonts.g**/**', (r) => r.abort())
+  await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
+  await p.locator('#main-content input').first().fill('Villa')
+  await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
+  await p.waitForTimeout(800)
+  await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+  await p.waitForTimeout(600)
+  // Apple's HIG says 44pt, Material says 48dp. 44 is the floor either way.
+  const small = await p.evaluate(() =>
+    [...document.querySelectorAll('#main-content button, #main-content input:not([type=hidden]):not([type=file]), #main-content select')]
+      .map((el) => ({ r: el.getBoundingClientRect(), label: (el.innerText || el.type || el.tagName).slice(0, 22) }))
+      .filter((x) => x.r.height > 0 && x.r.height < 44)
+      .map((x) => `${x.label} ${Math.round(x.r.height)}px`))
+  ok('every control clears 44px', small.length === 0, small.join(', '))
+  await ctx.close()
+}
+
+console.log('\n── WHEN SOMEONE ASKS FOR LESS MOTION ──')
+{
+  // Animation that cannot be turned off is a barrier for vestibular disorders,
+  // and every operating system has had the setting to say so for years.
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block', reducedMotion: 'reduce' })
+  const p = await ctx.newPage()
+  await p.route('**/fonts.g**/**', (r) => r.abort())
+  await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+  await p.waitForTimeout(500)
+  const moving = await p.evaluate(() =>
+    [...document.querySelectorAll('#main-content *')]
+      .filter((el) => {
+        const cs = getComputedStyle(el)
+        const dur = (v) => Math.max(...String(v).split(',').map((x) => parseFloat(x) || 0))
+        return dur(cs.transitionDuration) > 0.05 || dur(cs.animationDuration) > 0.05
+      }).length)
+  ok('nothing animates', moving === 0, `${moving} elements still animating`)
+  await ctx.close()
+}
+
+console.log('\n── ASYNC RESULTS ARE ANNOUNCED ──')
+{
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' })
+  const p = await ctx.newPage()
+  await p.route('**/fonts.g**/**', (r) => r.abort())
+  // A fresh context has no asset, and the expense form does not render without
+  // one — so there would be no form to submit.
+  await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
+  await p.locator('#main-content input').first().fill('Villa')
+  await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
+  await p.waitForTimeout(800)
+  await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+  // Submitting with no amount is the quickest way to a message.
+  await p.locator('form button[type="submit"]').first().click()
+  await p.waitForTimeout(700)
+  const announced = await p.evaluate(() =>
+    Boolean(document.querySelector('#main-content [role="alert"], #main-content [aria-live]')))
+  ok('a validation failure is announced, not only shown', announced)
+  await ctx.close()
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 await b.close(); if (fail) process.exitCode = 1

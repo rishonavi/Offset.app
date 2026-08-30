@@ -359,7 +359,7 @@ npx vite-node tests/logic/metals.test.mjs      # logic: 14 suites, 964 assertion
 ```
 
 ```sh
-VITE_OPEN_ACCESS=true npx vite build           # browser: 15 suites, 436
+VITE_OPEN_ACCESS=true npx vite build           # browser: 15 suites, 439
 npx vite preview --port 4188 &
 node tests/browser/flows.mjs
 ```

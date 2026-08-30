@@ -47,7 +47,7 @@ node tests/browser/rtlui.mjs
 |---|---|---|
 | `assetformui.mjs` | 37 | the asset form showing only the fields its type has |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
-| `contrastui.mjs` | 17 | whether the interface can be read, in both themes |
+| `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `draftui.mjs` | 17 | a half-typed entry surviving the screen being left |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
@@ -60,7 +60,7 @@ node tests/browser/rtlui.mjs
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
-| | **436** | |
+| | **439** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

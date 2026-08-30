@@ -85,24 +85,24 @@ h1, h2, h3 {
   /* 0.7rem uppercase with 1.5px of tracking is about as small as an interactive
      label can get before it stops being read and starts being decoration. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
-           font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
-           disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5
+           text-[0.8rem] font-semibold uppercase tracking-[0.8px] transition-all duration-200
+           active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-gold bg-gold text-navy shadow-sm hover:bg-gold-dark hover:border-gold-dark;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-border-light bg-white text-slate-700 hover:border-gold hover:text-gold;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-[0.8rem]
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-red-600 bg-red-600 text-white hover:bg-red-700 hover:border-red-700;
@@ -118,6 +118,12 @@ h1, h2, h3 {
   }
   .form-section-title {
     @apply text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500;
+  }
+  /* Save stays reachable without scrolling back down a form. Sticky rather than
+     fixed so it sits inside the card and cannot cover another page's content. */
+  .form-actions {
+    @apply sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-light
+           bg-white/85 px-5 py-4 backdrop-blur-sm sm:-mx-6 sm:px-6;
   }
   .card-hover {
     @apply transition duration-300 hover:-translate-y-1 hover:border-gold hover:shadow-[0_15px_30px_rgba(197,160,89,0.15)];
@@ -169,6 +175,17 @@ input[type='date'].field-input {
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* A control whose content is short — a date, a repeat interval. Left at full
+   width it looks like a field waiting for something more to be typed, and the
+   empty half-row beside it looks like something failed to render.
+   Written with the same shape as the rule above so it wins on the date input
+   without disturbing that fix. */
+.field-input-compact,
+input[type='date'].field-input-compact,
+select.field-input-compact {
+  max-width: 15rem;
 }
 
 /* Drop number spinners (we use inputMode='decimal') */
@@ -247,6 +264,7 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 .dark .field-label { color: #c4ba9d; }
 .dark .form-section-title { color: #a99f85; }
 .dark .form-section { border-color: #1e3560; }
+.dark .form-actions { background-color: rgba(13, 32, 64, 0.88); border-color: #1e3560; }
 .dark .btn-ghost { background-color: #0d2040; border-color: #1e3560; color: #e8dfc8; }
 .dark .btn-ghost:hover { border-color: #C5A059; color: #C5A059; }
 .dark .skeleton { background: #13294d; }
@@ -337,4 +355,28 @@ button:focus-visible,
   overflow: visible;
   clip: auto;
   white-space: normal;
+}
+
+/* Vestibular disorders make animation a genuine barrier, not a preference, and
+   the setting to say so has existed in every operating system for years. Nothing
+   here is load-bearing: every transition is decoration over a state change that
+   still happens instantly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active,
+  .btn-primary:active,
+  .btn-ghost:active,
+  .btn-danger:active {
+    transform: none !important;
+  }
+  .card-hover:hover {
+    transform: none !important;
+  }
 }
