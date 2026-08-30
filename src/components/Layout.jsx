@@ -27,7 +27,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useTheme, useAppearance } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { useConfig } from '../context/ConfigContext'
@@ -39,7 +39,7 @@ import QuickAddExpense from './QuickAddExpense'
 import CommandPalette from './CommandPalette'
 import ShortcutsHelp from './ShortcutsHelp'
 import { checkIsAdmin } from '../lib/admin'
-import { Spinner } from './ui'
+import { Spinner, Avatar } from './ui'
 
 const NAV = [
   { to: '/', key: 'nav.dashboard', icon: LayoutDashboard, end: true },
@@ -381,14 +381,15 @@ export default function Layout() {
 
 function UserFooter({ user, isCloud, onSignOut }) {
   const t = useT()
+  const { avatar } = useAppearance()
   return (
     <div className="mt-4 border-t border-white/10 pt-4">
       <div className="flex items-center gap-3 px-1">
-        <div className="grid h-9 w-9 shrink-0 place-items-center bg-gold/20 text-sm font-semibold text-gold">
-          {(user?.email || 'U')[0].toUpperCase()}
-        </div>
+        <Avatar avatar={avatar} email={user?.email} size={36} />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium text-white">{user?.email || t('chrome.localUser')}</div>
+          <div className="truncate text-sm font-medium text-white">
+            {avatar?.name?.trim() || user?.email || t('chrome.localUser')}
+          </div>
           <div className="text-[10px] uppercase tracking-[1.5px] text-gold/60">{isCloud ? t('chrome.signedIn') : t('chrome.demoMode')}</div>
         </div>
         <ThemeToggle />

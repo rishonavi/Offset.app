@@ -33,6 +33,7 @@ const seed = async (p) => {
   await p.waitForTimeout(500)
 }
 
+const borders = new Map()
 for (const theme of ['light', 'dark']) {
   console.log(`\n── ${theme.toUpperCase()}: EVERY PAGE ──`)
   const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' })
@@ -49,7 +50,7 @@ for (const theme of ['light', 'dark']) {
   await seed(p)
   await p.evaluate((t) => localStorage.setItem('pl_theme', t), theme)
 
-  const strayBorders = []
+  const borderSeen = new Map()
   const strayFills = []
   const unnamed = []
   for (const route of ROUTES) {
@@ -62,19 +63,23 @@ for (const theme of ['light', 'dark']) {
       for (const el of document.querySelectorAll('#main-content *')) {
         const cs = getComputedStyle(el)
         if (el.getBoundingClientRect().width === 0) continue
-        // A light divider left behind on a dark ground, and its opposite.
+        // Every border is recorded in both themes; which of them is a defect is
+        // decided afterwards, because a colour on its own cannot say. A light
+        // border on a dark ground is correct when it was chosen for the dark
+        // theme — a selection ring has to be light to be seen — and wrong when
+        // it is a light-theme colour that never got a dark variant. What tells
+        // them apart is whether the colour changed with the theme at all.
         for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
           if (parseFloat(cs[`border${side}Width`]) < 0.5) continue
           const c = cs[`border${side}Color`]
           if (!c || c === 'rgba(0, 0, 0, 0)') continue
-          // A hairline of white at a tenth of an opacity is how a dark panel gets
-          // an edge at all — it is the fully-opaque light border that was left
-          // behind, which is why this asks the same alpha question as the fills
-          // below do.
-          const l = window.__lum(c)
-          if (isDark && l > 0.6 && window.__alpha(c) > 0.5) {
-            const key = el.className + side
-            if (!seen.has(key)) { seen.add(key); out.borders.push(`${String(el.className).slice(0, 46)} ${side.toLowerCase()}`) }
+          const key = `${String(el.className).slice(0, 46)} ${side.toLowerCase()}`
+          if (!seen.has('b' + key)) {
+            seen.add('b' + key)
+            // A hairline of white at a tenth of an opacity is how a dark panel
+            // gets an edge at all, so the alpha question is asked here as it is
+            // for the fills below.
+            out.borders.push({ key, light: window.__lum(c) > 0.6 && window.__alpha(c) > 0.5 })
           }
         }
         const bg = cs.backgroundColor
@@ -95,15 +100,28 @@ for (const theme of ['light', 'dark']) {
       }
       return out
     }, theme === 'dark')
-    for (const x of found.borders) strayBorders.push(`${route} ${x}`)
+    for (const x of found.borders) borderSeen.set(`${route} ${x.key}`, x.light)
     for (const x of found.fills) strayFills.push(`${route} ${x}`)
     for (const x of found.unnamed) unnamed.push(`${route} ${x}`)
   }
-  ok(`no border is the wrong side of the ground it sits on`, strayBorders.length === 0, strayBorders.slice(0, 5).join(' | '))
+  borders.set(theme, borderSeen)
   ok(`no panel keeps a light fill`, strayFills.length === 0, strayFills.slice(0, 5).join(' | '))
   ok(`every icon-only control has a name`, unnamed.length === 0, [...new Set(unnamed)].slice(0, 5).join(' | '))
   ok(`no page threw`, errors.length === 0, errors.slice(0, 3).join(' | '))
   await ctx.close()
+}
+
+console.log('\n── BORDERS THAT NEVER HEARD ABOUT THE DARK THEME ──')
+{
+  // A border is only a defect when it is light on the dark ground *and* is the
+  // very same colour it was in the light theme — that is what "nobody wrote a
+  // dark variant" looks like. A light border that changed between the themes was
+  // chosen for the dark one, and a selection ring has to be light to be seen.
+  const dark = borders.get('dark') || new Map()
+  const light = borders.get('light') || new Map()
+  const stray = [...dark].filter(([key, isLight]) => isLight && light.get(key) === true).map(([key]) => key)
+  ok('no border is the wrong side of the ground it sits on', stray.length === 0, stray.slice(0, 5).join(' | '))
+  ok('and the sweep actually saw some borders', dark.size > 20, `${dark.size} seen`)
 }
 
 console.log('\n── ON A PHONE, EVERY PAGE ──')

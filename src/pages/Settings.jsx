@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail, Sparkles } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useAppearance } from '../context/ThemeContext'
 import { usePlan } from '../context/PlanContext'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
@@ -12,18 +12,19 @@ import { listReports, deleteReport, formatReportText, mailtoLink, kindLabel, SUP
 import { startCheckout, openBillingPortal } from '../lib/billing'
 import { listTeam, inviteMember, removeMembership } from '../lib/team'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Spinner } from '../components/ui'
+import { Card, Button, Spinner, Avatar } from '../components/ui'
+import AppearanceCard from '../components/AppearanceCard'
 import PageHeader from '../components/PageHeader'
 
 export default function Settings() {
   const { user, isCloud, signOut } = useAuth()
+  const { avatar } = useAppearance()
   const { t, lang, chosen, setLanguage, languages, coverage } = useLanguage()
   const changeLanguage = (code) => {
     setLanguage(code)
     const picked = languages.find((l) => l.code === code)
     toast(picked ? `${picked.name} · ${picked.english}` : t('language.systemDefault'))
   }
-  const { theme, toggle } = useTheme()
   const { info, isPro, billingEnabled, scanCount, scanLimit } = usePlan()
   const { properties, expenses, income, loading, deleteProperty, deleteExpense, deleteIncome, refresh } = useData()
   const toast = useToast()
@@ -256,11 +257,11 @@ export default function Settings() {
         <h2 className="text-sm font-semibold text-slate-700">Account</h2>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-light text-sm font-semibold text-brand">
-              {(user?.email || 'U')[0].toUpperCase()}
-            </span>
+            <Avatar avatar={avatar} email={user?.email} size={40} />
             <div>
-              <div className="text-sm font-medium text-slate-800">{user?.email || 'Local user'}</div>
+              <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                {avatar.name?.trim() || user?.email || 'Local user'}
+              </div>
               <div className="inline-flex items-center gap-1 text-xs text-slate-400">
                 <ShieldCheck size={12} /> {isCloud ? 'Cloud account' : 'Demo mode (this browser)'}
               </div>
@@ -275,30 +276,7 @@ export default function Settings() {
       </Card>
 
       {/* Appearance */}
-      <Card className="p-5">
-        <h2 className="text-sm font-semibold text-slate-700">Appearance</h2>
-        <p className="mt-1 text-xs text-slate-500">Choose how Offset looks — saved to this browser.</p>
-        <div className="mt-4 inline-flex rounded-xl border border-border-light bg-white p-0.5">
-          {[
-            { v: 'light', label: 'Light', icon: Sun },
-            { v: 'dark', label: 'Dark', icon: Moon },
-          ].map((o) => {
-            const on = theme === o.v
-            return (
-              <button
-                key={o.v}
-                onClick={() => !on && toggle()}
-                aria-pressed={on}
-                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wide transition ${
-                  on ? 'bg-brand text-white' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <o.icon size={15} /> {o.label}
-              </button>
-            )
-          })}
-        </div>
-      </Card>
+      <AppearanceCard />
 
       {/* Team / sharing (cloud only) */}
       {isCloud && (

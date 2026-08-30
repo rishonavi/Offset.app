@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react'
+import { initialsFrom } from '../lib/appearance'
 
 export const cx = (...c) => c.filter(Boolean).join(' ')
 
@@ -120,4 +121,31 @@ export function EmptyState({ icon: Icon, title, subtitle, action }) {
 
 export function Skeleton({ className }) {
   return <div className={cx('skeleton', className)} />
+}
+
+// Someone's mark in the sidebar. Initials unless they picked a symbol, and the
+// accent colour unless they picked a different one — so the default costs no
+// decision and still looks chosen once they change the accent.
+export function Avatar({ avatar, email, size = 36, className }) {
+  const { symbol, name, hue } = avatar || {}
+  const tint = typeof hue === 'number' ? `oklch(0.7245 0.0998 ${hue})` : 'var(--color-gold)'
+  const label = symbol || initialsFrom(name, email)
+  return (
+    <span
+      aria-hidden="true"
+      className={cx('grid shrink-0 place-items-center rounded-xl font-semibold', className)}
+      style={{
+        width: size,
+        height: size,
+        // A tenth of the accent behind it, the accent itself in front: legible
+        // on the navy sidebar and on a white card without needing two colours.
+        backgroundColor: `color-mix(in oklab, ${tint} 22%, transparent)`,
+        color: tint,
+        fontSize: symbol ? size * 0.5 : size * 0.4,
+        lineHeight: 1,
+      }}
+    >
+      {label}
+    </span>
+  )
 }
