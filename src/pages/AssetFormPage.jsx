@@ -80,7 +80,7 @@ export default function AssetFormPage() {
         </Card>
       ) : (
         <Card className="max-w-2xl p-5 sm:p-7">
-          <PropertyForm initial={editing} onSubmit={onSubmit} onCancel={goBack} />
+          <PropertyForm initial={editing} history={properties} onSubmit={onSubmit} onCancel={goBack} />
         </Card>
       )}
     </div>

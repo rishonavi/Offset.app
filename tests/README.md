@@ -24,6 +24,7 @@ for Vite's resolver.
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
 | `corp.test.mjs` | 106 | entities, control, ledgers, audit events |
 | `defaults.test.mjs` | 30 | filling a form in from history, and when not to |
+| `filled.test.mjs` | 22 | which values on a form the app put there |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
@@ -33,7 +34,7 @@ for Vite's resolver.
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **1,041** | |
+| | **1,063** | |
 
 ## Browser — `tests/browser/`
 
@@ -65,7 +66,8 @@ node tests/browser/rtlui.mjs
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
-| | **501** | |
+| `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
+| | **512** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

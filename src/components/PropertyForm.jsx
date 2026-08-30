@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { ASSET_TYPES, hasAddress, canBeFinanced, canBeLeased, ATTACHMENT_ACCEPT } from '../lib/constants'
+import { usual } from '../lib/defaults'
 import { currencySymbol, formatCurrency } from '../lib/format'
 import {
   METALS, METAL_KEYS, PURITIES, UNITS, UNIT_KEYS,
@@ -50,10 +51,15 @@ function BillSummary({ read }) {
   )
 }
 
-export default function PropertyForm({ initial, onSubmit, onCancel }) {
+export default function PropertyForm({ initial, history = [], onSubmit, onCancel }) {
+  // Someone with eleven flats is adding a twelfth, not a warehouse. The first
+  // entry in a list of forty types is a worse guess than the type they have
+  // picked every time so far — and when they have no habit yet, `usual` says so
+  // and the list falls back to its own first entry.
+  const learnedType = usual(history, 'type', { among: ASSET_TYPES })
   const [form, setForm] = useState({
     name: initial?.name || '',
-    type: initial?.type || ASSET_TYPES[0],
+    type: initial?.type || learnedType || ASSET_TYPES[0],
     address: initial?.address || '',
     value: initial?.value ?? '',
     monthly_budget: initial?.monthly_budget ?? '',
@@ -65,7 +71,7 @@ export default function PropertyForm({ initial, onSubmit, onCancel }) {
     lease_start: initial?.lease_start || '',
     lease_end: initial?.lease_end || '',
     deposit: initial?.deposit ?? '',
-    metal: initial?.metal || defaultMetalFor(initial?.type || ASSET_TYPES[0]) || 'gold',
+    metal: initial?.metal || defaultMetalFor(initial?.type || learnedType || ASSET_TYPES[0]) || 'gold',
     metal_quantity: initial?.metal_quantity ?? '',
     metal_unit: initial?.metal_unit || 'g',
     metal_fineness: initial?.metal_fineness ?? '',

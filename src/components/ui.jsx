@@ -1,4 +1,4 @@
-import { Loader2, ChevronRight } from 'lucide-react'
+import { Loader2, ChevronRight, Info } from 'lucide-react'
 import { initialsFrom } from '../lib/appearance'
 
 export const cx = (...c) => c.filter(Boolean).join(' ')
@@ -43,7 +43,7 @@ export function CardTitle({ title, description, icon: Icon, action }) {
   )
 }
 
-export function Field({ label, children, hint, required, className }) {
+export function Field({ label, children, hint, required, className, origin }) {
   return (
     <label className={cx('block', className)}>
       {label && (
@@ -52,6 +52,15 @@ export function Field({ label, children, hint, required, className }) {
         </span>
       )}
       {children}
+      {/* Deliberately not styled like the hint below it. A hint is advice; this
+          says the app put a value in the box, which is a different kind of
+          thing to tell someone and should not read as decoration. */}
+      {origin && (
+        <span className="mt-1 flex items-start gap-1 text-xs text-slate-500 dark:text-slate-400">
+          <Info size={12} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />
+          <span>{origin}</span>
+        </span>
+      )}
       {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
     </label>
   )

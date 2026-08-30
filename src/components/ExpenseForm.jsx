@@ -8,6 +8,7 @@ import { buildVendorIndex, suggestCategory } from '../lib/categorize'
 import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
 import { usual, lastUsed, hasDetail } from '../lib/defaults'
+import { mark, claim, claimAll, pending } from '../lib/filled'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
 import { Field, FormSection, Input, Select, Textarea, Button, MoreDetails } from './ui'
@@ -61,6 +62,18 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
   // button names it anyway.
   const [showMore, setShowMore] = useState(() =>
     hasDetail({ ...blank, ...(restored || {}) }, DETAIL_FIELDS, initial ? BLANK_DETAIL : blank))
+  // Which values on screen the app put there rather than the person. A value
+  // that came from `initial` is the entry's own and is not marked — only what
+  // was guessed on their behalf is.
+  const [filled, setFilled] = useState(() => {
+    if (initial) return {}
+    let f = mark({}, { property_id: defaultPropertyId ? '' : learned.property_id }, 'recent')
+    return mark(f, { payment_method: learned.payment_method }, 'history')
+  })
+  const originText = (key) => {
+    const src = filled[key]
+    return src ? t(`filled.${src}`) : null
+  }
   const [file, setFile] = useState(null)
   const [existingReceipt, setExistingReceipt] = useState(initial?.receipt_url || null)
   const [receiptPreview, setReceiptPreview] = useState(null)
@@ -171,7 +184,13 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
     }
   }
 
-  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  // Editing a field the app filled in makes it the person's, so the note under
+  // it goes away. `claim` returns the same object when there was nothing to
+  // drop, so this costs nothing on the fields nobody filled in.
+  const set = (key) => (e) => {
+    setForm((f) => ({ ...f, [key]: e.target.value }))
+    setFilled((f) => claim(f, key))
+  }
 
   // Resolve a viewable URL for an already-saved receipt (signed URL in cloud mode).
   useEffect(() => {
@@ -210,14 +229,24 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
       const { scanReceipt, scanSourceNote } = await import('../lib/ocr')
       const parsed = await scanReceipt(file, (p) => setScanPct(Math.round(p * 100)))
       if (parsed.source === 'ai') plan?.recordScan?.()
+      const read = {
+        amount: parsed.amount != null ? String(parsed.amount) : '',
+        tax: parsed.tax != null ? String(parsed.tax) : '',
+        date: parsed.date || '',
+        vendor: parsed.vendor || '',
+        category: parsed.category || '',
+      }
       setForm((f) => ({
         ...f,
-        amount: parsed.amount != null ? String(parsed.amount) : f.amount,
-        tax: parsed.tax != null ? String(parsed.tax) : f.tax,
-        date: parsed.date || f.date,
-        vendor: parsed.vendor || f.vendor,
-        category: parsed.category || f.category,
+        amount: read.amount || f.amount,
+        tax: read.tax || f.tax,
+        date: read.date || f.date,
+        vendor: read.vendor || f.vendor,
+        category: read.category || f.category,
       }))
+      // A figure read off a photograph is a guess wearing a number's clothes.
+      // Every field it landed in says so until someone looks at it.
+      setFilled((f) => mark(f, read, 'scan'))
       const got = [
         parsed.amount != null && 'amount',
         parsed.tax != null && 'tax',
@@ -267,6 +296,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
       // which is which.
       settled.current = true
       clearDraft(key)
+      setFilled(claimAll())
     } catch (err) {
       setError(err?.message || String(err))
       setSaving(false)
@@ -278,13 +308,21 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
       {/* Restoring silently is unnerving — a form that fills itself in looks
           like a bug until you work out why. Say it happened, and offer the
           blank form back in one click. */}
+      {/* Said once at the top as well as under each field. Someone scrolling
+          past to the Save button should not have to notice six small notes to
+          learn that the app answered six questions for them. */}
+      {pending(filled) > 0 && (
+        <p role="status" className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-slate-700 dark:border-gold/30 dark:bg-gold/10 dark:text-slate-200">
+          {t('filled.summary')}
+        </p>
+      )}
       {draftNoticed && (
         <div className="flex items-start justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-slate-700">
           <span>{t('entry.draftRestored')}</span>
           <button
             type="button"
             className="shrink-0 font-semibold text-brand underline"
-            onClick={() => { clearDraft(key); setForm(blank); setDraftNoticed(false) }}
+            onClick={() => { clearDraft(key); setForm(blank); setDraftNoticed(false); setFilled(claimAll()) }}
           >
             {t('entry.draftDiscard')}
           </button>
@@ -315,7 +353,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
       </div>
 
       <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-        <Field className="sm:col-span-2" label={t('entry.property')} required>
+        <Field className="sm:col-span-2" label={t('entry.property')} required origin={originText('property_id')}>
           <Select value={form.property_id} onChange={set('property_id')}>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
@@ -327,11 +365,11 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
         <FormSection title="The cost" />
 
-        <Field className="sm:col-span-2" label={t('entry.date')} required>
+        <Field className="sm:col-span-2" label={t('entry.date')} required origin={originText('date')}>
           <Input type="date" className="field-input-compact" value={form.date} onChange={set('date')} max={todayISO()} />
         </Field>
 
-        <Field label={t('entry.amount')} required>
+        <Field label={t('entry.amount')} required origin={originText('amount')}>
           <div className="relative">
             <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
               {currencySymbol}
@@ -352,7 +390,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
         <FormSection title="What it was for" />
 
-        <Field label={t('expense.category')} hint={t('expense.categoryHint')}>
+        <Field label={t('expense.category')} hint={t('expense.categoryHint')} origin={originText('category')}>
           <Input
             list="expense-categories"
             value={form.category}
@@ -377,7 +415,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
           )}
         </Field>
 
-        <Field label={t('expense.vendor')}>
+        <Field label={t('expense.vendor')} origin={originText('vendor')}>
           <Input
             list="expense-vendors"
             value={form.vendor}
@@ -403,7 +441,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
         {showMore && (
           <>
-            <Field label={t('entry.tax')} hint={t('entry.taxHint')}>
+            <Field label={t('entry.tax')} hint={t('entry.taxHint')} origin={originText('tax')}>
               <div className="relative">
                 <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
                   {currencySymbol}
@@ -423,7 +461,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
             <FormSection title="Payment" />
 
-            <Field label={t('entry.paymentMethod')}>
+            <Field label={t('entry.paymentMethod')} origin={originText('payment_method')}>
               <Select value={form.payment_method} onChange={set('payment_method')}>
                 <option value="">—</option>
                 {PAYMENT_METHODS.map((m) => (
@@ -503,6 +541,9 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
                 <X size={15} />
               </button>
             </div>
+            {isScannable(file) && (
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('entry.scanPrivacy')}</p>
+            )}
             {isScannable(file) && (
               <button type="button" onClick={runScan} disabled={scanning} className="btn-ghost w-full">
                 {scanning ? (

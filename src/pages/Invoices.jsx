@@ -18,6 +18,13 @@ import PageHeader from '../components/PageHeader'
 
 const ISSUER_KEY = 'pl_invoice_issuer'
 const SEQ_KEY = 'pl_invoice_seq'
+// The parts of an invoice that describe how this person invoices, rather than
+// who this one is for. Someone billing at 5% does not re-decide that every
+// month, and the issuer is already remembered for exactly this reason. The
+// client and the dates are deliberately not in here: re-using a name and
+// address is how an invoice goes to the wrong company.
+const HABITS_KEY = 'pl_invoice_habits'
+const HABITS = ['numberPattern', 'taxRate', 'propertyId', 'notes']
 
 const readJSON = (key, fallback) => {
   try {
@@ -43,7 +50,7 @@ export default function Invoices() {
     readJSON(ISSUER_KEY, { name: '', address: '', gstin: '', pan: '', email: '', phone: '', bank: '' }),
   )
   const [client, setClient] = useState({ name: '', address: '', gstin: '', email: '' })
-  const [meta, setMeta] = useState({
+  const [meta, setMeta] = useState(() => ({
     numberPattern: 'INV-{FY}-{0001}',
     seq: Number(localStorage.getItem(SEQ_KEY) || 1),
     date: todayISO(),
@@ -52,7 +59,8 @@ export default function Invoices() {
     notes: '',
     taxRate: 18,
     propertyId: '',
-  })
+    ...readJSON(HABITS_KEY, {}),
+  }))
   const [lines, setLines] = useState([{ description: '', hsn: '', qty: 1, rate: '' }])
 
   useEffect(() => {
@@ -172,6 +180,10 @@ export default function Invoices() {
     setMeta((m) => ({ ...m, seq: next }))
     try {
       localStorage.setItem(SEQ_KEY, String(next))
+      // Issuing an invoice is the moment these stop being a guess and become
+      // how this person invoices, so that is when they are remembered.
+      localStorage.setItem(HABITS_KEY, JSON.stringify(
+        Object.fromEntries(HABITS.map((k) => [k, meta[k]]))))
     } catch {
       /* numbering still advances for this session */
     }

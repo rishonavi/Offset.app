@@ -5,6 +5,7 @@ import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { CATEGORIES } from '../lib/constants'
 import { currencySymbol, todayISO } from '../lib/format'
+import { lastUsed } from '../lib/defaults'
 import { Field, Input, Select, Button } from './ui'
 
 // A compact modal for logging an expense from anywhere — no page navigation,
@@ -19,10 +20,15 @@ export default function QuickAddExpense({ open, onClose }) {
 
   useEffect(() => {
     if (!open) return
+    // Both of these went by list order, which is only the last-used entry if
+    // the list happens to be sorted newest-first. `lastUsed` sorts by date and
+    // skips values whose asset has since been deleted, so the quick form agrees
+    // with the full one instead of guessing differently.
     setForm({
-      property_id: properties[0]?.id || '',
+      property_id: lastUsed(expenses, 'property_id', { among: properties.map((p) => p.id) })
+        || properties[0]?.id || '',
       amount: '',
-      category: expenses[0]?.category || '', // default to the last-used category
+      category: lastUsed(expenses, 'category'),
       date: todayISO(),
     })
     setError(null)

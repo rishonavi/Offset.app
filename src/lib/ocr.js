@@ -298,7 +298,7 @@ export async function scanReceipt(file, onProgress) {
 
 // Human-readable note about which reader was used, shown under the scan button.
 export function scanSourceNote(parsed) {
-  if (parsed.source === 'ai') return 'Read with AI.'
+  if (parsed.source === 'ai') return 'Read by Google Gemini.'
   switch (parsed.aiError) {
     case 'not_configured':
       return 'Used basic OCR — add the Gemini key in Vercel (then redeploy) for accurate AI scans.'
