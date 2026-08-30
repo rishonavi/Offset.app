@@ -12,6 +12,7 @@ import { listReports, deleteReport, formatReportText, mailtoLink, kindLabel, SUP
 import { startCheckout, openBillingPortal } from '../lib/billing'
 import { listTeam, inviteMember, removeMembership } from '../lib/team'
 import { formatCurrency } from '../lib/format'
+import { clearSearches } from '../lib/searchHistory'
 import { Card, Button, Spinner, Avatar } from '../components/ui'
 import AppearanceCard from '../components/AppearanceCard'
 import PageHeader from '../components/PageHeader'
@@ -129,6 +130,10 @@ export default function Settings() {
     setBusy(true)
     try {
       for (const p of [...properties]) await deleteProperty(p.id)
+      // "All your data" has to mean all of it. What someone searched for is a
+      // record of what they were looking at, and leaving it behind would make
+      // the button's promise false.
+      clearSearches()
       toast('All data deleted.')
     } catch (e) {
       toast(e?.message || 'Could not delete data.', { type: 'error' })

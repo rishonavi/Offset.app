@@ -17,12 +17,16 @@ import {
   Sun,
   Building2,
   CornerDownLeft,
+  Clock,
+  Eraser,
   Keyboard,
   Bug,
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import { formatCurrency, formatDate } from '../lib/format'
+import { recentSearches, recordSearch, clearSearches, RETENTION_DAYS } from '../lib/searchHistory'
+import { terms, matchesAll, score } from '../lib/searchMatch'
 
 const NAV_COMMANDS = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
@@ -46,6 +50,10 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
   const { theme, toggle } = useTheme()
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
+  // Read when the palette opens rather than held across the session, so a week
+  // ticking over — or another tab clearing the list — is reflected next time it
+  // is used instead of at the next reload.
+  const [recents, setRecents] = useState([])
   const inputRef = useRef(null)
   const listRef = useRef(null)
 
@@ -53,6 +61,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
     if (!open) return
     setQ('')
     setActive(0)
+    setRecents(recentSearches())
     const t = setTimeout(() => inputRef.current?.focus(), 10)
     return () => clearTimeout(t)
   }, [open])
@@ -60,14 +69,31 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
   useEffect(() => setActive(0), [q])
 
   const items = useMemo(() => {
-    const query = q.trim().toLowerCase()
-    const match = (s) => !query || (s || '').toLowerCase().includes(query)
+    const query = q.trim()
+    const words = terms(query)
+    // Commands are matched on their own label; records get every field they
+    // have, so "villa plumber" can find the plumber's bill for the villa even
+    // though no single field holds both words.
+    const match = (s) => matchesAll([s], words)
     const go = (to) => () => {
       onClose()
       navigate(to)
     }
     const out = []
-    const push = (group, label, sublabel, icon, action) => out.push({ group, label, sublabel, icon, action })
+    const push = (group, label, sublabel, icon, action, rank) => out.push({ group, label, sublabel, icon, action, rank })
+
+    // With nothing typed, the most useful thing to offer is what they were
+    // looking for last time. Only here: once someone starts typing, the results
+    // are more use than the history of getting to them.
+    if (!words.length) {
+      for (const r of recents) {
+        push('Recent searches', r, '', Clock, () => { setQ(r); inputRef.current?.focus() })
+      }
+      if (recents.length) {
+        push('Recent searches', 'Clear recent searches', `Kept on this device for ${RETENTION_DAYS} days`, Eraser,
+          () => setRecents(clearSearches()))
+      }
+    }
 
     if (canWrite) {
       if (match('add expense')) push('Actions', 'Add expense', 'Quick add', Plus, () => { onClose(); onQuickAdd?.() })
@@ -85,42 +111,47 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
 
     for (const n of NAV_COMMANDS) if (match(n.label)) push('Go to', n.label, '', n.icon, go(n.to))
 
-    if (query) {
+    if (words.length) {
       let n = 0
       for (const p of properties) {
         if (n >= 6) break
-        if (match(p.name) || match(p.address) || match(p.type)) {
-          push('Assets', p.name, p.type || p.address || '', Building2, go(`/properties/${p.id}`))
+        if (matchesAll([p.name, p.address, p.type, p.notes], words)) {
+          push('Assets', p.name, p.type || p.address || '', Building2, go(`/properties/${p.id}`), score([p.name, p.type, p.address], words))
           n++
         }
       }
       n = 0
       for (const e of expenses) {
         if (n >= 6) break
-        if (match(e.vendor) || match(e.category) || match(e.description)) {
-          push('Expenses', `${e.vendor || e.category || 'Expense'} · ${formatCurrency(e.amount)}`, `${propertyNameById(e.property_id) || ''} · ${formatDate(e.date)}`, Receipt, go(`/properties/${e.property_id}`))
+        if (matchesAll([e.vendor, e.category, e.description, propertyNameById(e.property_id)], words)) {
+          push('Expenses', `${e.vendor || e.category || 'Expense'} · ${formatCurrency(e.amount)}`, `${propertyNameById(e.property_id) || ''} · ${formatDate(e.date)}`, Receipt, go(`/properties/${e.property_id}`), score([e.vendor, e.category, e.description], words))
           n++
         }
       }
       n = 0
       for (const e of income) {
         if (n >= 6) break
-        if (match(e.source) || match(e.payer) || match(e.description)) {
-          push('Income', `${e.source || 'Income'} · ${formatCurrency(e.amount)}`, `${propertyNameById(e.property_id) || ''} · ${formatDate(e.date)}`, Banknote, go(`/properties/${e.property_id}`))
+        if (matchesAll([e.source, e.payer, e.description, propertyNameById(e.property_id)], words)) {
+          push('Income', `${e.source || 'Income'} · ${formatCurrency(e.amount)}`, `${propertyNameById(e.property_id) || ''} · ${formatDate(e.date)}`, Banknote, go(`/properties/${e.property_id}`), score([e.source, e.payer, e.description], words))
           n++
         }
       }
       n = 0
       for (const d of documents) {
         if (n >= 5) break
-        if (match(d.title) || match(d.doc_type)) {
-          push('Documents', d.title, `${d.doc_type || ''} · ${propertyNameById(d.property_id) || ''}`, FileText, go(`/properties/${d.property_id}`))
+        if (matchesAll([d.title, d.doc_type, propertyNameById(d.property_id)], words)) {
+          push('Documents', d.title, `${d.doc_type || ''} · ${propertyNameById(d.property_id) || ''}`, FileText, go(`/properties/${d.property_id}`), score([d.title, d.doc_type], words))
           n++
         }
       }
     }
-    return out
-  }, [q, properties, expenses, income, documents, canWrite, theme]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Actions and navigation keep the order they are written in — that order is
+    // a decision. The records are sorted by how well they matched, so a source
+    // called "Rent" comes before a note that happens to mention rent.
+    const fixed = out.filter((x) => !x.rank)
+    const ranked = out.filter((x) => x.rank).sort((a, b) => b.rank - a.rank)
+    return [...fixed, ...ranked]
+  }, [q, properties, expenses, income, documents, canWrite, theme, recents]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the highlighted row scrolled into view.
   useEffect(() => {
@@ -128,6 +159,17 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
   }, [active])
 
   if (!open) return null
+
+  // A search is a thing someone did once they acted on a result. Recorded here
+  // rather than on every keystroke, which would fill the list with "s", "se",
+  // "sea" — the prefixes of one search, none of which anyone meant. Picking a
+  // past search back out of the list is moving around inside the palette, not a
+  // new search, so it does not re-record itself.
+  const run = (item) => {
+    if (!item) return
+    if (item.group !== 'Recent searches') recordSearch(q)
+    item.action()
+  }
 
   const onKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
@@ -138,7 +180,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
       setActive((a) => Math.max(a - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      items[active]?.action()
+      run(items[active])
     } else if (e.key === 'Escape') {
       e.preventDefault()
       onClose()
@@ -187,7 +229,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
                       <button
                         data-idx={i}
                         onMouseMove={() => setActive(i)}
-                        onClick={it.action}
+                        onClick={() => run(it)}
                         className={`flex w-full items-center gap-3 px-4 py-2.5 text-start transition ${
                           active === i ? 'bg-brand-light text-slate-900' : 'text-slate-600'
                         }`}

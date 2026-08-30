@@ -33,8 +33,10 @@ for Vite's resolver.
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
+| `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
+| `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **1,063** | |
+| | **531** | |
 
 ## Browser — `tests/browser/`
 
@@ -65,6 +67,7 @@ node tests/browser/rtlui.mjs
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
+| `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
 | | **512** | |
