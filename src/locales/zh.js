@@ -84,6 +84,7 @@ export default {
   'entry.notesPlaceholder': '可选说明',
   'entry.dueDate': '到期日',
   'entry.repeats': '重复',
+  'entry.moreDetails': '更多详情',
   'entry.cancel': '取消',
   'entry.save': '保存更改',
   'entry.attachmentHint': '图片、PDF、Word 或 Excel',

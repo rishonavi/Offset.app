@@ -83,6 +83,7 @@ export default {
   'entry.notesPlaceholder': 'ऐच्छिक तपशील',
   'entry.dueDate': 'देय दिनांक',
   'entry.repeats': 'पुनरावृत्ती',
+  'entry.moreDetails': 'अधिक तपशील',
   'entry.cancel': 'रद्द करा',
   'entry.save': 'बदल जतन करा',
   'entry.attachmentHint': 'प्रतिमा, PDF, Word किंवा Excel',

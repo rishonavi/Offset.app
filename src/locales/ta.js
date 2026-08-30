@@ -83,6 +83,7 @@ export default {
   'entry.notesPlaceholder': 'விருப்ப விவரம்',
   'entry.dueDate': 'செலுத்த வேண்டிய தேதி',
   'entry.repeats': 'மீண்டும் நிகழ்வு',
+  'entry.moreDetails': 'மேலும் விவரங்கள்',
   'entry.cancel': 'ரத்து செய்',
   'entry.save': 'மாற்றங்களைச் சேமி',
   'entry.attachmentHint': 'படம், PDF, Word அல்லது Excel',

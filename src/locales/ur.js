@@ -83,6 +83,7 @@ export default {
   'entry.notesPlaceholder': 'اختیاری تفصیلات',
   'entry.dueDate': 'واجب الادا تاریخ',
   'entry.repeats': 'تکرار',
+  'entry.moreDetails': 'مزید تفصیلات',
   'entry.cancel': 'منسوخ کریں',
   'entry.save': 'تبدیلیاں محفوظ کریں',
   'entry.attachmentHint': 'تصویر، PDF، Word یا Excel',

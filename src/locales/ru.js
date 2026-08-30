@@ -91,6 +91,7 @@ export default {
   'entry.notesPlaceholder': 'Необязательные подробности',
   'entry.dueDate': 'Срок оплаты',
   'entry.repeats': 'Повтор',
+  'entry.moreDetails': 'Подробнее',
   'entry.cancel': 'Отмена',
   'entry.save': 'Сохранить изменения',
   'entry.attachmentHint': 'Изображение, PDF, Word или Excel',

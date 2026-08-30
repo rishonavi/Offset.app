@@ -83,6 +83,7 @@ export default {
   'entry.notesPlaceholder': 'વૈકલ્પિક વિગત',
   'entry.dueDate': 'બાકી તારીખ',
   'entry.repeats': 'પુનરાવર્તન',
+  'entry.moreDetails': 'વધુ વિગતો',
   'entry.cancel': 'રદ કરો',
   'entry.save': 'ફેરફાર સાચવો',
   'entry.attachmentHint': 'છબી, PDF, Word કે Excel',

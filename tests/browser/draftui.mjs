@@ -14,6 +14,7 @@ const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : 
 
 const amount = () => p.locator('#main-content input[type=number]').first()
 const drafts = () => p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pl_draft_')))
+const more = () => p.locator('button[aria-expanded]').first()
 
 await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
 await p.locator('#main-content input').first().fill('Sea View Villa')
@@ -23,10 +24,15 @@ await p.waitForTimeout(800)
 console.log('\n── WHAT YOU TYPED SURVIVES LEAVING THE SCREEN ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
 await amount().fill('9999')
+// The note lives behind the disclosure, which is the point of the next
+// assertion: a draft that restores something must also show what it restored.
+await more().click()
 await p.locator('textarea').first().fill('half typed note')
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })   // wander off mid-entry
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
 ok('the amount is still there', (await amount().inputValue()) === '9999', await amount().inputValue())
+ok('the details opened themselves, so the note is not hidden',
+  (await more().getAttribute('aria-expanded')) === 'true')
 ok('and so is the note', (await p.locator('textarea').first().inputValue()) === 'half typed note')
 const body = await p.locator('#main-content').innerText()
 ok('and it says so rather than filling itself in silently', /already typed/i.test(body), body.slice(0, 160).replace(/\n/g, ' | '))

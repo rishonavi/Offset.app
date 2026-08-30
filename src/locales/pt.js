@@ -84,6 +84,7 @@ export default {
   'entry.notesPlaceholder': 'Detalhes opcionais',
   'entry.dueDate': 'Vencimento',
   'entry.repeats': 'Repete',
+  'entry.moreDetails': 'Mais detalhes',
   'entry.cancel': 'Cancelar',
   'entry.save': 'Guardar alterações',
   'entry.attachmentHint': 'Imagem, PDF, Word ou Excel',

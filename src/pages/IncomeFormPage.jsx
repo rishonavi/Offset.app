@@ -98,6 +98,7 @@ export default function IncomeFormPage() {
           initial={editing}
           properties={properties}
           payers={payers}
+          history={income}
           defaultPropertyId={params.get('asset') || ''}
           onSubmit={onSubmit}
           onCancel={goBack}

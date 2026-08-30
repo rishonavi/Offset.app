@@ -87,6 +87,7 @@ export default {
   'entry.notesPlaceholder': 'Detalles opcionales',
   'entry.dueDate': 'Fecha de vencimiento',
   'entry.repeats': 'Se repite',
+  'entry.moreDetails': 'Más detalles',
   'entry.cancel': 'Cancelar',
   'entry.save': 'Guardar cambios',
   'entry.attachmentHint': 'Imagen, PDF, Word o Excel',

@@ -84,6 +84,7 @@ export default {
   'entry.notesPlaceholder': 'वैकल्पिक विवरण',
   'entry.dueDate': 'देय तिथि',
   'entry.repeats': 'दोहराव',
+  'entry.moreDetails': 'अधिक विवरण',
   'entry.cancel': 'रद्द करें',
   'entry.save': 'परिवर्तन सहेजें',
   'entry.attachmentHint': 'छवि, PDF, Word या Excel',

@@ -18,10 +18,12 @@ for Vite's resolver.
 | Suite | Assertions | Covers |
 |---|---|---|
 | `apiguard.test.mjs` | 25 | what the endpoints refuse, and the rate ceiling |
+| `appearance.test.mjs` | 47 | accents, avatars, and the two places that must agree |
 | `assettypes.test.mjs` | 56 | which fields an asset type actually has |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
 | `corp.test.mjs` | 106 | entities, control, ledgers, audit events |
+| `defaults.test.mjs` | 30 | filling a form in from history, and when not to |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
@@ -31,7 +33,7 @@ for Vite's resolver.
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **964** | |
+| | **1,041** | |
 
 ## Browser — `tests/browser/`
 
@@ -47,10 +49,12 @@ node tests/browser/rtlui.mjs
 |---|---|---|
 | `assetformui.mjs` | 37 | the asset form showing only the fields its type has |
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
+| `appearanceui.mjs` | 26 | choosing an accent and an avatar; every accent still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
-| `draftui.mjs` | 17 | a half-typed entry surviving the screen being left |
+| `defaultsui.mjs` | 18 | the form folding what most entries never touch |
+| `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 12 | the sign-in screen, and what it says when a provider refuses |
@@ -61,7 +65,7 @@ node tests/browser/rtlui.mjs
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
-| | **456** | |
+| | **501** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

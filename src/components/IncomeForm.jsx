@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
 import { INCOME_SOURCES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
 import { useT } from '../context/LanguageContext'
@@ -8,21 +8,40 @@ import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
-import { Field, FormSection, Input, Select, Textarea, Button } from './ui'
+import { usual, lastUsed, hasDetail } from '../lib/defaults'
+import { Field, FormSection, Input, Select, Textarea, Button, MoreDetails } from './ui'
 
-export default function IncomeForm({ initial, properties, payers = [], defaultPropertyId, onSubmit, onCancel }) {
+const DETAIL_FIELDS = ['tax', 'payment_method', 'status', 'due_date', 'recurrence', 'description']
+// What each of those looks like when it holds nothing worth showing. 'received'
+// and 'none' are the form's own starting point, not something someone chose.
+const BLANK_DETAIL = { status: 'received', recurrence: 'none' }
+
+export default function IncomeForm({ initial, properties, payers = [], history = [], defaultPropertyId, onSubmit, onCancel }) {
   const t = useT()
   // A draft only ever fills what the blank form would have left empty or
   // default; it never overwrites the record being edited.
   const key = draftKey('income', initial?.id)
+  // Filled in from what this person actually does, rather than left blank or set
+  // to whichever asset happens to sort first. All three decline to answer unless
+  // the history is one-sided — lib/defaults.js says why that matters.
+  const assetIds = useMemo(() => properties.map((x) => x.id), [properties])
+  const learned = useMemo(
+    () => ({
+      property_id: lastUsed(history, 'property_id', { among: assetIds }),
+      payment_method: usual(history, 'payment_method', { among: PAYMENT_METHODS }),
+      source: usual(history, 'source', { among: INCOME_SOURCES }),
+    }),
+    [history, assetIds],
+  )
   const blank = {
-    property_id: initial?.property_id || defaultPropertyId || (properties[0]?.id ?? ''),
+    property_id:
+      initial?.property_id || defaultPropertyId || learned.property_id || (properties[0]?.id ?? ''),
     date: initial?.date || todayISO(),
     amount: initial?.amount ?? '',
     tax: initial?.tax ?? '',
-    source: initial?.source || 'Rent',
+    source: initial?.source || learned.source || 'Rent',
     payer: initial?.payer || '',
-    payment_method: initial?.payment_method || '',
+    payment_method: initial?.payment_method || learned.payment_method || '',
     status: initial?.status || 'received',
     due_date: initial?.due_date || '',
     recurrence: initial?.recurrence || 'none',
@@ -34,6 +53,14 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
   })
   const [form, setForm] = useState(() => ({ ...blank, ...(restored || {}) }))
   const [draftNoticed, setDraftNoticed] = useState(Boolean(restored))
+  // Open from the start when there is already something in there. What counts
+  // as "something" differs by what the form is for. Editing an entry measures
+  // against an empty form, so every value it records is shown rather than
+  // hidden. A new entry measures against its own starting point, because a
+  // default nobody chose is not a value worth unfolding a form for — and the
+  // button names it anyway.
+  const [showMore, setShowMore] = useState(() =>
+    hasDetail({ ...blank, ...(restored || {}) }, DETAIL_FIELDS, initial ? BLANK_DETAIL : blank))
   const [file, setFile] = useState(null)
   const [existingReceipt, setExistingReceipt] = useState(initial?.receipt_url || null)
   const [receiptPreview, setReceiptPreview] = useState(null)
@@ -95,6 +122,18 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
       document.removeEventListener('visibilitychange', save)
     }
   }, [key])
+
+  // Folded away is not the same as forgotten: whatever is inside gets named on
+  // the button, so nothing can be set without being visible somewhere.
+  const detailSummary = useMemo(() => {
+    const bits = []
+    if (form.status !== 'received') bits.push('Pending')
+    if (form.payment_method) bits.push(form.payment_method)
+    if (form.tax) bits.push(`${t('entry.tax')} ${form.tax}`)
+    if (form.recurrence && form.recurrence !== 'none') bits.push(t('entry.repeats'))
+    if (form.description) bits.push(t('entry.notes'))
+    return bits.join(', ')
+  }, [form.status, form.payment_method, form.tax, form.recurrence, form.description, t])
 
   const fileRef = useRef(null)
   const cameraRef = useRef(null)
@@ -298,23 +337,7 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           </div>
         </Field>
 
-        <Field label={t('entry.tax')} hint={t('entry.taxHint')}>
-          <div className="relative">
-            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
-              {currencySymbol}
-            </span>
-            <Input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              className="ps-8"
-              value={form.tax}
-              onChange={set('tax')}
-              placeholder="0"
-            />
-          </div>
-        </Field>
+
 
         <FormSection title="What it was for" />
 
@@ -348,63 +371,93 @@ export default function IncomeForm({ initial, properties, payers = [], defaultPr
           )}
         </Field>
 
-        <FormSection title="Payment" />
 
-        <Field label={t('entry.paymentMethod')}>
-          <Select value={form.payment_method} onChange={set('payment_method')}>
-            <option value="">—</option>
-            {PAYMENT_METHODS.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        <MoreDetails
+          open={showMore}
+          onToggle={() => setShowMore((v) => !v)}
+          label={t('entry.moreDetails')}
+          summary={detailSummary}
+        />
 
-        <Field label={t('income.status')}>
-          <div className="flex gap-2">
-            {[
-              { v: 'received', label: 'Received' },
-              { v: 'pending', label: 'Pending' },
-            ].map((o) => (
-              <button
-                type="button"
-                key={o.v}
-                onClick={() => setForm((f) => ({ ...f, status: o.v }))}
-                className={`flex-1 min-h-[2.75rem] rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition ${
-                  form.status === o.v
-                    ? o.v === 'received'
-                      ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
-                      : 'border-gold bg-brand-light text-gold'
-                    : 'border-border-light text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </Field>
+        {showMore && (
+          <>
+            <Field label={t('entry.tax')} hint={t('entry.taxHint')}>
+              <div className="relative">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                  {currencySymbol}
+                </span>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  className="ps-8"
+                  value={form.tax}
+                  onChange={set('tax')}
+                  placeholder="0"
+                />
+              </div>
+            </Field>
 
-        {form.status === 'pending' && (
-          <Field className="sm:col-span-2" label={t('entry.dueDate')}>
-            <Input type="date" className="field-input-compact" value={form.due_date} onChange={set('due_date')} />
-          </Field>
+            <FormSection title="Payment" />
+
+            <Field label={t('entry.paymentMethod')}>
+              <Select value={form.payment_method} onChange={set('payment_method')}>
+                <option value="">—</option>
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label={t('income.status')}>
+              <div className="flex gap-2">
+                {[
+                  { v: 'received', label: 'Received' },
+                  { v: 'pending', label: 'Pending' },
+                ].map((o) => (
+                  <button
+                    type="button"
+                    key={o.v}
+                    onClick={() => setForm((f) => ({ ...f, status: o.v }))}
+                    className={`flex-1 min-h-[2.75rem] rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide transition ${
+                      form.status === o.v
+                        ? o.v === 'received'
+                          ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
+                          : 'border-gold bg-brand-light text-gold'
+                        : 'border-border-light text-slate-500 hover:border-slate-300'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+
+            {form.status === 'pending' && (
+              <Field className="sm:col-span-2" label={t('entry.dueDate')}>
+                <Input type="date" className="field-input-compact" value={form.due_date} onChange={set('due_date')} />
+              </Field>
+            )}
+
+            <Field className="sm:col-span-2" label={t('entry.repeats')} hint={t('income.recurringHint')}>
+              <Select className="field-input-compact" value={form.recurrence} onChange={set('recurrence')}>
+                {RECURRENCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field className="sm:col-span-2" label={t('entry.notes')}>
+              <Textarea rows={2} value={form.description} onChange={set('description')} placeholder={t('income.notesPlaceholder')} />
+            </Field>
+          </>
         )}
-
-        <Field className="sm:col-span-2" label={t('entry.repeats')} hint={t('income.recurringHint')}>
-          <Select className="field-input-compact" value={form.recurrence} onChange={set('recurrence')}>
-            {RECURRENCE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
       </div>
-
-      <Field className="sm:col-span-2" label={t('entry.notes')}>
-        <Textarea rows={2} value={form.description} onChange={set('description')} placeholder={t('income.notesPlaceholder')} />
-      </Field>
 
       <Field label={t('income.proof')} hint={t('entry.attachmentHint')}>
         {receiptPreview || existingReceipt ? (

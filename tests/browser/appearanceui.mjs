@@ -49,15 +49,20 @@ console.log('── CHOOSING A COLOUR ──')
 
 console.log('\n── NO FLASH OF THE WRONG COLOUR ──')
 {
-  // The inline script in index.html has to have run before the first paint, so
-  // the variable is already set on the very first frame of a fresh load.
+  // The inline script in index.html has to set the accent before the first
+  // paint, or someone who chose a colour sees gold for a frame. Racing a
+  // navigation to catch that window is flaky; blocking the app's JavaScript
+  // outright is not. If the colour is right with none of the app loaded, only
+  // the inline script can have set it.
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' })
   const p = await ctx.newPage()
   await p.route('**/fonts.g**/**', (r) => r.abort())
+  await p.route('**/assets/*.js', (r) => r.abort())
   await p.addInitScript(() => localStorage.setItem('pl_accent', 'rose'))
-  await p.goto(B + '/settings', { waitUntil: 'commit' })
+  await p.goto(B + '/settings', { waitUntil: 'domcontentloaded' })
   const early = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-gold').trim())
-  ok('the accent is set before the app has loaded', early.includes('15'), early)
+  ok('the accent is set with none of the app loaded', early.includes('15'), early || 'not set')
+  ok('and the app really was not running', (await p.locator('#root').innerHTML()) === '')
   await ctx.close()
 }
 

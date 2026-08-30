@@ -96,6 +96,7 @@ export default {
   'entry.notesPlaceholder': 'تفاصيل اختيارية',
   'entry.dueDate': 'تاريخ الاستحقاق',
   'entry.repeats': 'التكرار',
+  'entry.moreDetails': 'مزيد من التفاصيل',
   'entry.cancel': 'إلغاء',
   'entry.save': 'حفظ التغييرات',
   'entry.attachmentHint': 'صورة أو PDF أو Word أو Excel',

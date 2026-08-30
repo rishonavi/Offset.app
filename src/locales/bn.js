@@ -83,6 +83,7 @@ export default {
   'entry.notesPlaceholder': 'ঐচ্ছিক বিবরণ',
   'entry.dueDate': 'নির্ধারিত তারিখ',
   'entry.repeats': 'পুনরাবৃত্তি',
+  'entry.moreDetails': 'আরও বিবরণ',
   'entry.cancel': 'বাতিল করুন',
   'entry.save': 'পরিবর্তন সংরক্ষণ করুন',
   'entry.attachmentHint': 'ছবি, PDF, Word বা Excel',

@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { Loader2, ChevronRight } from 'lucide-react'
 import { initialsFrom } from '../lib/appearance'
 
 export const cx = (...c) => c.filter(Boolean).join(' ')
@@ -147,5 +147,26 @@ export function Avatar({ avatar, email, size = 36, className }) {
     >
       {label}
     </span>
+  )
+}
+
+// The rest of a form, folded away. Twelve fields at once is twelve decisions;
+// most entries need four of them, and the other eight are still one click
+// away rather than gone. Opens itself when there is already something inside
+// worth seeing, which is what editing an entry always is.
+export function MoreDetails({ open, onToggle, label = 'More details', summary, className }) {
+  return (
+    <div className={cx('sm:col-span-2', className)}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl px-1 text-[0.8rem] font-medium text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+      >
+        <ChevronRight size={16} className={cx('transition-transform', open && 'rotate-90')} />
+        {label}
+        {!open && summary && <span className="text-slate-400 dark:text-slate-500">· {summary}</span>}
+      </button>
+    </div>
   )
 }

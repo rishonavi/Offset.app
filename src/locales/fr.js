@@ -86,6 +86,7 @@ export default {
   'entry.notesPlaceholder': 'Détails facultatifs',
   'entry.dueDate': 'Échéance',
   'entry.repeats': 'Récurrence',
+  'entry.moreDetails': 'Plus de détails',
   'entry.cancel': 'Annuler',
   'entry.save': 'Enregistrer les modifications',
   'entry.attachmentHint': 'Image, PDF, Word ou Excel',

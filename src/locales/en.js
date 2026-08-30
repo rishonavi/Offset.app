@@ -96,6 +96,7 @@ export default {
   'entry.notesPlaceholder': 'Optional details',
   'entry.dueDate': 'Due date',
   'entry.repeats': 'Repeats',
+  'entry.moreDetails': 'More details',
   'entry.cancel': 'Cancel',
   'entry.save': 'Save changes',
   'entry.attachmentHint': 'Image, PDF, Word or Excel',
