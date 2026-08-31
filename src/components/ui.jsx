@@ -179,3 +179,38 @@ export function MoreDetails({ open, onToggle, label = 'More details', summary, c
     </div>
   )
 }
+
+// The written-out version of a donut.
+//
+// A pie or donut conveys its categories by colour and nothing else: the slices
+// carry no labels, and a tooltip only exists for someone with a pointer hovering
+// it. That leaves the chart unreadable to anyone using a keyboard or a screen
+// reader, anyone who cannot tell two of the colours apart, and anyone on a phone
+// — which is most people, most of the time.
+//
+// So the key is the chart's actual content and the ring is the picture of it.
+// Rendered as a definition list because that is what it is, with the swatch
+// hidden from the accessibility tree: it repeats the name it sits next to.
+export function ChartKey({ items, total, format = (n) => n, className }) {
+  if (!items?.length) return null
+  const sum = total ?? items.reduce((a, x) => a + (Number(x.value) || 0), 0)
+  return (
+    <dl className={cx('mt-3 space-y-1.5 text-xs', className)}>
+      {items.map((d) => {
+        const pct = sum > 0 ? Math.round((Number(d.value) / sum) * 100) : 0
+        return (
+          <div key={d.name} className="flex items-baseline gap-2">
+            <span
+              aria-hidden="true"
+              className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ background: d.color }}
+            />
+            <dt className="min-w-0 flex-1 truncate text-slate-600 dark:text-slate-300">{d.name}</dt>
+            <dd className="shrink-0 tabular text-slate-800 dark:text-slate-100">{format(d.value)}</dd>
+            <dd className="w-9 shrink-0 text-end tabular text-slate-500 dark:text-slate-400">{pct}%</dd>
+          </div>
+        )
+      })}
+    </dl>
+  )
+}

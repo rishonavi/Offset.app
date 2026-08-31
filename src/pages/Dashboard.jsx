@@ -46,7 +46,7 @@ import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/re
 import { leasesNeedingAttention } from '../lib/lease'
 import { expiringDocuments } from '../lib/documents'
 import { spendingAnomalies } from '../lib/anomalies'
-import { Card, Button, EmptyState, Skeleton } from '../components/ui'
+import { Card, Button, EmptyState, Skeleton, ChartKey } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 
 const RANGES = [
@@ -100,7 +100,7 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   )
 }
 
-function ChartCard({ title, children, empty, action }) {
+function ChartCard({ title, children, empty, action, chartKey }) {
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
@@ -110,7 +110,10 @@ function ChartCard({ title, children, empty, action }) {
       {empty ? (
         <div className="grid h-64 place-items-center text-sm text-slate-400">No data for this view</div>
       ) : (
-        <div style={{ width: '100%', height: 260 }}>{children}</div>
+        <>
+          <div style={{ width: '100%', height: 260 }}>{children}</div>
+          {chartKey}
+        </>
       )}
     </Card>
   )
@@ -648,9 +651,21 @@ export default function Dashboard() {
 
       {/* Category + property charts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title="Spending by category" empty={byCategory.length === 0}>
+        <ChartCard
+          title="Spending by category"
+          empty={byCategory.length === 0}
+          chartKey={
+            <ChartKey
+              items={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
+              format={formatCurrency}
+            />
+          }
+        >
           <ResponsiveContainer>
-            <PieChart>
+            {/* The ring is decoration; the key below it is the content. Hidden
+                from the accessibility tree because everything it shows is in
+                the key, in words. */}
+            <PieChart role="presentation" aria-hidden="true">
               <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}>
                 {byCategory.map((d) => (
                   <Cell key={d.name} fill={colorForCategory(d.name)} />

@@ -90,6 +90,57 @@ console.log('\n── THE AVATAR ──')
   await ctx.close()
 }
 
+console.log('\n── THE ACCENT REACHES EVERYTHING ──')
+{
+  // Tailwind's own gold/N utilities were never the problem: they emit a baked
+  // hex and then a color-mix upgrade, so they follow the token. The hand-written
+  // CSS did not — a focus ring, a row hover, a scrollbar and the dark field
+  // border were literal rgba(197,160,89,...), so someone who picked indigo kept
+  // getting gold in exactly the places that say "you are here".
+  const surfaces = async (accent, theme) => {
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' })
+    const p = await ctx.newPage()
+    p.setDefaultTimeout(30000)
+    await p.route('**/fonts.g**/**', (r) => r.abort())
+    await p.addInitScript(([a, t]) => {
+      localStorage.setItem('pl_accent', a)
+      localStorage.setItem('pl_theme', t)
+      localStorage.setItem('pl_properties', JSON.stringify([{
+        id: 'a1', name: 'Sea View Villa', type: 'Real Estate — Apartment / Flat',
+        created_at: new Date().toISOString(),
+      }]))
+    }, [accent, theme])
+    await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+    await p.waitForTimeout(600)
+    // A real click, so :focus actually applies.
+    await p.locator('#main-content input.field-input').first().click()
+    await p.waitForTimeout(250)
+    const out = await p.evaluate(() => {
+      const el = document.querySelector('#main-content input.field-input')
+      const cs = getComputedStyle(el)
+      const panel = document.querySelector('.border-gold\\/30')
+      return {
+        'the focus ring': cs.boxShadow,
+        'the focused field border': cs.borderTopColor,
+        'the quick-add panel': panel ? getComputedStyle(panel).borderTopColor : null,
+      }
+    })
+    await ctx.close()
+    return out
+  }
+  for (const theme of ['light', 'dark']) {
+    const gold = await surfaces('gold', theme)
+    const indigo = await surfaces('indigo', theme)
+    for (const key of Object.keys(gold)) {
+      // Absent is a failed test, not a passing one — the earlier version of this
+      // check called a missing element "static" and agreed with itself.
+      const found = gold[key] && indigo[key] && gold[key] !== 'none'
+      ok(`${theme} · ${key} follows the accent`, found && gold[key] !== indigo[key],
+        found ? `both ${gold[key]}` : `not found: ${gold[key]}`)
+    }
+  }
+}
+
 console.log('\n── STILL READABLE IN EVERY COLOUR ──')
 // Accents vary hue at gold's lightness, which is the claim that makes six
 // palettes safe rather than six chances to ship something illegible. This is

@@ -38,7 +38,7 @@ export default function AppearanceCard() {
         <div className="space-y-6">
           <fieldset>
             <legend className="field-label">Theme</legend>
-            <div className="inline-flex rounded-xl border border-border-light bg-white p-0.5 dark:border-[#2a4878] dark:bg-[#0a1a33]">
+            <div className="inline-flex rounded-xl border border-border-light bg-white p-0.5 dark:border-field-line dark:bg-field-bg">
               {[
                 { v: 'light', label: 'Light', icon: Sun },
                 { v: 'dark', label: 'Dark', icon: Moon },
@@ -116,7 +116,7 @@ export default function AppearanceCard() {
                   'grid h-11 w-11 place-items-center rounded-xl border-2 text-sm font-semibold transition',
                   !avatar.symbol
                     ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
-                    : 'border-border-light text-slate-500 hover:border-slate-300 dark:border-[#2a4878] dark:text-slate-400',
+                    : 'border-border-light text-slate-500 hover:border-slate-300 dark:border-field-line dark:text-slate-400',
                 )}
               >
                 Aa<span className="sr-only">Use my initials</span>
@@ -131,7 +131,7 @@ export default function AppearanceCard() {
                     aria-pressed={on}
                     className={cx(
                       'grid h-11 w-11 place-items-center rounded-xl border-2 text-lg transition',
-                      on ? 'border-slate-900 dark:border-white' : 'border-border-light hover:border-slate-300 dark:border-[#2a4878]',
+                      on ? 'border-slate-900 dark:border-white' : 'border-border-light hover:border-slate-300 dark:border-field-line',
                     )}
                   >
                     {sym}
@@ -154,7 +154,7 @@ export default function AppearanceCard() {
                   'min-h-[2.25rem] rounded-lg border px-3 py-1.5 text-xs font-medium transition',
                   chosenHue === null
                     ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
-                    : 'border-border-light text-slate-500 hover:border-slate-300 dark:border-[#2a4878] dark:text-slate-400',
+                    : 'border-border-light text-slate-500 hover:border-slate-300 dark:border-field-line dark:text-slate-400',
                 )}
               >
                 Match the app

@@ -9,7 +9,7 @@ import { sumAmount } from '../lib/filters'
 import { totalsByCategory } from '../lib/stats'
 import { formatCurrency, formatDate, todayISO } from '../lib/format'
 import { budgetStatus } from '../lib/budget'
-import { Card, Button, Field, Input, Select, Textarea, Spinner, Badge, EmptyState } from '../components/ui'
+import { Card, Button, Field, Input, Select, Textarea, Spinner, Badge, EmptyState, ChartKey } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import BudgetBar from '../components/BudgetBar'
 
@@ -206,9 +206,11 @@ export default function Personal() {
           {byCategory.length === 0 ? (
             <div className="grid h-64 place-items-center text-sm text-slate-400">No spending this month</div>
           ) : (
+            <>
             <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer>
-                <PieChart>
+                {/* The ring is decoration; the key below it is the content. */}
+                <PieChart role="presentation" aria-hidden="true">
                   <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}>
                     {byCategory.map((d) => (
                       <Cell key={d.name} fill={colorForPersonal(d.name)} />
@@ -218,6 +220,11 @@ export default function Personal() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
+            <ChartKey
+              items={byCategory.map((d) => ({ ...d, color: colorForPersonal(d.name) }))}
+              format={formatCurrency}
+            />
+            </>
           )}
         </Card>
       </div>

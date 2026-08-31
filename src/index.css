@@ -23,6 +23,13 @@
   --color-surface-light:  #f8f5f0;
   --color-surface-subtle: #f3ede4;
   --color-border-light:   #e2d9cc;
+  /* This one was referenced by ten screens and never declared, so Tailwind
+     generated no `border-border-subtle` rule at all and the borders using it
+     fell back to currentColor — a near-black hairline on the Invoices totals,
+     Settings, Companies and Admin, where the faintest line in the app was
+     meant to go. Only the .dark override existed, which is why it looked
+     right in one theme and wrong in the other. */
+  --color-border-subtle:  #efe9df;
 
   /* The system's own interface font: SF Pro on Apple, Segoe UI on Windows,
      Roboto on Android. Naming Helvetica Neue first meant everything outside
@@ -44,7 +51,7 @@ body {
      reading as a patch stuck on top of it. */
   background-color: #f7f7f9;
   background-image:
-    radial-gradient(1100px circle at 15% -10%, rgba(197, 160, 89, 0.10), transparent 55%),
+    radial-gradient(1100px circle at 15% -10%, color-mix(in oklab, var(--color-gold) 10%, transparent), transparent 55%),
     radial-gradient(900px circle at 100% 0%, rgba(10, 24, 40, 0.05), transparent 45%);
   background-attachment: fixed;
   color: #333333;
@@ -147,7 +154,13 @@ h1, h2, h3 {
            bg-white/85 px-5 py-4 backdrop-blur-sm sm:-mx-6 sm:px-6;
   }
   .card-hover {
-    @apply transition duration-300 hover:-translate-y-1 hover:border-gold hover:shadow-[0_15px_30px_rgba(197,160,89,0.15)];
+    @apply transition duration-300 hover:-translate-y-1 hover:border-gold;
+  }
+  /* Written out rather than as an arbitrary `shadow-[...]` value: the accent is
+     a variable now, and Tailwind cannot parse the spaces inside a color-mix()
+     sitting in square brackets. */
+  .card-hover:hover {
+    box-shadow: 0 15px 30px color-mix(in oklab, var(--color-gold) 15%, transparent);
   }
 }
 
@@ -156,12 +169,12 @@ h1, h2, h3 {
    page was easy to lose — and someone tabbing through a form has nothing else
    telling them where they are. */
 input:focus, textarea:focus, select:focus {
-  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.28);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-gold) 28%, transparent);
   outline: none !important;
 }
 /* Keyboard users get the same ring on buttons and links, which had none at all. */
 button:focus-visible, a:focus-visible, [role='button']:focus-visible {
-  box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.35);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-gold) 35%, transparent);
   outline: none;
 }
 
@@ -216,7 +229,7 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 
 /* Navy→gold gradient text */
 .gradient-text {
-  background: linear-gradient(to right, #0B1D3A 15%, #C5A059 100%);
+  background: linear-gradient(to right, #0B1D3A 15%, var(--color-gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -225,8 +238,8 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 /* Gold scrollbar */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(197, 160, 89, 0.4); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(197, 160, 89, 0.7); }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--color-gold) 40%, transparent); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--color-gold) 70%, transparent); }
 
 /* Film-grain overlay */
 .noise-overlay {
@@ -265,20 +278,51 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 }
 
 /* ─── Dark mode — U.K. Builders navy palette ─────────────────────── */
+/* The ramp, named once. It was thirty-odd hex literals spread through the
+   overrides below — `#1e3560` alone appeared nine times — so changing how dark
+   the theme is meant finding every copy. Names describe the role a colour
+   plays, not the shade it happens to be, which is the only way the next person
+   can tell which one they want. */
+.dark {
+  --color-surface-page:   #070f1d;
+  --color-surface-card:   #0e1c33;
+  --color-surface-raised: #0d2040;
+  --color-surface-sunk:   #091a30;
+  --color-surface-hover:  #13294d;
+  --color-surface-grab:   #1a3a6e;
+  --color-field-bg:       #0a1a33;
+  --color-field-bg-focus: #0d2244;
+
+  --color-border-subtle:  #16284a;
+  --color-border-card:    #1b2c4d;
+  --color-border-light:   #1e3560;
+  --color-border-strong:  #274a86;
+  --color-field-line:     #2a4878;
+  --color-field-line-hi:  #3a5c93;
+
+  --color-ink-1: #f1ebda;
+  --color-ink-2: #e8dfc8;
+  --color-ink-3: #d6ccb2;
+  --color-ink-4: #c4ba9d;
+  --color-ink-5: #a99f85;
+  --color-ink-6: #877d66;
+  --color-ink-7: #6c6450;
+  --color-hint:  #8593ad;
+}
 .dark body {
   /* Deeper than before so the cards sit above the ground rather than beside it.
      The gold wash stays, quietly, because it is what makes this look like a
      considered dark theme rather than an inverted light one. */
-  background-color: #070f1d;
+  background-color: var(--color-surface-page);
   background-image:
-    radial-gradient(1200px circle at 12% -10%, rgba(197, 160, 89, 0.10), transparent 55%),
+    radial-gradient(1200px circle at 12% -10%, color-mix(in oklab, var(--color-gold) 10%, transparent), transparent 55%),
     radial-gradient(900px circle at 100% 0%, rgba(30, 53, 96, 0.28), transparent 45%);
-  color: #e8dfc8;
+  color: var(--color-ink-2);
 }
 
 .dark .card {
-  background-color: #0e1c33;
-  border-color: #1b2c4d;
+  background-color: var(--color-surface-card);
+  border-color: var(--color-border-card);
   backdrop-filter: none;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), 0 22px 50px -30px rgba(0, 0, 0, 0.85);
 }
@@ -289,17 +333,17 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
    lighter than the near-black of an actual value. Declared here rather than
    through @apply so one rule owns the colour in both themes. */
 .field-input::placeholder { color: #5d6b82; }
-.dark .field-input { background-color: #0a1a33; border-color: #2a4878; color: #e8dfc8; }
-.dark .field-input::placeholder { color: #8593ad; }
-.dark .field-input:hover { border-color: #3a5c93; }
-.dark .field-input:focus { background-color: #0d2244; border-color: #C5A059; }
+.dark .field-input { background-color: var(--color-field-bg); border-color: var(--color-field-line); color: var(--color-ink-2); }
+.dark .field-input::placeholder { color: var(--color-hint); }
+.dark .field-input:hover { border-color: var(--color-field-line-hi); }
+.dark .field-input:focus { background-color: var(--color-field-bg-focus); border-color: var(--color-gold); }
 /* Field labels and section headings take their colour through @apply, so the
    utility-class overrides above cannot reach them. Without these they stayed
    slate on navy: 1.9:1. */
-.dark .field-label { color: #c4ba9d; }
-.dark .form-section-title { color: #a99f85; }
-.dark .form-section { border-color: #1e3560; }
-.dark .form-actions { background-color: rgba(13, 32, 64, 0.88); border-color: #1e3560; }
+.dark .field-label { color: var(--color-ink-4); }
+.dark .form-section-title { color: var(--color-ink-5); }
+.dark .form-section { border-color: var(--color-border-light); }
+.dark .form-actions { background-color: rgba(13, 32, 64, 0.88); border-color: var(--color-border-light); }
 
 /* Scanning a table means tracking one row across several columns, which is
    easier when the row you are on says so. */
@@ -307,38 +351,38 @@ tbody tr {
   transition: background-color 120ms ease;
 }
 tbody tr:hover {
-  background-color: rgba(197, 160, 89, 0.06);
+  background-color: color-mix(in oklab, var(--color-gold) 6%, transparent);
 }
 .dark tbody tr:hover {
-  background-color: rgba(197, 160, 89, 0.10);
+  background-color: color-mix(in oklab, var(--color-gold) 10%, transparent);
 }
-.dark .btn-ghost { background-color: #0d2040; border-color: #1e3560; color: #e8dfc8; }
-.dark .btn-ghost:hover { border-color: #C5A059; color: #C5A059; }
-.dark .skeleton { background: #13294d; }
+.dark .btn-ghost { background-color: var(--color-surface-raised); border-color: var(--color-border-light); color: var(--color-ink-2); }
+.dark .btn-ghost:hover { border-color: var(--color-gold); color: var(--color-gold); }
+.dark .skeleton { background: var(--color-surface-hover); }
 
-.dark .bg-white { background-color: #0d2040; }
+.dark .bg-white { background-color: var(--color-surface-raised); }
 .dark .bg-white\/60 { background-color: rgba(13, 32, 64, 0.6); }
 .dark .bg-white\/80 { background-color: rgba(6, 17, 36, 0.85); }
 .dark .bg-white\/90 { background-color: rgba(6, 17, 36, 0.92); }
-.dark .bg-slate-50 { background-color: #091a30; }
-.dark .bg-slate-100 { background-color: #091a30; }
+.dark .bg-slate-50 { background-color: var(--color-surface-sunk); }
+.dark .bg-slate-100 { background-color: var(--color-surface-sunk); }
 .dark .bg-slate-50\/70 { background-color: rgba(9, 26, 48, 0.7); }
-.dark .bg-brand-light { background-color: rgba(197, 160, 89, 0.15); }
+.dark .bg-brand-light { background-color: color-mix(in oklab, var(--color-gold) 15%, transparent); }
 .dark .bg-amber-50 { background-color: #2a2310; }
 
-.dark .text-slate-900 { color: #f1ebda; }
-.dark .text-slate-800 { color: #e8dfc8; }
-.dark .text-slate-700 { color: #d6ccb2; }
-.dark .text-slate-600 { color: #c4ba9d; }
-.dark .text-slate-500 { color: #a99f85; }
-.dark .text-slate-400 { color: #877d66; }
-.dark .text-slate-300 { color: #6c6450; }
+.dark .text-slate-900 { color: var(--color-ink-1); }
+.dark .text-slate-800 { color: var(--color-ink-2); }
+.dark .text-slate-700 { color: var(--color-ink-3); }
+.dark .text-slate-600 { color: var(--color-ink-4); }
+.dark .text-slate-500 { color: var(--color-ink-5); }
+.dark .text-slate-400 { color: var(--color-ink-6); }
+.dark .text-slate-300 { color: var(--color-ink-7); }
 .dark .text-amber-800 { color: #e2b84b; }
 
-.dark .border-slate-200 { border-color: #1e3560; }
-.dark .border-slate-300 { border-color: #274a86; }
-.dark .border-slate-100 { border-color: #16284a; }
-.dark .border-slate-200\/80 { border-color: #1e3560; }
+.dark .border-slate-200 { border-color: var(--color-border-light); }
+.dark .border-slate-300 { border-color: var(--color-border-strong); }
+.dark .border-slate-100 { border-color: var(--color-border-subtle); }
+.dark .border-slate-200\/80 { border-color: var(--color-border-light); }
 /* Tailwind v4 hangs a divider on `> :not(:last-child)`, not on `* + *`. Written
    the old way, this override missed the FIRST divider and pointlessly recoloured
    the last row's absent one — so the top row of every table kept a near-white
@@ -348,29 +392,29 @@ tbody tr:hover {
    These need naming one by one because `divide-slate-100` is a different class
    from `border-slate-100`, and the override for the latter cannot reach it. */
 .dark .divide-slate-100 > * + *,
-.dark .divide-slate-100 > :not(:last-child) { border-color: #16284a !important; }
+.dark .divide-slate-100 > :not(:last-child) { border-color: var(--color-border-subtle) !important; }
 .dark .divide-border-light > * + *,
-.dark .divide-border-light > :not(:last-child) { border-color: #1e3560 !important; }
+.dark .divide-border-light > :not(:last-child) { border-color: var(--color-border-light) !important; }
 .dark .divide-border-subtle > * + *,
-.dark .divide-border-subtle > :not(:last-child) { border-color: #16284a !important; }
+.dark .divide-border-subtle > :not(:last-child) { border-color: var(--color-border-subtle) !important; }
 .dark .divide-emerald-100\/70 > * + *,
 .dark .divide-emerald-100\/70 > :not(:last-child) { border-color: #14392c !important; }
 
-.dark .hover\:bg-slate-50:hover { background-color: #13294d; }
-.dark .hover\:bg-slate-100:hover { background-color: #13294d; }
-.dark .hover\:bg-slate-200:hover { background-color: #1a3a6e; }
+.dark .hover\:bg-slate-50:hover { background-color: var(--color-surface-hover); }
+.dark .hover\:bg-slate-100:hover { background-color: var(--color-surface-hover); }
+.dark .hover\:bg-slate-200:hover { background-color: var(--color-surface-grab); }
 .dark .hover\:bg-slate-50\/70:hover { background-color: rgba(19, 41, 77, 0.7); }
 .dark .hover\:bg-red-50:hover { background-color: rgba(239, 68, 68, 0.16); }
-.dark .hover\:border-slate-300:hover { border-color: #274a86; }
-.dark .hover\:text-slate-700:hover { color: #d6ccb2; }
-.dark .hover\:text-slate-800:hover { color: #e8dfc8; }
-.dark .hover\:text-slate-900:hover { color: #f1ebda; }
+.dark .hover\:border-slate-300:hover { border-color: var(--color-border-strong); }
+.dark .hover\:text-slate-700:hover { color: var(--color-ink-3); }
+.dark .hover\:text-slate-800:hover { color: var(--color-ink-2); }
+.dark .hover\:text-slate-900:hover { color: var(--color-ink-1); }
 
-.dark .file\:bg-brand-light::file-selector-button { background-color: rgba(197, 160, 89, 0.15); }
-.dark .border-border-light { border-color: #1e3560; }
+.dark .file\:bg-brand-light::file-selector-button { background-color: color-mix(in oklab, var(--color-gold) 15%, transparent); }
+.dark .border-border-light { border-color: var(--color-border-light); }
 /* Only the `divide-` form of this had an override, so a plain border using it
    stayed a light hairline on the dark theme. */
-.dark .border-border-subtle { border-color: #16284a; }
+.dark .border-border-subtle { border-color: var(--color-border-subtle); }
 
 /* ─── Accessibility ──────────────────────────────────────────────── */
 /* Visible focus ring for keyboard users on interactive, non-field elements.
@@ -452,21 +496,21 @@ button:focus-visible,
    hover. Styling it here fixes all three at once, and keeps working if a
    fourth chart is added. */
 .dark .recharts-default-tooltip {
-  background-color: #0d2040 !important;
-  border-color: #1e3560 !important;
-  color: #e8dfc8 !important;
+  background-color: var(--color-surface-raised) !important;
+  border-color: var(--color-border-light) !important;
+  color: var(--color-ink-2) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
 }
 .dark .recharts-tooltip-label,
 .dark .recharts-tooltip-item,
 .dark .recharts-tooltip-item-name,
 .dark .recharts-tooltip-item-value {
-  color: #e8dfc8 !important;
+  color: var(--color-ink-2) !important;
 }
 /* The bar-hover highlight is a light wash passed inline for the same reason. */
 .dark .recharts-tooltip-cursor {
-  fill: rgba(197, 160, 89, 0.12) !important;
+  fill: color-mix(in oklab, var(--color-gold) 12%, transparent) !important;
 }
 .dark .recharts-cartesian-grid line {
-  stroke: #1e3560;
+  stroke: var(--color-border-light);
 }

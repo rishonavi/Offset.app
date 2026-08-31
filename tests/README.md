@@ -52,8 +52,9 @@ node tests/browser/rtlui.mjs
 |---|---|---|
 | `assetformui.mjs` | 37 | the asset form showing only the fields its type has |
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
-| `appearanceui.mjs` | 26 | choosing an accent and an avatar; every accent still readable |
+| `appearanceui.mjs` | 32 | choosing an accent and an avatar; every accent still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
+| `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `defaultsui.mjs` | 18 | the form folding what most entries never touch |
@@ -70,7 +71,7 @@ node tests/browser/rtlui.mjs
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **512** | |
+| | **548** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
