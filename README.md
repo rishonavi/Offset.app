@@ -19,6 +19,7 @@ it was built the way it was:
 
 | Document | Covers |
 | --- | --- |
+| [`docs/DEPLOY.md`](./docs/DEPLOY.md) | Putting it online: Vercel, Supabase, and what each optional key buys |
 | [`docs/ASSETS.md`](./docs/ASSETS.md) | Metals and broker holdings — assets that are a quantity, not a price |
 | [`docs/INVOICES.md`](./docs/INVOICES.md) | The invoice template language and its tokens |
 | [`docs/CORPORATE.md`](./docs/CORPORATE.md) | Entities, roles, departments, approvals and the four ledgers |
