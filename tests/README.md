@@ -36,7 +36,8 @@ for Vite's resolver.
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 65 | corporate storage layer |
-| | **531** | |
+| `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
+| | **1,124** | |
 
 ## Browser — `tests/browser/`
 

@@ -172,10 +172,10 @@ export default function BankImport() {
   return (
     <Card className="p-5">
       <div className="flex items-center gap-2">
-        <Landmark size={16} className="text-slate-500" />
-        <h2 className="text-sm font-semibold text-slate-700">Bank &amp; UPI statement</h2>
+        <Landmark size={16} className="text-ink-5" />
+        <h2 className="text-sm font-semibold text-ink-3">Bank &amp; UPI statement</h2>
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-ink-5">
         Export your transactions from your bank or Google Pay / PhonePe (CSV or Excel) and upload here. Offset finds which of
         your <strong>unpaid bills</strong> the statement settles and marks them done — the rest can be added in one tap.
       </p>
@@ -191,11 +191,11 @@ export default function BankImport() {
 
       {!plan && (
         <div className="mt-4 space-y-3">
-          <div className="rounded-xl border border-slate-200 p-3">
+          <div className="rounded-xl border border-line p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <Link2 size={15} className="text-slate-500" /> Connect a bank (live)
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-slate-500">
+              <span className="flex items-center gap-2 text-sm font-medium text-ink-3">
+                <Link2 size={15} className="text-ink-5" /> Connect a bank (live)
+                <span className="rounded-full bg-surface-chip px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-ink-5">
                   {bankSyncEnabled ? bankProviderLabel : 'Setup required'}
                 </span>
               </span>
@@ -210,14 +210,14 @@ export default function BankImport() {
                 )}
               </div>
             </div>
-            <p className="mt-1.5 text-[0.7rem] text-slate-400">
+            <p className="mt-1.5 text-[0.7rem] text-ink-6">
               Pull transactions straight from your bank — no file needed. Uses Plaid or an Account Aggregator (India).
               {!bankSyncEnabled && ' Not enabled on this deployment.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /> or import a file <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wide text-ink-5">
+            <span className="h-px flex-1 bg-line" /> or import a file <span className="h-px flex-1 bg-line" />
           </div>
 
           <Button variant="ghost" onClick={() => fileRef.current?.click()} loading={busy} disabled={!canWrite}>
@@ -228,8 +228,8 @@ export default function BankImport() {
 
       {plan && (
         <div className="mt-4 space-y-4">
-          <div className="text-xs text-slate-500">
-            Read <strong>{meta?.count}</strong> transactions from <span className="font-medium text-slate-700">{meta?.name}</span>.
+          <div className="text-xs text-ink-5">
+            Read <strong>{meta?.count}</strong> transactions from <span className="font-medium text-ink-3">{meta?.name}</span>.
           </div>
 
           {matchedCount > 0 ? (
@@ -240,10 +240,10 @@ export default function BankImport() {
               <ul className="divide-y divide-emerald-100/70">
                 {plan.matchedPaid.map(({ entry, txn }, i) => (
                   <li key={`p${i}`} className="flex items-center justify-between gap-3 py-1.5 text-sm">
-                    <span className="min-w-0 truncate text-slate-600">
+                    <span className="min-w-0 truncate text-ink-4">
                       {entry.category || 'Expense'} · {propertyNameById(entry.property_id) || '—'}
                     </span>
-                    <span className="flex shrink-0 items-center gap-1.5 text-slate-500">
+                    <span className="flex shrink-0 items-center gap-1.5 text-ink-5">
                       {formatCurrency(txn.amount)} · {formatDate(txn.date)}
                       <ArrowRight size={12} /> <span className="font-semibold text-emerald-700">mark paid</span>
                     </span>
@@ -251,10 +251,10 @@ export default function BankImport() {
                 ))}
                 {plan.matchedReceived.map(({ entry, txn }, i) => (
                   <li key={`r${i}`} className="flex items-center justify-between gap-3 py-1.5 text-sm">
-                    <span className="min-w-0 truncate text-slate-600">
+                    <span className="min-w-0 truncate text-ink-4">
                       {entry.source || 'Income'} · {propertyNameById(entry.property_id) || '—'}
                     </span>
-                    <span className="flex shrink-0 items-center gap-1.5 text-slate-500">
+                    <span className="flex shrink-0 items-center gap-1.5 text-ink-5">
                       {formatCurrency(txn.amount)} · {formatDate(txn.date)}
                       <ArrowRight size={12} /> <span className="font-semibold text-emerald-700">mark received</span>
                     </span>
@@ -263,14 +263,14 @@ export default function BankImport() {
               </ul>
             </div>
           ) : (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+            <div className="rounded-xl border border-line bg-surface-sunk p-3 text-xs text-ink-5">
               No outstanding bills matched this statement. Nothing was pending, or amounts/dates didn’t line up.
             </div>
           )}
 
           {newCount > 0 && (
-            <div className="rounded-xl border border-slate-200 p-3">
-              <label className="flex items-start gap-2 text-sm text-slate-700">
+            <div className="rounded-xl border border-line p-3">
+              <label className="flex items-start gap-2 text-sm text-ink-3">
                 <input type="checkbox" className="mt-1" checked={addNew} onChange={(e) => setAddNew(e.target.checked)} />
                 <span>
                   Also add <strong>{newCount}</strong> unmatched transaction{newCount === 1 ? '' : 's'} (
@@ -279,7 +279,7 @@ export default function BankImport() {
               </label>
               {addNew && (
                 <div className="mt-3">
-                  <span className="mb-1 block text-[0.65rem] font-semibold uppercase tracking-wide text-slate-400">Add them to asset</span>
+                  <span className="mb-1 block text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Add them to asset</span>
                   <select className="field-input w-full sm:w-auto" aria-label="Assign imported rows to asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
                     {properties.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -287,7 +287,7 @@ export default function BankImport() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-[0.7rem] text-slate-400">Categories are guessed from the description — review them on the Expenses page after.</p>
+                  <p className="mt-1 text-[0.7rem] text-ink-6">Categories are guessed from the description — review them on the Expenses page after.</p>
                 </div>
               )}
             </div>

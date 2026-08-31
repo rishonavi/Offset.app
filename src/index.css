@@ -31,6 +31,49 @@
      right in one theme and wrong in the other. */
   --color-border-subtle:  #efe9df;
 
+  /* ── The semantic ramp ────────────────────────────────────────────────
+     Components used to paint with the raw palette — `text-slate-500`,
+     `bg-white`, `border-slate-200` — and the dark theme repainted each of
+     those utilities one class at a time, forty rules of `.dark .thing`.
+     That works right up until someone adds a class nobody wrote an override
+     for, which is where both the near-white divider across every table and
+     the near-black hairline on the Invoices totals came from. The mechanism
+     could not tell you it was incomplete.
+
+     These flip with the theme on their own, so there is no second rule to
+     forget. Each light value is the palette colour it replaces, named for the
+     job it does: ink 1 is the strongest text, 7 the faintest. */
+  --color-ink-1: var(--color-slate-900);
+  --color-ink-2: var(--color-slate-800);
+  --color-ink-3: var(--color-slate-700);
+  --color-ink-4: var(--color-slate-600);
+  --color-ink-5: var(--color-slate-500);
+  --color-ink-6: var(--color-slate-400);
+  --color-ink-7: var(--color-slate-300);
+
+  --color-surface-raised: #ffffff;
+  --color-surface-sunk:   var(--color-slate-50);
+  --color-surface-chip:   var(--color-slate-100);
+  --color-surface-hover:  var(--color-slate-100);
+  --color-surface-grab:   var(--color-slate-200);
+
+  --color-line:        var(--color-slate-200);
+  --color-line-soft:   var(--color-slate-100);
+  --color-hint:        #5d6b82;
+  /* Deliberately white in both themes: this is the colour of a document, not
+     of a panel. A dark-mode invoice preview would show the user something the
+     printed invoice will never look like. */
+  --color-paper:       #ffffff;
+
+  --color-surface-page:   #f7f7f9;
+  --color-surface-card:   rgb(255 255 255 / 0.75);
+  --color-border-card:    rgb(255 255 255 / 0.9);
+  --color-field-bg:       var(--color-surface-light);
+  --color-field-bg-focus: #ffffff;
+  --color-field-line:     var(--color-border-light);
+  --color-field-line-hi:  var(--color-slate-300);
+  --color-border-strong: var(--color-slate-300);
+
   /* The system's own interface font: SF Pro on Apple, Segoe UI on Windows,
      Roboto on Android. Naming Helvetica Neue first meant everything outside
      Apple fell through to Arial, which is why the app read as unstyled on most
@@ -49,7 +92,7 @@ body {
   /* A cooler, lighter ground than the old cream. The warmth now comes from the
      gold wash rather than from the paper itself, which stops every white card
      reading as a patch stuck on top of it. */
-  background-color: #f7f7f9;
+  background-color: var(--color-surface-page);
   background-image:
     radial-gradient(1100px circle at 15% -10%, color-mix(in oklab, var(--color-gold) 10%, transparent), transparent 55%),
     radial-gradient(900px circle at 100% 0%, rgba(10, 24, 40, 0.05), transparent 45%);
@@ -81,12 +124,22 @@ h1, h2, h3 {
      no edge to speak of, and the field only appeared when you found its
      hairline border. */
   .field-input {
-    @apply w-full rounded-xl border border-border-light bg-surface-light px-3.5 py-2.5 text-sm
-           text-slate-900 outline-none transition-[background-color,border-color,box-shadow]
-           duration-150
-           hover:border-slate-300
-           focus:border-gold focus:bg-white;
+    @apply w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none
+           transition-[background-color,border-color,box-shadow] duration-150;
+    background-color: var(--color-field-bg);
+    border-color: var(--color-field-line);
+    color: var(--color-ink-1);
     min-height: 2.75rem;
+  }
+  .field-input:hover { border-color: var(--color-field-line-hi); }
+  /* After :hover, deliberately. The pointer is usually still over a field at
+     the moment it is clicked, so with these the other way round focusing a
+     field showed its hover border and the gold ring never appeared. Tailwind
+     orders its own variants correctly, which is why this only broke when the
+     rules were written out by hand. */
+  .field-input:focus {
+    background-color: var(--color-field-bg-focus);
+    border-color: var(--color-gold);
   }
   /* Numbers line up when they are tabular, and an amount is read as a quantity
      rather than as prose. */
@@ -134,9 +187,10 @@ h1, h2, h3 {
      the page and picks up the gold wash beneath it. Two shadows: a tight one
      for the edge, a wide soft one for the lift. */
   .card {
-    @apply rounded-2xl border bg-white/75 backdrop-blur-[14px]
+    @apply rounded-2xl border backdrop-blur-[14px]
            shadow-[0_1px_1px_rgba(16,24,40,0.04),0_14px_36px_-18px_rgba(16,24,40,0.20)];
-    border-color: rgba(255, 255, 255, 0.9);
+    background-color: var(--color-surface-card);
+    border-color: var(--color-border-card);
   }
   /* A labelled group of fields. A twelve-field form with no grouping is a list
      to get through; the same fields in three named groups is three small
@@ -294,6 +348,9 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
   --color-field-bg-focus: #0d2244;
 
   --color-border-subtle:  #16284a;
+  --color-surface-chip:   #091a30;
+  --color-line:           #1e3560;
+  --color-line-soft:      #16284a;
   --color-border-card:    #1b2c4d;
   --color-border-light:   #1e3560;
   --color-border-strong:  #274a86;
@@ -360,29 +417,12 @@ tbody tr:hover {
 .dark .btn-ghost:hover { border-color: var(--color-gold); color: var(--color-gold); }
 .dark .skeleton { background: var(--color-surface-hover); }
 
-.dark .bg-white { background-color: var(--color-surface-raised); }
 .dark .bg-white\/60 { background-color: rgba(13, 32, 64, 0.6); }
-.dark .bg-white\/80 { background-color: rgba(6, 17, 36, 0.85); }
-.dark .bg-white\/90 { background-color: rgba(6, 17, 36, 0.92); }
-.dark .bg-slate-50 { background-color: var(--color-surface-sunk); }
-.dark .bg-slate-100 { background-color: var(--color-surface-sunk); }
-.dark .bg-slate-50\/70 { background-color: rgba(9, 26, 48, 0.7); }
 .dark .bg-brand-light { background-color: color-mix(in oklab, var(--color-gold) 15%, transparent); }
 .dark .bg-amber-50 { background-color: #2a2310; }
 
-.dark .text-slate-900 { color: var(--color-ink-1); }
-.dark .text-slate-800 { color: var(--color-ink-2); }
-.dark .text-slate-700 { color: var(--color-ink-3); }
-.dark .text-slate-600 { color: var(--color-ink-4); }
-.dark .text-slate-500 { color: var(--color-ink-5); }
-.dark .text-slate-400 { color: var(--color-ink-6); }
-.dark .text-slate-300 { color: var(--color-ink-7); }
 .dark .text-amber-800 { color: #e2b84b; }
 
-.dark .border-slate-200 { border-color: var(--color-border-light); }
-.dark .border-slate-300 { border-color: var(--color-border-strong); }
-.dark .border-slate-100 { border-color: var(--color-border-subtle); }
-.dark .border-slate-200\/80 { border-color: var(--color-border-light); }
 /* Tailwind v4 hangs a divider on `> :not(:last-child)`, not on `* + *`. Written
    the old way, this override missed the FIRST divider and pointlessly recoloured
    the last row's absent one — so the top row of every table kept a near-white
@@ -391,30 +431,14 @@ tbody tr:hover {
 
    These need naming one by one because `divide-slate-100` is a different class
    from `border-slate-100`, and the override for the latter cannot reach it. */
-.dark .divide-slate-100 > * + *,
-.dark .divide-slate-100 > :not(:last-child) { border-color: var(--color-border-subtle) !important; }
-.dark .divide-border-light > * + *,
-.dark .divide-border-light > :not(:last-child) { border-color: var(--color-border-light) !important; }
-.dark .divide-border-subtle > * + *,
-.dark .divide-border-subtle > :not(:last-child) { border-color: var(--color-border-subtle) !important; }
 .dark .divide-emerald-100\/70 > * + *,
 .dark .divide-emerald-100\/70 > :not(:last-child) { border-color: #14392c !important; }
 
-.dark .hover\:bg-slate-50:hover { background-color: var(--color-surface-hover); }
-.dark .hover\:bg-slate-100:hover { background-color: var(--color-surface-hover); }
-.dark .hover\:bg-slate-200:hover { background-color: var(--color-surface-grab); }
-.dark .hover\:bg-slate-50\/70:hover { background-color: rgba(19, 41, 77, 0.7); }
 .dark .hover\:bg-red-50:hover { background-color: rgba(239, 68, 68, 0.16); }
-.dark .hover\:border-slate-300:hover { border-color: var(--color-border-strong); }
-.dark .hover\:text-slate-700:hover { color: var(--color-ink-3); }
-.dark .hover\:text-slate-800:hover { color: var(--color-ink-2); }
-.dark .hover\:text-slate-900:hover { color: var(--color-ink-1); }
 
 .dark .file\:bg-brand-light::file-selector-button { background-color: color-mix(in oklab, var(--color-gold) 15%, transparent); }
-.dark .border-border-light { border-color: var(--color-border-light); }
 /* Only the `divide-` form of this had an override, so a plain border using it
    stayed a light hairline on the dark theme. */
-.dark .border-border-subtle { border-color: var(--color-border-subtle); }
 
 /* ─── Accessibility ──────────────────────────────────────────────── */
 /* Visible focus ring for keyboard users on interactive, non-field elements.

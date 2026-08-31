@@ -126,7 +126,7 @@ export default function Login() {
                 </button>
               </div>
 
-              <div className="my-5 flex items-center gap-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-slate-400">
+              <div className="my-5 flex items-center gap-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-ink-6">
                 <span className="h-px flex-1 bg-border-light" /> or <span className="h-px flex-1 bg-border-light" />
               </div>
             </>
@@ -163,7 +163,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-5 text-center text-sm text-slate-500">
+          <p className="mt-5 text-center text-sm text-ink-5">
             {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
             <button
               type="button"

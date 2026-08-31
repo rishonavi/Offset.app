@@ -47,8 +47,8 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
           <Icon size={20} />
         </div>
         <div className="min-w-0">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{label}</div>
-          <div className="truncate font-serif text-xl font-bold text-slate-900">{value}</div>
+          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+          <div className="truncate font-serif text-xl font-bold text-ink-1">{value}</div>
         </div>
       </div>
     </Card>
@@ -136,7 +136,7 @@ export default function PropertyDetail() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <Link to="/properties" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
+      <Link to="/properties" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-ink-5 hover:text-ink-2">
         <ArrowLeft size={15} /> All assets
       </Link>
 
@@ -147,8 +147,8 @@ export default function PropertyDetail() {
             <AssetIcon size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{property.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-1">{property.name}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-5">
               {property.type && <span>{property.type}</span>}
               {property.address && (
                 <span className="inline-flex items-center gap-1">
@@ -180,7 +180,7 @@ export default function PropertyDetail() {
         </Card>
       ) : (
         <Card className="flex items-center justify-between p-4 text-sm">
-          <span className="text-slate-500">No monthly budget set for this asset.</span>
+          <span className="text-ink-5">No monthly budget set for this asset.</span>
           <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand hover:underline">
             Set a budget
           </Link>
@@ -199,8 +199,8 @@ export default function PropertyDetail() {
       {assetValue > 0 ? (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-700">Value &amp; returns</h2>
-            <span className="text-xs text-slate-400">Asset value · {formatCurrency(assetValue)}</span>
+            <h2 className="text-sm font-semibold text-ink-3">Value &amp; returns</h2>
+            <span className="text-xs text-ink-6">Asset value · {formatCurrency(assetValue)}</span>
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
             {[
@@ -209,27 +209,27 @@ export default function PropertyDetail() {
               { label: 'Total ROI', v: totalRoi, suffix: '%', hint: 'net to date' },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div
                   className="font-serif text-2xl font-bold"
                   style={{ color: m.v == null ? '#0A1828' : m.v >= 0 ? '#2F8F6B' : '#C0492F' }}
                 >
                   {m.v == null ? '—' : `${m.v.toFixed(1)}${m.suffix}`}
                 </div>
-                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Net to date</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Net to date</div>
               <div className="font-serif text-2xl font-bold" style={{ color: net >= 0 ? '#2F8F6B' : '#C0492F' }}>
                 {formatCurrency(net)}
               </div>
-              <div className="text-[0.65rem] text-slate-400">income − expenses</div>
+              <div className="text-[0.65rem] text-ink-6">income − expenses</div>
             </div>
           </div>
 
           {/* Operating performance (trailing 12 months) */}
-          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-4 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-line-soft pt-4 sm:grid-cols-4">
             {[
               { label: 'Cap rate', value: fmtPct(metrics.capRate), hint: 'NOI ÷ value', tone: metrics.capRate },
               { label: 'NOI', value: formatCurrency(metrics.noi), hint: 'last 12 mo operating', tone: metrics.noi },
@@ -242,21 +242,21 @@ export default function PropertyDetail() {
               },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div
-                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-slate-900' : ''}`}
+                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-ink-1' : ''}`}
                   style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
                 >
                   {m.value}
                 </div>
-                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
           </div>
         </Card>
       ) : (
         <Card className="flex items-center justify-between p-4 text-sm">
-          <span className="text-slate-500">Add an asset value to see ROI &amp; rental yield.</span>
+          <span className="text-ink-5">Add an asset value to see ROI &amp; rental yield.</span>
           <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand hover:underline">
             Set value
           </Link>
@@ -267,8 +267,8 @@ export default function PropertyDetail() {
       {loan && (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-700">Loan / mortgage</h2>
-            <span className="text-xs text-slate-400">
+            <h2 className="text-sm font-semibold text-ink-3">Loan / mortgage</h2>
+            <span className="text-xs text-ink-6">
               {loan.rate}% · {loan.months} mo · payoff {formatDate(loan.payoffDate)}
             </span>
           </div>
@@ -280,20 +280,20 @@ export default function PropertyDetail() {
               { label: 'Loan amount', value: formatCurrency(loan.principal), hint: 'original principal' },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div className="font-serif text-2xl font-bold" style={{ color: m.accent || '#0A1828' }}>
                   {m.value}
                 </div>
-                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
           </div>
           <div className="mt-4">
-            <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+            <div className="mb-1 flex items-center justify-between text-xs text-ink-5">
               <span>Repaid</span>
-              <span className="font-semibold text-slate-700">{loan.progressPct}%</span>
+              <span className="font-semibold text-ink-3">{loan.progressPct}%</span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-chip">
               <div className="h-full rounded-full bg-gold" style={{ width: `${loan.progressPct}%` }} />
             </div>
           </div>
@@ -304,7 +304,7 @@ export default function PropertyDetail() {
       {lease && (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-700">Tenancy / lease</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Tenancy / lease</h2>
             {lease.daysLeft != null && (
               <span
                 className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
@@ -326,20 +326,20 @@ export default function PropertyDetail() {
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Tenant</div>
-              <div className="truncate font-serif text-lg font-bold text-slate-900">{lease.tenant || '—'}</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Tenant</div>
+              <div className="truncate font-serif text-lg font-bold text-ink-1">{lease.tenant || '—'}</div>
             </div>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Lease start</div>
-              <div className="font-serif text-lg font-bold text-slate-900">{lease.start ? formatDate(lease.start) : '—'}</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Lease start</div>
+              <div className="font-serif text-lg font-bold text-ink-1">{lease.start ? formatDate(lease.start) : '—'}</div>
             </div>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Lease end</div>
-              <div className="font-serif text-lg font-bold text-slate-900">{lease.end ? formatDate(lease.end) : '—'}</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Lease end</div>
+              <div className="font-serif text-lg font-bold text-ink-1">{lease.end ? formatDate(lease.end) : '—'}</div>
             </div>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Deposit held</div>
-              <div className="font-serif text-lg font-bold text-slate-900">{lease.deposit ? formatCurrency(lease.deposit) : '—'}</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Deposit held</div>
+              <div className="font-serif text-lg font-bold text-ink-1">{lease.deposit ? formatCurrency(lease.deposit) : '—'}</div>
             </div>
           </div>
         </Card>
@@ -348,9 +348,9 @@ export default function PropertyDetail() {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">Spending over the last 12 months</h2>
+          <h2 className="mb-4 text-sm font-semibold text-ink-3">Spending over the last 12 months</h2>
           {monthly.every((m) => m.total === 0) ? (
-            <div className="grid h-64 place-items-center text-sm text-slate-400">No data yet</div>
+            <div className="grid h-64 place-items-center text-sm text-ink-6">No data yet</div>
           ) : (
             <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer>
@@ -373,9 +373,9 @@ export default function PropertyDetail() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">Spending by category</h2>
+          <h2 className="mb-4 text-sm font-semibold text-ink-3">Spending by category</h2>
           {byCategory.length === 0 ? (
-            <div className="grid h-64 place-items-center text-sm text-slate-400">No data yet</div>
+            <div className="grid h-64 place-items-center text-sm text-ink-6">No data yet</div>
           ) : (
             <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer>
@@ -398,7 +398,7 @@ export default function PropertyDetail() {
 
       {/* Expenses */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-slate-700">Expenses ({items.length})</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ink-3">Expenses ({items.length})</h2>
         {items.length === 0 ? (
           <EmptyState
             icon={Receipt}
@@ -424,7 +424,7 @@ export default function PropertyDetail() {
       {/* Income */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700">Income ({incomeItems.length})</h2>
+          <h2 className="text-sm font-semibold text-ink-3">Income ({incomeItems.length})</h2>
           {canWrite && (
             <Link to={`/income/new?asset=${property.id}`} className="btn-ghost">
               <Plus size={15} /> Add income

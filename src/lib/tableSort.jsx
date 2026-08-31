@@ -39,12 +39,12 @@ export function SortTh({ label, k, sort, onSort, align = 'left', className = '' 
         type="button"
         onClick={() => onSort(k)}
         aria-label={`Sort by ${label}`}
-        className={`inline-flex items-center gap-1 uppercase tracking-wide transition hover:text-slate-700 ${
+        className={`inline-flex items-center gap-1 uppercase tracking-wide transition hover:text-ink-3 ${
           align === 'right' ? 'flex-row-reverse' : ''
-        } ${active ? 'text-slate-700' : ''}`}
+        } ${active ? 'text-ink-3' : ''}`}
       >
         {label}
-        <Icon size={13} className={active ? 'text-gold' : 'text-slate-300'} />
+        <Icon size={13} className={active ? 'text-gold' : 'text-ink-7'} />
       </button>
     </th>
   )

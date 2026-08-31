@@ -78,7 +78,7 @@ export default function Companies() {
 
       {creating && (
         <Card className="p-5">
-          <h2 className="text-sm font-semibold text-slate-700">New company</h2>
+          <h2 className="text-sm font-semibold text-ink-3">New company</h2>
           <form onSubmit={createCompany} className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Registered name" required>
               <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Acme Industries Pvt Ltd" autoFocus />
@@ -104,15 +104,15 @@ export default function Companies() {
         <>
           {/* Companies */}
           <Card className="p-5">
-            <h2 className="text-sm font-semibold text-slate-700">Your companies</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Your companies</h2>
             <div className="mt-3 divide-y divide-border-light">
               {ent.entities.map((e) => (
                 <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                   <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
                     <input type="radio" name="active-company" checked={ent.activeId === e.id} onChange={() => ent.switchTo(e.id)} />
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-slate-800">{e.name}</span>
-                      <span className="block text-xs text-slate-400">
+                      <span className="block truncate text-sm font-medium text-ink-2">{e.name}</span>
+                      <span className="block text-xs text-ink-6">
                         {[e.gstin, e.currency, `FY from month ${e.fyStartMonth}`].filter(Boolean).join(' · ')}
                       </span>
                     </span>
@@ -123,7 +123,7 @@ export default function Companies() {
                         if (!window.confirm(`Archive ${e.name}? Its books stay, but it stops appearing in the switcher. Nothing is deleted.`)) return
                         act(() => store.archiveEntity(e.id, ent.actor), `${e.name} archived.`)
                       }}
-                      className="grid h-8 w-8 place-items-center text-slate-400 hover:text-red-600"
+                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
                       aria-label={`Archive ${e.name}`}
                       title={`Archive ${e.name}`}
                     >
@@ -136,8 +136,8 @@ export default function Companies() {
                 <label className="flex cursor-pointer items-center gap-2.5 py-2.5">
                   <input type="radio" name="active-company" checked={ent.consolidated} onChange={() => ent.switchTo(CONSOLIDATED)} />
                   <span>
-                    <span className="block text-sm font-medium text-slate-800">All companies</span>
-                    <span className="block text-xs text-slate-400">Consolidated and read-only — you can’t book a cost against a group.</span>
+                    <span className="block text-sm font-medium text-ink-2">All companies</span>
+                    <span className="block text-xs text-ink-6">Consolidated and read-only — you can’t book a cost against a group.</span>
                   </span>
                 </label>
               )}
@@ -145,21 +145,21 @@ export default function Companies() {
           </Card>
 
           {ent.consolidated ? (
-            <Card className="p-5 text-sm text-slate-500">
+            <Card className="p-5 text-sm text-ink-5">
               Members, departments and approvals are set per company. Pick one above to manage them.
             </Card>
           ) : (
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
               {/* Members */}
               <Card className="p-5">
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Users size={16} className="text-gold" /> People</h2>
-                <p className="mt-1 text-xs text-slate-500">
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3"><Users size={16} className="text-gold" /> People</h2>
+                <p className="mt-1 text-xs text-ink-5">
                   You are <strong>{roleLabel(ent.role)}</strong> here. {ROLES[ent.role]?.hint}
                 </p>
                 <div className="mt-3 divide-y divide-border-subtle">
                   {ent.members.map((m) => (
                     <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                      <span className="min-w-0 truncate text-sm text-slate-700">{m.email || m.user_id}</span>
+                      <span className="min-w-0 truncate text-sm text-ink-3">{m.email || m.user_id}</span>
                       <div className="flex shrink-0 items-center gap-1">
                         <Select
                           className="h-8 w-auto py-0 text-xs"
@@ -173,7 +173,7 @@ export default function Companies() {
                         {ent.can('member.manage') && (
                           <button
                             onClick={() => act(() => store.removeMember(ent.activeId, m.id, ent.actor), 'Removed.')}
-                            className="grid h-8 w-8 place-items-center text-slate-400 hover:text-red-600"
+                            className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
                             aria-label={`Remove ${m.email || m.user_id}`}
                             title="Remove"
                           >
@@ -205,21 +205,21 @@ export default function Companies() {
 
               {/* Departments */}
               <Card className="p-5">
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Network size={16} className="text-gold" /> Departments</h2>
-                <p className="mt-1 text-xs text-slate-500">Cost centres. A cost lands on one, and a division rolls up everything beneath it.</p>
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3"><Network size={16} className="text-gold" /> Departments</h2>
+                <p className="mt-1 text-xs text-ink-5">Cost centres. A cost lands on one, and a division rolls up everything beneath it.</p>
                 <div className="mt-3 divide-y divide-border-subtle">
-                  {ent.departments.length === 0 && <p className="py-2 text-sm text-slate-400">None yet.</p>}
+                  {ent.departments.length === 0 && <p className="py-2 text-sm text-ink-6">None yet.</p>}
                   {ent.departments.map((d) => (
                     <div key={d.id} className="flex items-center justify-between gap-2 py-2">
-                      <span className="min-w-0 truncate text-sm text-slate-700">
+                      <span className="min-w-0 truncate text-sm text-ink-3">
                         {departmentLabel(ent.departments, d.id)}
-                        {d.code && <span className="ml-2 bg-slate-100 px-1.5 py-0.5 font-mono text-[0.6rem] text-slate-500">{d.code}</span>}
-                        {d.budget_monthly > 0 && <span className="ml-2 text-xs text-slate-400">{formatCurrency(d.budget_monthly)}/mo</span>}
+                        {d.code && <span className="ml-2 bg-surface-chip px-1.5 py-0.5 font-mono text-[0.6rem] text-ink-5">{d.code}</span>}
+                        {d.budget_monthly > 0 && <span className="ml-2 text-xs text-ink-6">{formatCurrency(d.budget_monthly)}/mo</span>}
                       </span>
                       {ent.can('department.manage') && (
                         <button
                           onClick={() => act(() => store.deleteDepartment(d.id, ent.actor, { entries }), 'Department removed.')}
-                          className="grid h-8 w-8 shrink-0 place-items-center text-slate-400 hover:text-red-600"
+                          className="grid h-8 w-8 shrink-0 place-items-center text-ink-6 hover:text-red-600"
                           aria-label={`Remove ${d.name}`}
                           title="Remove"
                         >
@@ -253,12 +253,12 @@ export default function Companies() {
 
               {/* Approvals */}
               <Card className="p-5">
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><ShieldCheck size={16} className="text-gold" /> Approvals</h2>
-                <p className="mt-1 text-xs text-slate-500">
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3"><ShieldCheck size={16} className="text-gold" /> Approvals</h2>
+                <p className="mt-1 text-xs text-ink-5">
                   Spending at or above the threshold waits for sign-off. Nobody can approve their own entry, whatever their role.
                 </p>
                 <div className="mt-3 space-y-3">
-                  <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <label className="flex items-center gap-2 text-sm text-ink-3">
                     <input
                       type="checkbox"
                       checked={ent.policy.enabled}
@@ -282,16 +282,16 @@ export default function Companies() {
               {/* Audit */}
               {ent.can('audit.view') && (
                 <Card className="p-5">
-                  <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><ScrollText size={16} className="text-gold" /> Audit log</h2>
-                  <p className="mt-1 text-xs text-slate-500">Who changed what, most recent first.</p>
+                  <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3"><ScrollText size={16} className="text-gold" /> Audit log</h2>
+                  <p className="mt-1 text-xs text-ink-5">Who changed what, most recent first.</p>
                   <div className="mt-3 max-h-72 divide-y divide-border-subtle overflow-y-auto">
-                    {audit.length === 0 && <p className="py-2 text-sm text-slate-400">Nothing recorded yet.</p>}
+                    {audit.length === 0 && <p className="py-2 text-sm text-ink-6">Nothing recorded yet.</p>}
                     {audit.map((a) => (
                       <div key={a.id} className="flex items-baseline justify-between gap-3 py-1.5 text-xs">
-                        <span className="min-w-0 text-slate-600">
-                          <span className="font-medium text-slate-800">{a.actor_email || 'Someone'}</span> {a.summary}
+                        <span className="min-w-0 text-ink-4">
+                          <span className="font-medium text-ink-2">{a.actor_email || 'Someone'}</span> {a.summary}
                         </span>
-                        <span className="shrink-0 text-slate-400">{formatDate(a.at)}</span>
+                        <span className="shrink-0 text-ink-6">{formatDate(a.at)}</span>
                       </div>
                     ))}
                   </div>

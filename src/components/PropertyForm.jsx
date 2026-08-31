@@ -29,24 +29,24 @@ const NOTE_TEXT = {
 function BillSummary({ read }) {
   const { breakdown } = read
   return (
-    <div className="mt-3 rounded-lg border border-gold/40 bg-gold/10 p-3 text-xs text-slate-700">
+    <div className="mt-3 rounded-lg border border-gold/40 bg-gold/10 p-3 text-xs text-ink-3">
       <p className="font-semibold">Read from the bill</p>
       <dl className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-1">
         {breakdown.metalValue != null && (
-          <><dt className="text-slate-500">Metal</dt><dd className="text-end">{formatCurrency(breakdown.metalValue)}</dd></>
+          <><dt className="text-ink-5">Metal</dt><dd className="text-end">{formatCurrency(breakdown.metalValue)}</dd></>
         )}
         {breakdown.making != null && (
-          <><dt className="text-slate-500">Making</dt><dd className="text-end">{formatCurrency(breakdown.making)}</dd></>
+          <><dt className="text-ink-5">Making</dt><dd className="text-end">{formatCurrency(breakdown.making)}</dd></>
         )}
         {breakdown.tax != null && (
-          <><dt className="text-slate-500">Tax</dt><dd className="text-end">{formatCurrency(breakdown.tax)}</dd></>
+          <><dt className="text-ink-5">Tax</dt><dd className="text-end">{formatCurrency(breakdown.tax)}</dd></>
         )}
         {breakdown.total != null && (
-          <><dt className="font-medium text-slate-600">Paid</dt><dd className="text-end font-medium">{formatCurrency(breakdown.total)}</dd></>
+          <><dt className="font-medium text-ink-4">Paid</dt><dd className="text-end font-medium">{formatCurrency(breakdown.total)}</dd></>
         )}
       </dl>
-      {read.notes.map((n) => NOTE_TEXT[n] && <p key={n} className="mt-1.5 text-slate-500">{NOTE_TEXT[n]}</p>)}
-      <p className="mt-1.5 text-slate-500">Check every figure against the bill before saving.</p>
+      {read.notes.map((n) => NOTE_TEXT[n] && <p key={n} className="mt-1.5 text-ink-5">{NOTE_TEXT[n]}</p>)}
+      <p className="mt-1.5 text-ink-5">Check every figure against the bill before saving.</p>
     </div>
   )
 }
@@ -227,7 +227,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
 
         <Field label="Asset value" hint="Optional — purchase price or current value, used for ROI & yield">
           <div className="relative">
-            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-ink-5">
               {currencySymbol}
             </span>
             <Input
@@ -245,7 +245,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
 
         <Field label="Monthly budget" hint="Optional — used for budget alerts on this property">
           <div className="relative">
-            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-ink-5">
               {currencySymbol}
             </span>
             <Input
@@ -266,8 +266,8 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
           of metal rather than a single thing with a price. */}
       {isMetal && (
         <div className="border-t border-border-light pt-5">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">The metal itself</p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">The metal itself</p>
+          <p className="mt-1 text-xs text-ink-6">
             Weight and purity, so the value follows the market instead of being retyped. A rate buys fine metal, so a
             22K piece is worth 91.6% of it.
           </p>
@@ -335,7 +335,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
 
             <Field label="Market rate" hint={`${metalDef.label} ${quoteLabel(form.metal)} — optional`}>
               <div className="relative">
-                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-ink-5">
                   {currencySymbol}
                 </span>
                 <Input
@@ -354,8 +354,8 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
 
           {/* What the numbers above actually come to, before it is saved. */}
           {holding && !holding.error && (
-            <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs dark:bg-slate-800/50">
-              <p className="text-slate-600 dark:text-slate-300">
+            <div className="mt-3 rounded-lg bg-surface-sunk px-3 py-2.5 text-xs">
+              <p className="text-ink-4">
                 {describeHolding({
                   metal: form.metal,
                   quantity: form.metal_quantity,
@@ -364,22 +364,22 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
                 })}
               </p>
               {holding.value == null ? (
-                <p className="mt-1 text-slate-400">Add a rate to see what that is worth today.</p>
+                <p className="mt-1 text-ink-6">Add a rate to see what that is worth today.</p>
               ) : (
-                <p className="mt-1 flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-300">
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-ink-4">
                   <span>
-                    Metal value <strong className="text-slate-800 dark:text-slate-100">{formatCurrency(holding.value)}</strong>
+                    Metal value <strong className="text-ink-2">{formatCurrency(holding.value)}</strong>
                   </span>
                   <button
                     type="button"
-                    className="min-h-6 rounded border border-border-light px-2 py-0.5 font-medium text-brand hover:bg-white dark:hover:bg-slate-700"
+                    className="min-h-6 rounded border border-border-light px-2 py-0.5 font-medium text-brand hover:bg-surface-raised"
                     onClick={() => setForm((f) => ({ ...f, value: String(holding.value) }))}
                   >
                     Use as asset value
                   </button>
                 </p>
               )}
-              <p className="mt-1 text-slate-400">
+              <p className="mt-1 text-ink-6">
                 Metal only — making charges and GST on jewellery are not recovered on resale.
               </p>
             </div>
@@ -392,14 +392,14 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
           an EMI on one line of it — see canBeFinanced. */}
       {financeable && (
         <div className="border-t border-border-light pt-5">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">Loan / mortgage</p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">Loan / mortgage</p>
+          <p className="mt-1 text-xs text-ink-6">
             Optional — fill all four to see EMI, outstanding balance and payoff date on the asset page.
           </p>
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Loan amount">
               <div className="relative">
-                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-ink-5">
                   {currencySymbol}
                 </span>
                 <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"
@@ -425,8 +425,8 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
           a painting are owned, not tenanted. */}
       {leasable && (
         <div className="border-t border-border-light pt-5">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">Tenancy / lease</p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">Tenancy / lease</p>
+          <p className="mt-1 text-xs text-ink-6">
             Optional — for rented assets. You'll get a renewal nudge on the dashboard as the lease end nears.
           </p>
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -435,7 +435,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
             </Field>
             <Field label="Deposit held">
               <div className="relative">
-                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-ink-5">
                   {currencySymbol}
                 </span>
                 <Input type="number" inputMode="decimal" step="0.01" min="0" className="ps-8"

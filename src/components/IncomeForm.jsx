@@ -299,12 +299,12 @@ export default function IncomeForm({ initial, properties, payers = [], history =
           past to the Save button should not have to notice six small notes to
           learn that the app answered six questions for them. */}
       {pending(filled) > 0 && (
-        <p role="status" className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-slate-700 dark:border-gold/30 dark:bg-gold/10 dark:text-slate-200">
+        <p role="status" className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-ink-3 dark:border-gold/30 dark:bg-gold/10">
           {t('filled.summary')}
         </p>
       )}
       {draftNoticed && (
-        <div className="flex items-start justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-slate-700">
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-xs text-ink-3">
           <span>{t('entry.draftRestored')}</span>
           <button
             type="button"
@@ -316,7 +316,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
         </div>
       )}
       <div className="rounded-xl border border-gold/30 bg-gold/[0.07] p-4">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">
           <Sparkles size={13} className="text-gold" /> {t('entry.quickAdd')}
         </div>
         <div className="flex gap-2">
@@ -336,7 +336,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
             {t('entry.parse')}
           </Button>
         </div>
-        {nlNote && <p role="status" aria-live="polite" className="mt-1.5 text-xs text-slate-500">{nlNote}</p>}
+        {nlNote && <p role="status" aria-live="polite" className="mt-1.5 text-xs text-ink-5">{nlNote}</p>}
       </div>
 
       <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
@@ -358,7 +358,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
 
         <Field label={t('income.amount')} required origin={originText('amount')}>
           <div className="relative">
-            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+            <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-ink-5">
               {currencySymbol}
             </span>
             <Input
@@ -420,7 +420,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
           <>
             <Field label={t('entry.tax')} hint={t('entry.taxHint')} origin={originText('tax')}>
               <div className="relative">
-                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-ink-5">
                   {currencySymbol}
                 </span>
                 <Input
@@ -464,7 +464,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
                         ? o.v === 'received'
                           ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
                           : 'border-gold bg-brand-light text-gold'
-                        : 'border-border-light text-slate-500 hover:border-slate-300'
+                        : 'border-border-light text-ink-5 hover:border-border-strong'
                     }`}
                   >
                     {o.label}
@@ -499,8 +499,8 @@ export default function IncomeForm({ initial, properties, payers = [], history =
       <Field label={t('income.proof')} hint={t('entry.attachmentHint')}>
         {receiptPreview || existingReceipt ? (
           <div className="space-y-2">
-            <div className="flex items-center gap-3 border border-border-light bg-slate-50 px-3 py-2">
-              <Paperclip size={16} className="text-slate-400" />
+            <div className="flex items-center gap-3 border border-border-light bg-surface-sunk px-3 py-2">
+              <Paperclip size={16} className="text-ink-6" />
               <a
                 href={receiptPreview || '#'}
                 target="_blank"
@@ -512,14 +512,14 @@ export default function IncomeForm({ initial, properties, payers = [], history =
               <button
                 type="button"
                 onClick={clearReceipt}
-                className="grid h-7 w-7 place-items-center text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                className="grid h-7 w-7 place-items-center text-ink-6 hover:bg-surface-grab hover:text-ink-3"
                 title={t('entry.removeAttachment')}
               >
                 <X size={15} />
               </button>
             </div>
             {isScannable(file) && (
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('entry.scanPrivacy')}</p>
+              <p className="text-xs text-ink-5">{t('entry.scanPrivacy')}</p>
             )}
             {isScannable(file) && (
               <button type="button" onClick={runScan} disabled={scanning} className="btn-ghost w-full">
@@ -535,7 +535,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
                 )}
               </button>
             )}
-            {scanMsg && <p role="status" aria-live="polite" className="text-xs text-slate-500">{scanMsg}</p>}
+            {scanMsg && <p role="status" aria-live="polite" className="text-xs text-ink-5">{scanMsg}</p>}
           </div>
         ) : (
           <div className="space-y-2">

@@ -30,12 +30,12 @@ export default class ErrorBoundary extends Component {
 
     return (
       <div className="grid min-h-[60vh] place-items-center px-4">
-        <div className="w-full max-w-md border border-border-light bg-white p-8 text-center shadow-sm">
+        <div className="w-full max-w-md border border-border-light bg-surface-raised p-8 text-center shadow-sm">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-red-50 text-red-500">
             <AlertTriangle size={24} />
           </span>
-          <h2 className="mt-4 font-serif text-xl font-bold text-slate-900">Something went wrong</h2>
-          <p className="mt-2 text-sm text-slate-500">
+          <h2 className="mt-4 font-serif text-xl font-bold text-ink-1">Something went wrong</h2>
+          <p className="mt-2 text-sm text-ink-5">
             This part of the app hit an unexpected error. Your data is safe — try again, and if it keeps
             happening, reload the page.
           </p>

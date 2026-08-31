@@ -74,14 +74,14 @@ export default function ReceiptViewer({ stored, onClose }) {
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-auto rounded-xl bg-white">
+        <div className="min-h-0 flex-1 overflow-auto rounded-xl bg-paper">
           {state === 'loading' && (
-            <div className="flex h-full items-center justify-center gap-2 py-20 text-slate-400">
+            <div className="flex h-full items-center justify-center gap-2 py-20 text-ink-6">
               <Loader2 size={20} className="animate-spin" /> Loading…
             </div>
           )}
           {state === 'error' && (
-            <div className="flex h-full flex-col items-center justify-center gap-2 py-20 text-center text-slate-400">
+            <div className="flex h-full flex-col items-center justify-center gap-2 py-20 text-center text-ink-6">
               <FileText size={28} />
               <span className="text-sm">Couldn’t load this receipt.</span>
             </div>

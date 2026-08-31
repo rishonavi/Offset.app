@@ -150,9 +150,9 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
         {/* What became of it. "Filed" and "delivered" are different claims, and
             saying the second when only the first happened is how a report form
             quietly becomes a bin. */}
-        {sending && <p className="mt-4 text-sm text-slate-500">Sending it to the developer…</p>}
+        {sending && <p className="mt-4 text-sm text-ink-5">Sending it to the developer…</p>}
         {delivery?.ok && (
-          <p className="mt-4 flex items-start gap-2 text-sm text-slate-600">
+          <p className="mt-4 flex items-start gap-2 text-sm text-ink-4">
             <Send size={15} className="mt-0.5 shrink-0 text-emerald-600" />
             Sent — it’s in the developer’s queue. Nothing else to do.
           </p>
@@ -164,7 +164,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
         )}
 
         {!sending && !delivery?.ok && (
-          <p className="mt-4 text-sm text-slate-600">
+          <p className="mt-4 text-sm text-ink-4">
             {SUPPORT_EMAIL
               ? 'Send it on so it reaches someone:'
               : 'This copy of Offset has no support address configured, so send it on yourself:'}
@@ -185,7 +185,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
         </div>
 
         <details className="mt-4" open={showDetail}>
-          <summary className="cursor-pointer text-xs font-medium text-slate-500">See exactly what it says</summary>
+          <summary className="cursor-pointer text-xs font-medium text-ink-5">See exactly what it says</summary>
           <textarea
             readOnly
             aria-label="Report text"
@@ -227,8 +227,8 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
                   className="mt-0.5"
                 />
                 <span className="min-w-0">
-                  <span className="block text-sm font-medium text-slate-800">{k.label}</span>
-                  {k.hint && <span className="block text-xs text-slate-500">{k.hint}</span>}
+                  <span className="block text-sm font-medium text-ink-2">{k.label}</span>
+                  {k.hint && <span className="block text-xs text-ink-5">{k.hint}</span>}
                 </span>
               </label>
             ))}
@@ -283,14 +283,14 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
         </label>
 
         {/* What gets attached, spelled out. */}
-        <div className="mt-4 border border-border-light bg-slate-50 p-3 dark:bg-white/5">
+        <div className="mt-4 border border-border-light bg-surface-sunk p-3 dark:bg-white/5">
           <label className="flex items-start gap-2.5">
             <input type="checkbox" checked={attach} onChange={(e) => setAttach(e.target.checked)} className="mt-1" />
             <span className="min-w-0">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-slate-800">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-ink-2">
                 <ShieldCheck size={14} className="text-gold" /> Attach {rows.length} technical details
               </span>
-              <span className="mt-0.5 block text-xs text-slate-500">
+              <span className="mt-0.5 block text-xs text-ink-5">
                 Your entries, amounts, names and documents are never included — only counts of them.
               </span>
             </span>
@@ -308,8 +308,8 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
             <dl className="mt-2 space-y-1 border-t border-border-subtle pt-2">
               {rows.map((r) => (
                 <div key={r.label} className="flex gap-3 text-xs">
-                  <dt className="w-32 shrink-0 text-slate-500">{r.label}</dt>
-                  <dd className="min-w-0 break-words font-medium text-slate-700">{r.value}</dd>
+                  <dt className="w-32 shrink-0 text-ink-5">{r.label}</dt>
+                  <dd className="min-w-0 break-words font-medium text-ink-3">{r.value}</dd>
                 </div>
               ))}
             </dl>
@@ -342,10 +342,10 @@ function Shell({ dialogRef, onClose, title, children }) {
     >
       <div ref={dialogRef} className="card w-full max-w-lg animate-fade-in p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 font-serif text-lg font-bold text-slate-900">
+          <h3 className="flex items-center gap-2 font-serif text-lg font-bold text-ink-1">
             <Bug size={18} className="text-gold" /> {title}
           </h3>
-          <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100">
+          <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 hover:bg-surface-hover">
             <X size={18} />
           </button>
         </div>

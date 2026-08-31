@@ -87,21 +87,21 @@ export default function Properties() {
                       <Icon size={18} />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="truncate font-semibold text-slate-900">{p.name}</h2>
-                      {p.type && <span className="text-xs text-slate-400">{p.type}</span>}
+                      <h2 className="truncate font-semibold text-ink-1">{p.name}</h2>
+                      {p.type && <span className="text-xs text-ink-6">{p.type}</span>}
                     </div>
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={(e) => onEdit(e, p)}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-brand"
+                      className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 transition hover:bg-surface-hover hover:text-brand"
                       title="Edit"
                     >
                       <Pencil size={15} />
                     </button>
                     <button
                       onClick={(e) => onDelete(e, p)}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                      className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 transition hover:bg-red-50 hover:text-red-600"
                       title="Delete"
                     >
                       <Trash2 size={15} />
@@ -110,8 +110,8 @@ export default function Properties() {
                 </div>
 
                 {p.address && (
-                  <p className="mt-3 flex items-start gap-1.5 text-sm text-slate-500">
-                    <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
+                  <p className="mt-3 flex items-start gap-1.5 text-sm text-ink-5">
+                    <MapPin size={14} className="mt-0.5 shrink-0 text-ink-6" />
                     <span className="line-clamp-2">{p.address}</span>
                   </p>
                 )}
@@ -127,11 +127,11 @@ export default function Properties() {
                     two figures that change it. A value nobody entered stays
                     absent rather than being shown as zero — an asset worth
                     nothing and an asset nobody valued are different claims. */}
-                <div className="mt-auto border-t border-slate-100 pt-4">
+                <div className="mt-auto border-t border-line-soft pt-4">
                   <div className="flex items-end justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-xs text-slate-400">{p.value ? 'Value' : 'Total spent'}</div>
-                      <div className="tabular text-lg font-bold text-slate-900">
+                      <div className="text-xs text-ink-6">{p.value ? 'Value' : 'Total spent'}</div>
+                      <div className="tabular text-lg font-bold text-ink-1">
                         {p.value ? formatCurrency(p.value) : formatCurrency(totals.sum.get(p.id) || 0)}
                       </div>
                     </div>
@@ -139,15 +139,15 @@ export default function Properties() {
                       Details <ArrowRight size={13} />
                     </span>
                   </div>
-                  <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-xs">
+                  <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-line-soft pt-3 text-xs">
                     <div>
-                      <dt className="text-slate-400">Spent · {count}</dt>
-                      <dd className="tabular font-semibold text-slate-700">
+                      <dt className="text-ink-6">Spent · {count}</dt>
+                      <dd className="tabular font-semibold text-ink-3">
                         {formatCurrency(totals.sum.get(p.id) || 0)}
                       </dd>
                     </div>
                     <div className="text-end">
-                      <dt className="text-slate-400">Earned</dt>
+                      <dt className="text-ink-6">Earned</dt>
                       <dd className="tabular font-semibold text-emerald-700">
                         {formatCurrency(earned.get(p.id) || 0)}
                       </dd>

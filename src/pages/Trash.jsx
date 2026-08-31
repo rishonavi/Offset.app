@@ -108,29 +108,29 @@ export default function Trash() {
         <EmptyState icon={Trash2} title="Bin is empty" subtitle="Deleted expenses and income appear here, recoverable for 30 days." />
       ) : (
         <Card className="p-0">
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line-soft">
             {items.map((it) => (
               <div key={`${it.kind}-${it.id}`} className="flex items-center gap-3 px-5 py-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-400">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-chip text-ink-6">
                   <Undo2 size={15} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge>{KIND_LABEL[it.kind]}</Badge>
-                    <span className="text-sm font-medium text-slate-800">{label(it)}</span>
+                    <span className="text-sm font-medium text-ink-2">{label(it)}</span>
                     {it.kind !== 'personal' && (
-                      <span className="text-xs text-slate-400">· {propertyNameById(it.property_id) || 'asset'}</span>
+                      <span className="text-xs text-ink-6">· {propertyNameById(it.property_id) || 'asset'}</span>
                     )}
                   </div>
-                  <div className="mt-0.5 text-xs text-slate-400">
+                  <div className="mt-0.5 text-xs text-ink-6">
                     {formatCurrency(it.amount)} · {formatDate(it.date)} · deleted {formatDate(it.deleted_at)}
                   </div>
                 </div>
                 <span className="shrink-0 text-xs font-medium text-amber-600">{daysLeft(it.deleted_at)}d left</span>
-                <button onClick={() => restore(it)} disabled={busy} className="shrink-0 text-slate-400 hover:text-emerald-600 disabled:opacity-50" title="Restore" aria-label="Restore this item">
+                <button onClick={() => restore(it)} disabled={busy} className="shrink-0 text-ink-6 hover:text-emerald-600 disabled:opacity-50" title="Restore" aria-label="Restore this item">
                   <RotateCcw size={16} />
                 </button>
-                <button onClick={() => purge(it)} disabled={busy} className="shrink-0 text-slate-400 hover:text-red-600 disabled:opacity-50" title="Delete forever" aria-label="Delete this item for good">
+                <button onClick={() => purge(it)} disabled={busy} className="shrink-0 text-ink-6 hover:text-red-600 disabled:opacity-50" title="Delete forever" aria-label="Delete this item for good">
                   <Trash2 size={16} />
                 </button>
               </div>

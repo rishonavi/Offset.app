@@ -8,14 +8,14 @@ export default function PageHeader({ title, subtitle, actions, eyebrow }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
-          <h1 className="font-serif text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-ink-1 sm:text-3xl">{title}</h1>
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2 sm:shrink-0">{actions}</div>}
       </div>
       <span className="mt-3 block h-[2px] w-12 bg-gold" />
       {/* Capped, because a line of explanatory text running the full width of a
           wide monitor is measurably harder to read than one that doesn't. */}
-      {subtitle && <p className="mt-3 max-w-2xl text-sm text-slate-500">{subtitle}</p>}
+      {subtitle && <p className="mt-3 max-w-2xl text-sm text-ink-5">{subtitle}</p>}
     </div>
   )
 }

@@ -39,7 +39,7 @@ export default function AskCard() {
     <Card className="p-5">
       <div className="mb-3 flex items-center gap-2">
         <Sparkles size={16} className="text-gold" />
-        <h2 className="text-sm font-semibold text-slate-700">Ask about your finances</h2>
+        <h2 className="text-sm font-semibold text-ink-3">Ask about your finances</h2>
       </div>
       <div className="flex gap-2">
         <Input
@@ -65,7 +65,7 @@ export default function AskCard() {
             key={s}
             type="button"
             onClick={() => ask(s)}
-            className="rounded-full border border-border-light px-2.5 py-1 text-xs text-slate-500 transition hover:border-gold hover:text-gold"
+            className="rounded-full border border-border-light px-2.5 py-1 text-xs text-ink-5 transition hover:border-gold hover:text-gold"
           >
             {s}
           </button>
@@ -74,11 +74,11 @@ export default function AskCard() {
 
       {err && <p className="mt-3 text-sm text-red-600">{err}</p>}
       {answer && (
-        <div className="mt-3 whitespace-pre-wrap border-s-2 border-gold bg-brand-light/40 p-3 text-sm text-slate-700">
+        <div className="mt-3 whitespace-pre-wrap border-s-2 border-gold bg-brand-light/40 p-3 text-sm text-ink-3">
           {answer}
         </div>
       )}
-      <p className="mt-3 text-[0.7rem] text-slate-400">
+      <p className="mt-3 text-[0.7rem] text-ink-6">
         Answers are generated from your data by AI — double-check anything important.
       </p>
     </Card>

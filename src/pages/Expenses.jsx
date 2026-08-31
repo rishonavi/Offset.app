@@ -101,7 +101,7 @@ export default function Expenses() {
               }
             />
           ) : filtered.length === 0 ? (
-            <Card className="p-10 text-center text-sm text-slate-500">No expenses match these filters.</Card>
+            <Card className="p-10 text-center text-sm text-ink-5">No expenses match these filters.</Card>
           ) : (
             <ExpenseTable
               expenses={filtered}

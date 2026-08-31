@@ -61,7 +61,7 @@ export default function AssetFormPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <Link to="/properties" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
+      <Link to="/properties" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-ink-5 hover:text-ink-2">
         <ArrowLeft size={15} /> Back to assets
       </Link>
       <PageHeader title={editing ? 'Edit asset' : 'Add asset'} />
@@ -71,8 +71,8 @@ export default function AssetFormPage() {
             <Crown size={20} />
           </span>
           <div>
-            <p className="font-semibold text-slate-800">You’ve reached the {plan.info.limits.assets}-asset limit on the Free plan.</p>
-            <p className="mt-1 text-sm text-slate-500">Upgrade to Pro for unlimited assets.</p>
+            <p className="font-semibold text-ink-2">You’ve reached the {plan.info.limits.assets}-asset limit on the Free plan.</p>
+            <p className="mt-1 text-sm text-ink-5">Upgrade to Pro for unlimited assets.</p>
           </div>
           <Link to="/settings" className="btn-primary">
             <Crown size={16} /> Upgrade to Pro

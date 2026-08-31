@@ -79,7 +79,7 @@ export default function Bills() {
       <Card className="p-3">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div className="relative">
-            <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-6" />
             <input
               className="field-input pl-9"
               aria-label="Search bills"
@@ -103,7 +103,7 @@ export default function Bills() {
               setAssetId('')
               setQ('')
             }}
-            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800"
+            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2"
           >
             <X size={13} /> Clear filters
           </button>
@@ -127,31 +127,31 @@ export default function Bills() {
             const Icon = iconForAssetType(g.type)
             return (
               <Card key={g.pid} className="overflow-hidden">
-                <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-                  <Link to={`/properties/${g.pid}`} className="flex items-center gap-2 font-semibold text-slate-800 hover:text-brand">
+                <div className="flex items-center justify-between border-b border-line px-5 py-3">
+                  <Link to={`/properties/${g.pid}`} className="flex items-center gap-2 font-semibold text-ink-2 hover:text-brand">
                     <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-light text-brand">
                       <Icon size={16} />
                     </span>
                     {g.name}
                   </Link>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-ink-6">
                     {g.list.length} bill{g.list.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-line-soft">
                   {g.list.map((b) => {
                     const key = `${b.kind}-${b.id}`
                     const cmts = commentsFor(b)
                     const open = openId === key
                     return (
                       <div key={key}>
-                        <div className="flex w-full items-center gap-2 px-5 py-3 transition hover:bg-slate-50/70">
+                        <div className="flex w-full items-center gap-2 px-5 py-3 transition hover:bg-surface-hover/70">
                           <button
                             onClick={() => setViewing(b.receipt_url)}
                             className="flex min-w-0 flex-1 items-center gap-3 text-start"
                             title="View bill"
                           >
-                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-chip text-ink-5">
                               <Paperclip size={15} />
                             </span>
                             <div className="min-w-0 flex-1">
@@ -159,24 +159,24 @@ export default function Bills() {
                                 <Badge color={b.kind === 'income' ? colorForSource(b.label) : colorForCategory(b.label)}>
                                   {b.label || (b.kind === 'income' ? 'Income' : 'Expense')}
                                 </Badge>
-                                <span className="text-xs text-slate-400">{formatDate(b.date)}</span>
+                                <span className="text-xs text-ink-6">{formatDate(b.date)}</span>
                               </div>
-                              <div className="mt-0.5 truncate text-sm text-slate-600">
+                              <div className="mt-0.5 truncate text-sm text-ink-4">
                                 {b.party || '—'} ·{' '}
-                                <span className={b.kind === 'income' ? 'font-medium text-emerald-700' : 'font-medium text-slate-800'}>
+                                <span className={b.kind === 'income' ? 'font-medium text-emerald-700' : 'font-medium text-ink-2'}>
                                   {b.kind === 'income' ? '+' : ''}
                                   {formatCurrency(b.amount)}
                                 </span>
                               </div>
                             </div>
-                            <ExternalLink size={15} className="shrink-0 text-slate-400" />
+                            <ExternalLink size={15} className="shrink-0 text-ink-6" />
                           </button>
                           <button
                             onClick={() => setOpenId((cur) => (cur === key ? null : key))}
                             aria-expanded={open}
                             title={cmts.length ? `${cmts.length} comment${cmts.length === 1 ? '' : 's'}` : 'Add a comment'}
                             className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                              open || cmts.length ? 'bg-brand-light text-brand' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                              open || cmts.length ? 'bg-brand-light text-brand' : 'text-ink-6 hover:bg-surface-hover hover:text-ink-3'
                             }`}
                           >
                             <MessageSquare size={15} />
@@ -226,9 +226,9 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
   }
 
   return (
-    <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+    <div className="border-t border-line-soft bg-surface-sunk/60 px-5 py-4">
       {comments.length === 0 ? (
-        <p className="text-xs text-slate-400">No comments yet.</p>
+        <p className="text-xs text-ink-6">No comments yet.</p>
       ) : (
         <ul className="space-y-3">
           {comments.map((c) => (
@@ -238,12 +238,12 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-xs font-semibold text-slate-700">{c.author || 'Someone'}</span>
-                  <span className="shrink-0 text-[0.65rem] text-slate-400">{formatDate(c.created_at)}</span>
+                  <span className="truncate text-xs font-semibold text-ink-3">{c.author || 'Someone'}</span>
+                  <span className="shrink-0 text-[0.65rem] text-ink-6">{formatDate(c.created_at)}</span>
                   {canWrite && (
                     <button
                       onClick={() => onDelete(c.id)}
-                      className="ms-auto shrink-0 text-slate-300 transition hover:text-red-600"
+                      className="ms-auto shrink-0 text-ink-7 transition hover:text-red-600"
                       title="Delete comment"
                       aria-label="Delete comment"
                     >
@@ -251,7 +251,7 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
                     </button>
                   )}
                 </div>
-                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-slate-600">{c.body}</p>
+                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink-4">{c.body}</p>
               </div>
             </li>
           ))}
@@ -275,7 +275,7 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
           </Button>
         </form>
       ) : (
-        <p className="mt-3 text-xs text-slate-400">You have read-only access to this workspace.</p>
+        <p className="mt-3 text-xs text-ink-6">You have read-only access to this workspace.</p>
       )}
     </div>
   )

@@ -197,22 +197,22 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
     >
       <div className="card w-full max-w-xl animate-fade-in overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-border-light px-4">
-          <Search size={18} className="shrink-0 text-slate-400" />
+          <Search size={18} className="shrink-0 text-ink-6" />
           <input
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search or jump to…"
-            className="w-full bg-transparent py-3.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+            className="w-full bg-transparent py-3.5 text-sm text-ink-1 outline-none placeholder:text-hint"
             aria-label="Command palette search"
           />
-          <kbd className="hidden shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[0.65rem] font-sans text-slate-400 sm:block">Esc</kbd>
+          <kbd className="hidden shrink-0 rounded bg-surface-chip px-1.5 py-0.5 text-[0.65rem] font-sans text-ink-6 sm:block">Esc</kbd>
         </div>
 
         <div ref={listRef} className="max-h-[52vh] overflow-y-auto py-2">
           {items.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-slate-400">No matches for “{q}”.</div>
+            <div className="px-4 py-8 text-center text-sm text-ink-6">No matches for “{q}”.</div>
           ) : (
             <ul>
               {items.map((it, i) => {
@@ -221,7 +221,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
                 return (
                   <Fragment key={i}>
                     {showHeader && (
-                      <li className="px-4 pb-1 pt-3 text-[0.6rem] font-semibold uppercase tracking-[1.5px] text-slate-400">
+                      <li className="px-4 pb-1 pt-3 text-[0.6rem] font-semibold uppercase tracking-[1.5px] text-ink-6">
                         {it.group}
                       </li>
                     )}
@@ -231,15 +231,15 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
                         onMouseMove={() => setActive(i)}
                         onClick={() => run(it)}
                         className={`flex w-full items-center gap-3 px-4 py-2.5 text-start transition ${
-                          active === i ? 'bg-brand-light text-slate-900' : 'text-slate-600'
+                          active === i ? 'bg-brand-light text-ink-1' : 'text-ink-4'
                         }`}
                       >
-                        <Icon size={16} className={active === i ? 'text-gold' : 'text-slate-400'} />
+                        <Icon size={16} className={active === i ? 'text-gold' : 'text-ink-6'} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium">{it.label}</span>
-                          {it.sublabel && <span className="block truncate text-xs text-slate-400">{it.sublabel}</span>}
+                          {it.sublabel && <span className="block truncate text-xs text-ink-6">{it.sublabel}</span>}
                         </span>
-                        {active === i && <CornerDownLeft size={14} className="shrink-0 text-slate-400" />}
+                        {active === i && <CornerDownLeft size={14} className="shrink-0 text-ink-6" />}
                       </button>
                     </li>
                   </Fragment>
@@ -249,7 +249,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border-light px-4 py-2 text-[0.65rem] text-slate-400">
+        <div className="flex items-center justify-between border-t border-border-light px-4 py-2 text-[0.65rem] text-ink-6">
           <span>↑↓ to navigate · ↵ to open</span>
           <span>Search assets, income, expenses &amp; docs</span>
         </div>

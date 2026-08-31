@@ -57,6 +57,14 @@ for (const theme of ['light', 'dark']) {
     await p.goto(B + route, { waitUntil: 'networkidle' })
     await p.waitForTimeout(600)
     await p.evaluate(installColour)
+    await p.evaluate(() => {
+      const paper = getComputedStyle(document.documentElement).getPropertyValue('--color-paper').trim()
+      const probe = document.createElement('div')
+      probe.style.backgroundColor = paper
+      document.body.append(probe)
+      window.__paper = getComputedStyle(probe).backgroundColor
+      probe.remove()
+    })
     const found = await p.evaluate((isDark) => {
       const out = { borders: [], fills: [], unnamed: [] }
       const seen = new Set()
@@ -83,7 +91,11 @@ for (const theme of ['light', 'dark']) {
           }
         }
         const bg = cs.backgroundColor
-        if (bg && bg !== 'rgba(0, 0, 0, 0)') {
+        // One colour is light on the dark ground on purpose: `--color-paper`,
+        // the sheet an invoice preview or a scanned receipt is drawn on. The
+        // design system says so in one place, and this reads that rather than
+        // carrying a list of blessed elements.
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== window.__paper) {
           const l = window.__lum(bg)
           const alpha = window.__alpha(bg)
           if (isDark && l > 0.75 && alpha > 0.5) {

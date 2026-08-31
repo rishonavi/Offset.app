@@ -13,13 +13,13 @@ export default function BudgetBar({ spent, budget, showLabel = true, showStatus 
     <div>
       {showLabel && (
         <div className="mb-1 flex items-center justify-between text-xs">
-          <span className="text-slate-500">Budget this month</span>
+          <span className="text-ink-5">Budget this month</span>
           <span className="font-semibold" style={{ color }}>
             {formatCurrency(spent)} / {formatCurrency(status.budget)}
           </span>
         </div>
       )}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-chip">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${width}%`, background: color }} />
       </div>
       {showStatus && (

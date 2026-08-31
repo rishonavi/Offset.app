@@ -3,7 +3,7 @@ import { Wallet, ArrowLeft } from 'lucide-react'
 
 function LegalShell({ title, children }) {
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10">
+    <div className="min-h-screen bg-surface-sunk px-4 py-10">
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-serif text-lg font-bold text-navy">
@@ -12,14 +12,14 @@ function LegalShell({ title, children }) {
             </span>
             Offset
           </Link>
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand">
+          <Link to="/" className="inline-flex items-center gap-1 text-sm text-ink-5 hover:text-brand">
             <ArrowLeft size={15} /> Back
           </Link>
         </div>
         <h1 className="mt-8 font-serif text-3xl font-bold text-navy">{title}</h1>
-        <p className="mt-1 text-xs text-slate-400">Last updated {new Date().getFullYear()}</p>
-        <div className="prose mt-6 space-y-4 text-sm leading-relaxed text-slate-600">{children}</div>
-        <p className="mt-10 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-ink-6">Last updated {new Date().getFullYear()}</p>
+        <div className="prose mt-6 space-y-4 text-sm leading-relaxed text-ink-4">{children}</div>
+        <p className="mt-10 text-xs text-ink-6">
           <Link to="/terms" className="hover:text-brand">Terms</Link> ·{' '}
           <Link to="/privacy" className="hover:text-brand">Privacy</Link> ·{' '}
           <Link to="/pricing" className="hover:text-brand">Pricing</Link>
@@ -29,7 +29,7 @@ function LegalShell({ title, children }) {
   )
 }
 
-const H = ({ children }) => <h2 className="pt-2 font-semibold text-slate-800">{children}</h2>
+const H = ({ children }) => <h2 className="pt-2 font-semibold text-ink-2">{children}</h2>
 
 export function Terms() {
   return (

@@ -13,8 +13,8 @@ export default function AppearanceCard() {
 
   return (
     <Card className="p-5">
-      <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Appearance</h2>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+      <h2 className="text-sm font-semibold text-ink-3">Appearance</h2>
+      <p className="mt-1 text-xs text-ink-5">
         How Offset looks and who it says you are — saved to this browser.
       </p>
 
@@ -38,7 +38,7 @@ export default function AppearanceCard() {
         <div className="space-y-6">
           <fieldset>
             <legend className="field-label">Theme</legend>
-            <div className="inline-flex rounded-xl border border-border-light bg-white p-0.5 dark:border-field-line dark:bg-field-bg">
+            <div className="inline-flex rounded-xl border border-border-light bg-surface-raised p-0.5">
               {[
                 { v: 'light', label: 'Light', icon: Sun },
                 { v: 'dark', label: 'Dark', icon: Moon },
@@ -52,7 +52,7 @@ export default function AppearanceCard() {
                     aria-pressed={on}
                     className={cx(
                       'inline-flex min-h-[2.75rem] items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wide transition',
-                      on ? 'bg-brand text-navy' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100',
+                      on ? 'bg-brand text-navy' : 'text-ink-5 hover:text-ink-2',
                     )}
                   >
                     <o.icon size={15} /> {o.label}
@@ -64,7 +64,7 @@ export default function AppearanceCard() {
 
           <fieldset>
             <legend className="field-label">Colour</legend>
-            <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mb-2 text-xs text-ink-5">
               Tints buttons, links and highlights across the app.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -79,7 +79,7 @@ export default function AppearanceCard() {
                     title={a.name}
                     className={cx(
                       'grid h-11 w-11 place-items-center rounded-xl border-2 transition',
-                      on ? 'border-slate-900 dark:border-white' : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600',
+                      on ? 'border-ink-1' : 'border-transparent hover:border-border-strong',
                     )}
                   >
                     <span className="grid h-7 w-7 place-items-center rounded-lg" style={{ backgroundColor: swatch(a.hue) }}>
@@ -104,7 +104,7 @@ export default function AppearanceCard() {
                 aria-label="Display name"
               />
             </label>
-            <p className="mt-2 mb-2 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-2 mb-2 text-xs text-ink-5">
               Your initials, or pick a symbol.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -115,8 +115,8 @@ export default function AppearanceCard() {
                 className={cx(
                   'grid h-11 w-11 place-items-center rounded-xl border-2 text-sm font-semibold transition',
                   !avatar.symbol
-                    ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
-                    : 'border-border-light text-slate-500 hover:border-slate-300 dark:border-field-line dark:text-slate-400',
+                    ? 'border-ink-1 text-ink-1 dark:text-white'
+                    : 'border-border-light text-ink-5 hover:border-border-strong',
                 )}
               >
                 Aa<span className="sr-only">Use my initials</span>
@@ -131,7 +131,7 @@ export default function AppearanceCard() {
                     aria-pressed={on}
                     className={cx(
                       'grid h-11 w-11 place-items-center rounded-xl border-2 text-lg transition',
-                      on ? 'border-slate-900 dark:border-white' : 'border-border-light hover:border-slate-300 dark:border-field-line',
+                      on ? 'border-ink-1' : 'border-border-light hover:border-border-strong',
                     )}
                   >
                     {sym}
@@ -145,7 +145,7 @@ export default function AppearanceCard() {
                 decision at all — the override is here for someone who wants
                 their mark to stand apart from the interface around it. */}
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Colour:</span>
+              <span className="text-xs text-ink-5">Colour:</span>
               <button
                 type="button"
                 onClick={() => setAvatar({ hue: null })}
@@ -153,8 +153,8 @@ export default function AppearanceCard() {
                 className={cx(
                   'min-h-[2.25rem] rounded-lg border px-3 py-1.5 text-xs font-medium transition',
                   chosenHue === null
-                    ? 'border-slate-900 text-slate-900 dark:border-white dark:text-white'
-                    : 'border-border-light text-slate-500 hover:border-slate-300 dark:border-field-line dark:text-slate-400',
+                    ? 'border-ink-1 text-ink-1 dark:text-white'
+                    : 'border-border-light text-ink-5 hover:border-border-strong',
                 )}
               >
                 Match the app
@@ -168,7 +168,7 @@ export default function AppearanceCard() {
                   title={a.name}
                   className={cx(
                     'grid h-9 w-9 place-items-center rounded-lg border-2 transition',
-                    chosenHue === a.hue ? 'border-slate-900 dark:border-white' : 'border-transparent hover:border-slate-300',
+                    chosenHue === a.hue ? 'border-ink-1' : 'border-transparent hover:border-border-strong',
                   )}
                 >
                   <span className="h-5 w-5 rounded-md" style={{ backgroundColor: swatch(a.hue) }} />
@@ -180,7 +180,7 @@ export default function AppearanceCard() {
             <button
               type="button"
               onClick={resetAvatar}
-              className="mt-3 inline-flex min-h-[2.25rem] items-center gap-1.5 text-xs font-medium text-slate-500 underline-offset-2 hover:underline dark:text-slate-400"
+              className="mt-3 inline-flex min-h-[2.25rem] items-center gap-1.5 text-xs font-medium text-ink-5 underline-offset-2 hover:underline"
             >
               <RotateCcw size={13} /> Reset avatar
             </button>

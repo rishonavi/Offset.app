@@ -47,9 +47,9 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
     <>
       {canSelect && selected.size > 0 && (
         <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-brand-light px-4 py-2.5">
-          <span className="text-sm font-medium text-slate-700">{selected.size} selected</span>
+          <span className="text-sm font-medium text-ink-3">{selected.size} selected</span>
           <div className="flex items-center gap-3">
-            <button onClick={clearSel} className="inline-flex min-h-6 items-center text-xs font-medium text-slate-500 hover:text-slate-800">Clear</button>
+            <button onClick={clearSel} className="inline-flex min-h-6 items-center text-xs font-medium text-ink-5 hover:text-ink-2">Clear</button>
             <button onClick={bulkDelete} className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline">
               <Trash2 size={14} /> Delete {selected.size}
             </button>
@@ -58,10 +58,10 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
       )}
 
       {/* Desktop / tablet table */}
-      <div className="hidden overflow-hidden border border-border-light bg-white md:block">
+      <div className="hidden overflow-hidden border border-border-light bg-surface-raised md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-start text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-line bg-surface-sunk text-start text-xs uppercase tracking-wide text-ink-5">
               {canSelect && (
                 <th className="w-10 px-4 py-3">
                   <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" />
@@ -75,27 +75,27 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
               <th className="px-4 py-3 text-end font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line-soft">
             {visible.map((e) => (
-              <tr key={e.id} className={`transition hover:bg-slate-50/70 ${selected.has(e.id) ? 'bg-brand-light/40' : ''}`}>
+              <tr key={e.id} className={`transition hover:bg-surface-hover/70 ${selected.has(e.id) ? 'bg-brand-light/40' : ''}`}>
                 {canSelect && (
                   <td className="px-4 py-3">
                     <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label="Select row" />
                   </td>
                 )}
-                <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(e.date)}</td>
-                <td className="px-4 py-3 font-medium text-slate-800">{propertyNameById(e.property_id) || '—'}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-ink-4">{formatDate(e.date)}</td>
+                <td className="px-4 py-3 font-medium text-ink-2">{propertyNameById(e.property_id) || '—'}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge color={colorForSource(e.source)}>{e.source}</Badge>
                     <PaymentChip entry={e} kind="income" />
                   </div>
                 </td>
-                <td className="px-4 py-3 text-slate-600">
+                <td className="px-4 py-3 text-ink-4">
                   <div className="flex items-center gap-1.5">
-                    {e.payer || <span className="text-slate-300">—</span>}
+                    {e.payer || <span className="text-ink-7">—</span>}
                     {e.receipt_url && (
-                      <button onClick={() => setViewing(e.receipt_url)} className="text-slate-400 transition hover:text-gold" title="View proof">
+                      <button onClick={() => setViewing(e.receipt_url)} className="text-ink-6 transition hover:text-gold" title="View proof">
                         <Paperclip size={14} />
                       </button>
                     )}
@@ -109,7 +109,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                     {onMarkSettled && !isSettled(e, 'income') && (
                       <button
                         onClick={() => onMarkSettled(e)}
-                        className="grid h-8 w-8 place-items-center text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600"
+                        className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-emerald-50 hover:text-emerald-600"
                         title="Mark as received"
                       >
                         <CheckCircle2 size={15} />
@@ -118,7 +118,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                     {onDuplicate && (
                       <button
                         onClick={() => onDuplicate(e)}
-                        className="grid h-8 w-8 place-items-center text-slate-400 transition hover:bg-slate-100 hover:text-gold"
+                        className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-surface-hover hover:text-gold"
                         title="Duplicate"
                       >
                         <Copy size={15} />
@@ -126,14 +126,14 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                     )}
                     <button
                       onClick={() => onEdit(e)}
-                      className="grid h-8 w-8 place-items-center text-slate-400 transition hover:bg-slate-100 hover:text-gold"
+                      className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-surface-hover hover:text-gold"
                       title="Edit"
                     >
                       <Pencil size={15} />
                     </button>
                     <button
                       onClick={() => onDelete(e)}
-                      className="grid h-8 w-8 place-items-center text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                      className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-red-50 hover:text-red-600"
                       title="Delete"
                     >
                       <Trash2 size={15} />
@@ -156,8 +156,8 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
                   <input type="checkbox" className="mt-1" checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label="Select row" />
                 )}
                 <div className="min-w-0">
-                  <div className="truncate font-semibold text-slate-800">{propertyNameById(e.property_id) || '—'}</div>
-                  <div className="mt-0.5 text-xs text-slate-500">{formatDate(e.date)}</div>
+                  <div className="truncate font-semibold text-ink-2">{propertyNameById(e.property_id) || '—'}</div>
+                  <div className="mt-0.5 text-xs text-ink-5">{formatDate(e.date)}</div>
                 </div>
               </div>
               <div className="tabular text-end font-bold text-emerald-700">+{formatCurrency(e.amount)}</div>
@@ -165,26 +165,26 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge color={colorForSource(e.source)}>{e.source}</Badge>
               <PaymentChip entry={e} kind="income" />
-              {e.payer && <span className="text-xs text-slate-500">{e.payer}</span>}
+              {e.payer && <span className="text-xs text-ink-5">{e.payer}</span>}
               {e.receipt_url && (
                 <button onClick={() => setViewing(e.receipt_url)} className="inline-flex items-center gap-1 text-xs text-gold">
                   <Paperclip size={12} /> Proof
                 </button>
               )}
             </div>
-            {e.description && <p className="mt-2 text-sm text-slate-500">{e.description}</p>}
-            <div className={`mt-3 flex-wrap justify-end gap-3 border-t border-slate-100 pt-3 ${readOnly ? 'hidden' : 'flex'}`}>
+            {e.description && <p className="mt-2 text-sm text-ink-5">{e.description}</p>}
+            <div className={`mt-3 flex-wrap justify-end gap-3 border-t border-line-soft pt-3 ${readOnly ? 'hidden' : 'flex'}`}>
               {onMarkSettled && !isSettled(e, 'income') && (
                 <button onClick={() => onMarkSettled(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-emerald-600">
                   <CheckCircle2 size={13} /> Mark received
                 </button>
               )}
               {onDuplicate && (
-                <button onClick={() => onDuplicate(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-slate-600">
+                <button onClick={() => onDuplicate(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-ink-4">
                   <Copy size={13} /> Duplicate
                 </button>
               )}
-              <button onClick={() => onEdit(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-slate-600">
+              <button onClick={() => onEdit(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-ink-4">
                 <Pencil size={13} /> Edit
               </button>
               <button onClick={() => onDelete(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-red-600">
@@ -196,7 +196,7 @@ export default function IncomeTable({ income, propertyNameById, onEdit, onDelete
       </div>
 
       {income.length > limit && (
-        <div className="flex items-center justify-center gap-3 pt-2 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-3 pt-2 text-sm text-ink-5">
           <span>
             Showing {visible.length} of {income.length}
           </span>

@@ -32,11 +32,11 @@ export function CardTitle({ title, description, icon: Icon, action }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-2">
       <div className="min-w-0">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          {Icon && <Icon size={16} className="shrink-0 text-slate-400" />}
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3">
+          {Icon && <Icon size={16} className="shrink-0 text-ink-6" />}
           {title}
         </h2>
-        {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
+        {description && <p className="mt-1 text-xs text-ink-5">{description}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -56,12 +56,12 @@ export function Field({ label, children, hint, required, className, origin }) {
           says the app put a value in the box, which is a different kind of
           thing to tell someone and should not read as decoration. */}
       {origin && (
-        <span className="mt-1 flex items-start gap-1 text-xs text-slate-500 dark:text-slate-400">
+        <span className="mt-1 flex items-start gap-1 text-xs text-ink-5">
           <Info size={12} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />
           <span>{origin}</span>
         </span>
       )}
-      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-ink-6">{hint}</span>}
     </label>
   )
 }
@@ -106,7 +106,7 @@ export function Badge({ color = '#64748b', children }) {
 
 export function Spinner({ label = 'Loading…' }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-16 text-slate-400">
+    <div className="flex items-center justify-center gap-2 py-16 text-ink-6">
       <Loader2 className="animate-spin" size={20} />
       <span className="text-sm">{label}</span>
     </div>
@@ -115,14 +115,14 @@ export function Spinner({ label = 'Loading…' }) {
 
 export function EmptyState({ icon: Icon, title, subtitle, action }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-16 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-strong bg-white/60 px-6 py-16 text-center">
       {Icon && (
         <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-light text-brand">
           <Icon size={26} />
         </div>
       )}
-      <h2 className="text-base font-semibold text-slate-800">{title}</h2>
-      {subtitle && <p className="mt-1 max-w-sm text-sm text-slate-500">{subtitle}</p>}
+      <h2 className="text-base font-semibold text-ink-2">{title}</h2>
+      {subtitle && <p className="mt-1 max-w-sm text-sm text-ink-5">{subtitle}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   )
@@ -170,11 +170,11 @@ export function MoreDetails({ open, onToggle, label = 'More details', summary, c
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl px-1 text-[0.8rem] font-medium text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+        className="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl px-1 text-[0.8rem] font-medium text-ink-4 transition hover:text-ink-1 dark:hover:text-white"
       >
         <ChevronRight size={16} className={cx('transition-transform', open && 'rotate-90')} />
         {label}
-        {!open && summary && <span className="text-slate-400 dark:text-slate-500">· {summary}</span>}
+        {!open && summary && <span className="text-ink-6">· {summary}</span>}
       </button>
     </div>
   )
@@ -205,9 +205,9 @@ export function ChartKey({ items, total, format = (n) => n, className }) {
               className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ background: d.color }}
             />
-            <dt className="min-w-0 flex-1 truncate text-slate-600 dark:text-slate-300">{d.name}</dt>
-            <dd className="shrink-0 tabular text-slate-800 dark:text-slate-100">{format(d.value)}</dd>
-            <dd className="w-9 shrink-0 text-end tabular text-slate-500 dark:text-slate-400">{pct}%</dd>
+            <dt className="min-w-0 flex-1 truncate text-ink-4">{d.name}</dt>
+            <dd className="shrink-0 tabular text-ink-2">{format(d.value)}</dd>
+            <dd className="w-9 shrink-0 text-end tabular text-ink-5">{pct}%</dd>
           </div>
         )
       })}

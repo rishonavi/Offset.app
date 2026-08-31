@@ -170,8 +170,8 @@ export default function Settings() {
               <Languages size={20} />
             </span>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-slate-700">{t('language.title')}</h2>
-              <p className="mt-1 text-xs text-slate-500">{t('language.description')}</p>
+              <h2 className="text-sm font-semibold text-ink-3">{t('language.title')}</h2>
+              <p className="mt-1 text-xs text-ink-5">{t('language.description')}</p>
             </div>
           </div>
           <label className="min-w-[13rem]">
@@ -194,7 +194,7 @@ export default function Settings() {
             </select>
           </label>
         </div>
-        <p className="mt-3 text-xs text-slate-400">
+        <p className="mt-3 text-xs text-ink-6">
           {t('language.amounts')}
           {/* Always true for a non-English language, not only when the dictionary
               has holes: the dictionary covers the menus, buttons and messages,
@@ -216,14 +216,14 @@ export default function Settings() {
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className={`grid h-11 w-11 place-items-center rounded-xl ${isPro ? 'bg-gold/15 text-gold' : 'bg-slate-100 text-slate-500'}`}>
+            <span className={`grid h-11 w-11 place-items-center rounded-xl ${isPro ? 'bg-gold/15 text-gold' : 'bg-surface-chip text-ink-5'}`}>
               <Crown size={20} />
             </span>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Current plan</div>
-              <div className="font-serif text-xl font-bold text-slate-900">
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Current plan</div>
+              <div className="font-serif text-xl font-bold text-ink-1">
                 {info.name}
-                {info.price > 0 && <span className="ml-2 text-sm font-normal text-slate-400">{formatCurrency(info.price)}/mo</span>}
+                {info.price > 0 && <span className="ml-2 text-sm font-normal text-ink-6">{formatCurrency(info.price)}/mo</span>}
               </div>
             </div>
           </div>
@@ -238,20 +238,20 @@ export default function Settings() {
               </Button>
             )
           ) : (
-            <span className="text-xs text-slate-400">Billing not enabled</span>
+            <span className="text-xs text-ink-6">Billing not enabled</span>
           )}
         </div>
 
         <ul className="mt-4 grid gap-2 sm:grid-cols-2">
           {info.features.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+            <li key={f} className="flex items-start gap-2 text-sm text-ink-4">
               <Check size={15} className="mt-0.5 shrink-0 text-emerald-600" /> {f}
             </li>
           ))}
         </ul>
 
         {scanLimit !== Infinity && (
-          <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+          <p className="mt-4 border-t border-line-soft pt-3 text-xs text-ink-5">
             AI scans this month: <strong>{scanCount}</strong> / {scanLimit}
           </p>
         )}
@@ -259,15 +259,15 @@ export default function Settings() {
 
       {/* Account */}
       <Card className="p-5">
-        <h2 className="text-sm font-semibold text-slate-700">Account</h2>
+        <h2 className="text-sm font-semibold text-ink-3">Account</h2>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Avatar avatar={avatar} email={user?.email} size={40} />
             <div>
-              <div className="text-sm font-medium text-slate-800 dark:text-slate-100">
+              <div className="text-sm font-medium text-ink-2">
                 {avatar.name?.trim() || user?.email || 'Local user'}
               </div>
-              <div className="inline-flex items-center gap-1 text-xs text-slate-400">
+              <div className="inline-flex items-center gap-1 text-xs text-ink-6">
                 <ShieldCheck size={12} /> {isCloud ? 'Cloud account' : 'Demo mode (this browser)'}
               </div>
             </div>
@@ -286,8 +286,8 @@ export default function Settings() {
       {/* Team / sharing (cloud only) */}
       {isCloud && (
         <Card className="p-5">
-          <h2 className="text-sm font-semibold text-slate-700">Team &amp; sharing</h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-ink-3">Team &amp; sharing</h2>
+          <p className="mt-1 text-xs text-ink-5">
             Invite someone (e.g. your accountant or partner) to your workspace. A <strong>viewer</strong> is read-only;
             an <strong>editor</strong> can add and change records. They’ll need an Offset account.
           </p>
@@ -310,13 +310,13 @@ export default function Settings() {
 
           {team.sharedByMe.length > 0 && (
             <div className="mt-4">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">People with access</div>
-              <div className="mt-1 divide-y divide-slate-100">
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">People with access</div>
+              <div className="mt-1 divide-y divide-line-soft">
                 {team.sharedByMe.map((m) => (
                   <div key={m.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                    <span className="min-w-0 truncate text-slate-700">
+                    <span className="min-w-0 truncate text-ink-3">
                       {m.member_email || m.member_id}
-                      <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">
+                      <span className="ml-2 rounded-full bg-surface-chip px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-ink-5">
                         {m.role === 'editor' ? 'Editor' : 'Viewer'}
                       </span>
                     </span>
@@ -330,7 +330,7 @@ export default function Settings() {
           )}
 
           {team.sharedWithMe.length > 0 && (
-            <div className="mt-4 border-t border-slate-100 pt-3 text-sm text-slate-600">
+            <div className="mt-4 border-t border-line-soft pt-3 text-sm text-ink-4">
               <span className="font-medium">Shared with you:</span>{' '}
               {team.sharedWithMe.map((m) => m.owner_email || m.owner_id).join(', ')} — switch from the workspace selector in the sidebar.
             </div>
@@ -341,12 +341,12 @@ export default function Settings() {
       {/* Problem reports */}
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-slate-700">Report a problem</h2>
+          <h2 className="text-sm font-semibold text-ink-3">Report a problem</h2>
           <Button variant="ghost" onClick={() => openReport({})}>
             <Bug size={16} /> New report
           </Button>
         </div>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-5">
           Found a bug, a number that looks wrong, or something you can’t work out? Tell the developer.
           {SUPPORT_EMAIL ? ' Reports go to ' : ' Reports are kept here so you can copy or send them on.'}
           {SUPPORT_EMAIL && <span className="font-medium">{SUPPORT_EMAIL}</span>}
@@ -355,7 +355,7 @@ export default function Settings() {
 
         {reports.length > 0 && (
           <div className="mt-4">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">
               Reports you’ve filed
             </div>
             <div className="mt-1 divide-y divide-border-subtle">
@@ -363,21 +363,21 @@ export default function Settings() {
                 <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-semibold text-slate-700">{r.reference}</span>
-                      <span className="text-xs text-slate-500">{kindLabel(r.kind)}</span>
+                      <span className="font-mono text-xs font-semibold text-ink-3">{r.reference}</span>
+                      <span className="text-xs text-ink-5">{kindLabel(r.kind)}</span>
                       {r.status === 'sent' && (
                         <span className="bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-emerald-700">
                           {{ email: 'Emailed', copied: 'Copied' }[r.sent_how] || 'Sent'}
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 truncate text-sm text-slate-600">{r.message}</p>
+                    <p className="mt-0.5 truncate text-sm text-ink-4">{r.message}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     {SUPPORT_EMAIL && (
                       <a
                         href={mailtoLink(r)}
-                        className="grid h-8 w-8 place-items-center text-slate-400 hover:text-brand"
+                        className="grid h-8 w-8 place-items-center text-ink-6 hover:text-brand"
                         title={`Email report ${r.reference}`}
                         aria-label={`Email report ${r.reference}`}
                       >
@@ -386,7 +386,7 @@ export default function Settings() {
                     )}
                     <button
                       onClick={() => copyReport(r)}
-                      className="grid h-8 w-8 place-items-center text-slate-400 hover:text-brand"
+                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-brand"
                       title={`Copy report ${r.reference}`}
                       aria-label={`Copy report ${r.reference}`}
                     >
@@ -394,7 +394,7 @@ export default function Settings() {
                     </button>
                     <button
                       onClick={() => removeReport(r)}
-                      className="grid h-8 w-8 place-items-center text-slate-400 hover:text-red-600"
+                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
                       title={`Delete report ${r.reference}`}
                       aria-label={`Delete report ${r.reference}`}
                     >
@@ -410,8 +410,8 @@ export default function Settings() {
 
       {/* Data */}
       <Card className="p-5">
-        <h2 className="text-sm font-semibold text-slate-700">Your data</h2>
-        <p className="mt-1 text-xs text-slate-500">Download everything as JSON, or permanently delete it.</p>
+        <h2 className="text-sm font-semibold text-ink-3">Your data</h2>
+        <p className="mt-1 text-xs text-ink-5">Download everything as JSON, or permanently delete it.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="ghost" onClick={exportData}>
             <Download size={16} /> Export my data

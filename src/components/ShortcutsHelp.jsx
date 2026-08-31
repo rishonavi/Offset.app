@@ -30,20 +30,20 @@ export default function ShortcutsHelp({ open, onClose }) {
     >
       <div className="card w-full max-w-md animate-fade-in p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-serif text-lg font-bold text-slate-900">Keyboard shortcuts</h2>
-          <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100">
+          <h2 className="font-serif text-lg font-bold text-ink-1">Keyboard shortcuts</h2>
+          <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 hover:bg-surface-hover">
             <X size={18} />
           </button>
         </div>
         <ul className="space-y-2.5">
           {SHORTCUTS.map((s) => (
             <li key={s.desc} className="flex items-center justify-between gap-4">
-              <span className="text-sm text-slate-600">{s.desc}</span>
+              <span className="text-sm text-ink-4">{s.desc}</span>
               <span className="flex shrink-0 items-center gap-1">
                 {s.keys.map((k, j) => (
                   <kbd
                     key={j}
-                    className="min-w-[1.6rem] rounded border border-border-light bg-slate-50 px-1.5 py-0.5 text-center text-xs font-semibold text-slate-600"
+                    className="min-w-[1.6rem] rounded border border-border-light bg-surface-sunk px-1.5 py-0.5 text-center text-xs font-semibold text-ink-4"
                   >
                     {k}
                   </kbd>
@@ -52,7 +52,7 @@ export default function ShortcutsHelp({ open, onClose }) {
             </li>
           ))}
         </ul>
-        <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-400">
+        <p className="mt-4 border-t border-line-soft pt-3 text-xs text-ink-6">
           Tip: click any table column header to sort by it. Something not working? “Report a problem” is at
           the bottom of the sidebar, and in the command palette.
         </p>

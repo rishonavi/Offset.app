@@ -139,9 +139,9 @@ function CompanySwitcher() {
       title={t('company.switch')}
     >
       {entities.map((e) => (
-        <option key={e.id} value={e.id} className="text-slate-900">{e.name}</option>
+        <option key={e.id} value={e.id} className="text-ink-1">{e.name}</option>
       ))}
-      {entities.length > 1 && <option value="__all__" className="text-slate-900">{t('company.all')}</option>}
+      {entities.length > 1 && <option value="__all__" className="text-ink-1">{t('company.all')}</option>}
     </select>
   )
 }
@@ -174,7 +174,7 @@ function WorkspaceSwitcher() {
       title={t('chrome.switchWorkspace')}
     >
       {workspaces.map((w) => (
-        <option key={w.ownerId} value={w.ownerId} className="text-slate-900">
+        <option key={w.ownerId} value={w.ownerId} className="text-ink-1">
           {w.own ? t('chrome.myWorkspace') : t('chrome.sharedWorkspace', { name: w.label })}
         </option>
       ))}
@@ -325,13 +325,13 @@ export default function Layout() {
           </div>
         )}
         {announcement?.active && announcement.text && (
-          <div className="flex items-center gap-2 border-b border-gold/30 bg-brand-light px-4 py-2 text-xs font-medium text-slate-700 lg:px-8">
+          <div className="flex items-center gap-2 border-b border-gold/30 bg-brand-light px-4 py-2 text-xs font-medium text-ink-3 lg:px-8">
             <Info size={14} className="shrink-0 text-gold" />
             <span>{announcement.text}</span>
           </div>
         )}
         {!canWrite && (
-          <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-100 px-4 py-2 text-xs text-slate-600 lg:px-8">
+          <div className="flex items-center gap-2 border-b border-line bg-surface-chip px-4 py-2 text-xs text-ink-4 lg:px-8">
             <Eye size={14} className="shrink-0" />
             <span>
               {t('banner.readOnlyLead')} <strong>{t('banner.readOnlyStrong')}</strong> {t('banner.readOnlyTail')}

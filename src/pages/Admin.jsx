@@ -32,8 +32,8 @@ function Stat({ icon: Icon, label, value, accent = '#C5A059' }) {
           <Icon size={18} />
         </span>
         <div className="min-w-0">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{label}</div>
-          <div className="font-serif text-xl font-bold text-slate-900">{value}</div>
+          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+          <div className="font-serif text-xl font-bold text-ink-1">{value}</div>
         </div>
       </div>
     </Card>
@@ -235,7 +235,7 @@ export default function Admin() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Billing</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Billing</h2>
             <a
               href="https://dashboard.stripe.com"
               target="_blank"
@@ -246,11 +246,11 @@ export default function Admin() {
             </a>
           </div>
           <div className="mb-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Est. MRR</div>
-            <div className="font-serif text-2xl font-bold text-slate-900">
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Est. MRR</div>
+            <div className="font-serif text-2xl font-bold text-ink-1">
               {formatCurrency((overview?.pro_users || 0) * (Number(plans.pro_price) || 0))}
             </div>
-            <div className="text-[0.65rem] text-slate-400">{overview?.pro_users ?? 0} Pro × {formatCurrency(Number(plans.pro_price) || 0)}</div>
+            <div className="text-[0.65rem] text-ink-6">{overview?.pro_users ?? 0} Pro × {formatCurrency(Number(plans.pro_price) || 0)}</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
@@ -258,17 +258,17 @@ export default function Admin() {
               { label: 'Past due', v: overview?.sub_past_due, c: '#b45309' },
               { label: 'Canceled', v: overview?.sub_canceled, c: '#b91c1c' },
             ].map((s) => (
-              <div key={s.label} className="rounded-lg bg-slate-50 py-2">
+              <div key={s.label} className="rounded-lg bg-surface-sunk py-2">
                 <div className="font-serif text-lg font-bold" style={{ color: s.c }}>{s.v ?? 0}</div>
-                <div className="text-[0.6rem] uppercase tracking-wide text-slate-500">{s.label}</div>
+                <div className="text-[0.6rem] uppercase tracking-wide text-ink-5">{s.label}</div>
               </div>
             ))}
           </div>
         </Card>
 
         <Card className="p-5">
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Endpoint health</h2>
-          <div className="divide-y divide-slate-100">
+          <h2 className="mb-3 text-sm font-semibold text-ink-3">Endpoint health</h2>
+          <div className="divide-y divide-line-soft">
             {[
               { key: 'scan', label: 'Receipt scanning (/api/scan-receipt)' },
               { key: 'parse', label: 'AI quick-add (/api/parse-entry)' },
@@ -283,7 +283,7 @@ export default function Admin() {
               }[state]
               return (
                 <div key={e.key} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="min-w-0 truncate text-slate-600">{e.label}</span>
+                  <span className="min-w-0 truncate text-ink-4">{e.label}</span>
                   <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium" style={{ color: meta.c }}>
                     <span className="h-2 w-2 rounded-full" style={{ background: meta.c }} />
                     {meta.t}
@@ -298,13 +298,13 @@ export default function Admin() {
       {/* App config */}
       {canConfig && (
         <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">App configuration</h2>
+          <h2 className="mb-4 text-sm font-semibold text-ink-3">App configuration</h2>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Announcement */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Announcement banner</span>
-                <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                <span className="text-xs font-semibold uppercase tracking-wide text-ink-5">Announcement banner</span>
+                <label className="flex items-center gap-1.5 text-xs text-ink-4">
                   <input type="checkbox" checked={announcement.active} onChange={(e) => setAnnouncement((s) => ({ ...s, active: e.target.checked }))} />
                   On
                 </label>
@@ -323,8 +323,8 @@ export default function Admin() {
             {/* Maintenance */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Maintenance mode</span>
-                <label className="flex items-center gap-1.5 text-xs text-slate-600">
+                <span className="text-xs font-semibold uppercase tracking-wide text-ink-5">Maintenance mode</span>
+                <label className="flex items-center gap-1.5 text-xs text-ink-4">
                   <input type="checkbox" checked={maintenance.active} onChange={(e) => setMaintenance((s) => ({ ...s, active: e.target.checked }))} />
                   On
                 </label>
@@ -342,17 +342,17 @@ export default function Admin() {
 
             {/* Plan limits */}
             <div>
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Plan limits</span>
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-ink-5">Plan limits</span>
               <div className="space-y-2">
-                <label className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                <label className="flex items-center justify-between gap-2 text-sm text-ink-4">
                   Pro price
                   <input type="number" min="0" className="field-input h-9 w-28" value={plans.pro_price} onChange={(e) => setPlans((s) => ({ ...s, pro_price: e.target.value }))} />
                 </label>
-                <label className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                <label className="flex items-center justify-between gap-2 text-sm text-ink-4">
                   Free assets
                   <input type="number" min="0" className="field-input h-9 w-28" value={plans.free_assets} onChange={(e) => setPlans((s) => ({ ...s, free_assets: e.target.value }))} />
                 </label>
-                <label className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                <label className="flex items-center justify-between gap-2 text-sm text-ink-4">
                   Free scans/mo
                   <input type="number" min="0" className="field-input h-9 w-28" value={plans.free_scans} onChange={(e) => setPlans((s) => ({ ...s, free_scans: e.target.value }))} />
                 </label>
@@ -396,7 +396,7 @@ export default function Admin() {
                   key={id || 'all'}
                   onClick={() => { setReportFilter(id); loadReports(id) }}
                   className={`px-2.5 py-1 text-xs font-medium transition ${
-                    reportFilter === id ? 'bg-navy text-gold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    reportFilter === id ? 'bg-navy text-gold' : 'bg-surface-chip text-ink-4 hover:bg-surface-grab'
                   }`}
                 >
                   {label}
@@ -407,7 +407,7 @@ export default function Admin() {
           </div>
 
           {reports.length === 0 ? (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-ink-6">
               {reportFilter === 'new' ? 'Nothing new — the inbox is clear.' : 'No reports with this status.'}
             </p>
           ) : (
@@ -423,8 +423,8 @@ export default function Admin() {
                         aria-expanded={expanded}
                       >
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="font-mono text-xs font-semibold text-slate-700">{r.reference}</span>
-                          <span className="text-xs text-slate-500">{kindLabel(r.kind)}</span>
+                          <span className="font-mono text-xs font-semibold text-ink-3">{r.reference}</span>
+                          <span className="text-xs text-ink-5">{kindLabel(r.kind)}</span>
                           <span
                             className="px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide"
                             style={
@@ -438,9 +438,9 @@ export default function Admin() {
                           >
                             {r.status}
                           </span>
-                          <span className="text-[0.65rem] text-slate-400">{formatDate(r.created_at)}</span>
+                          <span className="text-[0.65rem] text-ink-6">{formatDate(r.created_at)}</span>
                         </span>
-                        <span className={`mt-0.5 block text-sm text-slate-700 ${expanded ? '' : 'truncate'}`}>{r.message}</span>
+                        <span className={`mt-0.5 block text-sm text-ink-3 ${expanded ? '' : 'truncate'}`}>{r.message}</span>
                       </button>
                       {canWrite && (
                         <div className="flex shrink-0 flex-wrap gap-1">
@@ -454,7 +454,7 @@ export default function Admin() {
                               <button
                                 key={id}
                                 onClick={() => setReportStatus(r, id)}
-                                className="border border-border-light px-2 py-0.5 text-[0.65rem] font-medium text-slate-500 transition hover:border-gold hover:text-slate-800"
+                                className="border border-border-light px-2 py-0.5 text-[0.65rem] font-medium text-ink-5 transition hover:border-gold hover:text-ink-2"
                               >
                                 {label}
                               </button>
@@ -467,34 +467,34 @@ export default function Admin() {
                       <div className="mt-3 space-y-3 border-s-2 border-gold/40 pl-3">
                         {r.expected && (
                           <div>
-                            <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-400">Expected</div>
-                            <p className="text-sm text-slate-600">{r.expected}</p>
+                            <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-6">Expected</div>
+                            <p className="text-sm text-ink-4">{r.expected}</p>
                           </div>
                         )}
                         <div>
-                          <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-slate-400">Reply to</div>
+                          <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-6">Reply to</div>
                           {r.email ? (
                             <a href={`mailto:${r.email}?subject=Offset ${r.reference}`} className="text-sm text-brand hover:underline">
                               {r.email}
                             </a>
                           ) : (
-                            <p className="text-sm text-slate-400">Not given</p>
+                            <p className="text-sm text-ink-6">Not given</p>
                           )}
                         </div>
                         {r.diagnostics ? (
                           <dl className="space-y-0.5">
                             {describeDiagnostics(r.diagnostics).map((d) => (
                               <div key={d.label} className="flex gap-3 text-xs">
-                                <dt className="w-32 shrink-0 text-slate-400">{d.label}</dt>
-                                <dd className="min-w-0 break-words font-medium text-slate-600">{d.value}</dd>
+                                <dt className="w-32 shrink-0 text-ink-6">{d.label}</dt>
+                                <dd className="min-w-0 break-words font-medium text-ink-4">{d.value}</dd>
                               </div>
                             ))}
                           </dl>
                         ) : (
-                          <p className="text-xs text-slate-400">No diagnostics — the reporter chose not to attach them.</p>
+                          <p className="text-xs text-ink-6">No diagnostics — the reporter chose not to attach them.</p>
                         )}
                         {r.diagnostics?.crash?.stack && (
-                          <pre className="overflow-x-auto bg-slate-50 p-2 text-[0.65rem] leading-relaxed text-slate-600">
+                          <pre className="overflow-x-auto bg-surface-sunk p-2 text-[0.65rem] leading-relaxed text-ink-4">
                             {r.diagnostics.crash.stack}
                           </pre>
                         )}
@@ -511,7 +511,7 @@ export default function Admin() {
       {/* Users */}
       <Card className="p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-slate-700">Users</h2>
+          <h2 className="text-sm font-semibold text-ink-3">Users</h2>
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -519,7 +519,7 @@ export default function Admin() {
             }}
             className="relative"
           >
-            <Search size={15} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={15} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-6" />
             <input
               className="field-input h-9 w-64 max-w-full pl-9"
               placeholder="Search email…"
@@ -531,7 +531,7 @@ export default function Admin() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-start text-[0.65rem] uppercase tracking-wide text-slate-400">
+              <tr className="border-b border-line text-start text-[0.65rem] uppercase tracking-wide text-ink-6">
                 <th className="py-2 pr-3 font-semibold">Email</th>
                 <th className="py-2 pr-3 font-semibold">Joined</th>
                 <th className="py-2 pr-3 font-semibold">Assets</th>
@@ -540,20 +540,20 @@ export default function Admin() {
                 <th className="py-2 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-line-soft">
               {users.map((u) => (
                 <tr key={u.user_id}>
                   <td className="py-2.5 pr-3">
-                    <span className="font-medium text-slate-800">{u.email || u.user_id}</span>
+                    <span className="font-medium text-ink-2">{u.email || u.user_id}</span>
                     {u.is_admin && (
                       <span className="ml-2 rounded-full bg-navy px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-gold">
                         Admin
                       </span>
                     )}
                   </td>
-                  <td className="py-2.5 pr-3 text-slate-500">{u.created_at ? formatDate(u.created_at) : '—'}</td>
-                  <td className="py-2.5 pr-3 text-slate-600">{u.assets}</td>
-                  <td className="py-2.5 pr-3 text-slate-600">{Number(u.expenses) + Number(u.income)}</td>
+                  <td className="py-2.5 pr-3 text-ink-5">{u.created_at ? formatDate(u.created_at) : '—'}</td>
+                  <td className="py-2.5 pr-3 text-ink-4">{u.assets}</td>
+                  <td className="py-2.5 pr-3 text-ink-4">{Number(u.expenses) + Number(u.income)}</td>
                   <td className="py-2.5 pr-3">
                     <span
                       className="rounded-full px-2 py-0.5 text-xs font-semibold"
@@ -564,12 +564,12 @@ export default function Admin() {
                   </td>
                   <td className="py-2.5">
                     {!canWrite ? (
-                      <span className="text-xs text-slate-300">—</span>
+                      <span className="text-xs text-ink-7">—</span>
                     ) : u.plan === 'pro' ? (
                       <button
                         onClick={() => setPlan(u, 'free')}
                         disabled={busyId === u.user_id}
-                        className="inline-flex min-h-6 items-center text-xs font-medium text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                        className="inline-flex min-h-6 items-center text-xs font-medium text-ink-5 hover:text-ink-2 disabled:opacity-50"
                       >
                         Downgrade
                       </button>
@@ -587,7 +587,7 @@ export default function Admin() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-sm text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-sm text-ink-6">
                     No users match.
                   </td>
                 </tr>
@@ -600,8 +600,8 @@ export default function Admin() {
       {/* Admins (superadmin only) */}
       {isSuper && (
         <Card className="p-5">
-          <h2 className="mb-1 text-sm font-semibold text-slate-700">Admins</h2>
-          <p className="mb-3 text-xs text-slate-500">Manage who can access this area. The user must already have an Offset account.</p>
+          <h2 className="mb-1 text-sm font-semibold text-ink-3">Admins</h2>
+          <p className="mb-3 text-xs text-ink-5">Manage who can access this area. The user must already have an Offset account.</p>
           <form onSubmit={addAdmin} className="flex flex-wrap gap-2">
             <input
               type="email"
@@ -624,16 +624,16 @@ export default function Admin() {
               <UserPlus size={16} /> Add
             </Button>
           </form>
-          <div className="mt-3 divide-y divide-slate-100">
+          <div className="mt-3 divide-y divide-line-soft">
             {admins.map((a) => (
               <div key={a.user_id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span className="min-w-0 truncate text-slate-700">
+                <span className="min-w-0 truncate text-ink-3">
                   {a.email}
-                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-500">
+                  <span className="ml-2 rounded-full bg-surface-chip px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-ink-5">
                     {a.role}
                   </span>
                 </span>
-                <button onClick={() => removeAdmin(a.user_id)} className="shrink-0 text-slate-400 hover:text-red-600" title="Remove admin">
+                <button onClick={() => removeAdmin(a.user_id)} className="shrink-0 text-ink-6 hover:text-red-600" title="Remove admin">
                   <Trash2 size={15} />
                 </button>
               </div>
@@ -644,19 +644,19 @@ export default function Admin() {
 
       {/* Audit log */}
       <Card className="p-5">
-        <h2 className="mb-3 text-sm font-semibold text-slate-700">Admin audit log</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ink-3">Admin audit log</h2>
         {audit.length === 0 ? (
-          <p className="text-sm text-slate-400">No admin actions recorded yet.</p>
+          <p className="text-sm text-ink-6">No admin actions recorded yet.</p>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line-soft">
             {audit.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span className="min-w-0 truncate text-slate-700">
+                <span className="min-w-0 truncate text-ink-3">
                   <span className="font-medium">{a.admin_email || 'admin'}</span> · {a.action}
                   {a.target_email ? ` → ${a.target_email}` : ''}
                   {a.detail?.plan ? ` (${a.detail.plan})` : ''}
                 </span>
-                <span className="shrink-0 text-xs text-slate-400">{formatDate(a.created_at)}</span>
+                <span className="shrink-0 text-xs text-ink-6">{formatDate(a.created_at)}</span>
               </div>
             ))}
           </div>

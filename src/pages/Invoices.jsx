@@ -261,22 +261,22 @@ export default function Invoices() {
                     onChange={() => setTemplateId(t.id)}
                   />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-slate-800">
+                    <span className="block truncate text-sm font-medium text-ink-2">
                       {t.name}
-                      {t.builtIn && <span className="ml-2 text-xs font-normal text-slate-400">built in</span>}
+                      {t.builtIn && <span className="ml-2 text-xs font-normal text-ink-6">built in</span>}
                       {isDefault && (
                         <span className="ml-2 bg-brand-light px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-gold">
                           Default
                         </span>
                       )}
                     </span>
-                    <span className="block text-xs text-slate-400">{t.paper === 'letter' ? 'Letter' : 'A4'}</span>
+                    <span className="block text-xs text-ink-6">{t.paper === 'letter' ? 'Letter' : 'A4'}</span>
                   </span>
                 </label>
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     onClick={() => makeDefault(t)}
-                    className="grid h-8 w-8 place-items-center text-slate-400 hover:text-gold"
+                    className="grid h-8 w-8 place-items-center text-ink-6 hover:text-gold"
                     title={`Make “${t.name}” the default`}
                     aria-label={`Make ${t.name} the default format`}
                   >
@@ -286,7 +286,7 @@ export default function Invoices() {
                     <>
                       <button
                         onClick={() => downloadHtml(templateToFile(t), `${t.name}.json`)}
-                        className="grid h-8 w-8 place-items-center text-slate-400 hover:text-brand"
+                        className="grid h-8 w-8 place-items-center text-ink-6 hover:text-brand"
                         title={`Export “${t.name}”`}
                         aria-label={`Export ${t.name}`}
                       >
@@ -294,7 +294,7 @@ export default function Invoices() {
                       </button>
                       <button
                         onClick={() => removeTemplate(t)}
-                        className="grid h-8 w-8 place-items-center text-slate-400 hover:text-red-600"
+                        className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
                         title={`Delete “${t.name}”`}
                         aria-label={`Delete ${t.name}`}
                       >
@@ -319,7 +319,7 @@ export default function Invoices() {
           </div>
         )}
         {analysis.warnings.map((w) => (
-          <p key={w} className="mt-2 text-xs text-slate-500">
+          <p key={w} className="mt-2 text-xs text-ink-5">
             {w}
           </p>
         ))}
@@ -368,7 +368,7 @@ export default function Invoices() {
                 starting with a state code). Tax will still be worked out from the state code.
               </p>
             )}
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-ink-5">
               {kind === 'intra'
                 ? 'Same state — tax splits into CGST and SGST.'
                 : kind === 'inter'
@@ -450,7 +450,7 @@ export default function Invoices() {
                   />
                   <button
                     onClick={() => dropLine(i)}
-                    className="col-span-1 grid place-items-center text-slate-400 hover:text-red-600"
+                    className="col-span-1 grid place-items-center text-ink-6 hover:text-red-600"
                     aria-label={`Remove line ${i + 1}`}
                   >
                     <X size={15} />
@@ -479,8 +479,8 @@ export default function Invoices() {
         {/* Preview */}
         <Card className="overflow-hidden p-0 lg:sticky lg:top-6 lg:self-start">
           <div className="flex items-center justify-between border-b border-border-light px-4 py-2.5">
-            <span className="text-sm font-semibold text-slate-700">Preview</span>
-            <span className="flex items-center gap-1 text-xs text-slate-400">
+            <span className="text-sm font-semibold text-ink-3">Preview</span>
+            <span className="flex items-center gap-1 text-xs text-ink-6">
               <Check size={13} className="text-emerald-600" /> {template.name}
             </span>
           </div>
@@ -490,7 +490,7 @@ export default function Invoices() {
             title="Invoice preview"
             sandbox=""
             srcDoc={documentHtml}
-            className="h-[70vh] w-full bg-white"
+            className="h-[70vh] w-full bg-paper"
           />
         </Card>
       </div>
@@ -500,7 +500,7 @@ export default function Invoices() {
 
 function Row({ label, value, strong }) {
   return (
-    <div className={`flex justify-between ${strong ? 'border-t border-border-subtle pt-1.5 font-semibold text-slate-900' : 'text-slate-600'}`}>
+    <div className={`flex justify-between ${strong ? 'border-t border-border-subtle pt-1.5 font-semibold text-ink-1' : 'text-ink-4'}`}>
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
@@ -510,12 +510,12 @@ function Row({ label, value, strong }) {
 function TokenReference() {
   const group = (title, map, prefix = '') => (
     <div>
-      <div className="text-[0.6rem] font-semibold uppercase tracking-[1px] text-slate-400">{title}</div>
+      <div className="text-[0.6rem] font-semibold uppercase tracking-[1px] text-ink-6">{title}</div>
       <dl className="mt-1 space-y-0.5">
         {Object.entries(map).map(([k, v]) => (
           <div key={k} className="flex gap-3 text-xs">
-            <dt className="w-44 shrink-0 font-mono text-slate-600">{`{{${prefix}${k}}}`}</dt>
-            <dd className="min-w-0 text-slate-500">{v}</dd>
+            <dt className="w-44 shrink-0 font-mono text-ink-4">{`{{${prefix}${k}}}`}</dt>
+            <dd className="min-w-0 text-ink-5">{v}</dd>
           </div>
         ))}
       </dl>
@@ -523,7 +523,7 @@ function TokenReference() {
   )
   return (
     <div className="mt-3 space-y-4 border-t border-border-subtle pt-3">
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-ink-5">
         Put these anywhere in your HTML. Wrap the row of a table in{' '}
         <code className="font-mono">{'{{#each lines}}…{{/each}}'}</code> to repeat it per line item, and{' '}
         <code className="font-mono">{'{{#if is_intra_state}}…{{/if}}'}</code> to show something only when it applies.

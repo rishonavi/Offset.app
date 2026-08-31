@@ -97,7 +97,7 @@ export default function Income() {
           <Card className="p-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-12">
               <div className="relative lg:col-span-4">
-                <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-6" />
                 <input className="field-input pl-9" aria-label="Search income" placeholder="Search source, payer, note…" value={filters.q} onChange={set('q')} />
               </div>
               <select className="field-input lg:col-span-4" aria-label="Filter by asset" value={filters.propertyId} onChange={set('propertyId')}>
@@ -112,7 +112,7 @@ export default function Income() {
               <input type="date" className="field-input lg:col-span-2" value={filters.to} onChange={set('to')} title="To date" />
             </div>
             {active && (
-              <button onClick={() => setFilters(EMPTY)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800">
+              <button onClick={() => setFilters(EMPTY)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2">
                 <X size={13} /> Clear filters
               </button>
             )}
@@ -130,7 +130,7 @@ export default function Income() {
               }
             />
           ) : filtered.length === 0 ? (
-            <Card className="p-10 text-center text-sm text-slate-500">No income matches these filters.</Card>
+            <Card className="p-10 text-center text-sm text-ink-5">No income matches these filters.</Card>
           ) : (
             <IncomeTable
               income={filtered}

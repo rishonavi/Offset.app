@@ -45,15 +45,15 @@ export default function GettingStarted() {
     <Card className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-slate-700">Getting started</h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-ink-3">Getting started</h2>
+          <p className="mt-1 text-xs text-ink-5">
             {done} of {total} done. This disappears on its own once it's finished.
           </p>
         </div>
         <button
           onClick={hide}
           aria-label="Hide getting started"
-          className="grid h-8 w-8 shrink-0 place-items-center text-slate-400 hover:text-slate-700"
+          className="grid h-8 w-8 shrink-0 place-items-center text-ink-6 hover:text-ink-3"
         >
           <X size={16} />
         </button>
@@ -74,12 +74,12 @@ export default function GettingStarted() {
               {/* A finished step is struck through and dimmed, but only to
                   slate-500 — slate-400 comes out at 3.97:1 on the dark card,
                   and "done" is still text someone may want to read. */}
-              <p className={`text-sm ${s.done ? 'text-slate-500 line-through' : 'font-medium text-slate-700'}`}>
+              <p className={`text-sm ${s.done ? 'text-ink-5 line-through' : 'font-medium text-ink-3'}`}>
                 {s.title}
                 <span className="sr-only">{s.done ? ' — done' : ' — still to do'}</span>
               </p>
               {!s.done && (
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-ink-5">
                   {s.why}{' '}
                   {/* Underlined rather than gold-on-white: the brand gold is
                       2.5:1 against a white card, which is below the 4.5:1 a
@@ -87,7 +87,7 @@ export default function GettingStarted() {
                       what marks a link anyway. */}
                   <Link
                     to={s.to}
-                    className="inline-flex items-center gap-1 font-medium text-slate-700 underline underline-offset-2 hover:text-brand"
+                    className="inline-flex items-center gap-1 font-medium text-ink-3 underline underline-offset-2 hover:text-brand"
                   >
                     {s.cta} <ArrowRight size={12} />
                   </Link>
@@ -102,7 +102,7 @@ export default function GettingStarted() {
           ones is the one thing this must never do. */}
       {empty && canWrite && (
         <div className="mt-4 border-t border-border-light pt-4">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-5">
             Or have a look around first with a sample portfolio — two properties, a car and a year of entries. You
             can remove it in one click from Settings.
           </p>

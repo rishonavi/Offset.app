@@ -450,8 +450,8 @@ export default function Reports() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Export */}
         <Card className="p-5">
-          <h2 className="text-sm font-semibold text-slate-700">Export</h2>
-          <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+          <h2 className="text-sm font-semibold text-ink-3">Export</h2>
+          <p className="mt-1 text-xs text-ink-5">{subtitle}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="ghost" onClick={() => doExport('xlsx')} disabled={filtered.length === 0}>
               <FileSpreadsheet size={16} className="text-emerald-600" /> Excel (.xlsx)
@@ -466,7 +466,7 @@ export default function Reports() {
               <Calculator size={16} className="text-indigo-600" /> Tally (XML)
             </Button>
           </div>
-          <p className="mt-3 text-[0.7rem] text-slate-400">
+          <p className="mt-3 text-[0.7rem] text-ink-6">
             Excel includes a separate <strong>Income</strong> sheet. CSV/PDF cover expenses; the year-end PDF below covers income, expenses &amp; tax by year and a deductible breakdown by category.
             <br />
             <strong>Tally</strong> exports the filtered income &amp; expenses as import-ready vouchers — in TallyPrime: Gateway of Tally → Import → Vouchers.
@@ -475,10 +475,10 @@ export default function Reports() {
 
         {/* Import */}
         <Card className="p-5">
-          <h2 className="text-sm font-semibold text-slate-700">Import from spreadsheet</h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <h2 className="text-sm font-semibold text-ink-3">Import from spreadsheet</h2>
+          <p className="mt-1 text-xs text-ink-5">
             Upload an <strong>.xlsx</strong> or <strong>.csv</strong> with columns:
-            <span className="font-medium text-slate-600"> Date, Property, Category, Vendor, Payment Method, Description, Amount</span>.
+            <span className="font-medium text-ink-4"> Date, Property, Category, Vendor, Payment Method, Description, Amount</span>.
             New property names are created automatically.
           </p>
           <input
@@ -494,8 +494,8 @@ export default function Reports() {
             </Button>
           </div>
 
-          <div className="mt-4 border-t border-slate-200 pt-4">
-            <p className="text-xs text-slate-500">
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="text-xs text-ink-5">
               Or import a <strong>Tally XML</strong> export (Day Book / Voucher Register). Payment/Purchase vouchers become
               expenses and Receipt/Sales become income, matched to the asset named in each voucher. Duplicates are skipped.
             </p>
@@ -530,28 +530,28 @@ export default function Reports() {
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Landmark size={16} className="text-slate-500" />
-            <h2 className="text-sm font-semibold text-slate-700">Tax &amp; year-end summary</h2>
+            <Landmark size={16} className="text-ink-5" />
+            <h2 className="text-sm font-semibold text-ink-3">Tax &amp; year-end summary</h2>
           </div>
           <Button variant="ghost" onClick={downloadYearEndPDF} disabled={byYear.length === 0}>
             <FileText size={16} className="text-red-600" /> Year-end PDF
           </Button>
         </div>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-5">
           GST/tax totals for the current filter{filters.propertyId ? ` · ${propertyNameById(filters.propertyId) || 'asset'}` : ''}.
         </p>
 
         <div className="mt-4 grid grid-cols-3 gap-3">
           <div className="border-s-2 border-emerald-500 pl-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Tax collected</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Tax collected</div>
             <div className="font-serif text-xl font-bold text-emerald-700">{formatCurrency(taxCollected)}</div>
           </div>
           <div className="border-s-2 border-gold pl-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Tax paid</div>
-            <div className="font-serif text-xl font-bold text-slate-900">{formatCurrency(taxPaid)}</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Tax paid</div>
+            <div className="font-serif text-xl font-bold text-ink-1">{formatCurrency(taxPaid)}</div>
           </div>
           <div className="border-s-2 border-navy pl-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Net tax</div>
+            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Net tax</div>
             <div className="font-serif text-xl font-bold" style={{ color: netTax >= 0 ? '#2F8F6B' : '#C0492F' }}>
               {formatCurrency(netTax)}
             </div>
@@ -562,7 +562,7 @@ export default function Reports() {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-start text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-line text-start text-xs uppercase tracking-wide text-ink-5">
                   <th className="py-2 pr-3 font-semibold">Year</th>
                   <th className="px-3 py-2 text-end font-semibold">Income</th>
                   <th className="px-3 py-2 text-end font-semibold">Expenses</th>
@@ -571,17 +571,17 @@ export default function Reports() {
                   <th className="py-2 pl-3 text-end font-semibold">Tax paid</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {byYear.map((r) => (
                   <tr key={r.year}>
-                    <td className="py-2 pr-3 font-medium text-slate-800">{r.year}</td>
+                    <td className="py-2 pr-3 font-medium text-ink-2">{r.year}</td>
                     <td className="px-3 py-2 text-end text-emerald-700">{formatCurrency(r.income)}</td>
-                    <td className="px-3 py-2 text-end text-slate-700">{formatCurrency(r.expense)}</td>
+                    <td className="px-3 py-2 text-end text-ink-3">{formatCurrency(r.expense)}</td>
                     <td className="px-3 py-2 text-end font-semibold" style={{ color: r.income - r.expense >= 0 ? '#2F8F6B' : '#C0492F' }}>
                       {formatCurrency(r.income - r.expense)}
                     </td>
-                    <td className="px-3 py-2 text-end text-slate-600">{formatCurrency(r.taxCollected)}</td>
-                    <td className="py-2 pl-3 text-end text-slate-600">{formatCurrency(r.taxPaid)}</td>
+                    <td className="px-3 py-2 text-end text-ink-4">{formatCurrency(r.taxCollected)}</td>
+                    <td className="py-2 pl-3 text-end text-ink-4">{formatCurrency(r.taxPaid)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -591,33 +591,33 @@ export default function Reports() {
 
         {byCategoryTax.length > 0 && (
           <div className="mt-6">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-[1px] text-slate-500">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[1px] text-ink-5">
               Deductible expenses by category
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 text-start text-xs uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-line text-start text-xs uppercase tracking-wide text-ink-5">
                     <th className="py-2 pr-3 font-semibold">Category</th>
                     <th className="px-3 py-2 text-end font-semibold">Entries</th>
                     <th className="px-3 py-2 text-end font-semibold">Tax</th>
                     <th className="py-2 pl-3 text-end font-semibold">Amount</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line-soft">
                   {byCategoryTax.map((r) => (
                     <tr key={r.category}>
                       <td className="py-2 pr-3">
                         <Badge color={colorForCategory(r.category)}>{r.category}</Badge>
                       </td>
-                      <td className="px-3 py-2 text-end text-slate-600">{r.count}</td>
-                      <td className="px-3 py-2 text-end text-slate-600">{formatCurrency(r.tax)}</td>
-                      <td className="py-2 pl-3 text-end font-semibold text-slate-800">{formatCurrency(r.total)}</td>
+                      <td className="px-3 py-2 text-end text-ink-4">{r.count}</td>
+                      <td className="px-3 py-2 text-end text-ink-4">{formatCurrency(r.tax)}</td>
+                      <td className="py-2 pl-3 text-end font-semibold text-ink-2">{formatCurrency(r.total)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t border-slate-200 font-semibold text-slate-900">
+                  <tr className="border-t border-line font-semibold text-ink-1">
                     <td className="py-2 pr-3">Total</td>
                     <td className="px-3 py-2 text-end">{filtered.length}</td>
                     <td className="px-3 py-2 text-end">{formatCurrency(taxPaid)}</td>
@@ -633,13 +633,13 @@ export default function Reports() {
       {/* Backup & restore */}
       <Card className="p-5">
         <div className="flex items-center gap-2">
-          <Cloud size={16} className="text-slate-500" />
-          <h2 className="text-sm font-semibold text-slate-700">Backup &amp; restore</h2>
+          <Cloud size={16} className="text-ink-5" />
+          <h2 className="text-sm font-semibold text-ink-3">Backup &amp; restore</h2>
         </div>
 
         {cloudProviders.length > 0 ? (
           <div className="mt-3">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-5">
               Connect a cloud account to keep a private backup of your assets, expenses &amp; income, and restore it
               on any device. (Receipts stay in Supabase.)
             </p>
@@ -660,15 +660,15 @@ export default function Reports() {
             </div>
           </div>
         ) : (
-          <p className="mt-2 text-xs text-slate-500">
-            Connect a cloud account by adding a client ID — Google Drive (<code className="bg-slate-100 px-1">VITE_GOOGLE_CLIENT_ID</code>),
-            Dropbox (<code className="bg-slate-100 px-1">VITE_DROPBOX_APP_KEY</code>) or OneDrive (<code className="bg-slate-100 px-1">VITE_MS_CLIENT_ID</code>).
+          <p className="mt-2 text-xs text-ink-5">
+            Connect a cloud account by adding a client ID — Google Drive (<code className="bg-surface-chip px-1">VITE_GOOGLE_CLIENT_ID</code>),
+            Dropbox (<code className="bg-surface-chip px-1">VITE_DROPBOX_APP_KEY</code>) or OneDrive (<code className="bg-surface-chip px-1">VITE_MS_CLIENT_ID</code>).
             See the README. You can still use a backup file below.
           </p>
         )}
 
-        <div className="mt-4 border-t border-slate-200 pt-4">
-          <p className="text-xs text-slate-500">
+        <div className="mt-4 border-t border-line pt-4">
+          <p className="text-xs text-ink-5">
             Or use a <strong>backup file</strong> — download it and keep it in iCloud Drive, Dropbox or anywhere; restore it on any device.
           </p>
           <input
@@ -680,7 +680,7 @@ export default function Reports() {
           />
           <div className="mt-3 flex flex-wrap gap-2">
             <Button variant="ghost" onClick={downloadBackup}>
-              <Download size={16} className="text-slate-600" /> Download backup
+              <Download size={16} className="text-ink-4" /> Download backup
             </Button>
             <Button variant="ghost" onClick={() => backupFileRef.current?.click()} loading={cloudBusy}>
               {!cloudBusy && <Upload size={16} />} Restore from file
@@ -705,16 +705,16 @@ export default function Reports() {
         <EmptyState icon={FileText} title="Nothing to show" subtitle="No expenses match the current filters." />
       ) : (
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-            <h2 className="text-sm font-semibold text-slate-700">Preview</h2>
-            <span className="text-xs text-slate-400">
+          <div className="flex items-center justify-between border-b border-line px-5 py-3">
+            <h2 className="text-sm font-semibold text-ink-3">Preview</h2>
+            <span className="text-xs text-ink-6">
               {preview.length < filtered.length ? `Showing ${preview.length} of ${filtered.length}` : `${filtered.length} rows`}
             </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-start text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-line bg-surface-sunk text-start text-xs uppercase tracking-wide text-ink-5">
                   <th className="px-5 py-2.5 font-semibold">Date</th>
                   <th className="px-5 py-2.5 font-semibold">Property</th>
                   <th className="px-5 py-2.5 font-semibold">Category</th>
@@ -722,21 +722,21 @@ export default function Reports() {
                   <th className="px-5 py-2.5 text-end font-semibold">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line-soft">
                 {preview.map((e) => (
                   <tr key={e.id}>
-                    <td className="whitespace-nowrap px-5 py-2.5 text-slate-600">{formatDate(e.date)}</td>
-                    <td className="px-5 py-2.5 font-medium text-slate-800">{propertyNameById(e.property_id) || '—'}</td>
+                    <td className="whitespace-nowrap px-5 py-2.5 text-ink-4">{formatDate(e.date)}</td>
+                    <td className="px-5 py-2.5 font-medium text-ink-2">{propertyNameById(e.property_id) || '—'}</td>
                     <td className="px-5 py-2.5">
                       <Badge color={colorForCategory(e.category)}>{e.category}</Badge>
                     </td>
-                    <td className="px-5 py-2.5 text-slate-600">{e.vendor || '—'}</td>
-                    <td className="whitespace-nowrap px-5 py-2.5 text-end font-semibold text-slate-900">{formatCurrency(e.amount)}</td>
+                    <td className="px-5 py-2.5 text-ink-4">{e.vendor || '—'}</td>
+                    <td className="whitespace-nowrap px-5 py-2.5 text-end font-semibold text-ink-1">{formatCurrency(e.amount)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-900">
+                <tr className="border-t border-line bg-surface-sunk font-semibold text-ink-1">
                   <td className="px-5 py-2.5" colSpan={4}>Total</td>
                   <td className="px-5 py-2.5 text-end">{formatCurrency(total)}</td>
                 </tr>

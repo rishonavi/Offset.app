@@ -86,7 +86,7 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   return (
     <Card className="card-hover p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{label}</div>
+        <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
         <div
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
           style={{ background: `${accent}1a`, color: accent }}
@@ -95,7 +95,7 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
           <Icon size={17} />
         </div>
       </div>
-      <div className="tabular mt-3 truncate font-serif text-2xl font-bold text-slate-900">{value}</div>
+      <div className="tabular mt-3 truncate font-serif text-2xl font-bold text-ink-1">{value}</div>
     </Card>
   )
 }
@@ -104,11 +104,11 @@ function ChartCard({ title, children, empty, action, chartKey }) {
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
+        <h2 className="text-sm font-semibold text-ink-3">{title}</h2>
         {action}
       </div>
       {empty ? (
-        <div className="grid h-64 place-items-center text-sm text-slate-400">No data for this view</div>
+        <div className="grid h-64 place-items-center text-sm text-ink-6">No data for this view</div>
       ) : (
         <>
           <div style={{ width: '100%', height: 260 }}>{children}</div>
@@ -280,7 +280,7 @@ export default function Dashboard() {
     // an empty page.
     return (
       <div className="animate-fade-in">
-        <h1 className="mb-6 text-2xl font-bold text-slate-900">Dashboard</h1>
+        <h1 className="mb-6 text-2xl font-bold text-ink-1">Dashboard</h1>
         {shouldShowOnboarding({ properties, expenses, income }) ? (
           <GettingStarted />
         ) : (
@@ -303,7 +303,7 @@ export default function Dashboard() {
     <div className="animate-fade-in space-y-6">
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-ink-1">Dashboard</h1>
         <div className="flex flex-wrap items-center gap-2">
           {/* w-auto sizes the control to its widest option, and an option is an
               asset name the user chose — a long one would drag the page
@@ -316,13 +316,13 @@ export default function Dashboard() {
               </option>
             ))}
           </select>
-          <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5">
+          <div className="inline-flex rounded-xl border border-line bg-surface-raised p-0.5">
             {RANGES.map((r) => (
               <button
                 key={r.id}
                 onClick={() => setRange(r.id)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  range === r.id ? 'bg-brand text-white' : 'text-slate-600 hover:text-slate-900'
+                  range === r.id ? 'bg-brand text-white' : 'text-ink-4 hover:text-ink-1'
                 }`}
               >
                 {r.label}
@@ -377,8 +377,8 @@ export default function Dashboard() {
       {showPerf && (
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-slate-700">Portfolio performance</h2>
-            <span className="text-xs text-slate-400">
+            <h2 className="text-sm font-semibold text-ink-3">Portfolio performance</h2>
+            <span className="text-xs text-ink-6">
               {formatCurrency(perf.totalValue)} value · trailing 12 months
             </span>
           </div>
@@ -396,14 +396,14 @@ export default function Dashboard() {
               },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{m.label}</div>
+                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div
-                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-slate-900' : ''}`}
+                  className={`font-serif text-xl font-bold ${m.tone == null ? 'text-ink-1' : ''}`}
                   style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
                 >
                   {m.value}
                 </div>
-                <div className="text-[0.65rem] text-slate-400">{m.hint}</div>
+                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
           </div>
@@ -415,17 +415,17 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <Repeat size={16} className="text-gold" />
-            <h2 className="text-sm font-semibold text-slate-700">Recurring — due to log</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Recurring — due to log</h2>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line-soft">
             {recurringDue.map((d) => (
               <div key={`${d.kind}-${d.template.id}`} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-slate-800">
+                  <div className="truncate text-sm font-medium text-ink-2">
                     {propertyNameById(d.template.property_id) || '—'} ·{' '}
                     {(d.kind === 'income' ? d.template.source : d.template.category) || (d.kind === 'income' ? 'Income' : 'Expense')}
                   </div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-ink-6">
                     {RECURRENCE_LABEL[d.template.recurrence]} · due {formatDate(d.dueDate)}
                   </div>
                 </div>
@@ -449,9 +449,9 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <CalendarClock size={16} className="text-gold" />
-            <h2 className="text-sm font-semibold text-slate-700">Lease renewals</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Lease renewals</h2>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line-soft">
             {leaseAlerts.map(({ property, lease }) => (
               <Link
                 key={property.id}
@@ -459,8 +459,8 @@ export default function Dashboard() {
                 className="flex items-center justify-between gap-3 py-2.5 transition hover:opacity-80"
               >
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-slate-800">{property.name}</div>
-                  <div className="text-xs text-slate-400">
+                  <div className="truncate text-sm font-medium text-ink-2">{property.name}</div>
+                  <div className="text-xs text-ink-6">
                     {lease.tenant ? `${lease.tenant} · ` : ''}ends {formatDate(lease.end)}
                   </div>
                 </div>
@@ -485,9 +485,9 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <FileText size={16} className="text-gold" />
-            <h2 className="text-sm font-semibold text-slate-700">Documents expiring</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Documents expiring</h2>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line-soft">
             {docAlerts.map(({ doc, exp }) => (
               <Link
                 key={doc.id}
@@ -495,10 +495,10 @@ export default function Dashboard() {
                 className="flex items-center justify-between gap-3 py-2.5 transition hover:opacity-80"
               >
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-slate-800">
-                    {doc.title} <span className="text-slate-400">· {doc.doc_type}</span>
+                  <div className="truncate text-sm font-medium text-ink-2">
+                    {doc.title} <span className="text-ink-6">· {doc.doc_type}</span>
                   </div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-ink-6">
                     {propertyNameById(doc.property_id) || '—'} · expires {formatDate(doc.expiry_date)}
                   </div>
                 </div>
@@ -523,17 +523,17 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <TrendingUp size={16} className="text-gold" />
-            <h2 className="text-sm font-semibold text-slate-700">Unusual spending</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Unusual spending</h2>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-line-soft">
             {anomalies.map((a) => (
               <div key={a.category} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                  <div className="flex items-center gap-2 text-sm font-medium text-ink-2">
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorForCategory(a.category) }} />
                     <span className="truncate">{a.category}</span>
                   </div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-ink-6">
                     {formatCurrency(a.current)} this month · vs {formatCurrency(a.average)} average
                   </div>
                 </div>
@@ -550,7 +550,7 @@ export default function Dashboard() {
       {budgeted.length > 0 && (
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Monthly budgets</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Monthly budgets</h2>
             {budgetAlerts > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                 <AlertTriangle size={12} /> {budgetAlerts} need attention
@@ -560,7 +560,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
             {budgeted.map((b) => (
               <Link key={b.p.id} to={`/properties/${b.p.id}`} className="block transition hover:opacity-80">
-                <div className="mb-1 truncate text-sm font-medium text-slate-700">{b.p.name}</div>
+                <div className="mb-1 truncate text-sm font-medium text-ink-3">{b.p.name}</div>
                 <BudgetBar spent={b.spent} budget={b.p.monthly_budget} />
               </Link>
             ))}
@@ -571,30 +571,30 @@ export default function Dashboard() {
       {/* Payments due */}
       {(payables > 0 || receivables > 0) && (
         <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">Payments due</h2>
+          <h2 className="mb-4 text-sm font-semibold text-ink-3">Payments due</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="border-s-2 border-gold pl-3">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">You owe · unpaid expenses</div>
-              <div className="font-serif text-2xl font-bold text-slate-900">{formatCurrency(payables)}</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">You owe · unpaid expenses</div>
+              <div className="font-serif text-2xl font-bold text-ink-1">{formatCurrency(payables)}</div>
             </div>
             <div className="border-s-2 border-emerald-500 pl-3">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">Owed to you · pending income</div>
+              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Owed to you · pending income</div>
               <div className="font-serif text-2xl font-bold text-emerald-700">{formatCurrency(receivables)}</div>
             </div>
           </div>
           {overdue.length > 0 && (
-            <div className="mt-4 border-t border-slate-100 pt-3">
+            <div className="mt-4 border-t border-line-soft pt-3">
               <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-red-600">
                 <AlertTriangle size={13} /> Overdue
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-line-soft">
                 {overdue.map((o) => (
                   <Link
                     key={o.id}
                     to={`/properties/${o.property_id}`}
                     className="flex items-center justify-between gap-3 py-2 text-sm transition hover:opacity-80"
                   >
-                    <span className="min-w-0 truncate text-slate-700">
+                    <span className="min-w-0 truncate text-ink-3">
                       {propertyNameById(o.property_id) || '—'} · {o.label || (o.kind === 'income' ? 'Income' : 'Expense')}
                     </span>
                     <span className="shrink-0 font-semibold" style={{ color: o.kind === 'income' ? '#2F8F6B' : '#C0492F' }}>
@@ -697,25 +697,25 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Recent activity</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Recent activity</h2>
             <Link to="/expenses" className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand hover:underline">
               View all <ArrowRight size={13} />
             </Link>
           </div>
           {recent.length === 0 ? (
-            <div className="grid h-32 place-items-center text-sm text-slate-400">No expenses yet</div>
+            <div className="grid h-32 place-items-center text-sm text-ink-6">No expenses yet</div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-line-soft">
               {recent.map((e) => (
                 <Link key={e.id} to="/expenses" className="flex items-center gap-3 py-2.5 transition hover:opacity-80">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorForCategory(e.category) }} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-slate-800">{propertyNameById(e.property_id) || '—'}</div>
-                    <div className="truncate text-xs text-slate-400">
+                    <div className="truncate text-sm font-medium text-ink-2">{propertyNameById(e.property_id) || '—'}</div>
+                    <div className="truncate text-xs text-ink-6">
                       {e.category} · {formatDate(e.date)}
                     </div>
                   </div>
-                  <div className="shrink-0 text-sm font-semibold text-slate-900">{formatCurrency(e.amount)}</div>
+                  <div className="shrink-0 text-sm font-semibold text-ink-1">{formatCurrency(e.amount)}</div>
                 </Link>
               ))}
             </div>
@@ -724,22 +724,22 @@ export default function Dashboard() {
 
         {byCategory.length > 0 ? (
           <Card className="p-5">
-            <h2 className="mb-4 text-sm font-semibold text-slate-700">Category breakdown</h2>
+            <h2 className="mb-4 text-sm font-semibold text-ink-3">Category breakdown</h2>
             <div className="space-y-3">
               {byCategory.slice(0, 6).map((c) => {
                 const pct = total ? Math.round((c.value / total) * 100) : 0
                 return (
                   <div key={c.name}>
                     <div className="mb-1 flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-slate-600">
+                      <span className="flex items-center gap-2 text-ink-4">
                         <span className="h-2.5 w-2.5 rounded-full" style={{ background: colorForCategory(c.name) }} />
                         {c.name}
                       </span>
-                      <span className="font-semibold text-slate-800">
-                        {formatCurrency(c.value)} <span className="ml-1 text-xs font-normal text-slate-400">{pct}%</span>
+                      <span className="font-semibold text-ink-2">
+                        {formatCurrency(c.value)} <span className="ml-1 text-xs font-normal text-ink-6">{pct}%</span>
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-chip">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: colorForCategory(c.name) }} />
                     </div>
                   </div>
@@ -748,7 +748,7 @@ export default function Dashboard() {
             </div>
           </Card>
         ) : (
-          <Card className="grid place-items-center p-5 text-sm text-slate-400">No category data yet</Card>
+          <Card className="grid place-items-center p-5 text-sm text-ink-6">No category data yet</Card>
         )}
       </div>
     </div>

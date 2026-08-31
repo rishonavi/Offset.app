@@ -26,8 +26,8 @@ function Stat({ icon: Icon, label, value, accent }) {
           <Icon size={20} />
         </span>
         <div className="min-w-0">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-slate-500">{label}</div>
-          <div className="truncate font-serif text-lg font-bold text-slate-900 sm:text-xl">{value}</div>
+          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+          <div className="truncate font-serif text-lg font-bold text-ink-1 sm:text-xl">{value}</div>
         </div>
       </div>
     </Card>
@@ -129,16 +129,16 @@ export default function Personal() {
     <div className="animate-fade-in space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Personal" subtitle="Everyday budgeting & spending — separate from your assets." />
-        <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
-          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100">
+        <div className="flex items-center gap-1 rounded-xl border border-line bg-surface-raised p-1">
+          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-ink-5 hover:bg-surface-hover">
             <ChevronLeft size={16} />
           </button>
-          <span className="min-w-36 text-center text-sm font-medium text-slate-700">{monthLabel(month)}</span>
+          <span className="min-w-36 text-center text-sm font-medium text-ink-3">{monthLabel(month)}</span>
           <button
             onClick={() => setMonth((m) => shiftMonth(m, 1))}
             disabled={month >= monthKey()}
             aria-label="Next month"
-            className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30"
+            className="grid h-8 w-8 place-items-center rounded-lg text-ink-5 hover:bg-surface-hover disabled:opacity-30"
           >
             <ChevronRight size={16} />
           </button>
@@ -156,7 +156,7 @@ export default function Personal() {
         {/* Budgets */}
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-700">Category budgets</h2>
+            <h2 className="text-sm font-semibold text-ink-3">Category budgets</h2>
             <button onClick={editBudgets ? () => setEditBudgets(false) : openBudgets} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand hover:underline">
               {editBudgets ? (<><X size={13} /> Close</>) : (<><SlidersHorizontal size={13} /> Manage</>)}
             </button>
@@ -165,7 +165,7 @@ export default function Personal() {
           {editBudgets ? (
             <div className="space-y-2">
               {PERSONAL_CATEGORIES.map((c) => (
-                <label key={c} className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                <label key={c} className="flex items-center justify-between gap-2 text-sm text-ink-4">
                   <span className="truncate">{c}</span>
                   <Input
                     type="number"
@@ -182,14 +182,14 @@ export default function Personal() {
               </Button>
             </div>
           ) : budgetedCats.length === 0 ? (
-            <div className="py-6 text-center text-sm text-slate-400">
+            <div className="py-6 text-center text-sm text-ink-6">
               No budgets set yet. Use <strong>Manage</strong> to set a monthly limit per category.
             </div>
           ) : (
             <div className="space-y-4">
               {budgetedCats.map((c) => (
                 <div key={c}>
-                  <div className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <div className="mb-1 flex items-center gap-2 text-sm font-medium text-ink-3">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ background: colorForPersonal(c) }} />
                     {c}
                   </div>
@@ -202,9 +202,9 @@ export default function Personal() {
 
         {/* Spending by category */}
         <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">Spending by category</h2>
+          <h2 className="mb-4 text-sm font-semibold text-ink-3">Spending by category</h2>
           {byCategory.length === 0 ? (
-            <div className="grid h-64 place-items-center text-sm text-slate-400">No spending this month</div>
+            <div className="grid h-64 place-items-center text-sm text-ink-6">No spending this month</div>
           ) : (
             <>
             <div style={{ width: '100%', height: 260 }}>
@@ -232,7 +232,7 @@ export default function Personal() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Add / edit */}
         <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">{editingId ? 'Edit expense' : 'Add personal expense'}</h2>
+          <h2 className="mb-4 text-sm font-semibold text-ink-3">{editingId ? 'Edit expense' : 'Add personal expense'}</h2>
           <form onSubmit={submit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date" required>
@@ -278,26 +278,26 @@ export default function Personal() {
 
         {/* This month's list */}
         <Card className="p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-700">{monthLabel(month)} · {monthExpenses.length} entries</h2>
+          <h2 className="mb-4 text-sm font-semibold text-ink-3">{monthLabel(month)} · {monthExpenses.length} entries</h2>
           {monthExpenses.length === 0 ? (
-            <div className="py-8 text-center text-sm text-slate-400">No personal expenses this month yet.</div>
+            <div className="py-8 text-center text-sm text-ink-6">No personal expenses this month yet.</div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-line-soft">
               {monthExpenses.map((e) => (
                 <div key={e.id} className="flex items-center gap-3 py-2.5">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorForPersonal(e.category) }} />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge color={colorForPersonal(e.category)}>{e.category}</Badge>
-                      <span className="text-xs text-slate-400">{formatDate(e.date)}</span>
+                      <span className="text-xs text-ink-6">{formatDate(e.date)}</span>
                     </div>
-                    {e.note && <div className="mt-0.5 truncate text-xs text-slate-500">{e.note}</div>}
+                    {e.note && <div className="mt-0.5 truncate text-xs text-ink-5">{e.note}</div>}
                   </div>
-                  <span className="shrink-0 text-sm font-semibold text-slate-900">{formatCurrency(e.amount)}</span>
-                  <button onClick={() => startEdit(e)} className="shrink-0 text-slate-400 hover:text-brand" title="Edit">
+                  <span className="shrink-0 text-sm font-semibold text-ink-1">{formatCurrency(e.amount)}</span>
+                  <button onClick={() => startEdit(e)} className="shrink-0 text-ink-6 hover:text-brand" title="Edit">
                     <Pencil size={15} />
                   </button>
-                  <button onClick={() => removeExpense(e)} className="shrink-0 text-slate-400 hover:text-red-600" title="Delete">
+                  <button onClick={() => removeExpense(e)} className="shrink-0 text-ink-6 hover:text-red-600" title="Delete">
                     <Trash2 size={15} />
                   </button>
                 </div>
