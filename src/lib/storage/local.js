@@ -9,7 +9,7 @@ const PEXP_KEY = 'pl_personal_expenses'
 const PBUD_KEY = 'pl_personal_budgets'
 const COMMENT_KEY = 'pl_comments'
 
-import { putBlob, getBlob, deleteBlob, isBlobToken } from './blobs'
+import { putBlob, getBlob, deleteBlob, isBlobToken, pruneBlobs } from './blobs'
 
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
@@ -154,6 +154,22 @@ export async function getReceiptUrl(stored) {
     return blob ? URL.createObjectURL(blob) : null
   }
   return stored
+}
+
+// Attachments whose row is gone. Deletes already call deleteBlob, so this is
+// the net under that: a delete that failed, a row removed by an older version,
+// a browser closed mid-write. Photographs of receipts are the largest thing
+// this app stores, and an unreachable one is invisible — nothing lists it and
+// nothing will ever ask for it again.
+//
+// The keep-list is read straight from storage rather than from React state,
+// because pruneBlobs deletes everything it is not given: called a moment too
+// early, against a store that had not loaded yet, it would delete every
+// attachment the user has. Soft-deleted rows count as reachable — their file
+// has to still be there when someone restores them from the bin.
+export async function sweepOrphanedBlobs() {
+  const rows = [...read(EXP_KEY), ...read(INC_KEY), ...read(DOC_KEY)]
+  return pruneBlobs(rows.flatMap((r) => [r?.receipt_url, r?.file_url]).filter(Boolean))
 }
 
 // ── Income ─────────────────────────────────────────────────────────

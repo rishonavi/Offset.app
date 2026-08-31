@@ -184,7 +184,7 @@ export const CONDITIONS = {
 // looks like one here.
 const decodeEntities = (s) =>
   String(s).replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, body) => {
-    if (body[0] !== '#') return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", tab: '\t', newline: '\n' }[body.toLowerCase()] ?? m
+    if (body[0] !== '#') return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", tab: '\t', newline: '\n', colon: ':', sol: '/', semi: ';', lpar: '(', rpar: ')' }[body.toLowerCase()] ?? m
     const code = body[1] === 'x' || body[1] === 'X' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10)
     return Number.isFinite(code) ? String.fromCodePoint(code) : m
   })
@@ -196,9 +196,19 @@ const decodeEntities = (s) =>
 // elements that would make SVG executable are stripped above.
 const DANGEROUS_URL = /^\s*(javascript|vbscript)\s*:/i
 const DOCUMENT_DATA_URL = /^\s*data\s*:(?!image\/)/i
+// The named-entity table above is an allowlist, and an allowlist of HTML5
+// entities is a list you will always be one short of: `&colon;` is real, was
+// missing, and `javascript&colon;alert(1)` is what a browser reads as
+// `javascript:alert(1)`. Rather than chase the full table, the URL is judged
+// twice — once as it decodes, and once assuming every entity still standing is
+// the separator. Being wrong about which entity it was no longer matters.
+const asWorstCase = (s) => s.replace(/&[a-z][a-z0-9]*;?/gi, ':')
 const unsafeUrl = (value) => {
-  const url = decodeEntities(value).replace(/[\u0000-\u0020]/g, '')
-  return DANGEROUS_URL.test(url) || DOCUMENT_DATA_URL.test(url)
+  const decoded = decodeEntities(value)
+  return [decoded, asWorstCase(decoded)].some((form) => {
+    const url = form.replace(/[\u0000-\u0020]/g, '')
+    return DANGEROUS_URL.test(url) || DOCUMENT_DATA_URL.test(url)
+  })
 }
 
 // An invoice layout is a document: text, tables, styling, images. None of the
@@ -214,23 +224,53 @@ const EXECUTABLE_OPEN_TAGS = /<\/?(script|iframe|object|embed|applet|frame|frame
 // ledger and the session token out of localStorage. That frame is sandboxed
 // without allow-scripts, which is the control that actually holds; this pass is
 // the second layer, and it is deliberately blunt about what it removes.
+const URL_ATTRS = new Set(['href', 'src', 'data', 'action', 'formaction', 'poster', 'background'])
+
+// A tag, with its attribute list captured whole — quoted runs are consumed as
+// units so a `>` inside `title="a > b"` does not end the tag early.
+const TAG = /<([a-z][\w:-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/gi
+// Attribute names, and values quoted three ways.
+const ATTR = /([a-z_:][-\w:.]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]*)))?/gi
+
+// Attributes are read one at a time rather than matched with a pattern over the
+// whole tag, because the two questions "is this a separator?" and "is this part
+// of a value?" have the same answer only if you are tracking quotes.
+//
+// A regex that treated a solidus as a separator caught `<img/onerror=alert(1)>`
+// — which HTML really does parse as an image with a handler — and also mangled
+// `href="/online=1"`, an ordinary link, into nothing. Reading the attributes
+// makes both cases obvious instead of trading one for the other.
+function cleanAttributes(whole, name, attrs) {
+  if (!attrs.trim()) return whole
+  const selfClosing = /\/\s*$/.test(attrs)
+  const kept = []
+  let dropped = 0
+  ATTR.lastIndex = 0
+  let m
+  while ((m = ATTR.exec(attrs))) {
+    if (!m[0].trim()) { ATTR.lastIndex += 1; continue }
+    const attr = m[1].toLowerCase()
+    const value = m[2] ?? m[3] ?? m[4] ?? ''
+    // An inline handler is a script with a shorter name.
+    if (/^on[a-z]+$/.test(attr)) { dropped += 1; continue }
+    // srcdoc carries an entire document inside an attribute.
+    if (attr === 'srcdoc') { dropped += 1; continue }
+    if (URL_ATTRS.has(attr) && unsafeUrl(value)) { dropped += 1; continue }
+    kept.push(m[0].trim())
+  }
+  // Nothing was removed, so hand back exactly what came in. A sanitiser that
+  // rewrites every tag it inspects turns `<br/>` into `<br />` throughout
+  // someone's letterhead for no reason, and makes its own diff impossible to
+  // read the day it does remove something.
+  if (!dropped) return whole
+  return `<${name}${kept.length ? ' ' + kept.join(' ') : ''}${selfClosing ? ' /' : ''}>`
+}
+
 export function sanitiseTemplate(html) {
   return String(html)
     .replace(EXECUTABLE_ELEMENTS, '')
     .replace(EXECUTABLE_OPEN_TAGS, '')
-    // Event handlers, quoted three ways.
-    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, '')
-    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
-    // Anything that carries a nested document, wherever it was smuggled.
-    .replace(/\ssrcdoc\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    // URL-bearing attributes are judged on what they decode to, not on how they
-    // are spelled.
-    .replace(/\s(href|src|data|action|formaction|poster|background)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
-      (match, attr, value) => {
-        const raw = /^["']/.test(value) ? value.slice(1, -1) : value
-        return unsafeUrl(raw) ? '' : match
-      })
+    .replace(TAG, cleanAttributes)
     .replace(/javascript:/gi, '')
 }
 
