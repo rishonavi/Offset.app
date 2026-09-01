@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { DEFAULT_ACCENT, accentById, applyAccent } from '../lib/appearance'
+import { DEFAULT_ACCENT, DEFAULT_TONE, accentById, toneById, applyAppearance } from '../lib/appearance'
 
 const ThemeContext = createContext(null)
 
@@ -47,7 +47,10 @@ export function ThemeProvider({ children }) {
     }
     return read('pl_theme', 'light')
   })
-  const [accent, setAccentState] = useState(() => accentById(read('pl_accent', DEFAULT_ACCENT)).id)
+  // An accent is a preset id or a hue somebody chose, kept as written. Passing
+  // it through accentById would turn every custom hue back into gold.
+  const [accent, setAccentState] = useState(() => read('pl_accent', DEFAULT_ACCENT))
+  const [tone, setToneState] = useState(() => toneById(read('pl_tone', DEFAULT_TONE)).id)
   const [avatar, setAvatarState] = useState(readAvatar)
 
   useEffect(() => {
@@ -56,11 +59,13 @@ export function ThemeProvider({ children }) {
   }, [theme])
 
   useEffect(() => {
-    applyAccent(accent)
-    // Gold is what the stylesheet already says, so storing it would only make a
-    // default look like a decision. Removing the key means "no choice made".
+    applyAppearance({ accent, tone })
+    // The defaults are what the stylesheet already says, so storing them would
+    // only make a default look like a decision. Removing the key means "no
+    // choice made".
     save('pl_accent', accent === DEFAULT_ACCENT ? null : accent)
-  }, [accent])
+    save('pl_tone', tone === DEFAULT_TONE ? null : tone)
+  }, [accent, tone])
 
   useEffect(() => {
     save('pl_avatar', Object.keys(avatar).length ? JSON.stringify(avatar) : null)
@@ -71,14 +76,16 @@ export function ThemeProvider({ children }) {
       theme,
       toggle: () => setTheme((t) => (t === 'dark' ? 'light' : 'dark')),
       accent,
-      setAccent: (id) => setAccentState(accentById(id).id),
+      setAccent: (value) => setAccentState(String(value)),
+      tone,
+      setTone: (id) => setToneState(toneById(id).id),
       avatar,
       // Merging rather than replacing, so setting a name does not silently drop
       // the symbol someone picked a minute earlier.
       setAvatar: (patch) => setAvatarState((a) => ({ ...a, ...patch })),
       resetAvatar: () => setAvatarState({}),
     }),
-    [theme, accent, avatar],
+    [theme, accent, tone, avatar],
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>

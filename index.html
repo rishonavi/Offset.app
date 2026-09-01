@@ -30,15 +30,29 @@
         if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark');
         }
+        // Only the page ground needs to be right before paint — the app is a
+        // blank div until React mounts, so this is the one colour anyone can
+        // see in that gap. Its lightness and chroma are the ramp's; only the
+        // hue and the chroma multiplier come from the chosen tone.
         var hues = { gold: 82.35, copper: 42, rose: 15, violet: 310, indigo: 262, emerald: 155 };
-        var h = hues[localStorage.getItem('pl_accent')];
-        if (h) {
-          var s = document.documentElement.style;
+        var tones = { navy: [260, 1], slate: [250, 0.55], graphite: [260, 0.12],
+                      forest: [158, 0.95], plum: [320, 0.85], clay: [40, 0.9] };
+        var a = localStorage.getItem('pl_accent');
+        var h = a && hues[a] !== undefined ? hues[a] : (a && !isNaN(Number(a)) ? Number(a) : null);
+        var s = document.documentElement.style;
+        if (h !== null) {
           s.setProperty('--color-gold', 'oklch(0.7245 0.0998 ' + h + ')');
           s.setProperty('--color-gold-dark', 'oklch(0.7665 0.1387 ' + h + ')');
           s.setProperty('--color-brand', 'oklch(0.7245 0.0998 ' + h + ')');
           s.setProperty('--color-brand-dark', 'oklch(0.662 0.1071 ' + h + ')');
           s.setProperty('--color-brand-light', 'oklch(0.9533 0.0184 ' + h + ')');
+        }
+        var t = tones[localStorage.getItem('pl_tone')];
+        if (t) {
+          var isDark = document.documentElement.classList.contains('dark');
+          var lc = isDark ? [0.1686, 0.0322] : [0.9767, 0.0026];
+          s.setProperty('--color-surface-page',
+            'oklch(' + lc[0] + ' ' + (lc[1] * t[1]).toFixed(4) + ' ' + t[0] + ')');
         }
       } catch (e) {}
     </script>

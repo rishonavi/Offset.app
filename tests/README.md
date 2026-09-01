@@ -18,7 +18,7 @@ for Vite's resolver.
 | Suite | Assertions | Covers |
 |---|---|---|
 | `apiguard.test.mjs` | 25 | what the endpoints refuse, and the rate ceiling |
-| `appearance.test.mjs` | 47 | accents, avatars, and the two places that must agree |
+| `appearance.test.mjs` | 97 | accents, tones, avatars, and the two places that must agree |
 | `assettypes.test.mjs` | 56 | which fields an asset type actually has |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
@@ -38,7 +38,7 @@ for Vite's resolver.
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 65 | corporate storage layer |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,164** | |
+| | **1,214** | |
 
 ## Browser — `tests/browser/`
 
@@ -54,7 +54,7 @@ node tests/browser/rtlui.mjs
 |---|---|---|
 | `assetformui.mjs` | 37 | the asset form showing only the fields its type has |
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
-| `appearanceui.mjs` | 32 | choosing an accent and an avatar; every accent still readable |
+| `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
@@ -74,7 +74,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **554** | |
+| | **575** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

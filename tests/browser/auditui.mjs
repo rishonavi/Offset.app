@@ -71,6 +71,10 @@ for (const theme of ['light', 'dark']) {
       for (const el of document.querySelectorAll('#main-content *')) {
         const cs = getComputedStyle(el)
         if (el.getBoundingClientRect().width === 0) continue
+        // A swatch is a picture of a colour, not a surface painted in it. The
+        // tone chips show the light ground beside the dark one on purpose, so
+        // you can see what a tone does to both themes without switching.
+        if (el.closest('[data-preview]')) continue
         // Every border is recorded in both themes; which of them is a defect is
         // decided afterwards, because a colour on its own cannot say. A light
         // border on a dark ground is correct when it was chosen for the dark

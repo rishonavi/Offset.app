@@ -1,7 +1,11 @@
 // What someone can change about how Offset looks, and the two places that have
 // to agree about it.
 import { readFileSync } from 'node:fs'
-import { ACCENTS, DEFAULT_ACCENT, accentById, accentVars, initialsFrom, AVATAR_SYMBOLS } from '../../src/lib/appearance.js'
+import {
+  ACCENTS, DEFAULT_ACCENT, accentById, accentVars, initialsFrom, AVATAR_SYMBOLS,
+  TONES, DEFAULT_TONE, toneById, schemeVars, chromeVars, schemeStyle, hueOfHex, accentHueOf,
+  LIGHT_UNTINTED,
+} from '../../src/lib/appearance.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
@@ -67,6 +71,94 @@ if (inline) {
   // The shades are duplicated too, so they are checked the same way.
   for (const [token, shade] of [['--color-gold', '0.7245 0.0998'], ['--color-gold-dark', '0.7665 0.1387'], ['--color-brand-light', '0.9533 0.0184']]) {
     ok(`${token}'s shade matches`, html.includes(`'${token}', 'oklch(${shade} '`), shade)
+  }
+}
+
+console.log('\n── THE BASE TONES ──')
+ok('there are few enough to choose from at a glance', TONES.length >= 3 && TONES.length <= 8, `${TONES.length}`)
+ok('each has an id, a name, a hue and a chroma', TONES.every((t) => t.id && t.name && typeof t.hue === 'number' && typeof t.chroma === 'number'))
+ok('no two share an id', new Set(TONES.map((t) => t.id)).size === TONES.length)
+ok('every hue is a real angle', TONES.every((t) => t.hue >= 0 && t.hue < 360))
+// A chroma above 1 would push the ramp past the colour it was measured at, and
+// zero would make every tone identical.
+ok('every chroma is a fraction of the original', TONES.every((t) => t.chroma > 0 && t.chroma <= 1))
+ok('the default is one of them', TONES.some((t) => t.id === DEFAULT_TONE))
+ok('an unknown tone falls back rather than breaking', toneById('mauve').id === DEFAULT_TONE)
+ok('and so does nothing at all', toneById(undefined).id === DEFAULT_TONE)
+
+console.log('\n── A SCHEME SETS BOTH HALVES OF EVERY TOKEN ──')
+// The border-subtle bug in one line: a token set for one theme and not the
+// other is invisible until somebody switches.
+const lightVars = schemeVars({ tone: 'forest', accentHue: 200, dark: false })
+const darkVars = schemeVars({ tone: 'forest', accentHue: 200, dark: true })
+ok('the light half sets tokens', Object.keys(lightVars).length > 10, `${Object.keys(lightVars).length}`)
+ok('the dark half sets tokens', Object.keys(darkVars).length > 10, `${Object.keys(darkVars).length}`)
+const onlyDark = Object.keys(darkVars).filter((k) => !(k in lightVars))
+const onlyLight = Object.keys(lightVars).filter((k) => !(k in darkVars))
+ok('the light half lacks nothing the dark half has, except by decision',
+  onlyDark.join() === LIGHT_UNTINTED.map((n) => `--color-${n}`).join(), onlyDark.join(', '))
+ok('and the dark half lacks nothing at all', onlyLight.length === 0, onlyLight.join(', '))
+ok('every value is a colour', Object.values({ ...lightVars, ...darkVars }).every((v) => v.startsWith('oklch(')))
+
+console.log('\n── HUE MOVES, LIGHTNESS DOES NOT ──')
+// The same argument the accents rest on, for the other half of the interface.
+const navyDark = schemeVars({ tone: 'navy', accentHue: 82.35, dark: true })
+for (const t of TONES) {
+  const v = schemeVars({ tone: t.id, accentHue: 82.35, dark: true })
+  ok(`${t.name} keeps every lightness`, Object.keys(navyDark).every((k) => lightnessOf(v[k]) === lightnessOf(navyDark[k])))
+}
+ok('and the tones are not all the same colour',
+  new Set(TONES.map((t) => schemeVars({ tone: t.id, dark: true })['--color-surface-page'])).size === TONES.length)
+
+console.log('\n── THE CHROME COMES WITH IT ──')
+// Without this the sidebar stayed navy while every surface around it changed.
+ok('navy follows the tone', chromeVars('forest')['--color-navy'] !== chromeVars('navy')['--color-navy'])
+ok('and so does its darker shade', chromeVars('forest')['--color-navy-dark'] !== chromeVars('navy')['--color-navy-dark'])
+ok('at the same lightness', lightnessOf(chromeVars('forest')['--color-navy']) === lightnessOf(chromeVars('navy')['--color-navy']))
+
+console.log('\n── A COLOUR SOMEBODY PICKED ──')
+ok('a teal gives a teal hue', Math.abs(hueOfHex('#0d9488') - 184.7) < 1, `${hueOfHex('#0d9488')}`)
+ok('a red gives a red hue', hueOfHex('#ff0000') > 25 && hueOfHex('#ff0000') < 35, `${hueOfHex('#ff0000')}`)
+ok('the leading hash is optional', hueOfHex('0d9488') !== null)
+// atan2(0, 0) is 0, which would silently turn every grey into red.
+ok('a grey has no hue to take', hueOfHex('#808080') === null)
+ok('white has none either', hueOfHex('#ffffff') === null)
+ok('black has none either', hueOfHex('#000000') === null)
+ok('nonsense gives nothing', hueOfHex('nope') === null && hueOfHex('') === null && hueOfHex(null) === null)
+ok('a short hex is refused rather than guessed', hueOfHex('#fff') === null)
+
+console.log('\n── AN ACCENT IS A NAME OR A HUE ──')
+ok('a preset resolves by name', accentHueOf('gold') === accentById('gold').hue)
+ok('a number is taken as a hue', accentHueOf('197') === 197)
+ok('and so is a real number', accentHueOf(262) === 262)
+ok('a hue past the circle wraps', accentHueOf(400) === 40)
+ok('a negative hue wraps too', accentHueOf(-20) === 340)
+// Otherwise an unrecognised value would land on hue 0 rather than the default.
+ok('an unknown name falls back to the default accent', accentHueOf('chartreuse') === accentById(DEFAULT_ACCENT).hue)
+ok('so does an empty string', accentHueOf('') === accentById(DEFAULT_ACCENT).hue)
+
+console.log('\n── THE STYLESHEET IT WRITES ──')
+const css = schemeStyle({ accent: '197', tone: 'plum' })
+ok('it has a light block', css.includes(':root{'))
+ok('it has a dark block', css.includes('.dark{'))
+ok('the accent reaches the brand tokens', css.includes('--color-gold:oklch(0.7245 0.0998 197)'))
+ok('and nothing is left undefined', !/:\s*(undefined|NaN)/.test(css), css.slice(0, 120))
+
+console.log('\n── THE PRE-PAINT SCRIPT KNOWS THE SAME TONES ──')
+// Same drift risk as the hue table above: index.html carries its own copy so
+// the ground is right before the app loads, and a copy can fall behind.
+const tonesInline = html.match(/var tones = \{([\s\S]*?)\};/)
+ok('the script still declares its tones', !!tonesInline)
+if (tonesInline) {
+  const declared = Object.fromEntries(
+    [...tonesInline[1].matchAll(/(\w+):\s*\[([\d.]+),\s*([\d.]+)\]/g)].map((m) => [m[1], [Number(m[2]), Number(m[3])]]),
+  )
+  ok('it lists exactly the tones on offer',
+    Object.keys(declared).sort().join() === TONES.map((t) => t.id).sort().join(),
+    `${Object.keys(declared).sort().join()} vs ${TONES.map((t) => t.id).sort().join()}`)
+  for (const t of TONES) {
+    ok(`${t.name} matches`, declared[t.id] && declared[t.id][0] === t.hue && declared[t.id][1] === t.chroma,
+      JSON.stringify(declared[t.id]))
   }
 }
 

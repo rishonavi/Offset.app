@@ -1,7 +1,7 @@
 // Choosing a colour and an avatar, and whether the app is still readable after.
 import { chromium } from './_playwright.mjs'
 import { installColour, backdrops } from './_colour.mjs'
-import { ACCENTS } from '../../src/lib/appearance.js'
+import { ACCENTS, TONES } from '../../src/lib/appearance.js'
 
 const B = process.env.OFFSET_TEST_URL || 'http://localhost:4188'
 const b = await chromium.launch({ args: ['--no-sandbox', '--no-proxy-server'] })
@@ -182,6 +182,87 @@ for (const theme of ['light', 'dark']) {
       return r < s.need ? [`${s.name} ${r.toFixed(2)}:1 needs ${s.need}`] : []
     }), { spots, bgs })
     ok(`${theme} · ${a.name} stays readable`, bad.length === 0 && spots.length > 0, bad.join(' · ') || 'nothing measured')
+    await ctx.close()
+  }
+}
+
+console.log('\n── CHOOSING A BASE TONE ──')
+{
+  const { ctx, p } = await open()
+  const ground = () => p.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  const before = await ground()
+  await p.locator('button[title="Forest"]').first().click()
+  await p.waitForTimeout(300)
+  ok('the ground changes', (await ground()) !== before, await ground())
+  // The sidebar is `navy`, which is not a surface token — it stayed put while
+  // everything around it moved until the chrome was brought into the scheme.
+  const chrome = await p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-navy').trim())
+  ok('and so does the chrome', chrome.includes('158'), chrome)
+  ok('the choice is remembered', (await p.evaluate(() => localStorage.getItem('pl_tone'))) === 'forest')
+  await p.reload({ waitUntil: 'networkidle' })
+  await p.waitForTimeout(400)
+  ok('and survives a reload', (await ground()) !== before)
+  await p.locator('button[title="Navy"]').first().click()
+  await p.waitForTimeout(300)
+  ok('going back to navy stores nothing', (await p.evaluate(() => localStorage.getItem('pl_tone'))) === null)
+  await ctx.close()
+}
+
+console.log('\n── AND A COLOUR OF YOUR OWN ──')
+{
+  const { ctx, p } = await open()
+  ok('the picker is there for anyone who wants to browse', (await p.locator('input[type="color"]').count()) === 1)
+  // Driven through the hex box: it is the same code path as the picker, and it
+  // is what someone with a brand colour actually reaches for.
+  await p.locator('input[aria-label="Accent colour hex"]').fill('0d9488')
+  await p.waitForTimeout(400)
+  const v = await accentVar(p)
+  ok('a picked colour becomes the accent', v.includes('184'), v)
+  ok('stored as its hue, not as a name',
+    /^[\d.]+$/.test(await p.evaluate(() => localStorage.getItem('pl_accent') || '')),
+    String(await p.evaluate(() => localStorage.getItem('pl_accent'))))
+  ok('and it says what it took', /hue of your colour/i.test(await p.locator('#main-content').innerText()))
+  await ctx.close()
+}
+
+console.log('\n── READABLE IN EVERY TONE TOO ──')
+// The tones rest on the same argument as the accents — hue moves, lightness
+// does not — so the same measurement has to back it up.
+for (const theme of ['light', 'dark']) {
+  for (const t of TONES) {
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' })
+    const p = await ctx.newPage()
+    p.setDefaultTimeout(30000)
+    await p.route('**/fonts.g**/**', (r) => r.abort())
+    await p.addInitScript(([tone, th]) => {
+      localStorage.setItem('pl_tone', tone)
+      localStorage.setItem('pl_theme', th)
+    }, [t.id, theme])
+    await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+    await p.waitForTimeout(500)
+    await p.evaluate(installColour)
+    const spots = await p.evaluate(() =>
+      [['.field-label', 'a field label'], ['#main-content h1', 'the page heading'],
+       ['#main-content .btn-primary', 'the primary button']]
+        .flatMap(([sel, name]) => {
+          const el = document.querySelector(sel)
+          if (!el) return []
+          const r = el.getBoundingClientRect()
+          if (r.width < 1 || r.height < 1) return []
+          const cs = getComputedStyle(el)
+          const px = parseFloat(cs.fontSize)
+          return [{ name, colour: cs.color,
+            point: [r.left + scrollX + r.width / 2, r.top + scrollY + r.height / 2],
+            need: px >= 24 || (px >= 18.66 && Number(cs.fontWeight) >= 700) ? 3 : 4.5 }]
+        }))
+    const bgs = await backdrops(p, spots.map((x) => x.point))
+    const bad = await p.evaluate(({ spots, bgs }) => spots.flatMap((x, i) => {
+      const bg = bgs[i]
+      const fg = window.__colour.srgb([`rgb(${bg.join(',')})`, x.colour])
+      const r = window.__colour.ratio(fg, bg)
+      return r < x.need ? [`${x.name} ${r.toFixed(2)}:1`] : []
+    }), { spots, bgs })
+    ok(`${theme} · ${t.name} stays readable`, bad.length === 0 && spots.length > 0, bad.join(' · ') || 'nothing measured')
     await ctx.close()
   }
 }
