@@ -14,6 +14,12 @@ export default {
   'company.switch': 'কোম্পানি বদলান',
   'company.all': 'সব কোম্পানি',
   'nav.settings': 'সেটিংস',
+  'nav.groupLedger': 'খতিয়ান',
+  'nav.groupHoldings': 'সম্পদ',
+  'nav.groupTools': 'সরঞ্জাম',
+  'nav.groupManage': 'ব্যবস্থাপনা',
+  'nav.waiting_one': '{count}টি এখনও বাকি',
+  'nav.waiting_other': '{count}টি এখনও বাকি',
   'nav.admin': 'প্রশাসন',
 
   'chrome.skipToContent': 'সরাসরি বিষয়বস্তুতে যান',

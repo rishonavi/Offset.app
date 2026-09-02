@@ -18,6 +18,12 @@ export default {
   'company.switch': 'Сменить компанию',
   'company.all': 'Все компании',
   'nav.settings': 'Настройки',
+  'nav.groupLedger': 'Книга',
+  'nav.groupHoldings': 'Активы',
+  'nav.groupTools': 'Инструменты',
+  'nav.groupManage': 'Управление',
+  'nav.waiting_one': '{count} не закрыт',
+  'nav.waiting_other': '{count} не закрыты',
   'nav.admin': 'Администрирование',
 
   'chrome.skipToContent': 'Перейти к содержимому',

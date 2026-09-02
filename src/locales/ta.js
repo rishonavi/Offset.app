@@ -14,6 +14,12 @@ export default {
   'company.switch': 'நிறுவனத்தை மாற்று',
   'company.all': 'அனைத்து நிறுவனங்களும்',
   'nav.settings': 'அமைப்புகள்',
+  'nav.groupLedger': 'கணக்கேடு',
+  'nav.groupHoldings': 'சொத்துகள்',
+  'nav.groupTools': 'கருவிகள்',
+  'nav.groupManage': 'நிர்வாகம்',
+  'nav.waiting_one': '{count} இன்னும் நிலுவையில்',
+  'nav.waiting_other': '{count} இன்னும் நிலுவையில்',
   'nav.admin': 'நிர்வாகம்',
 
   'chrome.skipToContent': 'நேரடியாக உள்ளடக்கத்திற்குச் செல்',

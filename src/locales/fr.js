@@ -17,6 +17,12 @@ export default {
   'company.switch': 'Changer de société',
   'company.all': 'Toutes les sociétés',
   'nav.settings': 'Paramètres',
+  'nav.groupLedger': 'Registre',
+  'nav.groupHoldings': 'Avoirs',
+  'nav.groupTools': 'Outils',
+  'nav.groupManage': 'Gestion',
+  'nav.waiting_one': '{count} en attente',
+  'nav.waiting_other': '{count} en attente',
   'nav.admin': 'Administration',
 
   'chrome.skipToContent': 'Aller au contenu',

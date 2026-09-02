@@ -18,6 +18,12 @@ export default {
   'company.switch': 'Cambiar de empresa',
   'company.all': 'Todas las empresas',
   'nav.settings': 'Ajustes',
+  'nav.groupLedger': 'Libro',
+  'nav.groupHoldings': 'Patrimonio',
+  'nav.groupTools': 'Herramientas',
+  'nav.groupManage': 'Gestión',
+  'nav.waiting_one': '{count} pendiente',
+  'nav.waiting_other': '{count} pendientes',
   'nav.admin': 'Administración',
 
   'chrome.skipToContent': 'Saltar al contenido',

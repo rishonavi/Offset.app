@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -29,6 +29,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { useTheme, useAppearance } from '../context/ThemeContext'
 import { useData } from '../context/DataContext'
+import { isSettled } from '../lib/payments'
 import { useWorkspace } from '../context/WorkspaceContext'
 import { useConfig } from '../context/ConfigContext'
 import { useReport } from '../context/ReportContext'
@@ -41,47 +42,103 @@ import ShortcutsHelp from './ShortcutsHelp'
 import { checkIsAdmin } from '../lib/admin'
 import { Spinner, Avatar } from './ui'
 
+// Eleven destinations in one flat column is eleven things to read before
+// choosing one, and it gave equal weight to the dashboard and to the bin. The
+// groups are the same four questions the app is actually about — where do I
+// stand, what moved, what do I own, what do I do with it — and the last group
+// is the one nobody visits on purpose.
 const NAV = [
-  { to: '/', key: 'nav.dashboard', icon: LayoutDashboard, end: true },
-  { to: '/personal', key: 'nav.personal', icon: PiggyBank },
-  { to: '/properties', key: 'nav.assets', icon: Boxes },
-  { to: '/income', key: 'nav.income', icon: Banknote },
-  { to: '/expenses', key: 'nav.expenses', icon: Receipt },
-  { to: '/bills', key: 'nav.bills', icon: FileText },
-  { to: '/import', key: 'nav.import', icon: MailPlus },
-  { to: '/invoices', key: 'nav.invoices', icon: FileSpreadsheet },
-  { to: '/reports', key: 'nav.reports', icon: PieChart },
-  { to: '/bin', key: 'nav.bin', icon: Trash2 },
-  { to: '/settings', key: 'nav.settings', icon: SettingsIcon },
+  { group: null, items: [
+    { to: '/', key: 'nav.dashboard', icon: LayoutDashboard, end: true },
+  ] },
+  { group: 'nav.groupLedger', items: [
+    { to: '/income', key: 'nav.income', icon: Banknote, count: 'income' },
+    { to: '/expenses', key: 'nav.expenses', icon: Receipt, count: 'expenses' },
+    { to: '/bills', key: 'nav.bills', icon: FileText },
+    { to: '/invoices', key: 'nav.invoices', icon: FileSpreadsheet },
+  ] },
+  { group: 'nav.groupHoldings', items: [
+    { to: '/properties', key: 'nav.assets', icon: Boxes },
+    { to: '/personal', key: 'nav.personal', icon: PiggyBank },
+  ] },
+  { group: 'nav.groupTools', items: [
+    { to: '/import', key: 'nav.import', icon: MailPlus },
+    { to: '/reports', key: 'nav.reports', icon: PieChart },
+  ] },
+  { group: 'nav.groupManage', items: [
+    { to: '/bin', key: 'nav.bin', icon: Trash2 },
+    { to: '/settings', key: 'nav.settings', icon: SettingsIcon },
+  ] },
 ]
 
 // Only shown once a company exists — a personal install never sees it.
 const CORPORATE_NAV = { to: '/companies', key: 'nav.companies', icon: Building2 }
+const ADMIN_NAV = { to: '/admin', key: 'nav.admin', icon: ShieldCheck }
+
+// What is waiting for you, per destination. A sidebar that only links is a list
+// of places; one that counts is a place to look first. Only unsettled entries
+// count — a paid expense is finished business and putting it in the badge would
+// make the number mean "how much have you done", which nobody needs.
+function useNavCounts() {
+  const { expenses, income } = useData()
+  return useMemo(() => ({
+    expenses: expenses.filter((e) => !isSettled(e, 'expense')).length,
+    income: income.filter((e) => !isSettled(e, 'income')).length,
+  }), [expenses, income])
+}
 
 function NavItems({ onNavigate, isAdmin }) {
   const t = useT()
   const { enabled: corporate } = useEntity()
-  const base = corporate ? [...NAV.slice(0, 2), CORPORATE_NAV, ...NAV.slice(2)] : NAV
-  const items = isAdmin ? [...base, { to: '/admin', key: 'nav.admin', icon: ShieldCheck }] : base
+  const counts = useNavCounts()
+  const groups = NAV.map((g) => {
+    if (corporate && g.group === 'nav.groupHoldings') return { ...g, items: [...g.items, CORPORATE_NAV] }
+    if (isAdmin && g.group === 'nav.groupManage') return { ...g, items: [ADMIN_NAV, ...g.items] }
+    return g
+  })
   return (
-    <nav className="flex flex-col gap-1">
-      {items.map(({ to, key, icon: Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            `flex items-center gap-3 border-s-2 px-3 py-2.5 text-[0.78rem] font-medium uppercase tracking-[1px] transition ${
-              isActive
-                ? 'border-gold bg-gold/15 text-gold'
-                : 'border-transparent text-white/65 hover:bg-white/5 hover:text-gold'
-            }`
-          }
-        >
-          <Icon size={17} />
-          {t(key)}
-        </NavLink>
+    <nav className="flex flex-col gap-5">
+      {groups.map((g, i) => (
+        <div key={g.group || 'top'} className="flex flex-col gap-0.5">
+          {g.group && (
+            <p className="mb-1 px-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-white/35">
+              {t(g.group)}
+            </p>
+          )}
+          {g.items.map(({ to, key, icon: Icon, end, count }) => {
+            const waiting = count ? counts[count] : 0
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  `group flex min-h-11 items-center gap-3 rounded-lg border-s-2 px-3 text-[0.83rem] transition ${
+                    isActive
+                      ? 'border-gold bg-gold/15 font-semibold text-gold'
+                      : 'border-transparent font-medium text-white/70 hover:bg-white/5 hover:text-gold'
+                  }`
+                }
+              >
+                <Icon size={17} className="shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{t(key)}</span>
+                {waiting > 0 && (
+                  <span
+                    className="shrink-0 rounded-full bg-gold/20 px-1.5 py-0.5 text-[0.65rem] font-semibold tabular text-gold"
+                    title={t('nav.waiting', { count: waiting })}
+                  >
+                    {waiting > 99 ? '99+' : waiting}
+                    <span className="sr-only"> {t('nav.waiting', { count: waiting })}</span>
+                  </span>
+                )}
+              </NavLink>
+            )
+          })}
+          {/* A hairline between groups rather than a heavier divider: it should
+              separate without being another thing on screen. */}
+          {i < groups.length - 1 && <span aria-hidden="true" className="mt-4 h-px bg-gradient-to-r from-gold/25 to-transparent" />}
+        </div>
       ))}
     </nav>
   )
@@ -90,11 +147,15 @@ function NavItems({ onNavigate, isAdmin }) {
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-1">
-      <div className="grid h-9 w-9 place-items-center bg-gold text-navy">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gold text-navy shadow-[0_2px_10px_-2px_var(--color-gold)]">
         <Wallet size={18} />
       </div>
       <div className="leading-tight">
-        <div className="font-serif text-base font-bold tracking-wide text-white">Offset</div>
+        <div className="font-serif text-[1.05rem] font-bold tracking-wide text-white">Offset</div>
+        {/* The same gold rule that sits under every page heading. It is a small
+            thing, but it is what ties the mark to the pages rather than leaving
+            it a logo parked above them. */}
+        <span aria-hidden="true" className="mt-1 block h-px w-8 bg-gradient-to-r from-gold to-transparent" />
       </div>
     </div>
   )
@@ -260,7 +321,12 @@ export default function Layout() {
           <span className="flex-1 text-start">{t('chrome.search')}</span>
           <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem]">⌘K</kbd>
         </button>
-        <div className="mt-6 flex-1">
+        {/* min-h-0 as well as flex-1: without it a flex child refuses to shrink
+            below its content, so the column grew past the screen and took the
+            user footer with it instead of scrolling. Grouping the nav made it
+            tall enough to matter, but the bug was always there waiting for a
+            short screen or one more destination. */}
+        <div className="mt-6 min-h-0 flex-1 overflow-y-auto pe-1">
           <NavItems isAdmin={isAdmin} />
           <ReportLink onClick={() => openReport({})} />
         </div>
@@ -307,7 +373,7 @@ export default function Layout() {
             <CompanySwitcher />
             <WorkspaceSwitcher />
             {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
-            <div className="mt-6 flex-1">
+            <div className="mt-6 min-h-0 flex-1 overflow-y-auto pe-1">
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
               <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
             </div>

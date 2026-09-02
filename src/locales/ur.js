@@ -14,6 +14,12 @@ export default {
   'company.switch': 'کمپنی تبدیل کریں',
   'company.all': 'تمام کمپنیاں',
   'nav.settings': 'ترتیبات',
+  'nav.groupLedger': 'کھاتہ',
+  'nav.groupHoldings': 'ملکیت',
+  'nav.groupTools': 'اوزار',
+  'nav.groupManage': 'انتظام',
+  'nav.waiting_one': '{count} اب بھی باقی',
+  'nav.waiting_other': '{count} اب بھی باقی',
   'nav.admin': 'انتظامیہ',
 
   'chrome.skipToContent': 'مواد پر جائیں',

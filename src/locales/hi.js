@@ -15,6 +15,12 @@ export default {
   'company.switch': 'कंपनी बदलें',
   'company.all': 'सभी कंपनियाँ',
   'nav.settings': 'सेटिंग्स',
+  'nav.groupLedger': 'बहीखाता',
+  'nav.groupHoldings': 'संपत्तियाँ',
+  'nav.groupTools': 'उपकरण',
+  'nav.groupManage': 'प्रबंधन',
+  'nav.waiting_one': '{count} अब भी बकाया',
+  'nav.waiting_other': '{count} अब भी बकाया',
   'nav.admin': 'प्रशासन',
 
   'chrome.skipToContent': 'सीधे सामग्री पर जाएँ',

@@ -19,6 +19,12 @@ export default {
   'company.switch': 'تبديل الشركة',
   'company.all': 'كل الشركات',
   'nav.settings': 'الإعدادات',
+  'nav.groupLedger': 'الدفتر',
+  'nav.groupHoldings': 'الممتلكات',
+  'nav.groupTools': 'الأدوات',
+  'nav.groupManage': 'الإدارة',
+  'nav.waiting_one': '{count} ما زال مفتوحًا',
+  'nav.waiting_other': '{count} ما زالت مفتوحة',
   'nav.admin': 'الإدارة',
 
   'chrome.skipToContent': 'تخطَّ إلى المحتوى',

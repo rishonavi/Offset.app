@@ -14,6 +14,12 @@ export default {
   'company.switch': 'कंपनी बदला',
   'company.all': 'सर्व कंपन्या',
   'nav.settings': 'सेटिंग्ज',
+  'nav.groupLedger': 'खतावणी',
+  'nav.groupHoldings': 'मालमत्ता',
+  'nav.groupTools': 'साधने',
+  'nav.groupManage': 'व्यवस्थापन',
+  'nav.waiting_one': '{count} अजून बाकी',
+  'nav.waiting_other': '{count} अजून बाकी',
   'nav.admin': 'प्रशासन',
 
   'chrome.skipToContent': 'थेट मजकुराकडे जा',

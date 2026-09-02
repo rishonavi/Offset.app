@@ -67,6 +67,7 @@ node tests/browser/rtlui.mjs
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
 | `metalbillui.mjs` | 15 | filling a holding from a purchase bill |
 | `metalsui.mjs` | 27 | metal holdings on screen |
+| `navui.mjs` | 17 | the side bar: grouping, what is waiting, and a short screen |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
 | `reportui.mjs` | 33 | the problem-report flow |
@@ -74,7 +75,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **575** | |
+| | **592** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

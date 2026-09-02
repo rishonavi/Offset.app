@@ -17,6 +17,12 @@ export default {
   'company.switch': '切换公司',
   'company.all': '所有公司',
   'nav.settings': '设置',
+  'nav.groupLedger': '账目',
+  'nav.groupHoldings': '持有',
+  'nav.groupTools': '工具',
+  'nav.groupManage': '管理',
+  'nav.waiting_one': '{count} 项未结',
+  'nav.waiting_other': '{count} 项未结',
   'nav.admin': '管理',
 
   'chrome.skipToContent': '跳到主要内容',

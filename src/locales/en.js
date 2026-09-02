@@ -19,6 +19,12 @@ export default {
   'company.switch': 'Switch company',
   'company.all': 'All companies',
   'nav.settings': 'Settings',
+  'nav.groupLedger': 'Ledger',
+  'nav.groupHoldings': 'Holdings',
+  'nav.groupTools': 'Tools',
+  'nav.groupManage': 'Manage',
+  'nav.waiting_one': '{count} still open',
+  'nav.waiting_other': '{count} still open',
   'nav.admin': 'Admin',
 
   // ── Chrome ──
