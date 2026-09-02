@@ -107,7 +107,7 @@ function ThemeToggle({ className = '' }) {
   return (
     <button
       onClick={toggle}
-      className={`grid h-9 w-9 place-items-center text-white/60 transition hover:bg-white/10 hover:text-gold ${className}`}
+      className={`grid h-11 w-11 place-items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-gold ${className}`}
       title={dark ? t('chrome.switchToLight') : t('chrome.switchToDark')}
       aria-label={t('chrome.toggleTheme')}
     >
@@ -247,7 +247,7 @@ export default function Layout() {
       <div className="noise-overlay" />
 
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 py-5 lg:flex">
+      <aside className="inset-safe ps-safe sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 py-5 lg:flex">
         <Brand />
         <CompanySwitcher />
         <WorkspaceSwitcher />
@@ -268,12 +268,12 @@ export default function Layout() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-navy-dark bg-navy px-4 py-3 lg:hidden">
+      <header className="pt-safe ps-safe sticky top-0 z-30 flex items-center justify-between border-b border-navy-dark bg-navy px-4 py-3 lg:hidden">
         <Brand />
         <div className="flex items-center gap-1">
           <button
             onClick={() => setCmdOpen(true)}
-            className="grid h-10 w-10 place-items-center text-white/70 hover:text-gold"
+            className="grid h-11 w-11 place-items-center rounded-lg text-white/70 hover:text-gold"
             aria-label={t('chrome.searchLabel')}
           >
             <Search size={20} />
@@ -281,7 +281,7 @@ export default function Layout() {
           <ThemeToggle />
           <button
             onClick={() => setMobileOpen(true)}
-            className="grid h-10 w-10 place-items-center text-white/70 hover:text-gold"
+            className="grid h-11 w-11 place-items-center rounded-lg text-white/70 hover:text-gold"
             aria-label={t('chrome.openMenu')}
           >
             <Menu size={22} />
@@ -293,12 +293,12 @@ export default function Layout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <div className="absolute start-0 top-0 flex h-full w-72 flex-col border-e-2 border-gold bg-navy px-4 py-5 shadow-xl animate-fade-in">
+          <div className="inset-safe absolute start-0 top-0 flex h-full w-72 flex-col border-e-2 border-gold bg-navy px-4 py-5 shadow-xl animate-fade-in">
             <div className="flex items-center justify-between">
               <Brand />
               <button
                 onClick={() => setMobileOpen(false)}
-                className="grid h-9 w-9 place-items-center text-white/60 hover:text-gold"
+                className="grid h-11 w-11 place-items-center rounded-lg text-white/60 hover:text-gold"
                 aria-label={t('chrome.closeMenu')}
               >
                 <X size={20} />
@@ -396,7 +396,7 @@ function UserFooter({ user, isCloud, onSignOut }) {
         {isCloud && (
           <button
             onClick={onSignOut}
-            className="grid h-9 w-9 place-items-center text-white/50 transition hover:bg-red-500/15 hover:text-red-400"
+            className="grid h-11 w-11 place-items-center rounded-lg text-white/50 transition hover:bg-red-500/15 hover:text-red-400"
             title={t('chrome.signOut')}
           >
             <LogOut size={17} />

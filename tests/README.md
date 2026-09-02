@@ -18,7 +18,7 @@ for Vite's resolver.
 | Suite | Assertions | Covers |
 |---|---|---|
 | `apiguard.test.mjs` | 25 | what the endpoints refuse, and the rate ceiling |
-| `appearance.test.mjs` | 97 | accents, tones, avatars, and the two places that must agree |
+| `appearance.test.mjs` | 110 | accents, tones, avatars, and the two places that must agree |
 | `assettypes.test.mjs` | 56 | which fields an asset type actually has |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
@@ -38,7 +38,7 @@ for Vite's resolver.
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 65 | corporate storage layer |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,214** | |
+| | **1,227** | |
 
 ## Browser — `tests/browser/`
 

@@ -108,12 +108,17 @@ console.log('\n── TARGETS BIG ENOUGH TO HIT ──')
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
   await p.waitForTimeout(600)
   // Apple's HIG says 44pt, Material says 48dp. 44 is the floor either way.
+  //
+  // The whole page, not only #main-content. Scoping this to the content is what
+  // let the phone header, the drawer close, the theme toggle and sign-out all
+  // sit at 36-40px: they are chrome, so nothing ever measured them, and the
+  // buttons hardest to hit on a phone were the ones held to no standard.
   const small = await p.evaluate(() =>
-    [...document.querySelectorAll('#main-content button, #main-content input:not([type=hidden]):not([type=file]), #main-content select')]
-      .map((el) => ({ r: el.getBoundingClientRect(), label: (el.innerText || el.type || el.tagName).slice(0, 22) }))
-      .filter((x) => x.r.height > 0 && x.r.height < 44)
+    [...document.querySelectorAll('button, a[role=button], input:not([type=hidden]):not([type=file]), select')]
+      .map((el) => ({ r: el.getBoundingClientRect(), label: (el.getAttribute('aria-label') || el.innerText || el.type || el.tagName).trim().slice(0, 24) }))
+      .filter((x) => x.r.height > 0 && x.r.width > 0 && x.r.height < 44)
       .map((x) => `${x.label} ${Math.round(x.r.height)}px`))
-  ok('every control clears 44px', small.length === 0, small.join(', '))
+  ok('every control clears 44px, chrome included', small.length === 0, small.join(', '))
   await ctx.close()
 }
 

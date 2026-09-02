@@ -4,7 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0A1828" />
+    <!-- Kept in step with the chosen tone by lib/appearance.js; this is the
+         value before any script runs. -->
+    <meta name="theme-color" content="#0d1728" />
 
     <!-- Installable app (PWA) -->
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -47,7 +49,17 @@
           s.setProperty('--color-brand-dark', 'oklch(0.662 0.1071 ' + h + ')');
           s.setProperty('--color-brand-light', 'oklch(0.9533 0.0184 ' + h + ')');
         }
-        var t = tones[localStorage.getItem('pl_tone')];
+        // The status bar on a phone and the title bar of an installed window.
+        // Hardcoded it announced navy while the app was green — the sort of
+        // seam that makes an installed app feel like a web page in a frame.
+        var chrome = { navy: '#0d1728', slate: '#101820', graphite: '#161719',
+                       forest: '#071c11', plum: '#1e1220', clay: '#24120b' };
+        var chosen = localStorage.getItem('pl_tone');
+        if (chrome[chosen]) {
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', chrome[chosen]);
+        }
+        var t = tones[chosen];
         if (t) {
           var isDark = document.documentElement.classList.contains('dark');
           var lc = isDark ? [0.1686, 0.0322] : [0.9767, 0.0026];

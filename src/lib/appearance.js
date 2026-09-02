@@ -191,6 +191,40 @@ export function schemeStyle({ accent = DEFAULT_ACCENT, tone = DEFAULT_TONE } = {
   ].join('')
 }
 
+// OKLCH back to a hex. Needed because <meta name="theme-color"> is read by the
+// operating system rather than by the page's style engine, and an oklch() there
+// is at best unevenly understood — a status bar that silently falls back to
+// white is worse than one that never moved. Out-of-gamut components are
+// clamped, which for these ramps only ever shaves a little chroma.
+export function hexFromOklch(L, C, H) {
+  const h = (H * Math.PI) / 180
+  const a = C * Math.cos(h)
+  const b = C * Math.sin(h)
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+  const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
+  const lin = [
+    +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+  ]
+  return '#' + lin.map((v) => {
+    const srgb = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.abs(v) ** (1 / 2.4) - 0.055
+    const byte = Math.round(Math.min(1, Math.max(0, srgb)) * 255)
+    return byte.toString(16).padStart(2, '0')
+  }).join('')
+}
+
+// What the browser paints around the page: the status bar on a phone, the title
+// bar of an installed window. The app's own chrome is navy — the sidebar on a
+// desktop, the header on a phone — so this follows the tone with it. Left
+// hardcoded it announced navy while the app was green, which is the kind of
+// seam that makes a web app feel like a web page.
+export const chromeColour = (tone = DEFAULT_TONE) => {
+  const t = toneById(tone)
+  return hexFromOklch(CHROME.navy[0], CHROME.navy[1] * t.chroma, t.hue)
+}
+
 export const STYLE_ID = 'offset-scheme'
 
 export function applyAppearance({ accent = DEFAULT_ACCENT, tone = DEFAULT_TONE } = {}) {
@@ -202,6 +236,13 @@ export function applyAppearance({ accent = DEFAULT_ACCENT, tone = DEFAULT_TONE }
     document.head.append(el)
   }
   el.textContent = schemeStyle({ accent, tone })
+
+  // Two of these ship in index.html so the colour is right before any script
+  // runs; this keeps them in step once someone changes the tone.
+  const colour = chromeColour(tone)
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+    meta.setAttribute('content', colour)
+  }
 }
 
 // A short row rather than a grid. Someone wanting a picture of themselves is not

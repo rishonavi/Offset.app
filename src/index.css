@@ -206,6 +206,13 @@ h1, h2, h3 {
   .form-actions {
     @apply sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-light
            bg-white/85 px-5 py-4 backdrop-blur-sm sm:-mx-6 sm:px-6;
+    /* The page declares viewport-fit=cover and the iOS status bar style is
+       black-translucent, which together put the page *under* the notch and the
+       home indicator rather than beside them. Nothing accounted for that, so on
+       an installed iPhone the Save button of every form sat beneath the home
+       indicator — the one control a form exists for, under the one gesture area
+       the system reserves. */
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
   .card-hover {
     @apply transition duration-300 hover:-translate-y-1 hover:border-gold;
@@ -439,6 +446,19 @@ tbody tr:hover {
 .dark .file\:bg-brand-light::file-selector-button { background-color: color-mix(in oklab, var(--color-gold) 15%, transparent); }
 /* Only the `divide-` form of this had an override, so a plain border using it
    stayed a light hairline on the dark theme. */
+
+/* ─── Room for the hardware ──────────────────────────────────────── */
+/* These are zero on every device without a notch or a gesture bar, so they cost
+   nothing where they are not needed. Written as utilities rather than baked
+   into components because which edge matters depends on where a thing sits. */
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.ps-safe { padding-inline-start: env(safe-area-inset-left, 0px); }
+/* A fixed panel has to clear both ends at once. */
+.inset-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
 /* ─── Accessibility ──────────────────────────────────────────────── */
 /* Visible focus ring for keyboard users on interactive, non-field elements.

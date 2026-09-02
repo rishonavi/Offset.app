@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import {
   ACCENTS, DEFAULT_ACCENT, accentById, accentVars, initialsFrom, AVATAR_SYMBOLS,
   TONES, DEFAULT_TONE, toneById, schemeVars, chromeVars, schemeStyle, hueOfHex, accentHueOf,
-  LIGHT_UNTINTED,
+  LIGHT_UNTINTED, chromeColour, hexFromOklch,
 } from '../../src/lib/appearance.js'
 
 let pass = 0, fail = 0
@@ -159,6 +159,34 @@ if (tonesInline) {
   for (const t of TONES) {
     ok(`${t.name} matches`, declared[t.id] && declared[t.id][0] === t.hue && declared[t.id][1] === t.chroma,
       JSON.stringify(declared[t.id]))
+  }
+}
+
+console.log('\n── THE COLOUR THE OPERATING SYSTEM IS TOLD ──')
+ok('the default is a hex, not an oklch', /^#[0-9a-f]{6}$/.test(chromeColour('navy')), chromeColour('navy'))
+ok('and it is dark enough to be chrome', parseInt(chromeColour('navy').slice(1, 3), 16) < 60)
+ok('every tone gives its own', new Set(TONES.map((t) => chromeColour(t.id))).size === TONES.length)
+// A round trip through OKLCH and back must land on the colour it started from,
+// or the status bar and the sidebar drift apart by a shade nobody chose.
+const back = hexFromOklch(0.7245, 0.0998, 82.35)
+ok('a known colour survives the conversion', back.toLowerCase() === '#c5a059', back)
+ok('an out-of-gamut chroma is clamped rather than wrapped',
+  /^#[0-9a-f]{6}$/.test(hexFromOklch(0.5, 0.4, 120)), hexFromOklch(0.5, 0.4, 120))
+
+// index.html carries the same six values so the bar is right before any script
+// runs, and a second copy is a second thing to fall behind.
+const chromeInline = html.match(/var chrome = \{([\s\S]*?)\};/)
+ok('the script still declares the chrome colours', !!chromeInline)
+if (chromeInline) {
+  const declared = Object.fromEntries(
+    [...chromeInline[1].matchAll(/(\w+):\s*'(#[0-9a-f]{6})'/g)].map((m) => [m[1], m[2]]),
+  )
+  ok('it lists exactly the tones on offer',
+    Object.keys(declared).sort().join() === TONES.map((t) => t.id).sort().join(),
+    Object.keys(declared).sort().join())
+  for (const t of TONES) {
+    ok(`${t.name}'s bar colour matches`, declared[t.id] === chromeColour(t.id),
+      `${declared[t.id]} vs ${chromeColour(t.id)}`)
   }
 }
 
