@@ -324,6 +324,13 @@ The three meet in one place. An advance paid to an employee can be recovered in
 a payroll run — matched by name, shown before it is applied, off unless you ask
 for it, and it writes the adjustment that actually closes the advance.
 
+Stock and payroll also reach **Reports**, under *What the company cost*, and the
+year-end PDF with them — so a company's books are one set of numbers rather than
+two. Stock is dated, so opening and closing values over a period are real
+figures. Payroll is not: Offset keeps no record of past runs, so a past month is
+computed from today's salaries, clamped to the months the company existed for,
+and labelled as the projection it is.
+
 Two rules are enforced in the model rather than the UI, because that is where
 they matter: **nobody approves their own entry**, and **an entity always keeps
 at least one owner** so it can never be locked out. `__all__` is a read-only

@@ -15,6 +15,7 @@ import { Card, Button, EmptyState, Badge } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import AskCard from '../components/AskCard'
 import FilterBar from '../components/FilterBar'
+import OperationsSummary, { useOperationsSummary } from '../components/OperationsSummary'
 
 const PREVIEW_LIMIT = 100
 
@@ -29,6 +30,11 @@ export default function Reports() {
   // ReferenceError instead. Nothing here rendered wrong, which is why it
   // survived a review and a full suite — it only failed on the click.
   const baseName = `property-expenses-${new Date().toISOString().slice(0, 10)}`
+
+  // Stock and payroll, when there is a company to have them. Null on a personal
+  // install, and null in the consolidated view, where one number over several
+  // companies would be a number nobody could file.
+  const ops = useOperationsSummary(filters)
 
   const filtered = useMemo(() => applyFilters(expenses, filters), [expenses, filters])
   const total = useMemo(() => sumAmount(filtered), [filtered])
@@ -135,6 +141,62 @@ export default function Reports() {
         footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
       })
     }
+    // The company's own costs, on the same sheet as the property's. Leaving
+    // them off would mean handing an accountant a year-end that is missing the
+    // wages.
+    if (ops) {
+      let y = doc.lastAutoTable.finalY + 10
+      doc.setFontSize(12)
+      doc.setTextColor(20)
+      doc.text(`${ops.entity?.name || 'Company'} — operations`, 14, y)
+      if (ops.itemCount > 0) {
+        autoTable(doc, {
+          startY: y + 4,
+          head: [['Stock', 'Opening', 'Received', 'Used up', 'On hand']],
+          body: [[
+            ops.itemCount === 1 ? '1 item' : `${ops.itemCount} items`,
+            formatCurrency(ops.stock.openingValue),
+            formatCurrency(ops.stock.receivedValue),
+            formatCurrency(ops.stock.consumedValue),
+            formatCurrency(ops.stock.closingValue),
+          ]],
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [10, 24, 40] },
+        })
+        y = doc.lastAutoTable.finalY + 8
+      }
+      if (ops.payroll.months.some((m) => m.headcount > 0)) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Payroll month', 'Staff', 'Gross', 'Statutory', 'Cost to company']],
+          body: ops.payroll.months.map((m) => [
+            m.period,
+            String(m.headcount),
+            formatCurrency(m.gross),
+            formatCurrency(m.statutory.pf + m.statutory.esi + m.statutory.professionalTax),
+            formatCurrency(m.employerCost),
+          ]),
+          foot: [[
+            'Total',
+            String(ops.payroll.headcount),
+            formatCurrency(ops.payroll.gross),
+            formatCurrency(ops.payroll.statutory.pf + ops.payroll.statutory.esi + ops.payroll.statutory.professionalTax),
+            formatCurrency(ops.payroll.employerCost),
+          ]],
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [10, 24, 40] },
+          footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
+        })
+        doc.setFontSize(8)
+        doc.setTextColor(120)
+        doc.text(
+          'Payroll is computed from the people and salaries on the payroll today, not from a record of past runs.',
+          14,
+          doc.lastAutoTable.finalY + 6,
+        )
+      }
+    }
+
     doc.save(`${baseName}-year-end.pdf`)
   }
 
@@ -162,7 +224,7 @@ export default function Reports() {
             <Landmark size={16} className="text-ink-5" />
             <h2 className="text-sm font-semibold text-ink-3">Tax &amp; year-end summary</h2>
           </div>
-          <Button variant="ghost" onClick={downloadYearEndPDF} disabled={byYear.length === 0}>
+          <Button variant="ghost" onClick={downloadYearEndPDF} disabled={byYear.length === 0 && !ops}>
             <FileText size={16} className="text-red-600" /> Year-end PDF
           </Button>
         </div>
@@ -258,6 +320,8 @@ export default function Reports() {
           </div>
         )}
       </Card>
+
+      <OperationsSummary summary={ops} />
 
       {/* Preview */}
       {filtered.length === 0 ? (

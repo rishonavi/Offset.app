@@ -33,13 +33,13 @@ for Vite's resolver.
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
-| `ops.test.mjs` | 151 | inventory, payables, advances, payroll |
+| `ops.test.mjs` | 182 | inventory, payables, advances, payroll, and both over a period |
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 79 | corporate storage layer, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,266** | |
+| | **1,297** | |
 
 ## Browser — `tests/browser/`
 
@@ -74,13 +74,13 @@ node tests/browser/rtlui.mjs
 | `navui.mjs` | 17 | the side bar: grouping, what is waiting, and a short screen |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
-| `opsui.mjs` | 64 | stock, advances, payroll — and a backup that carries them |
+| `opsui.mjs` | 82 | stock, advances, payroll — in the report, in a backup, and on their own page |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **722** | |
+| | **740** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

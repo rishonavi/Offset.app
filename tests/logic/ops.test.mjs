@@ -1,10 +1,10 @@
 // Inventory valuation, ageing of what's owed, advances and their adjustment,
 // and payroll. All four move money, so all four are tested on the arithmetic
 // rather than on the shape of the output.
-import { makeItem, makeMovement, stockOf, stockReport, reorderList, consumption, UNITS } from '../../src/lib/inventory.js'
+import { makeItem, makeMovement, stockOf, stockReport, stockOverPeriod, reorderList, consumption, UNITS } from '../../src/lib/inventory.js'
 import { ageing, byParty, workingCapital, daysOverdue, bucketFor, describeAgeing, AGE_BUCKETS } from '../../src/lib/payables.js'
 import { makeAdvance, makeAdjustment, balanceOf, canAdjust, outstandingAdvances, advancesByParty } from '../../src/lib/advances.js'
-import { makeEmployee, grossOf, providentFund, stateInsurance, professionalTax, payslipFor, runPayroll, payrollByDepartment, DEFAULT_PAYROLL_CONFIG } from '../../src/lib/payroll.js'
+import { makeEmployee, grossOf, providentFund, stateInsurance, professionalTax, payslipFor, runPayroll, payrollByDepartment, onPayrollIn, periodsBetween, payrollOverPeriods, DEFAULT_PAYROLL_CONFIG } from '../../src/lib/payroll.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
@@ -292,6 +292,60 @@ ok('the most expensive department leads', byDept[0].cost >= byDept[1].cost)
 ok('an employee with no department is not lost',
   byDept.some((d) => d.name === 'Unassigned') || byDept.every((d) => d.departmentId))
 eq('headcount adds back to the run', byDept.reduce((t, d) => t + d.headcount, 0), run.headcount)
+
+console.log('\n── STOCK OVER A PERIOD ──')
+// 100 bags in at 200 in April, 40 out in May, 50 more in at 300 in June.
+const bag = makeItem({ entityId: 'e1', name: 'Cement', unit: 'bag' })
+const flow = [
+  makeMovement({ entityId: 'e1', itemId: bag.id, kind: 'receipt', qty: 100, unitCost: 200, date: '2026-04-10' }),
+  makeMovement({ entityId: 'e1', itemId: bag.id, kind: 'issue', qty: 40, date: '2026-05-12' }),
+  makeMovement({ entityId: 'e1', itemId: bag.id, kind: 'receipt', qty: 50, unitCost: 300, date: '2026-06-03' }),
+]
+const may = stockOverPeriod([bag], flow, { from: '2026-05-01', to: '2026-05-31' })
+eq('the period opens at what was on hand before it', may.openingValue, 20000)
+eq('and closes at what is left', may.closingValue, 12000)
+eq('nothing was received in May', may.receivedValue, 0)
+eq('so 8,000 of stock was consumed', may.consumedValue, 8000)
+eq('and the change is the fall', may.change, -8000)
+
+const june = stockOverPeriod([bag], flow, { from: '2026-06-01', to: '2026-06-30' })
+eq('June opens where May closed', june.openingValue, may.closingValue)
+eq('June receipts are counted at what was paid', june.receivedValue, 15000)
+eq('June consumed nothing', june.consumedValue, 0)
+
+const all = stockOverPeriod([bag], flow, {})
+eq('with no range the opening is nothing', all.openingValue, 0)
+eq('and the close is everything on hand', all.closingValue, 27000)
+eq('a movement after the close is not counted',
+  stockOverPeriod([bag], flow, { to: '2026-05-31' }).closingValue, 12000)
+eq('an empty item list is zero, not a crash', stockOverPeriod([], flow, {}).closingValue, 0)
+
+console.log('\n── PAYROLL OVER A PERIOD ──')
+eq('a range covers the months it spans', periodsBetween('2026-04-05', '2026-06-20'), ['2026-04', '2026-05', '2026-06'])
+eq('one month is one month', periodsBetween('2026-04-01', '2026-04-30'), ['2026-04'])
+eq('a range crossing a year still counts', periodsBetween('2025-11-01', '2026-02-01').length, 4)
+eq('no end means the month it starts in', periodsBetween('2026-04-05', ''), ['2026-04'])
+eq('a backwards range is empty', periodsBetween('2026-06-01', '2026-04-01'), [])
+eq('no range at all is empty', periodsBetween('', ''), [])
+ok('an absurd range cannot spin', periodsBetween('1900-01-01', '2999-12-01').length <= 600)
+
+const joiner = makeEmployee({ entityId: 'e1', name: 'New Start', basic: 20000, joinedOn: '2026-05-20' })
+const oldHand = makeEmployee({ entityId: 'e1', name: 'Long Serving', basic: 20000, joinedOn: '2024-01-01' })
+eq('someone hired in May was not on the payroll in April', onPayrollIn([joiner, oldHand], '2026-04').length, 1)
+eq('and is from the month they joined', onPayrollIn([joiner, oldHand], '2026-05').length, 2)
+eq('an employee with no join date is always counted', onPayrollIn([makeEmployee({ name: 'Unknown' })], '2020-01').length, 1)
+eq('an inactive employee never is',
+  onPayrollIn([makeEmployee({ name: 'Gone', active: false })], '2026-05').length, 0)
+eq('a run for a month excludes those not yet hired', runPayroll([joiner, oldHand], { period: '2026-04' }).headcount, 1)
+
+const quarter = payrollOverPeriods([joiner, oldHand], periodsBetween('2026-04-01', '2026-06-30'))
+eq('three months are run', quarter.months.length, 3)
+eq('the gross adds the months up', quarter.gross, round(quarter.months.reduce((t, r) => t + r.gross, 0)))
+eq('headcount is the most anyone was paying, not the sum', quarter.headcount, 2)
+ok('the employer cost exceeds the gross over the period', quarter.employerCost > quarter.gross)
+eq('April is the cheaper month', quarter.months[0].gross < quarter.months[1].gross, true)
+eq('an empty range runs to zero', payrollOverPeriods([oldHand], []).gross, 0)
+eq('and so does an empty payroll', payrollOverPeriods([], periodsBetween('2026-04-01', '2026-06-30')).gross, 0)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

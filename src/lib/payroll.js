@@ -170,8 +170,17 @@ export function payslipFor(employee, { period, config = DEFAULT_PAYROLL_CONFIG, 
 // ── A payroll run ──────────────────────────────────────────────────
 export const RUN_STATUS = { draft: 'draft', approved: 'approved', paid: 'paid' }
 
+// Who was drawing a salary in a given month. Someone hired in March cost
+// nothing in January, and a report over a year that says otherwise is simply
+// wrong. Compared as YYYY-MM so there is no date arithmetic to get wrong.
+export function onPayrollIn(employees, period) {
+  return employees.filter(
+    (e) => e.active !== false && (!e.joined_on || String(e.joined_on).slice(0, 7) <= String(period || '')),
+  )
+}
+
 export function runPayroll(employees, { period, config = DEFAULT_PAYROLL_CONFIG, perEmployee = {} } = {}) {
-  const active = employees.filter((e) => e.active !== false)
+  const active = period ? onPayrollIn(employees, period) : employees.filter((e) => e.active !== false)
   const slips = active.map((e) => payslipFor(e, { period, config, ...(perEmployee[e.id] || {}) }))
   return {
     period,
@@ -189,6 +198,47 @@ export function runPayroll(employees, { period, config = DEFAULT_PAYROLL_CONFIG,
       tds: round2(slips.reduce((t, s) => t + s.deductions.tds, 0)),
     },
     problems: slips.filter((s) => s.overDeducted).length,
+  }
+}
+
+// The months a date range covers, as YYYY-MM. A range with no end runs to the
+// month the range starts in rather than to the end of time.
+export function periodsBetween(fromISO, toISO) {
+  const first = String(fromISO || '').slice(0, 7)
+  const last = String(toISO || '').slice(0, 7) || first
+  if (!first || !last || last < first) return first && !toISO ? [first] : []
+  const out = []
+  let [y, m] = first.split('-').map(Number)
+  // A year of months at most, so a filter set to 1900 cannot spin here.
+  for (let guard = 0; guard < 600; guard += 1) {
+    const period = `${y}-${String(m).padStart(2, '0')}`
+    out.push(period)
+    if (period >= last) break
+    m += 1
+    if (m > 12) { m = 1; y += 1 }
+  }
+  return out
+}
+
+// Payroll month by month across a range, which is what a report over a period
+// asks for. Offset keeps no history of past runs — it holds today's employees
+// and today's salaries — so every month here is computed from the payroll as it
+// stands now. That is a projection backwards, and the screen says so.
+export function payrollOverPeriods(employees, periods, { config = DEFAULT_PAYROLL_CONFIG } = {}) {
+  const months = periods.map((period) => runPayroll(employees, { period, config }))
+  const sum = (pick) => round2(months.reduce((t, r) => t + pick(r), 0))
+  return {
+    months,
+    headcount: months.length ? Math.max(...months.map((r) => r.headcount)) : 0,
+    gross: sum((r) => r.gross),
+    net: sum((r) => r.net),
+    employerCost: sum((r) => r.employerCost),
+    statutory: {
+      pf: sum((r) => r.statutory.pf),
+      esi: sum((r) => r.statutory.esi),
+      professionalTax: sum((r) => r.statutory.professionalTax),
+      tds: sum((r) => r.statutory.tds),
+    },
   }
 }
 

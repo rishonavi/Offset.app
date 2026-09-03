@@ -131,6 +131,34 @@ export function reorderList(items, movements) {
     .sort((a, b) => (a.negative === b.negative ? a.qty - b.qty : a.negative ? -1 : 1))
 }
 
+// Stock as a period statement rather than a snapshot, which is what a report
+// needs: what it was worth when the period opened, what it is worth at the
+// close, and what moved in between. Movements are dated, so both ends are real
+// figures rather than a projection.
+export function stockOverPeriod(items, movements, { from = null, to = null } = {}) {
+  const before = from ? movements.filter((m) => (m.date || '') < from) : []
+  const through = to ? movements.filter((m) => (m.date || '') <= to) : movements
+  const opening = stockReport(items, before)
+  const closing = stockReport(items, through)
+  const receivedValue = round2(
+    through
+      .filter((m) => m.kind === 'receipt' && (!from || (m.date || '') >= from))
+      .reduce((t, m) => t + m.qty * (Number(m.unit_cost) || 0), 0),
+  )
+  return {
+    opening,
+    closing,
+    openingValue: opening.totalValue,
+    closingValue: closing.totalValue,
+    receivedValue,
+    // What left the shelf, by the identity closing = opening + in − out. A
+    // stock-take that found less lands here too, which is the honest place for
+    // it: unexplained shrinkage is a cost, not a mystery to be filed separately.
+    consumedValue: round2(opening.totalValue + receivedValue - closing.totalValue),
+    change: round2(closing.totalValue - opening.totalValue),
+  }
+}
+
 // Consumption over a window, which is what tells you whether the reorder level
 // is set anywhere near reality.
 export function consumption(item, movements, fromISO, toISO) {

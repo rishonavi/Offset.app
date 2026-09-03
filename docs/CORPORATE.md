@@ -147,6 +147,21 @@ assertions:
   by id, so the same file twice adds nothing and a movement still points at its
   item.
 
+**Done and verified** — the company's costs inside the report, 18 more
+assertions:
+
+- **Reports** grows a *What the company cost* section once a company has stock
+  or staff — nothing on a personal install, nothing in the consolidated view
+- stock as a period statement, not a snapshot: opening, received, used up and
+  on hand. Movements are dated, so both ends are real figures
+- payroll month by month over the filter's range, with the statutory total and
+  the cost to company, and the same numbers in the year-end PDF
+- **the projection is labelled as one.** Offset holds today's employees and
+  today's salaries and no record of past runs, so a past month is what this
+  payroll *would have* cost. The months are clamped to the ones the company
+  existed for and has actually reached, and the card says when it clamped them —
+  a table of wages for a company that did not exist yet looks like a record
+
 **Done and verified** — the Supabase schema and row-level security,
 `supabase/corporate.sql`, 50 assertions against a real PostgreSQL:
 
@@ -168,8 +183,8 @@ surface — `auth.uid()` and friends are stood in for by the runner.
 
 1. Departments on entry forms; budgets and reports per cost centre
 2. The approvals queue
-3. Stock value and payroll cost in the reports, so a company's books are one
-   set of numbers rather than two
+3. A record of payroll runs, so a past month is history rather than a
+   projection from today's salaries
 4. The client storage layer talking to those tables — `storage/corporate.js` is
    still browser-only under both backends, and is synchronous throughout, so
    this is an async refactor of `EntityContext` and `Companies.jsx` rather than

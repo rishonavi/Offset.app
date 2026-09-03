@@ -47,13 +47,19 @@ await p.waitForTimeout(400)
 ok('and the palette does not offer it either', !/Operations/.test(await p.locator('[role="dialog"]').innerText()))
 await p.keyboard.press('Escape')
 await p.waitForTimeout(300)
+await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(500)
+ok('and the report grows no company section', !/What the company cost/.test(await main()))
 
 // ── 2. With a company ──
 console.log('\n── WITH A COMPANY ──')
 await p.evaluate(() => {
   const id = 'ent-test-1'
+  // Created a year ago, because a company incorporated five minutes ago has no
+  // payroll history to report and the page correctly says so.
+  const born = new Date(); born.setFullYear(born.getFullYear() - 1)
   localStorage.setItem('pl_corp_entities', JSON.stringify([
-    { id, name: 'Acme Industries Pvt Ltd', registration: '', gstin: '27AAAPA1234A1Z5', currency: 'INR', fyStartMonth: 4, created_at: new Date().toISOString() },
+    { id, name: 'Acme Industries Pvt Ltd', registration: '', gstin: '27AAAPA1234A1Z5', currency: 'INR', fyStartMonth: 4, created_at: born.toISOString() },
   ]))
   localStorage.setItem('pl_corp_members', JSON.stringify([
     { id: 'm1', entity_id: id, user_id: 'local-user', email: '', role: 'owner', department_id: null, created_at: new Date().toISOString() },
@@ -264,7 +270,65 @@ for (const name of ['Stock', 'Advances', 'Payroll']) {
   ok(`no sideways scroll on ${name} on a phone`, overflow <= 2, `${overflow}px`)
 }
 
-// ── 9. A backup that actually carries the company ──
+// ── 9. The company's costs in the report ──
+// Stock and payroll were their own page and nothing else knew about them, so a
+// company's books were two sets of numbers that never met.
+console.log('\n── STOCK AND PAYROLL IN THE REPORT ──')
+await p.setViewportSize({ width: 1440, height: 1000 })
+await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+let rep = await main()
+ok('the report has a section for what the company cost', /What the company cost/.test(rep), rep.slice(-300))
+ok('it names the company', /Acme Industries/.test(rep))
+// 40 bags in at 350, 35 issued: 5 left at the average, so 1,750 on hand.
+ok('stock on hand is valued', /1,750/.test(rep), rep.slice(-700))
+ok('and what was used up is stated', /12,250/.test(rep), rep.slice(-700))
+ok('payroll cost to company is there', /43,800/.test(rep), rep.slice(-500))
+ok('with no range it answers for this month', /for this month/.test(rep))
+ok('and admits it is not a record of past runs', /no history of past payroll runs/.test(rep))
+ok('one month needs no month-by-month table', !/MONTH\tSTAFF/.test(rep))
+
+// A range turns it into a month-by-month statement. Built from today so the
+// suite keeps working next month.
+const monthsBack = (n) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0, 7) }
+const [m2, m1, m0] = [monthsBack(2), monthsBack(1), monthsBack(0)]
+await p.goto(`${B}/reports?from=${m2}-01&to=${m0}-28`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+rep = await main()
+ok('a range gives a month for each', [m2, m1, m0].every((m) => rep.includes(m)), rep.slice(-900))
+ok('three months of payroll cost more than one', /1,31,400/.test(rep), rep.slice(-900))
+ok('and the wording follows the filter', /for the period above/.test(rep))
+
+// A range running into next year is not a forecast. Months the company has not
+// reached are dropped, and the card says it dropped them.
+const ahead = (n) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + n); return d.toISOString().slice(0, 7) }
+await p.goto(`${B}/reports?from=${m0}-01&to=${ahead(3)}-28`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+rep = await main()
+ok('months still to come are left out', !rep.includes(ahead(1)) && !rep.includes(ahead(3)), rep.slice(-500))
+ok('and it says it left them out', /still to come, are left out/.test(rep), rep.slice(-400))
+
+// Stock is dated, so an end date before the movements is a real answer.
+await p.goto(`${B}/reports?from=2020-01-01&to=2020-12-31`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+rep = await main()
+ok('a period before anything happened shows no stock', /ON HAND\n₹0/.test(rep), rep.slice(-600))
+ok('and no payroll section, because nobody was employed then', !/ON PAYROLL/.test(rep), rep.slice(-600))
+
+// The year-end PDF has to carry them too.
+await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(500)
+const pdf = await Promise.all([
+  p.waitForEvent('download'),
+  p.locator('button', { hasText: 'Year-end PDF' }).click(),
+]).then(([d]) => d)
+const pdfPath = `${TMP}/year-end.pdf`
+await pdf.saveAs(pdfPath)
+const raw = await readFile(pdfPath, 'latin1')
+ok('the year-end PDF is produced', raw.startsWith('%PDF'), raw.slice(0, 8))
+ok('and is not an empty shell', raw.length > 4000, `${raw.length} bytes`)
+
+// ── 10. A backup that actually carries the company ──
 // exportCorporate existed and was never called, so until now a backup held only
 // the personal books and restoring one onto a new browser lost every company,
 // every item, every advance and every employee in it.
