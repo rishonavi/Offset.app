@@ -22,7 +22,8 @@ for Vite's resolver.
 | `assettypes.test.mjs` | 56 | which fields an asset type actually has |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
-| `corp.test.mjs` | 106 | entities, control, ledgers, audit events |
+| `corp.test.mjs` | 106 |
+| `dedupe.test.mjs` | 25 | not importing the same row twice | entities, control, ledgers, audit events |
 | `defaults.test.mjs` | 30 | filling a form in from history, and when not to |
 | `filled.test.mjs` | 22 | which values on a form the app put there |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
@@ -38,7 +39,7 @@ for Vite's resolver.
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 65 | corporate storage layer |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,227** | |
+| | **1,252** | |
 
 ## Browser — `tests/browser/`
 
@@ -56,6 +57,7 @@ node tests/browser/rtlui.mjs
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
 | `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
+| `bulkui.mjs` | 17 | settling several at once, and re-importing a file |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
@@ -76,7 +78,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **623** | |
+| | **640** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

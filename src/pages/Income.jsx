@@ -40,6 +40,26 @@ export default function Income() {
       action: { label: 'Undo', onClick: () => updateIncome(id, { ...rest, status: e.status, due_date: e.due_date || null }) },
     })
   }
+  // Settling several at once. The whole reason the side bar counts what is
+  // outstanding is that people work through it in batches — paying a month of
+  // bills is one sitting, not eight visits to eight rows.
+  //
+  // Undo restores each row's own previous status rather than a single shared
+  // one: a selection can hold an unpaid bill and an overdue one, and putting
+  // them both back as "unpaid" would quietly lose that difference.
+  const settleMany = async (rows) => {
+    const before = rows.map((e) => { const { id, user_id, created_at, ...rest } = e; return { id, rest, e } })
+    for (const { id, rest } of before) await updateIncome(id, { ...rest, status: 'received', due_date: null })
+    toast(`${rows.length} marked received`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          for (const { id, rest, e } of before) await updateIncome(id, { ...rest, status: e.status, due_date: e.due_date || null })
+        },
+      },
+    })
+  }
+
   const duplicate = async (e) => {
     const { id, user_id, created_at, receipt_url, ...rest } = e
     const row = await addIncome({ ...rest, date: todayISO(), status: 'received', due_date: null })
@@ -140,6 +160,7 @@ export default function Income() {
               onMarkSettled={markReceived}
               onDuplicate={duplicate}
               onBulkDelete={removeMany}
+              onBulkSettle={settleMany}
               selectable
               readOnly={!canWrite}
             />

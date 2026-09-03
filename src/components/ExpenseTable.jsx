@@ -11,7 +11,7 @@ import ReceiptViewer from './ReceiptViewer'
 // Render rows in pages so a few thousand entries don't paint at once.
 const PAGE = 100
 
-export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDelete, onMarkSettled, onDuplicate, onBulkDelete, selectable, readOnly }) {
+export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDelete, onMarkSettled, onDuplicate, onBulkDelete, onBulkSettle, selectable, readOnly }) {
   const [viewing, setViewing] = useState(null)
   const [selected, setSelected] = useState(() => new Set())
   const [limit, setLimit] = useState(PAGE)
@@ -42,6 +42,14 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
     onBulkDelete(expenses.filter((e) => selected.has(e.id)))
     clearSel()
   }
+  // Only the ones that are actually outstanding. Offering to settle rows that
+  // are already settled would make the count on the button a lie, and marking
+  // them again would rewrite dates that were already right.
+  const unsettled = expenses.filter((e) => selected.has(e.id) && !isSettled(e, 'expense'))
+  const bulkSettle = () => {
+    onBulkSettle(unsettled)
+    clearSel()
+  }
 
   return (
     <>
@@ -50,6 +58,11 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
           <span className="text-sm font-medium text-ink-3">{selected.size} selected</span>
           <div className="flex items-center gap-3">
             <button onClick={clearSel} className="inline-flex min-h-6 items-center text-xs font-medium text-ink-5 hover:text-ink-2">Clear</button>
+            {onBulkSettle && unsettled.length > 0 && (
+              <button onClick={bulkSettle} className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline">
+                <CheckCircle2 size={14} /> Mark {unsettled.length} paid
+              </button>
+            )}
             <button onClick={bulkDelete} className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline">
               <Trash2 size={14} /> Delete {selected.size}
             </button>

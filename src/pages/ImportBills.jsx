@@ -12,6 +12,7 @@ import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import BankImport from '../components/BankImport'
 import { parseSpreadsheet, rowToExpenseInput } from '../lib/exports'
+import { entryKey, seenIndex, skippedNote } from '../lib/dedupe'
 import { parseTallyXML } from '../lib/tally'
 import { useBackup } from '../lib/useBackup'
 
@@ -31,7 +32,9 @@ function ImportResult({ msg, source }) {
 }
 
 export default function ImportBills() {
-  const { properties, loading, addExpense, addIncome, addProperty, propertyNameById } = useData()
+  // expenses and income are read, not written, by the importers: both check
+  // what is already in the books before adding to them.
+  const { properties, expenses, income, loading, addExpense, addIncome, addProperty, propertyNameById } = useData()
   const toast = useToast()
   const plan = usePlan()
   // Every way data comes in now lives here — a mailbox, a spreadsheet, a Tally
@@ -65,7 +68,12 @@ export default function ImportBills() {
         return
       }
       const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
+      // Added to as the loop runs, so a file that repeats a row inside itself
+      // imports it once rather than twice.
+      const seen = seenIndex(expenses, 'expense')
       let createdProps = 0
+      let skipped = 0
+      let added = 0
       for (const r of parsed) {
         const propName = r.property || 'Unassigned'
         const key = propName.toLowerCase()
@@ -76,7 +84,7 @@ export default function ImportBills() {
           nameToId.set(key, pid)
           createdProps += 1
         }
-        await addExpense({
+        const row = {
           property_id: pid,
           date: r.date,
           amount: r.amount,
@@ -85,14 +93,19 @@ export default function ImportBills() {
           payment_method: r.payment_method,
           description: r.description,
           receipt_url: null,
-        })
+        }
+        const dupKey = entryKey(row, 'expense')
+        if (seen.has(dupKey)) { skipped += 1; continue }
+        seen.add(dupKey)
+        await addExpense(row)
+        added += 1
       }
       setImportMsg({
         source: 'sheet',
         ok: true,
-        text: `Imported ${parsed.length} expense${parsed.length === 1 ? '' : 's'}${
+        text: `Imported ${added} expense${added === 1 ? '' : 's'}${
           createdProps ? `, created ${createdProps} new propert${createdProps === 1 ? 'y' : 'ies'}` : ''
-        }.`,
+        }${skippedNote(skipped)}.`,
       })
     } catch (err) {
       setImportMsg({ source: 'sheet', ok: false, text: `Import failed: ${err?.message || err}` })
@@ -131,14 +144,16 @@ export default function ImportBills() {
         return fallbackId
       }
       // Skip entries that already exist so re-importing the same day book is safe.
-      const expSeen = new Set(expenses.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.category}`))
-      const incSeen = new Set(income.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.source}`))
+      const expSeen = seenIndex(expenses, 'expense')
+      const incSeen = seenIndex(income, 'income')
       let addedE = 0
       let addedI = 0
       let skipped = 0
       for (const v of vouchers) {
         const pid = matchAsset(v.narration) || (await ensureFallback())
-        const key = `${pid}|${v.date}|${v.amount}|${v.ledger}`
+        const asExpense = { property_id: pid, date: v.date, amount: v.amount, category: v.ledger }
+        const asIncome = { property_id: pid, date: v.date, amount: v.amount, source: v.ledger }
+        const key = v.kind === 'income' ? entryKey(asIncome, 'income') : entryKey(asExpense, 'expense')
         if (v.kind === 'income') {
           if (incSeen.has(key)) { skipped++; continue }
           incSeen.add(key)
@@ -154,7 +169,7 @@ export default function ImportBills() {
       setImportMsg({
         source: 'tally',
         ok: true,
-        text: `Imported ${addedE} expense${addedE === 1 ? '' : 's'} and ${addedI} income from Tally${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}` : ''}.`,
+        text: `Imported ${addedE} expense${addedE === 1 ? '' : 's'} and ${addedI} income from Tally${skippedNote(skipped)}.`,
       })
     } catch (err) {
       setImportMsg({ source: 'tally', ok: false, text: `Tally import failed: ${err?.message || err}` })
@@ -276,7 +291,8 @@ export default function ImportBills() {
           <p className="mt-1 text-xs text-ink-5">
             An <strong>.xlsx</strong> or <strong>.csv</strong> with columns:
             <span className="font-medium text-ink-4"> Date, Property, Category, Vendor, Payment Method, Description, Amount</span>.
-            New property names are created automatically.
+            New property names are created automatically. Rows already in your books are skipped, so
+            re-importing the same file is safe.
           </p>
           <input
             ref={fileRef}
