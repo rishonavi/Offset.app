@@ -194,6 +194,29 @@ export default function Reports() {
           14,
           doc.lastAutoTable.finalY + 6,
         )
+        y = doc.lastAutoTable.finalY + 12
+      }
+      if (ops.advanceCount > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Advances', 'Opening', 'Paid out', 'Recovered', 'Still owed']],
+          body: [[
+            ops.advances.count === 1 ? '1 open' : `${ops.advances.count} open`,
+            formatCurrency(ops.advances.openingOutstanding),
+            formatCurrency(ops.advances.paidOut),
+            formatCurrency(ops.advances.recovered),
+            formatCurrency(ops.advances.closingOutstanding),
+          ]],
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [10, 24, 40] },
+        })
+        doc.setFontSize(8)
+        doc.setTextColor(120)
+        doc.text(
+          'Advances are money owed back to the company, not a cost, and are not included in the totals above.',
+          14,
+          doc.lastAutoTable.finalY + 6,
+        )
       }
     }
 

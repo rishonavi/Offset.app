@@ -3,7 +3,7 @@
 // rather than on the shape of the output.
 import { makeItem, makeMovement, stockOf, stockReport, stockOverPeriod, reorderList, consumption, UNITS } from '../../src/lib/inventory.js'
 import { ageing, byParty, workingCapital, daysOverdue, bucketFor, describeAgeing, AGE_BUCKETS } from '../../src/lib/payables.js'
-import { makeAdvance, makeAdjustment, balanceOf, canAdjust, outstandingAdvances, advancesByParty } from '../../src/lib/advances.js'
+import { makeAdvance, makeAdjustment, balanceOf, canAdjust, outstandingAdvances, advancesByParty, advancesOverPeriod } from '../../src/lib/advances.js'
 import { makeEmployee, grossOf, providentFund, stateInsurance, professionalTax, payslipFor, runPayroll, payrollByDepartment, onPayrollIn, periodsBetween, payrollOverPeriods, DEFAULT_PAYROLL_CONFIG } from '../../src/lib/payroll.js'
 
 let pass = 0, fail = 0
@@ -292,6 +292,60 @@ ok('the most expensive department leads', byDept[0].cost >= byDept[1].cost)
 ok('an employee with no department is not lost',
   byDept.some((d) => d.name === 'Unassigned') || byDept.every((d) => d.departmentId))
 eq('headcount adds back to the run', byDept.reduce((t, d) => t + d.headcount, 0), run.headcount)
+
+console.log('\n── ADVANCES OVER A PERIOD ──')
+// 50,000 to a contractor in March with no date it was expected back, 15,000 of
+// it set against a bill in May; 30,000 to a vendor in May, due back in June and
+// never returned. Deliberately different amounts, so an assertion about one
+// bucket cannot pass by matching the other.
+const march = makeAdvance({ entityId: 'e1', partyType: 'contractor', party: 'Ravi', amount: 50000, date: '2026-03-04' })
+const mayAdv = makeAdvance({ entityId: 'e1', party: 'Sundar Traders', amount: 30000, date: '2026-05-08', expectedBy: '2026-06-30' })
+const setOff = makeAdjustment({ advanceId: march.id, amount: 15000, date: '2026-05-19' })
+const ledger = [march, mayAdv]
+const setOffs = [setOff]
+
+const q1 = advancesOverPeriod(ledger, setOffs, { entityId: 'e1', from: '2026-03-01', to: '2026-03-31' })
+eq('nothing was outstanding before the first advance', q1.openingOutstanding, 0)
+eq('March paid one out', q1.paidOut, 50000)
+eq('and recovered nothing', q1.recovered, 0)
+eq('so 50,000 was still out at the close', q1.closingOutstanding, 50000)
+
+const q2 = advancesOverPeriod(ledger, setOffs, { entityId: 'e1', from: '2026-05-01', to: '2026-05-31' })
+eq('May opens with March still out', q2.openingOutstanding, 50000)
+eq('May paid another out', q2.paidOut, 30000)
+eq('and recovered part of the first', q2.recovered, 15000)
+eq('leaving 65,000 out at the close', q2.closingOutstanding, 65000)
+eq('the four figures tie together',
+  round(q2.openingOutstanding + q2.paidOut - q2.recovered), q2.closingOutstanding)
+eq('two advances are still open', q2.count, 2)
+eq('and nothing is a bookkeeping error', q2.errors, 0)
+
+// An advance is not overdue until the day it was expected back has passed.
+eq('nothing is overdue in May', advancesOverPeriod(ledger, setOffs, { entityId: 'e1', to: '2026-05-31' }).overdue, 0)
+const late = advancesOverPeriod(ledger, setOffs, { entityId: 'e1', to: '2026-08-31' })
+eq('by August the vendor advance is overdue', late.overdue, 30000)
+eq('and it is one line', late.overdueCount, 1)
+ok('the ageing ladder ages it by how late it is',
+  late.buckets.some((b) => b.id === 'd61_90' && b.total === 30000),
+  JSON.stringify(late.buckets.map((b) => [b.id, b.total])))
+ok('an advance with no expected date is aged separately',
+  late.buckets.some((b) => b.id === 'nodate' && b.total === 35000),
+  JSON.stringify(late.buckets.map((b) => [b.id, b.total])))
+
+// A close before anything happened is a real answer, not an empty one.
+const early = advancesOverPeriod(ledger, setOffs, { entityId: 'e1', to: '2026-01-31' })
+eq('nothing was out before the first advance', early.closingOutstanding, 0)
+eq('and nothing was paid out', early.paidOut, 0)
+
+eq('another company sees none of it', advancesOverPeriod(ledger, setOffs, { entityId: 'other' }).closingOutstanding, 0)
+eq('with no range at all it is everything to date',
+  advancesOverPeriod(ledger, setOffs, { entityId: 'e1' }).closingOutstanding, 65000)
+eq('an empty ledger is zero, not a crash', advancesOverPeriod([], [], { entityId: 'e1' }).closingOutstanding, 0)
+
+// Over-adjustment is the one figure here that means someone made a mistake.
+const broken = advancesOverPeriod([march], [setOff, makeAdjustment({ advanceId: march.id, amount: 40000, date: '2026-06-01' })], { entityId: 'e1' })
+eq('adjusting for more than was paid in is counted', broken.errors, 1)
+ok('and the advance is still listed rather than reading as settled', broken.count === 1)
 
 console.log('\n── STOCK OVER A PERIOD ──')
 // 100 bags in at 200 in April, 40 out in May, 50 more in at 300 in June.

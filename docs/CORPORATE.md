@@ -147,15 +147,21 @@ assertions:
   by id, so the same file twice adds nothing and a movement still points at its
   item.
 
-**Done and verified** — the company's costs inside the report, 18 more
+**Done and verified** — the company's own figures inside the report, 28 more
 assertions:
 
-- **Reports** grows a *What the company cost* section once a company has stock
-  or staff — nothing on a personal install, nothing in the consolidated view
+- **Reports** grows a *What the company cost, and what it is owed* section once
+  a company has stock, staff or advances — nothing on a personal install,
+  nothing in the consolidated view
 - stock as a period statement, not a snapshot: opening, received, used up and
   on hand. Movements are dated, so both ends are real figures
 - payroll month by month over the filter's range, with the statutory total and
   the cost to company, and the same numbers in the year-end PDF
+- advances as opening, paid out, recovered and still owed — the four tie
+  together by construction — aged on the same ladder as unpaid bills, with what
+  is past its expected-back date said in words. **An advance is never added into
+  a cost total**, because booking it as spending is the single most common way
+  small books go wrong: it is money the company is owed until a bill arrives
 - **the projection is labelled as one.** Offset holds today's employees and
   today's salaries and no record of past runs, so a past month is what this
   payroll *would have* cost. The months are clamped to the ones the company
