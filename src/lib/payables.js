@@ -36,8 +36,14 @@ export function bucketFor(days) {
   return 'current'
 }
 
+// A row with no status at all is an older entry from before the app tracked
+// payment, and `isSettled` in payments.js has always read those as settled —
+// so the dashboard counts them as done. This used to read them the other way,
+// which meant the same untouched row was paid on one screen and overdue on
+// another, and a report nobody can reconcile with the dashboard is a report
+// nobody uses. Same rule, one place to change it.
 const isOutstanding = (row, settledStatus) =>
-  !row.deleted_at && (row.status || '') !== settledStatus
+  !row.deleted_at && row.status != null && row.status !== settledStatus
 
 // One side of the ledger. `kind` decides the wording and which status counts as
 // settled: an expense is settled when paid, income when received.

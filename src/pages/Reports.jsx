@@ -16,8 +16,27 @@ import PageHeader from '../components/PageHeader'
 import AskCard from '../components/AskCard'
 import FilterBar from '../components/FilterBar'
 import OperationsSummary, { useOperationsSummary } from '../components/OperationsSummary'
+import WorkingCapital, { useWorkingCapital } from '../components/WorkingCapital'
 
 const PREVIEW_LIMIT = 100
+
+// The two ladders side by side, matched bucket for bucket so a row reads across
+// rather than being two tables the reader has to align by eye.
+function ladderRows({ payable, receivable }) {
+  const ids = [...new Set([...payable.buckets, ...receivable.buckets].map((b) => b.id))]
+  const find = (report, id) => report.buckets.find((b) => b.id === id)
+  return ids.map((id) => {
+    const p = find(payable, id)
+    const r = find(receivable, id)
+    return [
+      (p || r).label,
+      p ? String(p.count) : '—',
+      p ? formatCurrency(p.total) : '—',
+      r ? String(r.count) : '—',
+      r ? formatCurrency(r.total) : '—',
+    ]
+  })
+}
 
 // What the year came to. Moving the rows anywhere else is Export & import,
 // which shares this page's filter through the URL.
@@ -35,6 +54,10 @@ export default function Reports() {
   // install, and null in the consolidated view, where one number over several
   // companies would be a number nobody could file.
   const ops = useOperationsSummary(filters)
+
+  // What is still owed in both directions, aged. Not scoped to the date range —
+  // see the note in WorkingCapital.jsx for why that is deliberate.
+  const capital = useWorkingCapital(expenses, income, filters)
 
   const filtered = useMemo(() => applyFilters(expenses, filters), [expenses, filters])
   const total = useMemo(() => sumAmount(filtered), [filtered])
@@ -141,6 +164,30 @@ export default function Reports() {
         footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
       })
     }
+    // What is still owed, in both directions and by age. An accountant reading
+    // a year-end wants the ladder, not just the two totals.
+    if (capital.payable.count || capital.receivable.count) {
+      const y = doc.lastAutoTable.finalY + 10
+      doc.setFontSize(12)
+      doc.setTextColor(20)
+      doc.text('What is owed, and how late', 14, y)
+      autoTable(doc, {
+        startY: y + 4,
+        head: [['Age', 'Bills unpaid', 'Amount', 'Income awaited', 'Amount']],
+        body: ladderRows(capital),
+        foot: [[
+          'Total',
+          String(capital.payable.count),
+          formatCurrency(capital.payable.total),
+          String(capital.receivable.count),
+          formatCurrency(capital.receivable.total),
+        ]],
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [10, 24, 40] },
+        footStyles: { fillColor: [245, 245, 245], textColor: 20, fontStyle: 'bold' },
+      })
+    }
+
     // The company's own costs, on the same sheet as the property's. Leaving
     // them off would mean handing an accountant a year-end that is missing the
     // wages.
@@ -343,6 +390,8 @@ export default function Reports() {
           </div>
         )}
       </Card>
+
+      <WorkingCapital capital={capital} dated={filters.to ? formatDate(filters.to) : ''} />
 
       <OperationsSummary summary={ops} />
 

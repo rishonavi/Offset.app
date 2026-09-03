@@ -32,7 +32,7 @@ const thisMonth = () => new Date().toISOString().slice(0, 7)
 export function useOperationsSummary(filters) {
   const ent = useEntity()
   const eid = ent?.activeId
-  const scoped = Boolean(ent?.enabled && eid && !ent.consolidated)
+  const scoped = Boolean(ent?.corporate && eid && !ent.consolidated)
   const { from, to } = filters
 
   return useMemo(() => {

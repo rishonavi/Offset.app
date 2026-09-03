@@ -97,6 +97,11 @@ silent zero drags a total down and looks like an answer.
 - **Tally** — export income and expenses as import-ready Tally XML vouchers,
   and import Tally XML back in.
 - **Export** — Excel (`.xlsx`), CSV, or a formatted PDF of any filtered view.
+- **What is owed, and how late** — an ageing ladder in both directions on the
+  Reports page: bills you have not paid and money not yet received, bucketed by
+  how far past due they are, plus where you would stand if both settled.
+  Deliberately not scoped to the report's start date — a bill unpaid for a year
+  is the row that matters most, and a date filter would hide it.
 - **Reports** — GST/tax paid vs collected, deductible expenses by category, a
   per-year statement and a year-end PDF.
 - **Backup & restore** — a private JSON backup, to a file or to your own Google
@@ -305,9 +310,18 @@ them, costs tagged to **departments**, spending that needs **approval**, and an
 audit trail — plus **stock, advances and payroll** on their own page.
 
 **The whole layer stays dormant until you create a company.** A personal install
-sees no Companies nav, no entity switcher, and writes no `pl_corp_*` keys. The
-route exists regardless: go to **`/companies`** and press *Add a company*, and
-the nav entry and switcher appear from then on.
+sees no Companies nav, no books tabs, and writes no `pl_corp_*` keys. The route
+exists regardless: go to **`/companies`** and press *Add a company*, and the nav
+entry and the tabs appear from then on.
+
+Once a company exists, the top of the side bar carries two tabs — **Personal**
+and **Company** — because which set of books you are in is the choice that
+changes what the app is for, and it should not be buried inside a dropdown you
+have to open to read. A second control appears under them only when there is
+more than one company to choose between. Personal books have no roles and no
+approvals, so while they are on screen the app behaves exactly as it does with
+no company at all: `can` answers no because you are not inside a company, and
+`canWrite` keeps answering yes because the ledger in front of you is yours.
 
 **Operations** (`/operations`) is the day-to-day half, in three tabs:
 

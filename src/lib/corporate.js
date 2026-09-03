@@ -16,7 +16,14 @@
 // definition, because you cannot book a cost against a group.
 export const CONSOLIDATED = '__all__'
 
+// Your own books, kept even after the first company exists. A landlord who
+// incorporates does not stop owning the flat they live in, and the two sets of
+// books are not the same set of books — so which one you are looking at is a
+// choice, not something inferred from whether a company happens to exist.
+export const PERSONAL = '__personal__'
+
 export const isConsolidated = (id) => id === CONSOLIDATED
+export const isPersonal = (id) => id === PERSONAL
 
 export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4 } = {}) {
   return {

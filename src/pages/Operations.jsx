@@ -37,7 +37,7 @@ export default function Operations() {
   const bump = () => setVersion((v) => v + 1)
 
   const eid = ent?.activeId
-  const scoped = ent?.enabled && eid && !ent.consolidated
+  const scoped = ent?.corporate && eid && !ent.consolidated
 
   const data = useMemo(() => {
     if (!scoped) return null
@@ -64,13 +64,18 @@ export default function Operations() {
     )
   }
   if (!scoped) {
+    const personal = ent.personal
     return (
       <div className="animate-fade-in space-y-6">
         <PageHeader title="Operations" subtitle="Stock, advances and payroll." />
         <EmptyState
           icon={Boxes}
-          title="Pick one company"
-          subtitle="These are kept per company, so the consolidated view has nothing to show. Switch to a single company above."
+          title={personal ? 'You are in your personal books' : 'Pick one company'}
+          subtitle={
+            personal
+              ? 'Stock, advances and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
+              : 'These are kept per company, so the consolidated view has nothing to show. Switch to a single company above.'
+          }
         />
       </div>
     )

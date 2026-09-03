@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useAuth } from './AuthContext'
-import { CONSOLIDATED, isConsolidated, can, canWriteIn, roleFor } from '../lib/corporate'
+import { CONSOLIDATED, PERSONAL, isConsolidated, isPersonal, can, canWriteIn, roleFor } from '../lib/corporate'
 import * as store from '../lib/storage/corporate'
 
 const EntityContext = createContext(null)
@@ -39,9 +39,16 @@ export function EntityProvider({ children }) {
   // consolidated view only makes sense with more than one company.
   const active = useMemo(() => {
     if (!enabled) return ''
+    if (isPersonal(activeId)) return PERSONAL
     if (isConsolidated(activeId)) return entities.length > 1 ? CONSOLIDATED : entities[0].id
     return entities.some((e) => e.id === activeId) ? activeId : entities[0].id
   }, [activeId, entities, enabled])
+
+  // Personal books have no roles, no approvals and no entity column, so while
+  // they are the ones on screen the app has to behave exactly as it does with
+  // no company at all. Getting this wrong would make `can` answer no and turn
+  // the whole app read-only the moment someone looked at their own books.
+  const corporate = enabled && !isPersonal(active)
 
   const entity = useMemo(() => entities.find((e) => e.id === active) || null, [entities, active])
 
@@ -52,12 +59,12 @@ export function EntityProvider({ children }) {
 
   const userId = user?.id || 'local-user'
   const role = useMemo(() => {
-    if (!enabled) return null
+    if (!corporate) return null
     // The consolidated view shows what you can see anywhere, at the weakest
     // level of authority you hold — it spans companies with different rules.
     if (isConsolidated(active)) return 'auditor'
     return roleFor(members, active, userId) || null
-  }, [enabled, active, members, userId])
+  }, [corporate, active, members, userId])
 
   const actor = useMemo(() => ({ id: userId, email: user?.email || '' }), [userId, user])
 
@@ -69,6 +76,11 @@ export function EntityProvider({ children }) {
       entity,
       activeId: active,
       consolidated: isConsolidated(active),
+      // Looking at your own books rather than any company's.
+      personal: isPersonal(active),
+      // The corporate layer is live: a company exists AND it is the one on
+      // screen. Every consumer that used to ask `enabled` wants this.
+      corporate,
       switchTo,
       reload,
       version,
@@ -77,26 +89,31 @@ export function EntityProvider({ children }) {
       actor,
       members: members.filter((m) => m.entity_id === active),
       allMembers: members,
-      // `can` is the single question every screen asks. With the corporate
-      // layer off it answers yes, so the personal app is unchanged.
-      can: (permission) => (!enabled ? true : can(role, permission)),
-      canWrite: !enabled ? true : canWriteIn(active, role),
+      // `can` is the single question every screen asks, and it is always about
+      // a company. With no companies at all it answers yes, so the personal app
+      // is unchanged. In personal books, where companies exist but none is on
+      // screen, it answers no: you are not inside one, so there is nothing to
+      // manage, approve or audit. `canWrite` is a different question — it is
+      // about the ledger in front of you — and personal books are yours to
+      // write in.
+      can: (permission) => (!enabled ? true : corporate ? can(role, permission) : false),
+      canWrite: !corporate ? true : canWriteIn(active, role),
 
       departments: entityDepartments,
       allDepartments: departments,
-      policy: enabled && !isConsolidated(active) ? store.approvalPolicy(active) : { enabled: false, threshold: 0, alwaysCategories: [] },
+      policy: corporate && !isConsolidated(active) ? store.approvalPolicy(active) : { enabled: false, threshold: 0, alwaysCategories: [] },
 
       // Rows carry an entity_id once the corporate layer is on. Personal rows
       // never had one, so with it off everything is in scope.
       inEntity: (rows) => {
-        if (!enabled) return rows
+        if (!corporate) return rows
         if (isConsolidated(active)) return rows.filter((r) => entities.some((e) => e.id === r.entity_id))
         return rows.filter((r) => r.entity_id === active)
       },
       // What to stamp on a new row.
-      stamp: () => (enabled && !isConsolidated(active) ? { entity_id: active } : {}),
+      stamp: () => (corporate && !isConsolidated(active) ? { entity_id: active } : {}),
     }
-  }, [enabled, entities, entity, active, switchTo, reload, version, role, actor, members, departments])
+  }, [enabled, corporate, entities, entity, active, switchTo, reload, version, role, actor, members, departments])
 
   return <EntityContext.Provider value={value}>{children}</EntityContext.Provider>
 }

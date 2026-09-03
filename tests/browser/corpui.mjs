@@ -30,6 +30,7 @@ await p.goto(B, { waitUntil: 'networkidle' })
 const nav = await p.locator('aside nav').innerText()
 ok('the sidebar has no Companies entry', !/COMPANIES/i.test(nav), nav.replace(/\n/g, ' | '))
 ok('and no company switcher', (await p.locator('select[aria-label="Switch company"]').count()) === 0)
+ok('and no books tabs', (await p.locator('aside [role="tablist"]').count()) === 0)
 ok('nothing corporate is written to storage',
   (await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pl_corp')).length)) === 0)
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
@@ -57,7 +58,13 @@ ok('creating it is audited', (await ls('pl_corp_audit')).some((a) => a.action ==
 await p.goto(B, { waitUntil: 'networkidle' })
 await p.waitForTimeout(400)
 ok('Companies now appears in the sidebar', /COMPANIES/i.test(await p.locator('aside nav').innerText()))
-ok('and the switcher appears', await p.locator('select[aria-label="Switch company"]').isVisible())
+// One company needs no dropdown to choose between — the tabs say which set of
+// books, and the company's name sits under them.
+ok('and the books tabs appear', await p.locator('aside [role="tablist"]').isVisible())
+ok('with the company selected', /COMPANY/i.test(await p.locator('aside [role="tab"][aria-selected="true"]').innerText()))
+ok('and named underneath', /Acme Industries/.test(await p.locator('aside').innerText()))
+ok('but no dropdown, with only one to choose from',
+  (await p.locator('select[aria-label="Switch company"]').count()) === 0)
 ok('the personal books are untouched', (await ls('pl_expenses')).length === 1)
 
 // ── 3. Departments ──
@@ -157,7 +164,67 @@ ok('personal entries still show', /Adani/.test(await p.locator('#main-content').
 await p.goto(B, { waitUntil: 'networkidle' })
 ok('the dashboard still works', (await p.locator('#main-content').innerText()).length > 100)
 
-// ── 9. Layout ──
+// ── 9. Personal books and company books, as two tabs ──
+// The choice that changes what the app is for was previously one option inside
+// a dropdown you had to open to read. The dangerous part of putting it on the
+// surface is what "personal" does to permissions: `can` is about a company and
+// must answer no, while `canWrite` is about the ledger in front of you and must
+// keep answering yes, or looking at your own books turns the app read-only.
+console.log('\n── PERSONAL BOOKS ──')
+await p.setViewportSize({ width: 1440, height: 1000 })
+const tabs = p.locator('aside [role="tablist"]')
+const chosen = () => p.locator('aside [role="tab"][aria-selected="true"]').innerText()
+const pick = (name) => p.locator('aside [role="tab"]', { hasText: new RegExp(name, 'i') }).click()
+
+await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+ok('the tabs offer both sets of books', /PERSONAL/.test(await tabs.innerText()) && /COMPANY/.test(await tabs.innerText()))
+ok('a company is what you are in', /COMPANY/i.test(await chosen()))
+await pick('personal')
+await p.waitForTimeout(700)
+ok('switching lands on personal', /PERSONAL/i.test(await chosen()))
+ok('and the company dropdown goes with it',
+  (await p.locator('select[aria-label="Switch company"]').count()) === 0)
+ok('Operations says which books you are in', /You are in your personal books/.test(await p.locator('#main-content').innerText()))
+
+// The one that would be a disaster to get wrong.
+await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(500)
+ok('the personal ledger still shows', /Adani/.test(await p.locator('#main-content').innerText()))
+ok('and is still writable', (await p.locator('a[href="/expenses/new"]').count()) > 0)
+await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+ok('a new entry can still be started', (await p.locator('#main-content input,#main-content select').count()) > 3,
+  (await p.locator('#main-content').innerText()).slice(0, 120))
+
+// Companies is still reachable — otherwise the tab would be a trap.
+await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+let co = await p.locator('#main-content').innerText()
+ok('Companies still lists them', /Acme Industries/.test(co))
+ok('and still offers to add one', /Add a company/i.test(co))
+ok('but the per-company sections wait for a company', /Pick one above to manage them/.test(co), co.slice(0, 300))
+
+// And back again, to the company you were last in.
+await pick('company')
+await p.waitForTimeout(700)
+ok('coming back lands on a company', !/PERSONAL/i.test(await chosen()))
+await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+ok('and Operations works again', /Stock/.test(await p.locator('#main-content').innerText()))
+ok('the dropdown is back, with two companies to choose from',
+  await p.locator('select[aria-label="Switch company"]').isVisible())
+
+await pick('personal')
+await p.waitForTimeout(500)
+await p.reload({ waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+ok('the choice survives a reload', /PERSONAL/i.test(await chosen()))
+ok('and nothing corporate is written for it', (await ls('pl_corp_entities')).length === 2)
+await pick('company')
+await p.waitForTimeout(600)
+
+// ── 10. Layout ──
 console.log('\n── LAYOUT ──')
 await p.setViewportSize({ width: 390, height: 800 })
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })

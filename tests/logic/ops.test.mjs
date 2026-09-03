@@ -155,6 +155,17 @@ eq('received income is not still awaited', wc.receivable.count, 1)
 eq('receivables total', wc.receivable.total, 40000)
 eq('net position is what is owed to us less what we owe', wc.net, 14000)
 ok('the overdue-only net is reported too', typeof wc.netOverdue === 'number')
+// An older row from before the app tracked payment. payments.js has always read
+// a missing status as settled, so the dashboard counts it as done; this used to
+// read it the other way and the two screens disagreed about the same row.
+const legacy = [{ id: 'old', entity_id: 'e1', vendor: 'Before', amount: 7777, due_date: '2020-01-01' }]
+eq('a row with no status at all is settled, as it is everywhere else',
+  ageing(legacy, { kind: 'payable', asOf: ASOF, entityId: 'e1' }).total, 0)
+eq('and it is not counted as overdue either',
+  ageing(legacy, { kind: 'payable', asOf: ASOF, entityId: 'e1' }).overdueCount, 0)
+eq('an explicitly unpaid row still counts',
+  ageing([{ ...legacy[0], status: 'unpaid' }], { kind: 'payable', asOf: ASOF, entityId: 'e1' }).total, 7777)
+
 ok('an empty ledger reads as nothing outstanding', /Nothing/.test(describeAgeing(ageing([], { kind: 'payable' }))))
 ok('an all-current ledger says none overdue',
   /none overdue/.test(describeAgeing(ageing([{ amount: 1, status: 'unpaid', due_date: '2027-01-01' }], { kind: 'payable', asOf: ASOF }))))

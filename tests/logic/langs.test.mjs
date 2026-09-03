@@ -74,6 +74,7 @@ console.log('\n── NOTHING IS LEFT IN ENGLISH BY ACCIDENT ──')
 const ALLOWED_SAME = new Set([
   'language.coverage', 'chrome.sharedWorkspace',
   'es:nav.personal',   // "Personal" is the Spanish word as well
+  'es:company.personal', // and the books tab uses the same word as the nav
   'fr:entry.date',     // as is "Date" in French
   'fr:entry.notes',    // and "Description / Notes"
   'fr:income.source',  // and "Source"

@@ -37,6 +37,7 @@ import { useConfig } from '../context/ConfigContext'
 import { useReport } from '../context/ReportContext'
 import { useT } from '../context/LanguageContext'
 import { useEntity } from '../context/EntityContext'
+import { CONSOLIDATED, PERSONAL } from '../lib/corporate'
 import ErrorBoundary from './ErrorBoundary'
 import QuickAddExpense from './QuickAddExpense'
 import CommandPalette from './CommandPalette'
@@ -207,24 +208,75 @@ function QuickAdd({ onClick }) {
   )
 }
 
-// Which company's books you are looking at. Absent until there is one.
+// Which set of books you are looking at. Absent until a company exists.
+//
+// Two levels, because they are two different questions. The tabs answer "whose
+// books" — your own, or a company's — which is the one that changes what the
+// app is for, and it was previously buried as one option inside a dropdown you
+// had to open to read. The select underneath answers "which company", and only
+// appears when there is more than one to choose between.
 function CompanySwitcher() {
-  const { enabled, entities, activeId, switchTo, consolidated } = useEntity()
+  const { enabled, entities, activeId, switchTo, consolidated, personal } = useEntity()
   const t = useT()
   if (!enabled) return null
+
+  // Coming back to a company lands on the one you were last in, so the tab is a
+  // toggle rather than a thing that loses your place.
+  const lastCompany = entities.some((e) => e.id === activeId) ? activeId : entities[0].id
+
   return (
-    <select
-      value={consolidated ? '__all__' : activeId}
-      onChange={(e) => switchTo(e.target.value)}
-      className="mt-4 w-full border border-white/15 bg-white/5 px-2 py-2 text-xs text-white/90"
-      aria-label={t('company.switch')}
-      title={t('company.switch')}
+    <div className="mt-4">
+      <div
+        role="tablist"
+        aria-label={t('company.books')}
+        className="flex gap-1 border border-white/15 bg-white/5 p-1"
+      >
+        <BooksTab selected={personal} onSelect={() => switchTo(PERSONAL)} label={t('company.personal')} icon={PiggyBank} />
+        <BooksTab
+          selected={!personal}
+          onSelect={() => switchTo(consolidated ? CONSOLIDATED : lastCompany)}
+          label={t('company.company')}
+          icon={Building2}
+        />
+      </div>
+
+      {!personal && entities.length > 1 && (
+        <select
+          value={consolidated ? CONSOLIDATED : activeId}
+          onChange={(e) => switchTo(e.target.value)}
+          className="mt-1.5 w-full border border-white/15 bg-white/5 px-2 py-2 text-xs text-white/90"
+          aria-label={t('company.switch')}
+          title={t('company.switch')}
+        >
+          {entities.map((e) => (
+            <option key={e.id} value={e.id} className="text-ink-1">{e.name}</option>
+          ))}
+          <option value={CONSOLIDATED} className="text-ink-1">{t('company.all')}</option>
+        </select>
+      )}
+      {!personal && entities.length === 1 && (
+        <p className="mt-1.5 truncate px-1 text-[0.68rem] text-white/45" title={entities[0].name}>
+          {entities[0].name}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function BooksTab({ selected, onSelect, label, icon: Icon }) {
+  return (
+    <button
+      role="tab"
+      aria-selected={selected}
+      onClick={onSelect}
+      className={
+        selected
+          ? 'flex flex-1 items-center justify-center gap-1.5 bg-gold px-2 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[1px] text-navy'
+          : 'flex flex-1 items-center justify-center gap-1.5 px-2 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[1px] text-white/55 transition hover:text-white/90'
+      }
     >
-      {entities.map((e) => (
-        <option key={e.id} value={e.id} className="text-ink-1">{e.name}</option>
-      ))}
-      {entities.length > 1 && <option value="__all__" className="text-ink-1">{t('company.all')}</option>}
-    </select>
+      <Icon size={13} /> {label}
+    </button>
   )
 }
 

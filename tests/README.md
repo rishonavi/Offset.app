@@ -33,13 +33,13 @@ for Vite's resolver.
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
-| `ops.test.mjs` | 205 | inventory, payables, advances, payroll, and each over a period |
+| `ops.test.mjs` | 208 | inventory, payables, advances, payroll, and each over a period |
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 79 | corporate storage layer, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,320** | |
+| | **1,323** | |
 
 ## Browser — `tests/browser/`
 
@@ -61,7 +61,7 @@ node tests/browser/rtlui.mjs
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `clickui.mjs` | 18 | pressing every button on every page and watching |
-| `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
+| `corpui.mjs` | 61 | companies nav, the personal/company tabs, consolidated view |
 | `defaultsui.mjs` | 18 | the form folding what most entries never touch |
 | `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
@@ -74,13 +74,14 @@ node tests/browser/rtlui.mjs
 | `navui.mjs` | 17 | the side bar: grouping, what is waiting, and a short screen |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
+| `owedui.mjs` | 22 | what is owed in both directions, and how old it is |
 | `opsui.mjs` | 92 | stock, advances, payroll — in the report, in a backup, and on their own page |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **750** | |
+| | **792** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

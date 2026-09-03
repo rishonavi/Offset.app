@@ -168,7 +168,7 @@ export function advancesOverPeriod(advances, adjustments, { entityId = null, fro
       amount: l.outstanding,
       due_date: l.advance.expected_by || '',
       vendor: l.advance.party || 'Unnamed',
-      status: '',
+      status: 'unpaid',
     })),
     { kind: 'payable', asOf: to || undefined },
   )

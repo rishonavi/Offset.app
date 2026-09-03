@@ -168,6 +168,19 @@ assertions:
   existed for and has actually reached, and the card says when it clamped them —
   a table of wages for a company that did not exist yet looks like a record
 
+**Done and verified** — personal books and company books as two tabs, 20 more
+assertions:
+
+- the side bar's top control is now **Personal | Company**, with the
+  which-company dropdown appearing under it only when there is more than one
+- `PERSONAL` is a third active-id sentinel alongside `CONSOLIDATED`. The rule
+  that matters: `can` is about a company and answers **no** in personal books,
+  while `canWrite` is about the ledger in front of you and keeps answering
+  **yes** — getting that backwards would turn the whole app read-only the
+  moment someone looked at their own books, so it is asserted directly
+- Operations, Companies and the report's company card all follow the tab
+- the choice persists across reloads and writes nothing corporate
+
 **Done and verified** — the Supabase schema and row-level security,
 `supabase/corporate.sql`, 50 assertions against a real PostgreSQL:
 

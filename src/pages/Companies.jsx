@@ -68,8 +68,8 @@ export default function Companies() {
     <div className="animate-fade-in space-y-5">
       <PageHeader
         title="Companies"
-        subtitle={ent.consolidated ? 'Viewing all companies together.' : ent.entity?.name || ''}
-        actions={ent.can('entity.manage') || !ent.enabled ? (
+        subtitle={ent.personal ? 'You are in your personal books.' : ent.consolidated ? 'Viewing all companies together.' : ent.entity?.name || ''}
+        actions={ent.can('entity.manage') || !ent.corporate ? (
           <Button variant="ghost" onClick={() => setCreating((v) => !v)}>
             <Plus size={16} /> Add a company
           </Button>
@@ -144,7 +144,7 @@ export default function Companies() {
             </div>
           </Card>
 
-          {ent.consolidated ? (
+          {ent.consolidated || ent.personal ? (
             <Card className="p-5 text-sm text-ink-5">
               Members, departments and approvals are set per company. Pick one above to manage them.
             </Card>
