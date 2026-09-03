@@ -61,6 +61,7 @@ node tests/browser/rtlui.mjs
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `defaultsui.mjs` | 18 | the form folding what most entries never touch |
 | `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
+| `exportsui.mjs` | 22 | reports and exports as two pages sharing one filter |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 12 | the sign-in screen, and what it says when a provider refuses |
@@ -75,7 +76,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **592** | |
+| | **614** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

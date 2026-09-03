@@ -7,6 +7,7 @@ import {
   Banknote,
   FileText,
   MailPlus,
+  FileUp,
   PieChart,
   Settings as SettingsIcon,
   LogOut,
@@ -62,8 +63,12 @@ const NAV = [
     { to: '/personal', key: 'nav.personal', icon: PiggyBank },
   ] },
   { group: 'nav.groupTools', items: [
+    { to: '/reports', key: 'nav.reports', icon: PieChart, keepsFilter: true },
+    // Two errands, not one: reading what the year came to, and moving the rows
+    // somewhere else. They shared a door and a heading, so whichever you came
+    // for you read past the other one first.
+    { to: '/exports', key: 'nav.exports', icon: FileUp, keepsFilter: true },
     { to: '/import', key: 'nav.import', icon: MailPlus },
-    { to: '/reports', key: 'nav.reports', icon: PieChart },
   ] },
   { group: 'nav.groupManage', items: [
     { to: '/bin', key: 'nav.bin', icon: Trash2 },
@@ -87,10 +92,14 @@ function useNavCounts() {
   }), [expenses, income])
 }
 
+const FILTER_PAIR = ['/reports', '/exports']
+
 function NavItems({ onNavigate, isAdmin }) {
   const t = useT()
   const { enabled: corporate } = useEntity()
   const counts = useNavCounts()
+  const { pathname, search } = useLocation()
+  const keepsFilterHere = FILTER_PAIR.includes(pathname)
   const groups = NAV.map((g) => {
     if (corporate && g.group === 'nav.groupHoldings') return { ...g, items: [...g.items, CORPORATE_NAV] }
     if (isAdmin && g.group === 'nav.groupManage') return { ...g, items: [ADMIN_NAV, ...g.items] }
@@ -105,12 +114,17 @@ function NavItems({ onNavigate, isAdmin }) {
               {t(g.group)}
             </p>
           )}
-          {g.items.map(({ to, key, icon: Icon, end, count }) => {
+          {g.items.map(({ to, key, icon: Icon, end, count, keepsFilter }) => {
             const waiting = count ? counts[count] : 0
+            // Reports and Export ask the same question of the same rows, so
+            // moving between them keeps the filter you already built. Every
+            // other destination starts clean — carrying ?propertyId= into
+            // Settings would be noise, not continuity.
+            const target = keepsFilter && keepsFilterHere ? { pathname: to, search } : to
             return (
               <NavLink
                 key={to}
-                to={to}
+                to={target}
                 end={end}
                 onClick={onNavigate}
                 className={({ isActive }) =>

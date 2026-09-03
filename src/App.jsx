@@ -28,6 +28,7 @@ const Bills = lazy(() => import('./pages/Bills'))
 const ImportBills = lazy(() => import('./pages/ImportBills'))
 const Invoices = lazy(() => import('./pages/Invoices'))
 const Reports = lazy(() => import('./pages/Reports'))
+const Exports = lazy(() => import('./pages/Exports'))
 const Companies = lazy(() => import('./pages/Companies'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Admin = lazy(() => import('./pages/Admin'))
@@ -121,6 +122,7 @@ export default function App() {
         <Route path="import" element={<ImportBills />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="exports" element={<Exports />} />
         <Route path="companies" element={<Companies />} />
         <Route path="settings" element={<Settings />} />
         <Route path="personal" element={<Personal />} />

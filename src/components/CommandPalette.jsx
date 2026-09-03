@@ -8,6 +8,7 @@ import {
   Receipt,
   FileText,
   MailPlus,
+  FileUp,
   PieChart,
   Settings as SettingsIcon,
   Trash2,
@@ -36,7 +37,10 @@ const NAV_COMMANDS = [
   { label: 'Expenses', to: '/expenses', icon: Receipt },
   { label: 'Bills', to: '/bills', icon: FileText },
   { label: 'Import', to: '/import', icon: MailPlus },
-  { label: 'Reports & Export', to: '/reports', icon: PieChart },
+  { label: 'Reports', to: '/reports', icon: PieChart },
+  // Named for the words people type. "Export" and "backup" are what someone
+  // wants when they come here, and neither used to match anything.
+  { label: 'Export & import', to: '/exports', icon: FileUp, also: 'export csv excel pdf tally backup restore' },
   { label: 'Bin', to: '/bin', icon: Trash2 },
   { label: 'Settings', to: '/settings', icon: SettingsIcon },
 ]
@@ -109,7 +113,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
     if (match('report a problem') || match('bug') || match('feedback') || match('support'))
       push('Actions', 'Report a problem', 'Tell the developer about a bug', Bug, () => { onClose(); onReport?.() })
 
-    for (const n of NAV_COMMANDS) if (match(n.label)) push('Go to', n.label, '', n.icon, go(n.to))
+    for (const n of NAV_COMMANDS) if (matchesAll([n.label, n.also], words)) push('Go to', n.label, '', n.icon, go(n.to))
 
     if (words.length) {
       let n = 0

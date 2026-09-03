@@ -121,8 +121,10 @@ console.log('\n── A BACKUP STILL CARRIES THE FILE ──')
 // The row holds a token that means nothing on another device, so the backup has
 // to inline the file. Getting this wrong loses every receipt on restore, and
 // silently — the backup would still look complete.
-await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
+// Backup lives with the other ways of moving data, not with the summaries.
+await p.goto(`${B}/exports`, { waitUntil: 'networkidle' })
 const backupBtn = p.locator('button', { hasText: /Download backup/i }).first()
+await backupBtn.waitFor({ state: 'visible' }).catch(() => {})
 ok('there is a backup control', await backupBtn.count() > 0)
 if (await backupBtn.count()) {
   const [download] = await Promise.all([

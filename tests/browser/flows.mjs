@@ -148,8 +148,10 @@ if (await del.count()) {
 
 // ── 8. Exports ──
 console.log('\n── EXPORTS ──')
-await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
+// Exporting moved off /reports when that page was split in two: reading what
+// the year came to is one errand, taking the rows somewhere else is another.
+await p.goto(`${B}/exports`, { waitUntil: 'networkidle' })
+await p.locator('#main-content button:has-text("Excel")').first().waitFor({ state: 'visible' })
 for (const [label, ext] of [[/CSV/i, 'csv'], [/Excel/i, 'xlsx'], [/PDF/i, 'pdf']]) {
   const btn = p.locator('#main-content button', { hasText: label }).first()
   if (!(await btn.count())) { ok(`${ext} export exists`, false, 'button not found'); continue }
