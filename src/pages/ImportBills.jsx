@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mail, Loader2, Sparkles, Plus, X, Building2, Inbox, Upload, Calculator, CheckCircle2, AlertCircle, DownloadCloud, FileUp } from 'lucide-react'
+import { Mail, Loader2, Sparkles, Plus, X, Building2, Inbox, Upload, Calculator, CheckCircle2, AlertCircle, DownloadCloud, FileUp, FileSpreadsheet } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { usePlan } from '../context/PlanContext'
@@ -15,6 +15,21 @@ import { parseSpreadsheet, rowToExpenseInput } from '../lib/exports'
 import { parseTallyXML } from '../lib/tally'
 import { useBackup } from '../lib/useBackup'
 
+function ImportResult({ msg, source }) {
+  if (!msg || msg.source !== source) return null
+  return (
+    <div
+      role="status"
+      className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
+        msg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+      }`}
+    >
+      {msg.ok ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <AlertCircle size={16} className="mt-0.5 shrink-0" />}
+      {msg.text}
+    </div>
+  )
+}
+
 export default function ImportBills() {
   const { properties, loading, addExpense, addIncome, addProperty, propertyNameById } = useData()
   const toast = useToast()
@@ -22,7 +37,8 @@ export default function ImportBills() {
   // Every way data comes in now lives here — a mailbox, a spreadsheet, a Tally
   // export, a backup file. They were spread across two pages, one of which was
   // called Export.
-  const [importing, setImporting] = useState(false)
+  // Which import is running, so only that card's button spins.
+  const [importing, setImporting] = useState(null)
   const [importMsg, setImportMsg] = useState(null)
   const fileRef = useRef(null)
   const tallyRef = useRef(null)
@@ -39,13 +55,13 @@ export default function ImportBills() {
 
   const handleImport = async (file) => {
     if (!file) return
-    setImporting(true)
+    setImporting('sheet')
     setImportMsg(null)
     try {
       const raw = await parseSpreadsheet(file)
       const parsed = raw.map(rowToExpenseInput).filter((r) => r.amount > 0 && r.date)
       if (parsed.length === 0) {
-        setImportMsg({ ok: false, text: 'No valid rows found. Expected columns: Date, Property, Category, Amount.' })
+        setImportMsg({ source: 'sheet', ok: false, text: 'No valid rows found. Expected columns: Date, Property, Category, Amount.' })
         return
       }
       const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
@@ -72,15 +88,16 @@ export default function ImportBills() {
         })
       }
       setImportMsg({
+        source: 'sheet',
         ok: true,
         text: `Imported ${parsed.length} expense${parsed.length === 1 ? '' : 's'}${
           createdProps ? `, created ${createdProps} new propert${createdProps === 1 ? 'y' : 'ies'}` : ''
         }.`,
       })
     } catch (err) {
-      setImportMsg({ ok: false, text: `Import failed: ${err?.message || err}` })
+      setImportMsg({ source: 'sheet', ok: false, text: `Import failed: ${err?.message || err}` })
     } finally {
-      setImporting(false)
+      setImporting(null)
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -90,12 +107,12 @@ export default function ImportBills() {
   // its narration, else filed under a single "Imported from Tally" asset.
   const handleTallyImport = async (file) => {
     if (!file) return
-    setImporting(true)
+    setImporting('tally')
     setImportMsg(null)
     try {
       const vouchers = parseTallyXML(await file.text())
       if (vouchers.length === 0) {
-        setImportMsg({ ok: false, text: 'No vouchers found in that Tally file.' })
+        setImportMsg({ source: 'tally', ok: false, text: 'No vouchers found in that Tally file.' })
         return
       }
       const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
@@ -135,13 +152,14 @@ export default function ImportBills() {
         }
       }
       setImportMsg({
+        source: 'tally',
         ok: true,
         text: `Imported ${addedE} expense${addedE === 1 ? '' : 's'} and ${addedI} income from Tally${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}` : ''}.`,
       })
     } catch (err) {
-      setImportMsg({ ok: false, text: `Tally import failed: ${err?.message || err}` })
+      setImportMsg({ source: 'tally', ok: false, text: `Tally import failed: ${err?.message || err}` })
     } finally {
-      setImporting(false)
+      setImporting(null)
       if (tallyRef.current) tallyRef.current.value = ''
     }
   }
@@ -246,11 +264,17 @@ export default function ImportBills() {
         <>
           <BankImport />
 
-        {/* Import */}
+        {/* A spreadsheet and a Tally export are different errands with
+            different files and different rules, and Tally was a paragraph
+            below a horizontal rule inside somebody else's card — findable only
+            if you already knew it was there. */}
         <Card className="p-5">
-          <h2 className="text-sm font-semibold text-ink-3">Import from spreadsheet</h2>
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet size={16} className="text-emerald-600" />
+            <h2 className="text-sm font-semibold text-ink-3">From a spreadsheet</h2>
+          </div>
           <p className="mt-1 text-xs text-ink-5">
-            Upload an <strong>.xlsx</strong> or <strong>.csv</strong> with columns:
+            An <strong>.xlsx</strong> or <strong>.csv</strong> with columns:
             <span className="font-medium text-ink-4"> Date, Property, Category, Vendor, Payment Method, Description, Amount</span>.
             New property names are created automatically.
           </p>
@@ -262,40 +286,39 @@ export default function ImportBills() {
             onChange={(e) => handleImport(e.target.files?.[0])}
           />
           <div className="mt-4">
-            <Button variant="ghost" onClick={() => fileRef.current?.click()} loading={importing}>
-              {!importing && <Upload size={16} />} Choose file…
+            <Button variant="ghost" onClick={() => fileRef.current?.click()} loading={importing === 'sheet'}>
+              {importing !== 'sheet' && <Upload size={16} />} Choose file…
             </Button>
           </div>
+          <ImportResult msg={importMsg} source="sheet" />
+        </Card>
 
-          <div className="mt-4 border-t border-line pt-4">
-            <p className="text-xs text-ink-5">
-              Or import a <strong>Tally XML</strong> export (Day Book / Voucher Register). Payment/Purchase vouchers become
-              expenses and Receipt/Sales become income, matched to the asset named in each voucher. Duplicates are skipped.
-            </p>
-            <input
-              ref={tallyRef}
-              type="file"
-              accept=".xml,text/xml,application/xml"
-              className="hidden"
-              onChange={(e) => handleTallyImport(e.target.files?.[0])}
-            />
-            <div className="mt-3">
-              <Button variant="ghost" onClick={() => tallyRef.current?.click()} loading={importing}>
-                {!importing && <Calculator size={16} className="text-indigo-600" />} Import Tally XML
-              </Button>
-            </div>
+        <Card className="p-5">
+          <div className="flex items-center gap-2">
+            <Calculator size={16} className="text-indigo-600" />
+            <h2 className="text-sm font-semibold text-ink-3">From Tally</h2>
           </div>
-
-          {importMsg && (
-            <div
-              className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
-                importMsg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-              }`}
-            >
-              {importMsg.ok ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <AlertCircle size={16} className="mt-0.5 shrink-0" />}
-              {importMsg.text}
-            </div>
-          )}
+          <p className="mt-1 text-xs text-ink-5">
+            A <strong>Tally XML</strong> export — Day Book or Voucher Register. Payment and Purchase vouchers become
+            expenses, Receipt and Sales become income, each matched to the asset named in the voucher. Duplicates are
+            skipped, so re-importing the same file is safe.
+          </p>
+          <p className="mt-2 text-[0.7rem] text-ink-6">
+            In TallyPrime: Gateway of Tally → Display More Reports → Day Book → Export.
+          </p>
+          <input
+            ref={tallyRef}
+            type="file"
+            accept=".xml,text/xml,application/xml"
+            className="hidden"
+            onChange={(e) => handleTallyImport(e.target.files?.[0])}
+          />
+          <div className="mt-4">
+            <Button variant="ghost" onClick={() => tallyRef.current?.click()} loading={importing === 'tally'}>
+              {importing !== 'tally' && <Calculator size={16} className="text-indigo-600" />} Choose Tally XML…
+            </Button>
+          </div>
+          <ImportResult msg={importMsg} source="tally" />
         </Card>
 
 

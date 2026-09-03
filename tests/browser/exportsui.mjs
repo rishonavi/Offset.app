@@ -46,7 +46,7 @@ console.log('── EACH PAGE DOES ONE THING ──')
   ok('exports shows the export buttons', /excel \(\.xlsx\)/i.test(e), e.replace(/\n/g, ' | ').slice(0, 140))
   ok('and the backup that stands on its own', /Back up everything/i.test(e))
   // Every way data comes in is on Import, including restoring a backup.
-  ok('but not the spreadsheet import', !/Import from spreadsheet/i.test(e))
+  ok('but not the spreadsheet import', !/From a spreadsheet/i.test(e))
   ok('nor restoring one', !/Restore a backup/i.test(e))
   ok('nor the year-end summary', !/year-end summary/i.test(e))
   ok('neither page threw', errs.length === 0, errs.join(' | '))
@@ -59,13 +59,25 @@ console.log('\n── EVERY WAY IN IS ON ONE PAGE ──')
   // nobody would look for it.
   const { ctx, p, errs } = await open()
   await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
-  await p.locator('#main-content').getByText(/Import from spreadsheet/i).first().waitFor({ state: 'visible' })
+  await p.locator('#main-content').getByText(/From a spreadsheet/i).first().waitFor({ state: 'visible' })
   const i = await body(p)
   ok('a bank statement', /statement/i.test(i))
   ok('the inbox', /Bills from Gmail/i.test(i))
-  ok('a spreadsheet', /Import from spreadsheet/i.test(i))
-  ok('Tally', /tally/i.test(i))
+  ok('a spreadsheet', /From a spreadsheet/i.test(i))
+  ok('Tally, as its own card rather than a paragraph inside another',
+    /From Tally/i.test(i) && /From a spreadsheet/i.test(i), i.replace(/\n/g, ' | ').slice(0, 160))
   ok('and a backup to restore', /Restore a backup/i.test(i))
+  // Two cards sharing one message strip meant a Tally failure appearing under
+  // the spreadsheet, which is a worse lie than saying nothing.
+  await p.setInputFiles('input[accept*="xml"]', {
+    name: 'empty.xml', mimeType: 'text/xml', buffer: Buffer.from('<ENVELOPE></ENVELOPE>'),
+  })
+  await p.waitForTimeout(900)
+  const under = await p.evaluate(() =>
+    [...document.querySelectorAll('#main-content .card')]
+      .filter((c) => /vouchers found|Tally import failed/i.test(c.innerText))
+      .map((c) => c.querySelector('h2')?.innerText || '?'))
+  ok('a Tally result reports under the Tally card', under.length === 1 && /tally/i.test(under[0]), under.join(', ') || 'nowhere')
   ok('nothing on it exports', !/Download backup/i.test(i) && !/excel \(\.xlsx\)/i.test(i))
   ok('the import page did not throw', errs.length === 0, errs.join(' | '))
   await ctx.close()
