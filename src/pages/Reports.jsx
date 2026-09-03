@@ -24,6 +24,11 @@ export default function Reports() {
   const { expenses, income, properties, propertyNameById } = useData()
   const [filters, setFilters] = useFilterParams()
   const { search } = useLocation()
+  // Left behind when this page was split from Export: downloadYearEndPDF still
+  // named it, so the one button on this page that produces a file threw
+  // ReferenceError instead. Nothing here rendered wrong, which is why it
+  // survived a review and a full suite — it only failed on the click.
+  const baseName = `property-expenses-${new Date().toISOString().slice(0, 10)}`
 
   const filtered = useMemo(() => applyFilters(expenses, filters), [expenses, filters])
   const total = useMemo(() => sumAmount(filtered), [filtered])

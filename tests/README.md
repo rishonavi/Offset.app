@@ -60,6 +60,7 @@ node tests/browser/rtlui.mjs
 | `bulkui.mjs` | 17 | settling several at once, and re-importing a file |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
+| `clickui.mjs` | 17 | pressing every button on every page and watching |
 | `corpui.mjs` | 41 | companies nav, switcher, consolidated view |
 | `defaultsui.mjs` | 18 | the form folding what most entries never touch |
 | `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
@@ -78,7 +79,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **640** | |
+| | **657** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
