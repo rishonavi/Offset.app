@@ -21,6 +21,15 @@ which is the usual reason a connection fails at this step.
    refresh on `/expenses` does not 404.
 3. **Deploy.** Every push to `main` deploys from then on.
 
+> **"You don't have permission to create a project."** Vercel returns this
+> when the credential making the request may read the account but not create
+> in it — a Viewer/Contributor role, or an integration token granted read-only
+> access. It is not about the repository: a repository Vercel cannot see fails
+> with a different message naming the repo. The fix is to do this step signed
+> in as an Owner of the Vercel account, in the dashboard. Everything after the
+> project exists — environment variables, redeploys, reading logs — works with
+> the lesser role.
+
 At this point the app is live in demo mode. `api/` deploys as serverless
 functions and each one answers **501** until its keys are set, rather than
 failing — an unconfigured feature says it is unconfigured.
