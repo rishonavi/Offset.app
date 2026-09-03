@@ -17,6 +17,7 @@ import {
   Moon,
   Sun,
   Building2,
+  Briefcase,
   CornerDownLeft,
   Clock,
   Eraser,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
+import { useEntity } from '../context/EntityContext'
 import { formatCurrency, formatDate } from '../lib/format'
 import { recentSearches, recordSearch, clearSearches, RETENTION_DAYS } from '../lib/searchHistory'
 import { terms, matchesAll, score } from '../lib/searchMatch'
@@ -45,6 +47,19 @@ const NAV_COMMANDS = [
   { label: 'Settings', to: '/settings', icon: SettingsIcon },
 ]
 
+// Only offered once a company exists. On a personal install these two words
+// would lead to a screen that only says "you have no company", which is a
+// worse answer than no result at all.
+const CORPORATE_COMMANDS = [
+  { label: 'Companies', to: '/companies', icon: Building2 },
+  {
+    label: 'Operations',
+    to: '/operations',
+    icon: Briefcase,
+    also: 'stock inventory items movements goods reorder advances imprest payroll salary salaries payslip employees staff pf esi',
+  },
+]
+
 // A ⌘K / Ctrl-K palette: jump to any page, run a quick action, or search across
 // assets, income, expenses and documents. Everything is local — no navigation
 // round-trips until you pick a result.
@@ -52,6 +67,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
   const navigate = useNavigate()
   const { properties, expenses, income, documents, propertyNameById, canWrite } = useData()
   const { theme, toggle } = useTheme()
+  const { enabled: corporate } = useEntity()
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
   // Read when the palette opens rather than held across the session, so a week
@@ -113,7 +129,8 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
     if (match('report a problem') || match('bug') || match('feedback') || match('support'))
       push('Actions', 'Report a problem', 'Tell the developer about a bug', Bug, () => { onClose(); onReport?.() })
 
-    for (const n of NAV_COMMANDS) if (matchesAll([n.label, n.also], words)) push('Go to', n.label, '', n.icon, go(n.to))
+    const destinations = corporate ? [...NAV_COMMANDS, ...CORPORATE_COMMANDS] : NAV_COMMANDS
+    for (const n of destinations) if (matchesAll([n.label, n.also], words)) push('Go to', n.label, '', n.icon, go(n.to))
 
     if (words.length) {
       let n = 0
@@ -155,7 +172,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
     const fixed = out.filter((x) => !x.rank)
     const ranked = out.filter((x) => x.rank).sort((a, b) => b.rank - a.rank)
     return [...fixed, ...ranked]
-  }, [q, properties, expenses, income, documents, canWrite, theme, recents]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [q, properties, expenses, income, documents, canWrite, corporate, theme, recents]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the highlighted row scrolled into view.
   useEffect(() => {

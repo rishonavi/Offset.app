@@ -5,7 +5,7 @@ import {
   listMembers, addMember, setMemberRole, removeMember,
   listDepartments, createDepartment, updateDepartment, deleteDepartment,
   approvalPolicy, setApprovalPolicy, listAudit, recordAudit,
-  items, movements, advances, employees, exportCorporate, hasCorporateData, clearCorporate,
+  items, movements, advances, employees, exportCorporate, importCorporate, hasCorporateData, clearCorporate,
 } from '../../src/lib/storage/corporate.js'
 import { makeItem, makeMovement } from '../../src/lib/inventory.js'
 import { makeAdvance } from '../../src/lib/advances.js'
@@ -155,9 +155,40 @@ ok('and departments', dump.departments.length === 1)
 ok('and the policy', Boolean(dump.policy[ee.id]))
 ok('and the audit trail', dump.audit.length > 0)
 ok('the active company is not exported as data', dump.active === undefined)
+// A backup nobody can restore is not a backup, and exportCorporate had no
+// counterpart until now.
+const stocked = items.add(makeItem({ entityId: ee.id, name: 'Cement', sku: 'cem' }), actor)
+movements.add(makeMovement({ entityId: ee.id, itemId: stocked.id, kind: 'receipt', qty: 10, unitCost: 350 }), actor)
+const full = exportCorporate()
 clearCorporate()
 ok('clearing removes the corporate side', !hasCorporateData())
 eq('and the audit with it', listAudit().length, 0)
+
+console.log('\n── RESTORING ONE ──')
+const restored = importCorporate(full)
+ok('the company comes back', hasCorporateData())
+eq('with its department', listDepartments(ee.id).length, 1)
+eq('and its owner', listMembers(ee.id).length, 1)
+eq('and its stock', items.list(ee.id).length, 1)
+eq('and the movement still points at the item', movements.list(ee.id)[0].item_id, stocked.id)
+ok('the policy survives', approvalPolicy(ee.id).enabled)
+ok('something was counted as added', restored.added > 0, `${restored.added}`)
+
+const again = importCorporate(full)
+eq('restoring the same file twice adds nothing', again.added, 0)
+eq('and does not duplicate the company', listEntities().length, 1)
+eq('nor the stock', items.list(ee.id).length, 1)
+
+// A policy already set here is the one this install is running on.
+setApprovalPolicy(ee.id, { enabled: false, threshold: 0 }, actor)
+importCorporate(full)
+ok('a local policy is not overwritten by an older backup', !approvalPolicy(ee.id).enabled)
+
+reset()
+eq('a payload with no corporate half is harmless', importCorporate(null).added, 0)
+eq('and so is a garbage one', importCorporate({ entities: 'nope', items: [{ no: 'id' }] }).added, 0)
+ok('nothing was created from garbage', !hasCorporateData())
+clearCorporate()
 
 console.log('\n── CORRUPT STORAGE ──')
 reset()

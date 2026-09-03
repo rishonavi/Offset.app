@@ -120,7 +120,8 @@ silent zero drags a total down and looks like an answer.
 - **Share read-only** — invite an accountant or partner to view your workspace
   (Settings → Team; run `supabase/teams.sql`).
 - **Companies** — several legal entities under one login, with roles,
-  departments and approval rules. See [Companies](#companies-optional) below.
+  departments and approval rules, plus stock, advances and payroll. See
+  [Companies](#companies-optional) below.
 - **Report a problem** — users can tell you what broke with the diagnostics
   already attached.
 
@@ -301,12 +302,27 @@ Setup reuses `VITE_GOOGLE_CLIENT_ID`:
 Personal Offset has one set of books owned by one person. The corporate layer
 adds several **legal entities** under one login, people with **roles** inside
 them, costs tagged to **departments**, spending that needs **approval**, and an
-audit trail — plus models for inventory, payables, advances and payroll.
+audit trail — plus **stock, advances and payroll** on their own page.
 
 **The whole layer stays dormant until you create a company.** A personal install
 sees no Companies nav, no entity switcher, and writes no `pl_corp_*` keys. The
 route exists regardless: go to **`/companies`** and press *Add a company*, and
 the nav entry and switcher appear from then on.
+
+**Operations** (`/operations`) is the day-to-day half, in three tabs:
+
+- **Stock** — items, receipts and issues at a running average cost, and a
+  reorder list that puts negative stock first, because that means the books and
+  the shelf disagree.
+- **Advances** — money paid out that is owed back, set against a bill when it
+  arrives. An adjustment can never take out more than is left.
+- **Payroll** — payslips with PF, ESI and professional tax from the statutory
+  rules. TDS is not computed: it depends on declared investments, and a wrong
+  guess is worse than an empty field.
+
+The three meet in one place. An advance paid to an employee can be recovered in
+a payroll run — matched by name, shown before it is applied, off unless you ask
+for it, and it writes the adjustment that actually closes the advance.
 
 Two rules are enforced in the model rather than the UI, because that is where
 they matter: **nobody approves their own entry**, and **an entity always keeps
@@ -425,7 +441,7 @@ src/
   context/          auth, data, config, entity, language, plan, theme, …
   components/       Layout, forms, tables, charts, and the ui.jsx primitives
   pages/            Dashboard, Assets, Income, Expenses, Bills, Invoices,
-                    Reports, Companies, Personal, Settings, Admin, Bin, …
+                    Reports, Companies, Operations, Personal, Settings, …
 api/                Vercel serverless functions; files prefixed _ are helpers
 supabase/           schema.sql plus the optional teams / admin / reports / limits
 docs/               the reasoning behind each area

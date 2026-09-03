@@ -17,6 +17,7 @@ export default {
   'nav.exports': 'Export',
   'nav.bin': 'Bin',
   'nav.companies': 'Companies',
+  'nav.operations': 'Operations',
   'company.switch': 'Switch company',
   'company.all': 'All companies',
   'nav.settings': 'Settings',

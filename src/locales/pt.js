@@ -13,6 +13,7 @@ export default {
   'nav.exports': 'Exportar',
   'nav.bin': 'Lixeira',
   'nav.companies': 'Empresas',
+  'nav.operations': 'Operações',
   'company.switch': 'Trocar de empresa',
   'company.all': 'Todas as empresas',
   'nav.settings': 'Configurações',

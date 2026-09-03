@@ -24,6 +24,7 @@ import {
   Trash2,
   Search,
   Building2,
+  Briefcase,
   Bug,
   FileSpreadsheet,
 } from 'lucide-react'
@@ -77,7 +78,13 @@ const NAV = [
 ]
 
 // Only shown once a company exists — a personal install never sees it.
-const CORPORATE_NAV = { to: '/companies', key: 'nav.companies', icon: Building2 }
+// Stock, advances and payroll share one destination because they are one job —
+// running the company behind the property — and eleven places to go was already
+// too many.
+const CORPORATE_NAV = [
+  { to: '/companies', key: 'nav.companies', icon: Building2 },
+  { to: '/operations', key: 'nav.operations', icon: Briefcase },
+]
 const ADMIN_NAV = { to: '/admin', key: 'nav.admin', icon: ShieldCheck }
 
 // What is waiting for you, per destination. A sidebar that only links is a list
@@ -101,7 +108,7 @@ function NavItems({ onNavigate, isAdmin }) {
   const { pathname, search } = useLocation()
   const keepsFilterHere = FILTER_PAIR.includes(pathname)
   const groups = NAV.map((g) => {
-    if (corporate && g.group === 'nav.groupHoldings') return { ...g, items: [...g.items, CORPORATE_NAV] }
+    if (corporate && g.group === 'nav.groupHoldings') return { ...g, items: [...g.items, ...CORPORATE_NAV] }
     if (isAdmin && g.group === 'nav.groupManage') return { ...g, items: [ADMIN_NAV, ...g.items] }
     return g
   })

@@ -13,6 +13,7 @@ export default {
   'nav.exports': 'निर्यात',
   'nav.bin': 'रद्दी',
   'nav.companies': 'कंपनियाँ',
+  'nav.operations': 'संचालन',
   'company.switch': 'कंपनी बदलें',
   'company.all': 'सभी कंपनियाँ',
   'nav.settings': 'सेटिंग्स',

@@ -15,6 +15,7 @@ export default {
   'nav.exports': 'Exporter',
   'nav.bin': 'Corbeille',
   'nav.companies': 'Sociétés',
+  'nav.operations': 'Opérations',
   'company.switch': 'Changer de société',
   'company.all': 'Toutes les sociétés',
   'nav.settings': 'Paramètres',

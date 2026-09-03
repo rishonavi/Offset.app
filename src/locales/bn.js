@@ -12,6 +12,7 @@ export default {
   'nav.exports': 'রপ্তানি',
   'nav.bin': 'আবর্জনা',
   'nav.companies': 'কোম্পানি',
+  'nav.operations': 'পরিচালনা',
   'company.switch': 'কোম্পানি বদলান',
   'company.all': 'সব কোম্পানি',
   'nav.settings': 'সেটিংস',

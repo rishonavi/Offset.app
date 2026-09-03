@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
 import { isBlobToken, blobToDataUrl } from './storage/blobs'
 import { cloudProviders } from './cloud'
+import { exportCorporate, importCorporate, hasCorporateData } from './storage/corporate'
 
 // Backup and restore, in one place because they are one round trip.
 //
@@ -13,6 +15,11 @@ import { cloudProviders } from './cloud'
 // round-tripping.
 export function useBackup(baseName) {
   const { expenses, income, properties, propertyNameById, addProperty, addExpense, addIncome } = useData()
+  // Companies, departments, stock, advances and payroll live in their own
+  // store. exportCorporate had been written and never called, so a backup
+  // quietly held only the personal books — and restoring one onto a new browser
+  // lost every company in it.
+  const { reload: reloadEntities } = useEntity()
   const [cloudBusy, setCloudBusy] = useState(false)
   const [cloudMsg, setCloudMsg] = useState(null)
   const [providerId, setProviderId] = useState(cloudProviders[0]?.id || '')
@@ -28,11 +35,14 @@ export function useBackup(baseName) {
     )
 
   const buildPayload = async () => ({
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     properties,
     expenses: await withAttachments(expenses),
     income: await withAttachments(income),
+    // Absent on a personal install rather than an empty husk, so a version 1
+    // file and a personal version 2 file restore identically.
+    ...(hasCorporateData() ? { corporate: exportCorporate() } : {}),
   })
 
   // Recreate assets/expenses/income from a backup object (matches assets by
@@ -95,7 +105,11 @@ export function useBackup(baseName) {
       })
       addedInc += 1
     }
-    return { createdProps, addedExp, addedInc }
+    // Merged by id, so the ids inside a movement or an adjustment still point
+    // at the item or advance they were written against.
+    const { added: addedCorp } = data.corporate ? importCorporate(data.corporate) : { added: 0 }
+    if (addedCorp) reloadEntities?.()
+    return { createdProps, addedExp, addedInc, addedCorp }
   }
 
   const provider = cloudProviders.find((p) => p.id === providerId)
@@ -125,10 +139,10 @@ export function useBackup(baseName) {
         setCloudMsg({ ok: false, text: `No backup found in your ${provider.label}.` })
         return
       }
-      const { createdProps, addedExp, addedInc } = await importBackup(data)
+      const { createdProps, addedExp, addedInc, addedCorp } = await importBackup(data)
       setCloudMsg({
         ok: true,
-        text: `Restored ${addedExp} expenses, ${addedInc} income${createdProps ? `, created ${createdProps} assets` : ''} from ${provider.label}.`,
+        text: `Restored ${addedExp} expenses, ${addedInc} income${createdProps ? `, created ${createdProps} assets` : ''}${addedCorp ? `, ${addedCorp} company records` : ''} from ${provider.label}.`,
       })
     } catch (err) {
       setCloudMsg({ ok: false, text: err?.message || String(err) })
@@ -153,10 +167,10 @@ export function useBackup(baseName) {
     setCloudMsg(null)
     try {
       const data = JSON.parse(await file.text())
-      const { createdProps, addedExp, addedInc } = await importBackup(data)
+      const { createdProps, addedExp, addedInc, addedCorp } = await importBackup(data)
       setCloudMsg({
         ok: true,
-        text: `Restored ${addedExp} expenses, ${addedInc} income${createdProps ? `, created ${createdProps} assets` : ''} from file.`,
+        text: `Restored ${addedExp} expenses, ${addedInc} income${createdProps ? `, created ${createdProps} assets` : ''}${addedCorp ? `, ${addedCorp} company records` : ''} from file.`,
       })
     } catch (err) {
       setCloudMsg({ ok: false, text: `Could not read backup file: ${err?.message || err}` })

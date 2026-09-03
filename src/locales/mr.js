@@ -12,6 +12,7 @@ export default {
   'nav.exports': 'निर्यात',
   'nav.bin': 'कचरापेटी',
   'nav.companies': 'कंपन्या',
+  'nav.operations': 'कामकाज',
   'company.switch': 'कंपनी बदला',
   'company.all': 'सर्व कंपन्या',
   'nav.settings': 'सेटिंग्ज',

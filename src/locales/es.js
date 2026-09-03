@@ -16,6 +16,7 @@ export default {
   'nav.exports': 'Exportar',
   'nav.bin': 'Papelera',
   'nav.companies': 'Empresas',
+  'nav.operations': 'Operaciones',
   'company.switch': 'Cambiar de empresa',
   'company.all': 'Todas las empresas',
   'nav.settings': 'Ajustes',

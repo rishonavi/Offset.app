@@ -10,7 +10,7 @@ import { chromium } from './_playwright.mjs'
 const B = process.env.OFFSET_TEST_URL || 'http://localhost:4188'
 const ROUTES = ['/', '/personal', '/properties', '/properties/new', '/income', '/income/new',
   '/expenses', '/expenses/new', '/bills', '/import', '/invoices', '/reports', '/exports',
-  '/bin', '/settings', '/companies']
+  '/bin', '/settings', '/companies', '/operations']
 // Anything that destroys data or ends the session. Skipped by name, since the
 // point is to exercise the app rather than to empty it.
 const DESTRUCTIVE = /delete|remove|sign out|log out|clear|discard|purge|reset|danger|restore/i
@@ -30,6 +30,28 @@ const SEED = () => {
     status: i < 2 ? 'unpaid' : 'paid', created_at: now }))))
   localStorage.setItem('pl_income', JSON.stringify([{ id: 'i1', property_id: 'a1', date: '2026-01-05',
     amount: 50000, source: 'Rent', tax: 500, status: 'received', created_at: now }]))
+  // A company too, so the corporate half of the app has controls to press at
+  // all. Without one, Operations is a single sentence and Companies is a form.
+  localStorage.setItem('pl_corp_entities', JSON.stringify([
+    { id: 'ent-1', name: 'Acme Industries Pvt Ltd', registration: '', gstin: '27AAAPA1234A1Z5',
+      currency: 'INR', fyStartMonth: 4, created_at: now }]))
+  localStorage.setItem('pl_corp_members', JSON.stringify([
+    { id: 'm1', entity_id: 'ent-1', user_id: 'local-user', email: '', role: 'owner',
+      department_id: null, created_at: now }]))
+  localStorage.setItem('pl_corp_active', 'ent-1')
+  localStorage.setItem('pl_corp_items', JSON.stringify([
+    { id: 'it1', entity_id: 'ent-1', name: 'Cement 50kg', sku: 'CEM50', unit: 'bag',
+      reorder_level: 10, department_id: null, hsn: '', created_at: now }]))
+  localStorage.setItem('pl_corp_movements', JSON.stringify([
+    { id: 'mv1', entity_id: 'ent-1', item_id: 'it1', kind: 'receipt', qty: 40, unit_cost: 350,
+      date: '2026-08-01', note: '', ref: '', created_by: null, created_at: now }]))
+  localStorage.setItem('pl_corp_advances', JSON.stringify([
+    { id: 'ad1', entity_id: 'ent-1', party_type: 'vendor', party: 'Ravi Contractors', amount: 50000,
+      date: '2026-08-02', purpose: '', department_id: null, expected_by: '', created_by: null, created_at: now }]))
+  localStorage.setItem('pl_corp_employees', JSON.stringify([
+    { id: 'em1', entity_id: 'ent-1', name: 'Sunil Rao', code: 'EMP01', email: '', department_id: null,
+      pay: { basic: 30000, hra: 12000, conveyance: 0, medical: 0, special: 0, other: 0 },
+      pan: '', uan: '', joined_on: null, active: true, created_at: now }]))
 }
 
 for (const route of ROUTES) {

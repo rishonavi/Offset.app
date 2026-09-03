@@ -12,6 +12,7 @@ export default {
   'nav.exports': 'નિકાસ',
   'nav.bin': 'કચરાપેટી',
   'nav.companies': 'કંપનીઓ',
+  'nav.operations': 'સંચાલન',
   'company.switch': 'કંપની બદલો',
   'company.all': 'બધી કંપનીઓ',
   'nav.settings': 'સેટિંગ્સ',

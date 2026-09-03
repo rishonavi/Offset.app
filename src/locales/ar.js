@@ -17,6 +17,7 @@ export default {
   'nav.exports': 'تصدير',
   'nav.bin': 'سلة المحذوفات',
   'nav.companies': 'الشركات',
+  'nav.operations': 'العمليات',
   'company.switch': 'تبديل الشركة',
   'company.all': 'كل الشركات',
   'nav.settings': 'الإعدادات',

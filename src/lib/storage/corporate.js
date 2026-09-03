@@ -253,6 +253,40 @@ export function exportCorporate() {
   return out
 }
 
+// The other half of exportCorporate, and the reason it exists: a backup that
+// can only be written is not a backup. Merged by id rather than replacing, so
+// restoring the same file twice adds nothing the second time and a row's
+// relationships — a movement's item, an adjustment's advance — survive intact.
+export function importCorporate(data) {
+  if (!data || typeof data !== 'object') return { added: 0, skipped: 0 }
+  let added = 0
+  let skipped = 0
+  for (const [name, key] of Object.entries(KEYS)) {
+    if (name === 'active') continue
+    const incoming = data[name]
+    if (name === 'policy') {
+      if (!incoming || typeof incoming !== 'object') continue
+      const current = readOne(key, {})
+      // A policy already set here wins: it is what this install is running on.
+      write(key, { ...incoming, ...current })
+      continue
+    }
+    if (!Array.isArray(incoming)) continue
+    const current = read(key)
+    const seen = new Set(current.map((r) => r?.id))
+    const merged = current.slice()
+    for (const row of incoming) {
+      if (!row || typeof row !== 'object' || !row.id) { skipped += 1; continue }
+      if (seen.has(row.id)) { skipped += 1; continue }
+      seen.add(row.id)
+      merged.push(row)
+      added += 1
+    }
+    if (merged.length !== current.length) write(key, merged)
+  }
+  return { added, skipped }
+}
+
 export function hasCorporateData() {
   return read(KEYS.entities).length > 0
 }

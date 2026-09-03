@@ -16,6 +16,7 @@ export default {
   'nav.exports': 'Экспорт',
   'nav.bin': 'Корзина',
   'nav.companies': 'Компании',
+  'nav.operations': 'Операции',
   'company.switch': 'Сменить компанию',
   'company.all': 'Все компании',
   'nav.settings': 'Настройки',

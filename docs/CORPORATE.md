@@ -128,6 +128,25 @@ costs is not what they are paid.
 - **the whole layer stays dormant until the first company exists**: a personal
   install shows no Companies nav, no switcher, and writes no `pl_corp_*` keys
 
+**Done and verified** — stock, advances and payroll on screen, 64 more
+assertions:
+
+- one page at `/operations`, three tabs, appearing in the sidebar and the
+  command palette only once a company exists, and scoped to one company at a
+  time — the consolidated view says so rather than showing a mixture
+- stock: items, movements at a running average cost, and the reorder list
+- advances: outstanding and overdue, set against a bill, and the refusal when
+  that would take out more than is left
+- payroll: payslips with PF, ESI and professional tax, and what to deposit
+- an employee advance recovered in a payroll run — matched by name, shown
+  before it is applied, off unless asked for, and writing the adjustment that
+  actually closes the advance
+- **a backup now carries all of it.** `exportCorporate()` had been written and
+  never called, so until now a backup held only the personal books and
+  restoring one onto a new browser lost every company in it. The restore merges
+  by id, so the same file twice adds nothing and a movement still points at its
+  item.
+
 **Done and verified** — the Supabase schema and row-level security,
 `supabase/corporate.sql`, 50 assertions against a real PostgreSQL:
 
@@ -149,7 +168,8 @@ surface — `auth.uid()` and friends are stood in for by the runner.
 
 1. Departments on entry forms; budgets and reports per cost centre
 2. The approvals queue
-3. Inventory, payables, advances and payroll screens
+3. Stock value and payroll cost in the reports, so a company's books are one
+   set of numbers rather than two
 4. The client storage layer talking to those tables — `storage/corporate.js` is
    still browser-only under both backends, and is synchronous throughout, so
    this is an async refactor of `EntityContext` and `Companies.jsx` rather than
