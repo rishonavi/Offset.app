@@ -36,11 +36,11 @@ const NAV_COMMANDS = [
   { label: 'Income', to: '/income', icon: Banknote },
   { label: 'Expenses', to: '/expenses', icon: Receipt },
   { label: 'Bills', to: '/bills', icon: FileText },
-  { label: 'Import', to: '/import', icon: MailPlus },
+  { label: 'Import', to: '/import', icon: MailPlus, also: 'import gmail inbox spreadsheet csv xlsx tally statement restore backup' },
   { label: 'Reports', to: '/reports', icon: PieChart },
   // Named for the words people type. "Export" and "backup" are what someone
   // wants when they come here, and neither used to match anything.
-  { label: 'Export & import', to: '/exports', icon: FileUp, also: 'export csv excel pdf tally backup restore' },
+  { label: 'Export', to: '/exports', icon: FileUp, also: 'export csv excel pdf tally download backup' },
   { label: 'Bin', to: '/bin', icon: Trash2 },
   { label: 'Settings', to: '/settings', icon: SettingsIcon },
 ]

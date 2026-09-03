@@ -10,7 +10,7 @@ export default {
   'nav.import': 'Importar',
   'nav.invoices': 'Faturas emitidas',
   'nav.reports': 'Relatórios',
-  'nav.exports': 'Exportar e importar',
+  'nav.exports': 'Exportar',
   'nav.bin': 'Lixeira',
   'nav.companies': 'Empresas',
   'company.switch': 'Trocar de empresa',

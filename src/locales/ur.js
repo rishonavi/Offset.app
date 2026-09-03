@@ -9,7 +9,7 @@ export default {
   'nav.import': 'درآمد',
   'nav.invoices': 'جاری کردہ انوائسز',
   'nav.reports': 'رپورٹس',
-  'nav.exports': 'برآمد و درآمد',
+  'nav.exports': 'برآمد',
   'nav.bin': 'ردی کی ٹوکری',
   'nav.companies': 'کمپنیاں',
   'company.switch': 'کمپنی تبدیل کریں',

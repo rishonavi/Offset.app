@@ -12,7 +12,7 @@ export default {
   'nav.import': '导入',
   'nav.invoices': '发票',
   'nav.reports': '报表',
-  'nav.exports': '导出与导入',
+  'nav.exports': '导出',
   'nav.bin': '回收站',
   'nav.companies': '公司',
   'company.switch': '切换公司',

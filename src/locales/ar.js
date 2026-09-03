@@ -14,7 +14,7 @@ export default {
   'nav.import': 'استيراد',
   'nav.invoices': 'فواتير المبيعات',
   'nav.reports': 'التقارير',
-  'nav.exports': 'التصدير والاستيراد',
+  'nav.exports': 'تصدير',
   'nav.bin': 'سلة المحذوفات',
   'nav.companies': 'الشركات',
   'company.switch': 'تبديل الشركة',

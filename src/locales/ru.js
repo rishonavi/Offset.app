@@ -13,7 +13,7 @@ export default {
   'nav.import': 'Импорт',
   'nav.invoices': 'Выставленные счета',
   'nav.reports': 'Отчёты',
-  'nav.exports': 'Экспорт и импорт',
+  'nav.exports': 'Экспорт',
   'nav.bin': 'Корзина',
   'nav.companies': 'Компании',
   'company.switch': 'Сменить компанию',

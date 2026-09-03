@@ -9,7 +9,7 @@ export default {
   'nav.import': 'আমদানি',
   'nav.invoices': 'চালান',
   'nav.reports': 'রিপোর্ট',
-  'nav.exports': 'রপ্তানি ও আমদানি',
+  'nav.exports': 'রপ্তানি',
   'nav.bin': 'আবর্জনা',
   'nav.companies': 'কোম্পানি',
   'company.switch': 'কোম্পানি বদলান',

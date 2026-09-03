@@ -44,10 +44,30 @@ console.log('── EACH PAGE DOES ONE THING ──')
   await p.locator('#main-content button:has-text("Excel")').first().waitFor({ state: 'visible' })
   const e = await body(p)
   ok('exports shows the export buttons', /excel \(\.xlsx\)/i.test(e), e.replace(/\n/g, ' | ').slice(0, 140))
-  ok('and spreadsheet import', /Import from spreadsheet/i.test(e))
-  ok('and backup and restore', /Backup & restore/i.test(e))
-  ok('but not the year-end summary', !/year-end summary/i.test(e))
+  ok('and the backup that stands on its own', /Back up everything/i.test(e))
+  // Every way data comes in is on Import, including restoring a backup.
+  ok('but not the spreadsheet import', !/Import from spreadsheet/i.test(e))
+  ok('nor restoring one', !/Restore a backup/i.test(e))
+  ok('nor the year-end summary', !/year-end summary/i.test(e))
   ok('neither page threw', errs.length === 0, errs.join(' | '))
+  await ctx.close()
+}
+
+console.log('\n── EVERY WAY IN IS ON ONE PAGE ──')
+{
+  // A spreadsheet import used to live on a page called Export, which is where
+  // nobody would look for it.
+  const { ctx, p, errs } = await open()
+  await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
+  await p.locator('#main-content').getByText(/Import from spreadsheet/i).first().waitFor({ state: 'visible' })
+  const i = await body(p)
+  ok('a bank statement', /statement/i.test(i))
+  ok('the inbox', /Bills from Gmail/i.test(i))
+  ok('a spreadsheet', /Import from spreadsheet/i.test(i))
+  ok('Tally', /tally/i.test(i))
+  ok('and a backup to restore', /Restore a backup/i.test(i))
+  ok('nothing on it exports', !/Download backup/i.test(i) && !/excel \(\.xlsx\)/i.test(i))
+  ok('the import page did not throw', errs.length === 0, errs.join(' | '))
   await ctx.close()
 }
 

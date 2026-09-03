@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mail, Loader2, Sparkles, Plus, X, Building2, Inbox } from 'lucide-react'
+import { Mail, Loader2, Sparkles, Plus, X, Building2, Inbox, Upload, Calculator, CheckCircle2, AlertCircle, DownloadCloud, FileUp } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { usePlan } from '../context/PlanContext'
@@ -11,11 +11,22 @@ import { gmailConfigured, connectGmail, isGmailConnected, fetchBillCandidates, a
 import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import BankImport from '../components/BankImport'
+import { parseSpreadsheet, rowToExpenseInput } from '../lib/exports'
+import { parseTallyXML } from '../lib/tally'
+import { useBackup } from '../lib/useBackup'
 
 export default function ImportBills() {
-  const { properties, loading, addExpense } = useData()
+  const { properties, loading, addExpense, addIncome, addProperty, propertyNameById } = useData()
   const toast = useToast()
   const plan = usePlan()
+  // Every way data comes in now lives here — a mailbox, a spreadsheet, a Tally
+  // export, a backup file. They were spread across two pages, one of which was
+  // called Export.
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState(null)
+  const fileRef = useRef(null)
+  const tallyRef = useRef(null)
+  const backup = useBackup(`offset-${new Date().toISOString().slice(0, 10)}`)
   const [rows, setRows] = useState([])
   const [scanning, setScanning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })
@@ -25,6 +36,120 @@ export default function ImportBills() {
   if (loading) return <Spinner />
 
   const firstAsset = properties[0]?.id || ''
+
+  const handleImport = async (file) => {
+    if (!file) return
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const raw = await parseSpreadsheet(file)
+      const parsed = raw.map(rowToExpenseInput).filter((r) => r.amount > 0 && r.date)
+      if (parsed.length === 0) {
+        setImportMsg({ ok: false, text: 'No valid rows found. Expected columns: Date, Property, Category, Amount.' })
+        return
+      }
+      const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
+      let createdProps = 0
+      for (const r of parsed) {
+        const propName = r.property || 'Unassigned'
+        const key = propName.toLowerCase()
+        let pid = nameToId.get(key)
+        if (!pid) {
+          const created = await addProperty({ name: propName, type: 'Other', address: '', notes: '' })
+          pid = created.id
+          nameToId.set(key, pid)
+          createdProps += 1
+        }
+        await addExpense({
+          property_id: pid,
+          date: r.date,
+          amount: r.amount,
+          category: r.category || 'Other',
+          vendor: r.vendor,
+          payment_method: r.payment_method,
+          description: r.description,
+          receipt_url: null,
+        })
+      }
+      setImportMsg({
+        ok: true,
+        text: `Imported ${parsed.length} expense${parsed.length === 1 ? '' : 's'}${
+          createdProps ? `, created ${createdProps} new propert${createdProps === 1 ? 'y' : 'ies'}` : ''
+        }.`,
+      })
+    } catch (err) {
+      setImportMsg({ ok: false, text: `Import failed: ${err?.message || err}` })
+    } finally {
+      setImporting(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  // Import a Tally XML export — Payment/Purchase vouchers become expenses,
+  // Receipt/Sales become income. Each voucher is matched to an asset named in
+  // its narration, else filed under a single "Imported from Tally" asset.
+  const handleTallyImport = async (file) => {
+    if (!file) return
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const vouchers = parseTallyXML(await file.text())
+      if (vouchers.length === 0) {
+        setImportMsg({ ok: false, text: 'No vouchers found in that Tally file.' })
+        return
+      }
+      const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
+      const matchAsset = (narration) => {
+        for (const seg of (narration || '').split('·').map((s) => s.trim().toLowerCase())) {
+          if (seg && nameToId.has(seg)) return nameToId.get(seg)
+        }
+        return null
+      }
+      let fallbackId = nameToId.get('imported from tally') || null
+      const ensureFallback = async () => {
+        if (fallbackId) return fallbackId
+        const created = await addProperty({ name: 'Imported from Tally', type: 'Other', address: '', notes: '' })
+        fallbackId = created.id
+        nameToId.set('imported from tally', fallbackId)
+        return fallbackId
+      }
+      // Skip entries that already exist so re-importing the same day book is safe.
+      const expSeen = new Set(expenses.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.category}`))
+      const incSeen = new Set(income.map((e) => `${e.property_id}|${e.date}|${Number(e.amount)}|${e.source}`))
+      let addedE = 0
+      let addedI = 0
+      let skipped = 0
+      for (const v of vouchers) {
+        const pid = matchAsset(v.narration) || (await ensureFallback())
+        const key = `${pid}|${v.date}|${v.amount}|${v.ledger}`
+        if (v.kind === 'income') {
+          if (incSeen.has(key)) { skipped++; continue }
+          incSeen.add(key)
+          await addIncome({ property_id: pid, date: v.date, amount: v.amount, source: v.ledger, payer: '', payment_method: v.payment_method, status: 'received', description: v.narration, receipt_url: null })
+          addedI++
+        } else {
+          if (expSeen.has(key)) { skipped++; continue }
+          expSeen.add(key)
+          await addExpense({ property_id: pid, date: v.date, amount: v.amount, category: v.ledger, vendor: '', payment_method: v.payment_method, status: 'paid', description: v.narration, receipt_url: null })
+          addedE++
+        }
+      }
+      setImportMsg({
+        ok: true,
+        text: `Imported ${addedE} expense${addedE === 1 ? '' : 's'} and ${addedI} income from Tally${skipped ? `, skipped ${skipped} duplicate${skipped === 1 ? '' : 's'}` : ''}.`,
+      })
+    } catch (err) {
+      setImportMsg({ ok: false, text: `Tally import failed: ${err?.message || err}` })
+    } finally {
+      setImporting(false)
+      if (tallyRef.current) tallyRef.current.value = ''
+    }
+  }
+
+  // Attachments live in IndexedDB and the rows carry only a token, which means
+  // nothing on the device a backup is restored to. So the files travel with it,
+  // inlined the way they used to be stored — a backup that quietly leaves the
+  // receipts behind is worse than one that is honestly large.
 
   const run = async () => {
     setError(null)
@@ -103,7 +228,7 @@ export default function ImportBills() {
     <div className="animate-fade-in space-y-6">
       <PageHeader
         title="Import"
-        subtitle="Reconcile a bank / UPI statement to see which bills are paid, or pull invoices from your inbox."
+        subtitle="Everything that comes in: a bank statement, your inbox, a spreadsheet, Tally, or a backup."
       />
 
       {properties.length === 0 ? (
@@ -120,6 +245,107 @@ export default function ImportBills() {
       ) : (
         <>
           <BankImport />
+
+        {/* Import */}
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold text-ink-3">Import from spreadsheet</h2>
+          <p className="mt-1 text-xs text-ink-5">
+            Upload an <strong>.xlsx</strong> or <strong>.csv</strong> with columns:
+            <span className="font-medium text-ink-4"> Date, Property, Category, Vendor, Payment Method, Description, Amount</span>.
+            New property names are created automatically.
+          </p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => handleImport(e.target.files?.[0])}
+          />
+          <div className="mt-4">
+            <Button variant="ghost" onClick={() => fileRef.current?.click()} loading={importing}>
+              {!importing && <Upload size={16} />} Choose file…
+            </Button>
+          </div>
+
+          <div className="mt-4 border-t border-line pt-4">
+            <p className="text-xs text-ink-5">
+              Or import a <strong>Tally XML</strong> export (Day Book / Voucher Register). Payment/Purchase vouchers become
+              expenses and Receipt/Sales become income, matched to the asset named in each voucher. Duplicates are skipped.
+            </p>
+            <input
+              ref={tallyRef}
+              type="file"
+              accept=".xml,text/xml,application/xml"
+              className="hidden"
+              onChange={(e) => handleTallyImport(e.target.files?.[0])}
+            />
+            <div className="mt-3">
+              <Button variant="ghost" onClick={() => tallyRef.current?.click()} loading={importing}>
+                {!importing && <Calculator size={16} className="text-indigo-600" />} Import Tally XML
+              </Button>
+            </div>
+          </div>
+
+          {importMsg && (
+            <div
+              className={`mt-3 flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
+                importMsg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+              }`}
+            >
+              {importMsg.ok ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <AlertCircle size={16} className="mt-0.5 shrink-0" />}
+              {importMsg.text}
+            </div>
+          )}
+        </Card>
+
+
+          {/* Restoring is an import too: it is a file arriving, not one
+              leaving. Its other half — making the backup — sits on the export
+              page, and both call the same hook so the format cannot drift. */}
+          <Card className="p-5">
+            <div className="flex items-center gap-2">
+              <DownloadCloud size={16} className="text-ink-5" />
+              <h2 className="text-sm font-semibold text-ink-3">Restore a backup</h2>
+            </div>
+            <p className="mt-1 text-xs text-ink-5">
+              From a backup file, or from the cloud account you backed up to. Entries are added, not replaced.
+            </p>
+            <input
+              ref={backup.backupFileRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => backup.restoreFromFile(e.target.files?.[0])}
+            />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button variant="ghost" onClick={() => backup.backupFileRef.current?.click()} loading={backup.busy}>
+                {!backup.busy && <FileUp size={16} />} Restore from file
+              </Button>
+              {backup.providers.length > 0 && (
+                <>
+                  <select
+                    className="field-input w-auto"
+                    aria-label="Cloud account"
+                    value={backup.providerId}
+                    onChange={(e) => backup.setProviderId(e.target.value)}
+                  >
+                    {backup.providers.map((x) => (
+                      <option key={x.id} value={x.id}>{x.label}</option>
+                    ))}
+                  </select>
+                  <Button variant="ghost" onClick={backup.cloudRestore} loading={backup.busy}>
+                    {!backup.busy && <DownloadCloud size={16} className="text-sky-600" />} Restore from cloud
+                  </Button>
+                </>
+              )}
+            </div>
+            {backup.msg && (
+              <div className={`mt-3 flex items-start gap-2 px-3 py-2 text-sm ${backup.msg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                {backup.msg.ok ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <AlertCircle size={16} className="mt-0.5 shrink-0" />}
+                {backup.msg.text}
+              </div>
+            )}
+          </Card>
 
           <div className="space-y-6 border-t border-border-light pt-6">
             <h2 className="text-sm font-semibold uppercase tracking-[1px] text-ink-5">Bills from Gmail</h2>

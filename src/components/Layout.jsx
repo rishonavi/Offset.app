@@ -64,11 +64,11 @@ const NAV = [
   ] },
   { group: 'nav.groupTools', items: [
     { to: '/reports', key: 'nav.reports', icon: PieChart, keepsFilter: true },
-    // Two errands, not one: reading what the year came to, and moving the rows
-    // somewhere else. They shared a door and a heading, so whichever you came
-    // for you read past the other one first.
-    { to: '/exports', key: 'nav.exports', icon: FileUp, keepsFilter: true },
+    // Three errands that were spread across two pages, one of which was called
+    // Export and contained an import. Data in, data out, and what it all came
+    // to — each now behind the word for it.
     { to: '/import', key: 'nav.import', icon: MailPlus },
+    { to: '/exports', key: 'nav.exports', icon: FileUp, keepsFilter: true },
   ] },
   { group: 'nav.groupManage', items: [
     { to: '/bin', key: 'nav.bin', icon: Trash2 },

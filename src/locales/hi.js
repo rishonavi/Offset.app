@@ -10,7 +10,7 @@ export default {
   'nav.import': 'आयात',
   'nav.invoices': 'चालान',
   'nav.reports': 'रिपोर्ट',
-  'nav.exports': 'निर्यात और आयात',
+  'nav.exports': 'निर्यात',
   'nav.bin': 'रद्दी',
   'nav.companies': 'कंपनियाँ',
   'company.switch': 'कंपनी बदलें',

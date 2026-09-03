@@ -14,7 +14,7 @@ export default {
   'nav.import': 'Import',
   'nav.invoices': 'Invoices',
   'nav.reports': 'Reports',
-  'nav.exports': 'Export & import',
+  'nav.exports': 'Export',
   'nav.bin': 'Bin',
   'nav.companies': 'Companies',
   'company.switch': 'Switch company',

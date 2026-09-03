@@ -121,7 +121,8 @@ console.log('\n── A BACKUP STILL CARRIES THE FILE ──')
 // The row holds a token that means nothing on another device, so the backup has
 // to inline the file. Getting this wrong loses every receipt on restore, and
 // silently — the backup would still look complete.
-// Backup lives with the other ways of moving data, not with the summaries.
+// Making a backup is an export; restoring it is an import. This checks the
+// making half, which is on the export page.
 await p.goto(`${B}/exports`, { waitUntil: 'networkidle' })
 const backupBtn = p.locator('button', { hasText: /Download backup/i }).first()
 await backupBtn.waitFor({ state: 'visible' }).catch(() => {})

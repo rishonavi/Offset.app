@@ -9,7 +9,7 @@ export default {
   'nav.import': 'இறக்குமதி',
   'nav.invoices': 'விலைப்பட்டியல்',
   'nav.reports': 'அறிக்கைகள்',
-  'nav.exports': 'ஏற்றுமதி & இறக்குமதி',
+  'nav.exports': 'ஏற்றுமதி',
   'nav.bin': 'குப்பைத் தொட்டி',
   'nav.companies': 'நிறுவனங்கள்',
   'company.switch': 'நிறுவனத்தை மாற்று',
