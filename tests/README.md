@@ -19,7 +19,7 @@ for Vite's resolver.
 |---|---|---|
 | `apiguard.test.mjs` | 25 | what the endpoints refuse, and the rate ceiling |
 | `appearance.test.mjs` | 110 | accents, tones, avatars, and the two places that must agree |
-| `assettypes.test.mjs` | 56 | which fields an asset type actually has |
+| `assettypes.test.mjs` | 75 | which fields an asset type has, how it is grouped and what it looks like |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
 | `corp.test.mjs` | 106 | entities, control, ledgers, audit events |
@@ -39,7 +39,7 @@ for Vite's resolver.
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 79 | corporate storage layer, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,323** | |
+| | **1,342** | |
 
 ## Browser — `tests/browser/`
 
@@ -53,7 +53,7 @@ node tests/browser/rtlui.mjs
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `assetformui.mjs` | 37 | the asset form showing only the fields its type has |
+| `assetformui.mjs` | 60 | the asset form: picking a type, and asking for one thing at a time |
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
 | `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
@@ -78,10 +78,10 @@ node tests/browser/rtlui.mjs
 | `opsui.mjs` | 92 | stock, advances, payroll — in the report, in a backup, and on their own page |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
-| `rtlui.mjs` | 54 | Arabic and Urdu mirror correctly |
+| `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **792** | |
+| | **816** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

@@ -40,6 +40,15 @@ it was built the way it was:
   only what the chosen type can have: an address for things fixed to a place, a
   loan for things that can be financed or pledged, a tenancy for things that can
   be let out. A holding of stock is a short form; a let shop is a long one.
+
+  Only the name is required, and the form says so. The type is a grid you point
+  at rather than a fifteen-option dropdown you read to the end, and it changes
+  the example in the name box — pick a car and it stops suggesting an apartment.
+  Loan, tenancy and notes stay shut until you say there is one, and open by
+  themselves when you are editing something that already has them. Type an
+  amount, a rate and a term and the monthly payment appears while you are still
+  in the box, next to what the loan comes to in all and how much of it is
+  interest, because that is the number you were filling the block in to find.
 - **Precious metals from the bill** — add a jeweller's or bullion bill and the
   weight, purity, rate and what you paid come off it into the holding. The
   conversions that go wrong by hand are done for you: a bill quoting per gram

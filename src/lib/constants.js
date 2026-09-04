@@ -19,6 +19,71 @@ export const ASSET_TYPES = [
   'Other',
 ]
 
+// The same fifteen types, in the five families a person actually thinks in.
+//
+// A dropdown makes you open it and read linearly before you can choose, and it
+// gives the most consequential decision on the form — the one that decides
+// which sections even exist — the least presence on the page. Grouped and
+// visible, it is a choice you make by pointing at the thing you own.
+//
+// Derived from ASSET_TYPES rather than a second list: `assettypes.test.mjs`
+// asserts every type appears here exactly once, so adding a type to the list
+// above and forgetting this one is a failing test rather than a type nobody
+// can pick.
+export const ASSET_GROUPS = [
+  { label: 'Property', types: [
+    'Real Estate — Apartment / Flat',
+    'Real Estate — Villa / House',
+    'Real Estate — Commercial',
+    'Land / Plot',
+  ] },
+  { label: 'Vehicles & machines', types: [
+    'Vehicle / Car',
+    'Yacht / Boat',
+    'Aircraft',
+    'Machinery / Equipment',
+  ] },
+  { label: 'Valuables', types: [
+    'Jewellery',
+    'Precious Metals — Gold / Silver',
+    'Art / Collectibles',
+  ] },
+  { label: 'Investments', types: [
+    'Stocks / Equity',
+    'Mutual Funds / Bonds',
+    'Cryptocurrency',
+  ] },
+  { label: 'Anything else', types: ['Other'] },
+]
+
+// "Real Estate — Apartment / Flat" reads as "Apartment / Flat" once it is sitting
+// under a heading that says Property. The stored value never changes.
+export const shortTypeLabel = (type = '') => {
+  const tail = String(type).split(' — ')[1]
+  return tail || type
+}
+
+// What to put in the name box. A form that already knows you picked a car and
+// still suggests "Sea View Apartment · BMW X5 · Sunseeker 60" is showing you a
+// list because it was not paying attention.
+const TYPE_EXAMPLE = {
+  'Real Estate — Apartment / Flat': 'Sea View Apartment',
+  'Real Estate — Villa / House': 'Hillside Villa',
+  'Real Estate — Commercial': 'Unit 4, Anand Complex',
+  'Land / Plot': 'Two acres at Alibaug',
+  'Vehicle / Car': 'BMW X5',
+  'Yacht / Boat': 'Sunseeker 60',
+  Aircraft: 'Cessna 172',
+  'Machinery / Equipment': 'JCB 3DX',
+  Jewellery: 'Mother’s 22K bangles',
+  'Precious Metals — Gold / Silver': 'Sovereign coins',
+  'Art / Collectibles': 'Husain canvas',
+  'Stocks / Equity': 'HDFC Bank shares',
+  'Mutual Funds / Bonds': 'Parag Parikh Flexi Cap',
+  Cryptocurrency: 'Bitcoin',
+}
+export const exampleNameFor = (type) => TYPE_EXAMPLE[type] || 'Whatever you call it'
+
 // An address identifies the asset for anything fixed to a place, and is noise
 // for anything that isn't: a car, a gold chain, a holding of stock and a
 // cryptocurrency wallet do not have one, and asking for it invites someone to

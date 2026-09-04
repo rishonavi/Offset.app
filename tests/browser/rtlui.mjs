@@ -97,6 +97,23 @@ ok('the currency symbol sits on the right of the field in RTL',
 ok('and the padding is made on that side, so text cannot run under it',
   money && parseFloat(money.padRight) > parseFloat(money.padLeft), JSON.stringify(money))
 
+// The type picker is a grid of radio tiles, so its icon has to sit on the
+// trailing side in RTL the way every other leading glyph does.
+const tile = await p.evaluate(() => {
+  const input = document.querySelector('fieldset input[type=radio]')
+  const label = input?.closest('label')
+  const svg = label?.querySelector('svg')
+  const text = label?.querySelector('span')
+  if (!svg || !text) return null
+  const a = svg.getBoundingClientRect(), b = text.getBoundingClientRect()
+  return { iconCentre: Math.round(a.left + a.width / 2), textCentre: Math.round(b.left + b.width / 2) }
+})
+ok('a type tile puts its icon on the right in RTL',
+  tile && tile.iconCentre > tile.textCentre, JSON.stringify(tile))
+
+// A select only exists on this form once a type that holds metal is chosen.
+await p.getByRole('radio', { name: 'Jewellery', exact: true }).check()
+await p.waitForTimeout(400)
 const arrow = await p.evaluate(() => {
   const sel = document.querySelector('select.field-input')
   if (!sel) return null

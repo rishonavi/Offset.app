@@ -6,8 +6,10 @@
 import {
   ASSET_TYPES, ADDRESSABLE_ASSET_TYPES, hasAddress,
   FINANCEABLE_ASSET_TYPES, canBeFinanced, LEASABLE_ASSET_TYPES, canBeLeased,
+  ASSET_GROUPS, shortTypeLabel, exampleNameFor,
 } from '../../src/lib/constants.js'
 import { METAL_ASSET_TYPES, holdsMetal } from '../../src/lib/metals.js'
+import { iconForAssetType } from '../../src/lib/assetIcon.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
@@ -91,6 +93,50 @@ for (const type of ['Stocks / Equity', 'Mutual Funds / Bonds', 'Cryptocurrency']
   ok(`${type} shows none of the three blocks`,
     !hasAddress(type) && !canBeFinanced(type) && !canBeLeased(type))
 }
+
+console.log('\n── THE PICKER SHOWS ALL OF THEM ──')
+// The guard that matters: the picker is a hand-written grouping, so a type
+// added above and forgotten here would be one nobody could ever choose.
+const grouped = ASSET_GROUPS.flatMap((g) => g.types)
+ok('every type is in a group', ASSET_TYPES.every((t) => grouped.includes(t)),
+  ASSET_TYPES.filter((t) => !grouped.includes(t)).join(', '))
+ok('and no group invents one', grouped.every((t) => ASSET_TYPES.includes(t)),
+  grouped.filter((t) => !ASSET_TYPES.includes(t)).join(', '))
+ok('none is in two groups at once', new Set(grouped).size === grouped.length)
+ok('every group is named and non-empty', ASSET_GROUPS.every((g) => g.label && g.types.length))
+
+console.log('\n── HOW THEY READ ──')
+ok('a long type reads as its tail', shortTypeLabel('Real Estate — Apartment / Flat') === 'Apartment / Flat',
+  shortTypeLabel('Real Estate — Apartment / Flat'))
+ok('and one with no dash is left alone', shortTypeLabel('Jewellery') === 'Jewellery')
+ok('a blank one does not crash', shortTypeLabel() === '')
+ok('every type has an example name', ASSET_TYPES.every((t) => exampleNameFor(t).length > 2))
+ok('a car is not offered a flat as an example', exampleNameFor('Vehicle / Car') === 'BMW X5')
+ok('and an unknown type still gets something', exampleNameFor('Nonsense').length > 2)
+
+console.log('\n── EVERY TYPE LOOKS LIKE ITSELF ──')
+// Seven of the fifteen used to fall through to the same box, which put three
+// identical icons in a row and made the picker harder to scan, not easier.
+const icons = new Map(ASSET_TYPES.map((t) => [t, iconForAssetType(t)]))
+const shared = ASSET_TYPES.filter((t) => t !== 'Other' && icons.get(t) === iconForAssetType('nothing at all'))
+ok('no type falls back to the generic box', shared.length === 0, shared.join(', '))
+const distinct = new Set([...icons.values()])
+ok('and they are nearly all distinct', distinct.size >= ASSET_TYPES.length - 3, `${distinct.size} icons for ${ASSET_TYPES.length} types`)
+
+// Distinctness alone was not enough: it passed while a painter's palette sat
+// on "Apartment / Flat", because apArTment contains art. What each type shows
+// has to be checked by name.
+const named = (a, b) => ok(`${a} and ${b} do not share an icon`, icons.get(a) !== icons.get(b),
+  `both ${icons.get(a)?.displayName || icons.get(a)?.name}`)
+named('Real Estate — Apartment / Flat', 'Art / Collectibles')
+ok('a flat looks like a building, not a painting',
+  icons.get('Real Estate — Apartment / Flat') === icons.get('Real Estate — Villa / House'))
+ok('and every kind of real estate agrees',
+  icons.get('Real Estate — Commercial') === icons.get('Real Estate — Apartment / Flat'))
+ok('a plot is not a building', icons.get('Land / Plot') !== icons.get('Real Estate — Apartment / Flat'))
+ok('an aircraft is not a piece of art', icons.get('Aircraft') !== icons.get('Art / Collectibles'))
+ok('an unknown type still gets an icon rather than nothing', Boolean(iconForAssetType('Racehorse')))
+ok('and a blank one does too', Boolean(iconForAssetType()))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

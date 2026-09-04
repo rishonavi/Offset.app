@@ -29,8 +29,10 @@ await p.evaluate(() => {
 console.log('\n── CREATING AN ASSET ──')
 await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
 await p.locator('input').first().fill('Sea View Villa')
-const typeSel = p.locator('select').first()
-await typeSel.selectOption({ index: 1 })
+// The type is a grid of radio cards rather than a dropdown; the card is
+// labelled with the tail of the type, so "Real Estate — Villa / House" reads
+// as "Villa / House" under a Property heading.
+await p.getByRole('radio', { name: 'Villa / House', exact: true }).check()
 const valueField = p.locator('input[type=number]').first()
 if (await valueField.count()) await valueField.fill('4200000')
 await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
