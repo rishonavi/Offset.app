@@ -448,16 +448,24 @@ tbody tr:hover {
    stayed a light hairline on the dark theme. */
 
 /* ─── Room for the hardware ──────────────────────────────────────── */
-/* These are zero on every device without a notch or a gesture bar, so they cost
-   nothing where they are not needed. Written as utilities rather than baked
-   into components because which edge matters depends on where a thing sits. */
-.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
-.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
-.ps-safe { padding-inline-start: env(safe-area-inset-left, 0px); }
+/* Zero on every device without a notch or a gesture bar, so they cost nothing
+   where they are not needed. Written as utilities rather than baked into
+   components because which edge matters depends on where a thing sits.
+ *
+ * `max()`, not a bare env(). These set padding, so on a device with no notch
+ * they were setting it to zero — which did not add safety margin, it deleted
+ * the panel's own padding. The sidebar was written py-5 and ran at 0, which is
+ * why its account footer sat flush against the bottom of the screen. Each call
+ * site names its base in --safe-pad, and the inset only ever wins by being
+ * larger. Without the variable the default is 0px, which is exactly the old
+ * behaviour for anything that never had padding to lose. */
+.pt-safe { padding-top: max(var(--safe-pad, 0px), env(safe-area-inset-top, 0px)); }
+.pb-safe { padding-bottom: max(var(--safe-pad, 0px), env(safe-area-inset-bottom, 0px)); }
+.ps-safe { padding-inline-start: max(var(--safe-pad-x, 0px), env(safe-area-inset-left, 0px)); }
 /* A fixed panel has to clear both ends at once. */
 .inset-safe {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-top: max(var(--safe-pad, 0px), env(safe-area-inset-top, 0px));
+  padding-bottom: max(var(--safe-pad, 0px), env(safe-area-inset-bottom, 0px));
 }
 
 /* ─── Accessibility ──────────────────────────────────────────────── */

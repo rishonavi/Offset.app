@@ -112,6 +112,36 @@ console.log('\n── EVERY DESTINATION IS STILL COMFORTABLE TO HIT ──')
   await ctx.close()
 }
 
+console.log('\n── THE PANEL KEEPS ITS OWN PADDING ──')
+// .pt-safe and friends set padding to env(safe-area-inset-*), which is 0px on
+// anything without a notch — so instead of adding safety margin they deleted
+// the padding the panel was written with. The sidebar said py-5 and ran at 0,
+// which is why the account footer sat flush against the bottom of the screen.
+{
+  const { ctx, p } = await open({ width: 1280, height: 1000 })
+  const pad = await p.evaluate(() => {
+    const cs = getComputedStyle(document.querySelector('aside'))
+    return { top: parseFloat(cs.paddingTop), bottom: parseFloat(cs.paddingBottom), start: parseFloat(cs.paddingInlineStart) }
+  })
+  ok('the sidebar has its bottom padding', pad.bottom >= 16, JSON.stringify(pad))
+  ok('and its top padding', pad.top >= 16, JSON.stringify(pad))
+  ok('and its inline padding', pad.start >= 12, JSON.stringify(pad))
+  const gap = await p.evaluate(() => {
+    const aside = document.querySelector('aside').getBoundingClientRect()
+    const kids = [...document.querySelector('aside').children]
+    const last = kids[kids.length - 1].getBoundingClientRect()
+    return Math.round(aside.bottom - last.bottom)
+  })
+  ok('so nothing in it touches the bottom edge', gap >= 16, `${gap}px`)
+  await ctx.close()
+}
+{
+  const { ctx, p } = await open({ width: 390, height: 800 })
+  const top = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('header')).paddingTop))
+  ok('the mobile bar keeps its top padding too', top >= 10, `${top}px`)
+  await ctx.close()
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 await b.close()
 process.exit(fail ? 1 : 0)

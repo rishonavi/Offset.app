@@ -323,11 +323,11 @@ sees no Companies nav, no books tabs, and writes no `pl_corp_*` keys. The route
 exists regardless: go to **`/companies`** and press *Add a company*, and the nav
 entry and the tabs appear from then on.
 
-Once a company exists, the top of the side bar carries two tabs — **Personal**
-and **Company** — because which set of books you are in is the choice that
-changes what the app is for, and it should not be buried inside a dropdown you
-have to open to read. A second control appears under them only when there is
-more than one company to choose between. Personal books have no roles and no
+Once a company exists, the account footer at the bottom of the side bar carries
+two tabs — **Personal** and **Company**. Which set of books you are in is the
+same kind of question as who you are signed in as, so it sits with it rather
+than competing with the brand at the top of the column. A second control appears
+under them only when there is more than one company to choose between. Personal books have no roles and no
 approvals, so while they are on screen the app behaves exactly as it does with
 no company at all: `can` answers no because you are not inside a company, and
 `canWrite` keeps answering yes because the ledger in front of you is yours.

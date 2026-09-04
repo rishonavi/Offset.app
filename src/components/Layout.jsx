@@ -225,7 +225,7 @@ function CompanySwitcher() {
   const lastCompany = entities.some((e) => e.id === activeId) ? activeId : entities[0].id
 
   return (
-    <div className="mt-4">
+    <div className="mt-3">
       <div
         role="tablist"
         aria-label={t('company.books')}
@@ -381,9 +381,8 @@ export default function Layout() {
       <div className="noise-overlay" />
 
       {/* Desktop sidebar */}
-      <aside className="inset-safe ps-safe sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 py-5 lg:flex">
+      <aside className="inset-safe ps-safe [--safe-pad-x:1rem] [--safe-pad:1.25rem] sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 lg:flex">
         <Brand />
-        <CompanySwitcher />
         <WorkspaceSwitcher />
         {canWrite && <QuickAdd onClick={() => setQuickAdd(true)} />}
         <button
@@ -407,7 +406,7 @@ export default function Layout() {
       </aside>
 
       {/* Mobile top bar */}
-      <header className="pt-safe ps-safe sticky top-0 z-30 flex items-center justify-between border-b border-navy-dark bg-navy px-4 py-3 lg:hidden">
+      <header className="pt-safe ps-safe [--safe-pad-x:1rem] [--safe-pad:0.75rem] sticky top-0 z-30 flex items-center justify-between border-b border-navy-dark bg-navy px-4 pb-3 lg:hidden">
         <Brand />
         <div className="flex items-center gap-1">
           <button
@@ -432,7 +431,7 @@ export default function Layout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <div className="inset-safe absolute start-0 top-0 flex h-full w-72 flex-col border-e-2 border-gold bg-navy px-4 py-5 shadow-xl animate-fade-in">
+          <div className="inset-safe [--safe-pad:1.25rem] absolute start-0 top-0 flex h-full w-72 flex-col border-e-2 border-gold bg-navy px-4 shadow-xl animate-fade-in">
             <div className="flex items-center justify-between">
               <Brand />
               <button
@@ -443,7 +442,6 @@ export default function Layout() {
                 <X size={20} />
               </button>
             </div>
-            <CompanySwitcher />
             <WorkspaceSwitcher />
             {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
             <div className="mt-6 min-h-0 flex-1 overflow-y-auto pe-1">
@@ -542,6 +540,10 @@ function UserFooter({ user, isCloud, onSignOut }) {
           </button>
         )}
       </div>
+      {/* Which books you are in is the same kind of question as who you are
+          signed in as, so it sits with it rather than competing with the brand
+          at the top of the column. Absent entirely until a company exists. */}
+      <CompanySwitcher />
     </div>
   )
 }
