@@ -45,13 +45,22 @@ const NAV_COMMANDS = [
   { label: 'Export', to: '/exports', icon: FileUp, also: 'export csv excel pdf tally download backup' },
   { label: 'Bin', to: '/bin', icon: Trash2 },
   { label: 'Settings', to: '/settings', icon: SettingsIcon },
+  // Offered even with no company, unlike Operations. Somebody typing "company"
+  // is looking for exactly the page that turns the corporate side on, and
+  // hiding it until a company exists left no way to find it at all: no nav
+  // entry, no link on any page, and the word "company" nowhere in the app.
+  {
+    label: 'Companies',
+    to: '/companies',
+    icon: Building2,
+    also: 'company business entity corporate gst incorporate limited pvt ltd add a company legal',
+  },
 ]
 
-// Only offered once a company exists. On a personal install these two words
-// would lead to a screen that only says "you have no company", which is a
-// worse answer than no result at all.
+// Only once a company exists: on a personal install this leads to a screen that
+// only says "you have no company", which is a worse answer than no result.
+// Companies itself is always offered — that is the way in.
 const CORPORATE_COMMANDS = [
-  { label: 'Companies', to: '/companies', icon: Building2 },
   {
     label: 'Operations',
     to: '/operations',

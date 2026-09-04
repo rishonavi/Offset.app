@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail, Sparkles } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail, Sparkles, Building2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAppearance } from '../context/ThemeContext'
 import { usePlan } from '../context/PlanContext'
@@ -7,6 +8,7 @@ import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useReport } from '../context/ReportContext'
+import { useEntity } from '../context/EntityContext'
 import { hasSampleData, removeSampleData } from '../lib/sampleData'
 import { listReports, deleteReport, formatReportText, mailtoLink, kindLabel, SUPPORT_EMAIL } from '../lib/reports'
 import { startCheckout, openBillingPortal } from '../lib/billing'
@@ -157,6 +159,7 @@ export default function Settings() {
   }
 
   const sampleLoaded = hasSampleData({ properties, expenses, income })
+  const { enabled: hasCompany } = useEntity()
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -282,6 +285,37 @@ export default function Settings() {
 
       {/* Appearance */}
       <AppearanceCard />
+
+      {/* The way in to the corporate side.
+       *
+       * The whole layer is dormant until the first company exists, which is
+       * right — but it was dormant to the point of being unreachable: no nav
+       * entry, no link on any page, and the word "company" appeared nowhere in
+       * the app. The only route was typing /companies into the address bar.
+       * Shown only while there is nothing yet; after that the nav entry and the
+       * books tabs are the door and this would be a third copy of it. */}
+      {!hasCompany && (
+        <Card className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-gold">
+                <Building2 size={20} />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-ink-3">Running a business?</h2>
+                <p className="mt-1 text-xs text-ink-5">
+                  Add a company to keep its books beside your own: entities, roles, departments, approvals, and
+                  stock, advances and payroll. Your assets and entries stay exactly as they are, and you can switch
+                  between the two sets of books whenever you like.
+                </p>
+              </div>
+            </div>
+            <Link to="/companies" className="btn-ghost shrink-0">
+              <Building2 size={16} /> Add a company
+            </Link>
+          </div>
+        </Card>
+      )}
 
       {/* Team / sharing (cloud only) */}
       {isCloud && (

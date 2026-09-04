@@ -36,6 +36,32 @@ ok('nothing corporate is written to storage',
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
 ok('the ledger still shows the personal entry', /Adani/.test(await p.locator('#main-content').innerText()))
 
+// ── 1b. There has to be a way in ──
+// The layer being dormant is right; being unreachable is not. Before this there
+// was no nav entry, no link on any page and no palette match, so the only route
+// to the page that turns the corporate side on was typing its URL.
+console.log('\n── AND YET THERE IS A WAY IN ──')
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(500)
+const settings = await p.locator('#main-content').innerText()
+ok('Settings asks whether you run a business', /Running a business\?/.test(settings), settings.slice(0, 200))
+ok('and offers to add a company', (await p.locator('#main-content a[href="/companies"]').count()) === 1)
+await p.locator('body').click({ position: { x: 5, y: 5 } })
+await p.keyboard.press('Control+k')
+await p.locator('[role="dialog"] input').first().waitFor({ state: 'visible' })
+for (const q of ['company', 'business', 'entity']) {
+  await p.locator('[role="dialog"] input').first().fill(q)
+  await p.waitForTimeout(350)
+  ok(`the palette finds it from "${q}"`, /Companies/.test(await p.locator('[role="dialog"]').innerText()))
+}
+// Operations stays hidden: it would lead to a screen that only says you have
+// no company, which is a worse answer than no result.
+await p.locator('[role="dialog"] input').first().fill('payroll')
+await p.waitForTimeout(350)
+ok('but Operations still waits for one', !/Operations/.test(await p.locator('[role="dialog"]').innerText()))
+await p.keyboard.press('Escape')
+await p.waitForTimeout(300)
+
 // ── 2. Creating the first company ──
 console.log('\n── THE FIRST COMPANY ──')
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
@@ -66,6 +92,12 @@ ok('and named underneath', /Acme Industries/.test(await p.locator('aside').inner
 ok('but no dropdown, with only one to choose from',
   (await p.locator('select[aria-label="Switch company"]').count()) === 0)
 ok('the personal books are untouched', (await ls('pl_expenses')).length === 1)
+// Once you are through it, the door stops being a door: the nav entry and the
+// books tabs are how you get back, and a third copy in Settings would be noise.
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(500)
+ok('and Settings stops asking, now that there is one',
+  !/Running a business\?/.test(await p.locator('#main-content').innerText()))
 
 // ── 3. Departments ──
 console.log('\n── DEPARTMENTS ──')
