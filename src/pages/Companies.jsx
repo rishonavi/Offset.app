@@ -43,7 +43,14 @@ export default function Companies() {
     if (!draft.name.trim()) return toast('Give the company a name.', { type: 'error' })
     act(() => {
       const created = store.createEntity(draft, ent.actor)
-      store.setActiveEntity(created.id)
+      // switchTo, not store.setActiveEntity: the latter writes the choice to
+      // storage and never tells React, so the books you were in stayed on
+      // screen while storage had already moved. Creating a company from your
+      // personal books left the tab reading Personal and the stored active
+      // company set to the new one — and the next reload jumped you into it
+      // without being asked. reload() refreshes the lists but re-reads the
+      // active id only on mount, so it could not have caught this.
+      ent.switchTo(created.id)
     }, `${draft.name.trim()} created.`)
     setDraft({ name: '', gstin: '', registration: '', currency: 'INR' })
     setCreating(false)

@@ -256,6 +256,43 @@ ok('and nothing corporate is written for it', (await ls('pl_corp_entities')).len
 await pick('company')
 await p.waitForTimeout(600)
 
+// ── 9b. Adding a company while in your personal books ──
+// The nav entry is there in both sets of books, because you manage companies
+// from a page rather than from inside one.
+console.log('\n── ADDING ONE FROM PERSONAL BOOKS ──')
+await pick('personal')
+await p.waitForTimeout(600)
+ok('Companies is still in the nav from personal books', /COMPANIES/i.test(await p.locator('aside nav').innerText()))
+await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+ok('and the page still offers to add one', (await p.locator('#main-content button', { hasText: 'Add a company' }).count()) > 0,
+  (await p.locator('#main-content').innerText()).slice(0, 200))
+const before = (await ls('pl_corp_entities')).length
+await p.locator('button', { hasText: 'Add a company' }).first().click()
+await p.waitForTimeout(400)
+await p.locator('#main-content input').first().fill('Third Co Pvt Ltd')
+await p.locator('button', { hasText: 'Create company' }).click()
+await p.waitForTimeout(900)
+ok('it is created', (await ls('pl_corp_entities')).length === before + 1)
+// The bug this is here for: createCompany wrote the active company straight to
+// storage without telling React, so the tab still read PERSONAL while storage
+// had already moved — and the next reload jumped you into a company you had
+// not asked to be in.
+ok('and you are put into the company you just made',
+  !/PERSONAL/i.test(await chosen()), await chosen())
+// Read without assuming the switcher is on screen: in personal books it is
+// not, and a locator that times out gives a crashed run rather than a failed
+// assertion — which is the one thing a regression must not do.
+const stored = await p.evaluate(() => localStorage.getItem('pl_corp_active'))
+const shown = await p.evaluate(() => {
+  const sel = document.querySelector('select[aria-label="Switch company"]')
+  return sel ? sel.value : '(no switcher — personal books)'
+})
+ok('with the screen and the stored choice agreeing', stored === shown, `stored ${stored}, shown ${shown}`)
+await p.reload({ waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+ok('and a reload does not move you somewhere else', (await p.evaluate(() => localStorage.getItem('pl_corp_active'))) === stored)
+
 // ── 10. Layout ──
 console.log('\n── LAYOUT ──')
 await p.setViewportSize({ width: 390, height: 800 })
