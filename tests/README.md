@@ -57,7 +57,7 @@ node tests/browser/rtlui.mjs
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
 | `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
-| `booksui.mjs` | 13 | one login, two sets of books, and nothing leaking between them |
+| `booksui.mjs` | 21 | one login, two sets of books, and nothing leaking between them |
 | `bulkui.mjs` | 17 | settling several at once, and re-importing a file |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
@@ -82,7 +82,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **870** | |
+| | **878** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

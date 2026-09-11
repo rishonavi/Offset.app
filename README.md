@@ -336,6 +336,13 @@ you add in a company does not appear in your own books, and the other way round
 — one login, two ledgers. Everything written before you had a company has no
 company on it, so it stays personal, which is what it always was.
 
+Invoices go further, because an invoice says who it is *from*. The issuer — name,
+address, GSTIN — and the numbering series are kept per set of books, so a
+company's invoices carry the company's GSTIN and its own sequence. A company
+with nothing saved yet starts from the name and GSTIN already on its record.
+Templates are deliberately shared: a template is a page layout, and wanting the
+same one on both sides is reasonable.
+
 Once a company exists, two tabs — **Personal** and **Company** — appear with
 your account: in the side bar's footer, and on the Account card in Settings.
 Which set of books you are in is the same kind of question as who you are signed

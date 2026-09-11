@@ -107,6 +107,78 @@ await p.goto(B, { waitUntil: 'networkidle' })
 await p.waitForTimeout(800)
 ok('the dashboard shows the company, not your flat', !/Sea View Villa/.test(await main()), (await main()).slice(0, 300))
 
+// ── 5. Bills ──
+// Bills are unpaid entries and overdue income, read from the same rows as
+// everything else, so they follow without knowing anything about books. Worth
+// asserting rather than assuming: it is the claim the page makes.
+console.log('\n── BILLS FOLLOW THE BOOKS ──')
+await p.goto(B, { waitUntil: 'networkidle' })
+await pick('personal')
+await p.evaluate(() => {
+  const rows = JSON.parse(localStorage.getItem('pl_expenses'))
+  rows.push({ id: 'b-own', property_id: 'p1', category: 'Materials', vendor: 'Personal Supplier',
+    amount: 8000, date: '2026-05-10', status: 'unpaid', due_date: '2026-05-20' })
+  const co = JSON.parse(localStorage.getItem('pl_properties')).find((r) => r.name === 'Factory Unit')
+  rows.push({ id: 'b-co', property_id: co.id, entity_id: 'ent-1', category: 'Materials', vendor: 'Company Supplier',
+    amount: 9000, date: '2026-05-10', status: 'unpaid', due_date: '2026-05-20' })
+  localStorage.setItem('pl_expenses', JSON.stringify(rows))
+})
+await p.goto(`${B}/bills`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
+// Bills groups attached receipts by asset, so the asset filter is what says
+// whose books you are in.
+let bills = await main()
+ok('personal books offer only personal assets', /Sea View Villa/.test(bills) && !/Factory Unit/.test(bills),
+  bills.replace(/\n+/g, ' | ').slice(0, 260))
+await p.goto(B, { waitUntil: 'networkidle' })
+await pick('company')
+await p.goto(`${B}/bills`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
+bills = await main()
+ok('and the company only its own', /Factory Unit/.test(bills) && !/Sea View Villa/.test(bills),
+  bills.replace(/\n+/g, ' | ').slice(0, 260))
+
+// ── 6. Invoices ──
+// An invoice says who it is from. A company's goes out under the company's
+// GSTIN, and the numbering is a series per issuer — one counter shared across
+// two sets of books puts gaps in both.
+console.log('\n── AND SO DOES WHO AN INVOICE IS FROM ──')
+await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+const issuerName = () => p.getByLabel('Name / business').first()
+const gstinBox = () => p.locator('input[placeholder="27AAAPA1234A1Z5"]').first()
+ok('a company pre-fills its own name', (await issuerName().inputValue()).includes('Acme'),
+  await issuerName().inputValue())
+await gstinBox().fill('27AAAPA1234A1Z5')
+await p.waitForTimeout(700)
+ok('the company issuer is stored under its own key',
+  Boolean(await p.evaluate(() => localStorage.getItem('pl_invoice_issuer:ent-1'))))
+
+await p.goto(B, { waitUntil: 'networkidle' })
+await pick('personal')
+await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+ok('your own books do not inherit the company GSTIN', (await gstinBox().inputValue()) === '',
+  await gstinBox().inputValue())
+await issuerName().fill('Krish Shah')
+await p.waitForTimeout(700)
+const personalIssuer = await p.evaluate(() => localStorage.getItem('pl_invoice_issuer'))
+ok('and are stored under the unsuffixed key, where they always were',
+  /Krish Shah/.test(personalIssuer || ''), String(personalIssuer).slice(0, 90))
+
+// The numbering series is per issuer too.
+await p.evaluate(() => { localStorage.setItem('pl_invoice_seq', '7'); localStorage.setItem('pl_invoice_seq:ent-1', '42') })
+await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+let shown = await main()
+ok('personal invoices number from their own series', /0007/.test(shown), shown.slice(0, 300))
+await p.goto(B, { waitUntil: 'networkidle' })
+await pick('company')
+await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+shown = await main()
+ok('and the company from its own', /0042/.test(shown) && !/0007/.test(shown), shown.slice(0, 300))
+
 console.log(`\n${pass} passed, ${fail} failed`)
 console.log('errors:', errs.length ? errs.slice(0, 4) : 'none')
 await b.close()

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FileText, Upload, Download, Printer, Trash2, Star, Plus, X, Check, AlertTriangle, Code } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import { formatCurrency, todayISO } from '../lib/format'
 import {
@@ -16,6 +17,17 @@ import { invoiceToPDF, printInvoice, downloadHtml } from '../lib/invoicePdf'
 import { Card, Button, CardTitle, Field, Input, Select, Textarea, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 
+// Kept per set of books, not per browser.
+//
+// The issuer is who the invoice is *from* — a name, an address, a GSTIN. A
+// company's invoices go out under the company's GSTIN, and putting a personal
+// one on a company's tax document is not an inconvenience, it is the wrong
+// entity on a statutory record.
+//
+// The sequence is the same argument. Invoice numbering is a series per issuer,
+// and one counter shared across two sets of books produces gaps in both. The
+// templates are deliberately *not* scoped: a template is a page layout, and
+// wanting the same one on both sides is reasonable.
 const ISSUER_KEY = 'pl_invoice_issuer'
 const SEQ_KEY = 'pl_invoice_seq'
 // The parts of an invoice that describe how this person invoices, rather than
@@ -26,6 +38,10 @@ const SEQ_KEY = 'pl_invoice_seq'
 const HABITS_KEY = 'pl_invoice_habits'
 const HABITS = ['numberPattern', 'taxRate', 'propertyId', 'notes']
 
+// Personal books keep the unsuffixed key, so everything already saved stays
+// exactly where it is and stays personal — which is what it was.
+const scoped = (base, entityId) => (entityId ? `${base}:${entityId}` : base)
+
 const readJSON = (key, fallback) => {
   try {
     return { ...fallback, ...(JSON.parse(localStorage.getItem(key)) || {}) }
@@ -33,33 +49,39 @@ const readJSON = (key, fallback) => {
     return fallback
   }
 }
+const EMPTY_ISSUER = { name: '', address: '', gstin: '', pan: '', email: '', phone: '', bank: '' }
 
 const BUILT_IN = { id: '', name: 'Offset default', html: DEFAULT_TEMPLATE_HTML, paper: 'a4', builtIn: true }
 
 export default function Invoices() {
   const { properties, income, propertyNameById } = useData()
+  const { corporate, consolidated, activeId, entity } = useEntity()
   const toast = useToast()
   const fileRef = useRef(null)
+  // The consolidated view is read-only and spans companies, so there is no one
+  // issuer it could mean. Invoicing from it would have to pick one.
+  const books = corporate && !consolidated ? activeId : ''
+  const issuerKey = scoped(ISSUER_KEY, books)
+  const seqKey = scoped(SEQ_KEY, books)
+  const habitsKey = scoped(HABITS_KEY, books)
 
   const [templates, setTemplates] = useState([])
   const [templateId, setTemplateId] = useState('')
   const [showTokens, setShowTokens] = useState(false)
   const [busy, setBusy] = useState('')
 
-  const [issuer, setIssuer] = useState(() =>
-    readJSON(ISSUER_KEY, { name: '', address: '', gstin: '', pan: '', email: '', phone: '', bank: '' }),
-  )
+  const [issuer, setIssuer] = useState(() => readJSON(issuerKey, EMPTY_ISSUER))
   const [client, setClient] = useState({ name: '', address: '', gstin: '', email: '' })
   const [meta, setMeta] = useState(() => ({
     numberPattern: 'INV-{FY}-{0001}',
-    seq: Number(localStorage.getItem(SEQ_KEY) || 1),
+    seq: Number(localStorage.getItem(seqKey) || 1),
     date: todayISO(),
     dueDate: '',
     period: '',
     notes: '',
     taxRate: 18,
     propertyId: '',
-    ...readJSON(HABITS_KEY, {}),
+    ...readJSON(habitsKey, {}),
   }))
   const [lines, setLines] = useState([{ description: '', hsn: '', qty: 1, rate: '' }])
 
@@ -68,15 +90,26 @@ export default function Invoices() {
     setTemplateId(defaultTemplateId())
   }, [])
 
+  // Switching books mid-invoice swaps who it is from. The company already knows
+  // its own name and GSTIN, so a company with nothing saved yet starts from
+  // those rather than from an empty form — it is the same fact, typed once.
+  useEffect(() => {
+    const saved = readJSON(issuerKey, EMPTY_ISSUER)
+    const blank = !saved.name && !saved.gstin
+    setIssuer(blank && entity ? { ...saved, name: entity.name || '', gstin: entity.gstin || '' } : saved)
+    setMeta((m) => ({ ...m, seq: Number(localStorage.getItem(seqKey) || 1), ...readJSON(habitsKey, {}) }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [issuerKey, seqKey, habitsKey])
+
   // The issuer's own details are the same on every invoice they ever send, so
   // they are remembered rather than retyped.
   useEffect(() => {
     try {
-      localStorage.setItem(ISSUER_KEY, JSON.stringify(issuer))
+      localStorage.setItem(issuerKey, JSON.stringify(issuer))
     } catch {
       /* a convenience, not worth an error */
     }
-  }, [issuer])
+  }, [issuer, issuerKey])
 
   const allTemplates = [BUILT_IN, ...templates]
   const template = allTemplates.find((t) => t.id === templateId) || BUILT_IN
@@ -179,10 +212,10 @@ export default function Invoices() {
     const next = Number(meta.seq) + 1
     setMeta((m) => ({ ...m, seq: next }))
     try {
-      localStorage.setItem(SEQ_KEY, String(next))
+      localStorage.setItem(seqKey, String(next))
       // Issuing an invoice is the moment these stop being a guess and become
       // how this person invoices, so that is when they are remembered.
-      localStorage.setItem(HABITS_KEY, JSON.stringify(
+      localStorage.setItem(habitsKey, JSON.stringify(
         Object.fromEntries(HABITS.map((k) => [k, meta[k]]))))
     } catch {
       /* numbering still advances for this session */
