@@ -130,7 +130,9 @@ silent zero drags a total down and looks like an answer.
 
 ### Working with other people
 
-- **Private login** — enforced by row-level security.
+- **Private login** — Google, Facebook or Apple, or an email and password,
+  enforced by row-level security. Each provider is independent: switch on the
+  ones you want in Supabase and the rest simply say so when pressed.
 - **Share read-only** — invite an accountant or partner to view your workspace
   (Settings → Team; run `supabase/teams.sql`).
 - **Companies** — several legal entities under one login, with roles,

@@ -61,18 +61,33 @@ failing — an unconfigured feature says it is unconfigured.
 5. **Redeploy.** `VITE_` variables are read at build time, not at run time, so
    an existing deployment will not pick them up — it has to be rebuilt.
 
-### Signing in with Google
+### Signing in with Google, Facebook or Apple
 
-In **Supabase → Authentication → Providers → Google**: paste a Google OAuth
-client ID and secret, and in the Google Cloud console add this exact redirect
-URI:
+The sign-in screen offers all three. Each is independent: switch on the ones you
+want under **Supabase → Authentication → Providers** and leave the rest off. A
+provider that is off still shows its button and says so when pressed, naming the
+console you have to open — the app remembers which button was pressed across the
+redirect so it can tell you the right one.
+
+Nothing goes in the bundle. The client ID and secret live in Supabase, so there
+is no `VITE_` variable for any of this.
+
+| Provider | Where the keys come from |
+|---|---|
+| Google | Google Cloud → APIs & Services → Credentials |
+| Facebook | Meta for Developers → your app → Facebook Login → Settings |
+| Apple | Apple developer portal → Certificates, Identifiers & Profiles |
+
+In every one of those consoles, the redirect URI is the **Supabase** callback,
+not your own domain:
 
 ```
 https://<your-project-ref>.supabase.co/auth/v1/callback
 ```
 
-The redirect goes to *Supabase*, not to your Vercel domain — pointing it at the
-app is the mistake that produces a login loop with no error.
+Pointing it at the app is the mistake that produces a login loop with no error.
+For Facebook this is the **Valid OAuth Redirect URI** field, and the app has to
+be taken out of Development mode before anyone but you can use it.
 
 Then add your Vercel URL under **Authentication → URL Configuration** as both
 the Site URL and a redirect URL, or Supabase will refuse to send people back.

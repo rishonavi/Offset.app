@@ -15,6 +15,17 @@ function GoogleIcon() {
   )
 }
 
+function FacebookIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#1877F2"
+        d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.96h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"
+      />
+    </svg>
+  )
+}
+
 function AppleIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 384 512" fill="currentColor" aria-hidden="true">
@@ -23,20 +34,43 @@ function AppleIcon() {
   )
 }
 
+// Where each provider's keys come from. The error messages below name the
+// console you actually have to open, and telling someone to check Google Cloud
+// after they pressed Facebook is worse than saying nothing.
+const PROVIDERS = {
+  google: { label: 'Google', console: 'Google Cloud' },
+  facebook: { label: 'Facebook', console: 'Meta for Developers' },
+  apple: { label: 'Apple', console: 'the Apple developer portal' },
+}
+
+// An OAuth sign-in leaves the page, so by the time the provider bounces back
+// with an error the click that started it is gone. Remembering which button was
+// pressed is what lets the message name the right console on the way back.
+const ATTEMPT_KEY = 'pl_oauth_attempt'
+const rememberAttempt = (provider) => {
+  try { sessionStorage.setItem(ATTEMPT_KEY, provider) } catch { /* private mode */ }
+}
+const lastAttempt = () => {
+  try { return sessionStorage.getItem(ATTEMPT_KEY) || '' } catch { return '' }
+}
+
 // Supabase reports a provider nobody switched on as "Unsupported provider",
 // which reads like the app asked for something that does not exist. It is
 // nearly always the one setting still turned off, and saying which one is the
 // difference between a two-minute fix and an afternoon.
-function explain(message) {
+function explain(message, provider) {
   const text = String(message || '')
+  const p = PROVIDERS[provider] || null
+  const named = p ? `${p.label} isn’t` : 'That provider isn’t'
+  const from = p ? p.console : 'the provider’s developer console'
   if (/unsupported provider|provider is not enabled|not enabled/i.test(text)) {
-    return 'That provider isn’t switched on in this project’s Supabase. Enable it under Authentication → Providers, and paste in the client ID and secret from Google Cloud.'
+    return `${named} switched on in this project’s Supabase. Enable it under Authentication → Providers, and paste in the client ID and secret from ${from}.`
   }
   if (/redirect|requested path is invalid|not allowed|invalid.*url/i.test(text)) {
     return `Supabase refused the return address. Add ${window.location.origin} to Authentication → URL Configuration → Redirect URLs, and set Site URL to the same thing.`
   }
   if (/exchange external code|invalid.*code|bad_oauth/i.test(text)) {
-    return 'Google accepted the sign-in but Supabase could not complete it — usually a client ID or secret that does not match the one in Google Cloud, or a redirect URI there that is not https://<your-project>.supabase.co/auth/v1/callback.'
+    return `${p ? p.label : 'The provider'} accepted the sign-in but Supabase could not complete it — usually a client ID or secret that does not match the one in ${from}, or a redirect URI there that is not https://<your-project>.supabase.co/auth/v1/callback.`
   }
   return text
 }
@@ -57,16 +91,17 @@ export default function Login() {
 
   // A provider that refused says so on the way back rather than by throwing.
   useEffect(() => {
-    if (redirectError) setError(explain(redirectError))
+    if (redirectError) setError(explain(redirectError, lastAttempt()))
   }, [redirectError])
 
   const oauth = async (provider) => {
     setError(null)
     setInfo(null)
+    rememberAttempt(provider)
     try {
       await signInWithProvider(provider) // redirects to the provider
     } catch (err) {
-      setError(explain(err?.message || String(err)))
+      setError(explain(err?.message || String(err), provider))
     }
   }
 
@@ -118,8 +153,13 @@ export default function Login() {
           {isCloud ? (
             <>
               <div className="space-y-2.5">
+                {/* Google first, then Facebook: this is an India-first app and
+                    that is the order the accounts actually exist in. */}
                 <button type="button" onClick={() => oauth('google')} className="btn-ghost w-full">
                   <GoogleIcon /> Continue with Google
+                </button>
+                <button type="button" onClick={() => oauth('facebook')} className="btn-ghost w-full">
+                  <FacebookIcon /> Continue with Facebook
                 </button>
                 <button type="button" onClick={() => oauth('apple')} className="btn-ghost w-full">
                   <AppleIcon /> Continue with Apple

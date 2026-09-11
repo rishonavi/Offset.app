@@ -67,7 +67,7 @@ node tests/browser/rtlui.mjs
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
-| `loginui.mjs` | 12 | the sign-in screen, and what it says when a provider refuses |
+| `loginui.mjs` | 24 | the sign-in screen, its three providers, and what it says when one refuses |
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
 | `metalbillui.mjs` | 15 | filling a holding from a purchase bill |
 | `metalsui.mjs` | 27 | metal holdings on screen |
@@ -81,7 +81,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **841** | |
+| | **853** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

@@ -40,6 +40,15 @@ console.log('\n── THE SIGN-IN SCREEN ──')
   const { p, ctx, text } = await visit(`${B}/login`)
   ok('is reachable once Supabase is configured', p.url().includes('/login'), p.url())
   ok('and offers Google', await p.locator('button:has-text("Continue with Google")').count() === 1)
+  ok('and Facebook', await p.locator('button:has-text("Continue with Facebook")').count() === 1)
+  ok('and Apple', await p.locator('button:has-text("Continue with Apple")').count() === 1)
+  // India first: Google, then Facebook, then Apple — the order the accounts
+  // actually exist in for the people this app is for.
+  const order = await p.locator('.card button[type="button"]').allInnerTexts()
+  // .btn-ghost is uppercased in CSS, so innerText comes back shouting.
+  ok('in the order they are likely to be used',
+    /google/i.test(order[0] || '') && /facebook/i.test(order[1] || '') && /apple/i.test(order[2] || ''),
+    JSON.stringify(order.slice(0, 3)))
   ok('and email and password', /password/i.test(text))
   await ctx.close()
 }
@@ -64,7 +73,41 @@ console.log('\n── WHEN THE PROVIDER SENDS BACK A REFUSAL ──')
 {
   const { ctx, text } = await visit(`${B}/#error=server_error&error_description=Unable+to+exchange+external+code`)
   ok('a mismatched client id is explained as one', /client ID or secret/.test(text), text.slice(0, 180))
-  ok('including the redirect URI Google needs', /auth\/v1\/callback/.test(text), text.slice(0, 220))
+  ok('including the redirect URI the provider needs', /auth\/v1\/callback/.test(text), text.slice(0, 220))
+  await ctx.close()
+}
+
+console.log('\n── AND IT NAMES THE RIGHT CONSOLE ──')
+// OAuth leaves the page, so the click that started it is gone by the time the
+// refusal comes back. The attempted provider is remembered across the redirect
+// — without it, someone who pressed Facebook is told to go and check Google
+// Cloud, which is worse than saying nothing.
+for (const [provider, button, expected, wrong] of [
+  ['google', 'Continue with Google', 'Google Cloud', 'Meta for Developers'],
+  ['facebook', 'Continue with Facebook', 'Meta for Developers', 'Google Cloud'],
+  ['apple', 'Continue with Apple', 'Apple developer portal', 'Google Cloud'],
+]) {
+  const ctx = await b.newContext({ viewport: { width: 1100, height: 900 }, serviceWorkers: 'block' })
+  const p = await ctx.newPage()
+  await p.route('**/fonts.g**/**', (r) => r.abort())
+  // Stop the real redirect: the point is what the app remembers, not what the
+  // provider does with it.
+  await p.route('**/auth/v1/authorize**', (r) => r.abort())
+  await p.goto(`${B}/login`, { waitUntil: 'networkidle' })
+  await p.waitForTimeout(400)
+  await p.locator(`button:has-text("${button}")`).click()
+  await p.waitForTimeout(500)
+  // Come back the way a refused provider does. The read has to happen after
+  // this: the aborted hop to the provider leaves the tab on an opaque origin,
+  // where touching sessionStorage throws SecurityError — which is also why the
+  // app wraps its own access in try/catch.
+  await p.goto(`${B}/#error=server_error&error_description=Unsupported+provider`, { waitUntil: 'domcontentloaded' })
+  await p.waitForTimeout(1200)
+  const remembered = await p.evaluate(() => sessionStorage.getItem('pl_oauth_attempt'))
+  ok(`pressing ${provider} is remembered across the redirect`, remembered === provider, String(remembered))
+  const back = (await p.locator('body').innerText()).replace(/\n+/g, ' ')
+  ok(`and ${provider} is told to open ${expected}`, back.includes(expected), back.slice(0, 220))
+  ok(`and not ${wrong}`, !back.includes(wrong), back.slice(0, 220))
   await ctx.close()
 }
 

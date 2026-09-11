@@ -48,7 +48,9 @@ export async function signUp({ email, password }) {
   return data // { user, session } — session may be null if email confirmation is on
 }
 export async function signInWithProvider(provider) {
-  // provider: 'google' | 'apple'
+  // provider: 'google' | 'facebook' | 'apple' — whatever is switched on under
+  // Authentication → Providers in the Supabase project. Nothing here needs a
+  // key: the client ID and secret live in Supabase, not in the bundle.
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo: window.location.origin },
