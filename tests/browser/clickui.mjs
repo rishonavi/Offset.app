@@ -22,14 +22,17 @@ const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : 
 const SEED = () => {
   try { if (localStorage.getItem('pl_properties')) return } catch { return }
   const now = new Date().toISOString()
+  // Stamped with the company that is active below. The ledger is scoped by
+  // which set of books you are in, so unstamped rows would be invisible here
+  // and the sweep would press a third fewer controls than it looks like it is.
   localStorage.setItem('pl_properties', JSON.stringify([
-    { id: 'a1', name: 'Sea View Villa', type: 'Real Estate — Apartment / Flat', value: 9000000, created_at: now }]))
+    { id: 'a1', name: 'Sea View Villa', type: 'Real Estate — Apartment / Flat', value: 9000000, entity_id: 'ent-1', created_at: now }]))
   localStorage.setItem('pl_expenses', JSON.stringify(Array.from({ length: 8 }, (_, i) => ({
     id: `e${i}`, property_id: 'a1', date: `2026-0${(i % 9) + 1}-10`, amount: 1000 + i,
-    category: 'Utilities', vendor: 'Ravi', tax: 90,
+    category: 'Utilities', vendor: 'Ravi', tax: 90, entity_id: 'ent-1',
     status: i < 2 ? 'unpaid' : 'paid', created_at: now }))))
   localStorage.setItem('pl_income', JSON.stringify([{ id: 'i1', property_id: 'a1', date: '2026-01-05',
-    amount: 50000, source: 'Rent', tax: 500, status: 'received', created_at: now }]))
+    amount: 50000, source: 'Rent', tax: 500, status: 'received', entity_id: 'ent-1', created_at: now }]))
   // A company too, so the corporate half of the app has controls to press at
   // all. Without one, Operations is a single sentence and Companies is a form.
   localStorage.setItem('pl_corp_entities', JSON.stringify([

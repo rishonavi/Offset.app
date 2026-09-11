@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { db, isCloud } from '../lib/storage'
 import { useAuth } from './AuthContext'
 import { useWorkspace } from './WorkspaceContext'
+import { useEntity } from './EntityContext'
 
 const DataContext = createContext(null)
 
@@ -13,6 +14,7 @@ const byDateDesc = (a, b) => (b.date || '').localeCompare(a.date || '')
 export function DataProvider({ children }) {
   const { user } = useAuth()
   const { activeOwner, isOwnWorkspace, canWriteActive } = useWorkspace()
+  const { corporate, consolidated, activeId, entities, stamp } = useEntity()
   const [properties, setProperties] = useState([])
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
@@ -67,11 +69,44 @@ export function DataProvider({ children }) {
     (rows) => (isCloud ? rows.filter((r) => r.user_id === activeOwner) : rows),
     [activeOwner],
   )
-  const scopedProperties = useMemo(() => inScope(properties), [properties, inScope])
-  const scopedExpenses = useMemo(() => inScope(expenses), [expenses, inScope])
-  const scopedIncome = useMemo(() => inScope(income), [income, inScope])
-  const scopedDocuments = useMemo(() => inScope(documents), [documents, inScope])
-  const scopedComments = useMemo(() => inScope(comments), [comments, inScope])
+
+  // And then by which set of books you are in. A row carries the company it
+  // belongs to; a row with none belongs to you.
+  //
+  // That is also the migration, and it needs no migrating: everything written
+  // before companies existed has no entity_id, so it is all personal — which is
+  // exactly what it was. Nobody logs in one day to find their flat has become
+  // company property.
+  //
+  // A personal install never reaches the filter at all: with no company,
+  // `corporate` is false and every row is unstamped, so the whole thing is a
+  // no-op on the app most people are running.
+  const inBooks = useCallback(
+    (rows) => {
+      if (!corporate) return rows.filter((r) => !r.entity_id)
+      // The consolidated view is every company at once — and only companies.
+      // Your own books are not one of the things being consolidated.
+      if (consolidated) return rows.filter((r) => r.entity_id && entities.some((e) => e.id === r.entity_id))
+      return rows.filter((r) => r.entity_id === activeId)
+    },
+    [corporate, consolidated, activeId, entities],
+  )
+
+  const visible = useCallback((rows) => inBooks(inScope(rows)), [inBooks, inScope])
+  const scopedProperties = useMemo(() => visible(properties), [properties, visible])
+  const scopedExpenses = useMemo(() => visible(expenses), [expenses, visible])
+  const scopedIncome = useMemo(() => visible(income), [income, visible])
+  // Attachments and notes hang off an asset rather than carrying their own
+  // company: if you cannot see the asset, there is nothing for them to be on.
+  const visibleIds = useMemo(() => new Set(scopedProperties.map((p) => p.id)), [scopedProperties])
+  const scopedDocuments = useMemo(
+    () => inScope(documents).filter((d) => !d.property_id || visibleIds.has(d.property_id)),
+    [documents, inScope, visibleIds],
+  )
+  const scopedComments = useMemo(
+    () => inScope(comments).filter((c) => !c.property_id || visibleIds.has(c.property_id)),
+    [comments, inScope, visibleIds],
+  )
 
   // Every expense and income row asks for its asset's name while rendering, so
   // a linear scan here is a scan per row — 400 entries over 30 assets is 12,000
@@ -83,10 +118,13 @@ export function DataProvider({ children }) {
   )
   const propertyNameById = useCallback((id) => propertyNames.get(id), [propertyNames])
 
+  // A new row belongs to the books it was created in. `stamp()` is the company
+  // when you are in one and nothing at all when you are in your own — so a
+  // personal install writes exactly the rows it always did.
   // ── Properties ──
   const addProperty = async (data) => {
     guard()
-    const row = await db.addProperty(data)
+    const row = await db.addProperty({ ...data, ...stamp() })
     setProperties((prev) => [...prev, row].sort(byNameAsc))
     return row
   }
@@ -108,7 +146,7 @@ export function DataProvider({ children }) {
   // ── Expenses ──
   const addExpense = async (data) => {
     guard()
-    const row = await db.addExpense(data)
+    const row = await db.addExpense({ ...data, ...stamp() })
     setExpenses((prev) => [row, ...prev].sort(byDateDesc))
     return row
   }
@@ -132,7 +170,7 @@ export function DataProvider({ children }) {
   // ── Income ──
   const addIncome = async (data) => {
     guard()
-    const row = await db.addIncome(data)
+    const row = await db.addIncome({ ...data, ...stamp() })
     setIncome((prev) => [row, ...prev].sort(byDateDesc))
     return row
   }
@@ -156,7 +194,7 @@ export function DataProvider({ children }) {
   // ── Documents ──
   const addDocument = async (data) => {
     guard()
-    const row = await db.addDocument(data)
+    const row = await db.addDocument({ ...data, ...stamp() })
     setDocuments((prev) => [...prev, row])
     return row
   }

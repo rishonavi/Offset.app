@@ -168,6 +168,11 @@ alter table public.income   add column if not exists approval_status text not nu
 alter table public.income   add column if not exists approved_by     uuid references auth.users(id) on delete set null;
 alter table public.income   add column if not exists approved_at     timestamptz;
 
+-- An asset belongs to one set of books too. Without this column the client can
+-- read which books a row is in but never write it, so every asset created
+-- inside a company would come back as personal on the next load.
+alter table public.properties add column if not exists entity_id uuid references public.entities(id) on delete set null;
+
 -- add column if not exists carries its check only when it creates the column,
 -- so the constraint is added separately and idempotently.
 do $$
@@ -182,8 +187,9 @@ begin
   end if;
 end $$;
 
-create index if not exists expenses_entity_idx on public.expenses (entity_id);
-create index if not exists income_entity_idx   on public.income (entity_id);
+create index if not exists expenses_entity_idx   on public.expenses (entity_id);
+create index if not exists income_entity_idx     on public.income (entity_id);
+create index if not exists properties_entity_idx on public.properties (entity_id);
 
 -- ════════════════════════════════════════════════════════════════
 --  Who may do what

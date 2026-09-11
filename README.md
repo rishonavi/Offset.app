@@ -330,6 +330,12 @@ Company, with the button that creates one. ⌘K finds it from *company*,
 books tabs appear from then on — after which that card steps aside, because the
 tabs on the account card are the door.
 
+**The two sets of books are separate.** Assets, expenses, income, bills and
+invoices all carry the company they belong to; a row with none is yours. What
+you add in a company does not appear in your own books, and the other way round
+— one login, two ledgers. Everything written before you had a company has no
+company on it, so it stays personal, which is what it always was.
+
 Once a company exists, two tabs — **Personal** and **Company** — appear with
 your account: in the side bar's footer, and on the Account card in Settings.
 Which set of books you are in is the same kind of question as who you are signed

@@ -57,11 +57,12 @@ node tests/browser/rtlui.mjs
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
 | `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
+| `booksui.mjs` | 13 | one login, two sets of books, and nothing leaking between them |
 | `bulkui.mjs` | 17 | settling several at once, and re-importing a file |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `clickui.mjs` | 18 | pressing every button on every page and watching |
-| `corpui.mjs` | 83 | the way in, companies nav, the books switch in both places, consolidated view |
+| `corpui.mjs` | 85 | the way in, companies nav, the books switch in both places, consolidated view |
 | `defaultsui.mjs` | 18 | the form folding what most entries never touch |
 | `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
@@ -81,7 +82,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **855** | |
+| | **870** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
@@ -124,7 +125,7 @@ learn to ignore.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 50 | schema applies and re-applies; who may see and change what; the two invariants; founding; that a personal install is untouched |
+| `corporate.sql` | 57 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; that a personal install is untouched |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

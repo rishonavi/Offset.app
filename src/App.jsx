@@ -93,17 +93,20 @@ export default function App() {
         element={
           <ProtectedRoute>
             <WorkspaceProvider>
-              <DataProvider>
-                <PlanProvider>
-                  <PersonalProvider>
-                    <EntityProvider>
+              {/* Above DataProvider, because the ledger is now scoped by which
+                  books you are in and DataProvider has to be able to ask.
+                  EntityProvider itself only needs auth, so it can sit here. */}
+              <EntityProvider>
+                <DataProvider>
+                  <PlanProvider>
+                    <PersonalProvider>
                       <ReportProvider>
                         <Layout />
                       </ReportProvider>
-                    </EntityProvider>
-                  </PersonalProvider>
-                </PlanProvider>
-              </DataProvider>
+                    </PersonalProvider>
+                  </PlanProvider>
+                </DataProvider>
+              </EntityProvider>
             </WorkspaceProvider>
           </ProtectedRoute>
         }

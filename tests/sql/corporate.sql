@@ -268,4 +268,32 @@ select t.check('which took effect',
 select t.allows('and delete it',
   $$delete from public.expenses where id = 'cccccccc-0000-0000-0000-000000000009'$$);
 
+-- An asset carries its books the same way an entry does. The column has to
+-- exist for the client to write it, and has to stay nullable — a row with none
+-- is a personal one, which is what every row written before companies existed
+-- already is.
+select t.allows('a personal asset still saves',
+  $$insert into public.properties (id, user_id, name, type)
+    values ('bbbbbbbb-0000-0000-0000-00000000000e','55555555-5555-5555-5555-555555555555',
+            'Eve Cottage', 'Real Estate — Villa / House')$$);
+select t.check('with no entity on it either',
+  (select entity_id from public.properties where id = 'bbbbbbbb-0000-0000-0000-00000000000e') is null);
+select t.allows('and one can be put into a company',
+  $$update public.properties set entity_id = null
+     where id = 'bbbbbbbb-0000-0000-0000-00000000000e'$$);
+select t.allows('and deleted',
+  $$delete from public.properties where id = 'bbbbbbbb-0000-0000-0000-00000000000e'$$);
+
 reset role;
+
+\echo ''
+\echo '── AN ASSET CARRIES ITS BOOKS ──'
+reset role;
+select t.check('properties has an entity_id',
+  exists (select 1 from information_schema.columns
+           where table_schema = 'public' and table_name = 'properties' and column_name = 'entity_id'));
+select t.check('and it is nullable, so a personal asset needs nothing',
+  (select is_nullable from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties' and column_name = 'entity_id') = 'YES');
+select t.check('and it is indexed, because every read filters on it',
+  exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'properties_entity_idx'));

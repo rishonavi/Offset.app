@@ -181,8 +181,22 @@ assertions:
 - Operations, Companies and the report's company card all follow the tab
 - the choice persists across reloads and writes nothing corporate
 
+**Done and verified** — one login, two sets of books, 15 more assertions:
+
+- **the ledger is scoped by which books you are in.** Assets, expenses, income,
+  bills, invoices, documents — a row carries the company it belongs to, and a
+  row with none belongs to you. What you add in a company is invisible in your
+  own books and the other way round.
+- **the migration is no migration.** Everything written before companies existed
+  has no entity_id, so it is all personal — which is what it already was. Nobody
+  logs in to find their flat has become company property.
+- a personal install never reaches the filter: with no company every row is
+  unstamped and the whole thing is a no-op on the app most people run
+- `EntityProvider` moved above `DataProvider`, because the ledger now has to ask
+  which books it is in. It only ever needed auth, so it could
+
 **Done and verified** — the Supabase schema and row-level security,
-`supabase/corporate.sql`, 50 assertions against a real PostgreSQL:
+`supabase/corporate.sql`, 57 assertions against a real PostgreSQL:
 
 - every table, and the file applying cleanly twice over
 - the permission matrix as policies, mirroring `PERMISSIONS` role by role

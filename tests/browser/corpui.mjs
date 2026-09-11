@@ -15,6 +15,11 @@ let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
 
+// The books switcher, used from several sections below.
+const tabs = p.locator('aside [role="tablist"]')
+const chosen = () => p.locator('aside [role="tab"][aria-selected="true"]').innerText()
+const pick = (name) => p.locator('aside [role="tab"]', { hasText: new RegExp(name, 'i') }).click()
+
 const seedPersonal = () => p.evaluate(() => {
   localStorage.clear()
   localStorage.setItem('pl_properties', JSON.stringify([{ id: 'p1', name: 'Sea View Villa', type: 'Real Estate — Villa / House', value: 4200000 }]))
@@ -204,8 +209,18 @@ console.log('\n── AFTER A RELOAD ──')
 await p.reload({ waitUntil: 'networkidle' })
 await p.waitForTimeout(600)
 ok('the company is still active', /Acme/.test(await p.locator('#main-content').innerText()))
+// The books are separate now, so a personal entry is not in a company's
+// ledger — that is the feature. What has to survive is that it is still there,
+// untouched, in the books it belongs to.
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-ok('personal entries still show', /Adani/.test(await p.locator('#main-content').innerText()))
+await p.waitForTimeout(500)
+ok('a personal entry is not in the company ledger', !/Adani/.test(await p.locator('#main-content').innerText()))
+ok('but the row itself is untouched', (await ls('pl_expenses')).some((e) => e.vendor === 'Adani'))
+await pick('personal')
+await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(500)
+ok('and it still shows in your own books', /Adani/.test(await p.locator('#main-content').innerText()))
+await pick('company')
 await p.goto(B, { waitUntil: 'networkidle' })
 ok('the dashboard still works', (await p.locator('#main-content').innerText()).length > 100)
 
@@ -217,9 +232,6 @@ ok('the dashboard still works', (await p.locator('#main-content').innerText()).l
 // keep answering yes, or looking at your own books turns the app read-only.
 console.log('\n── PERSONAL BOOKS ──')
 await p.setViewportSize({ width: 1440, height: 1000 })
-const tabs = p.locator('aside [role="tablist"]')
-const chosen = () => p.locator('aside [role="tab"][aria-selected="true"]').innerText()
-const pick = (name) => p.locator('aside [role="tab"]', { hasText: new RegExp(name, 'i') }).click()
 
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(600)

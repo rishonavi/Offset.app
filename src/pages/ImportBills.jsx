@@ -264,6 +264,60 @@ export default function ImportBills() {
         subtitle="Everything that comes in: a bank statement, your inbox, a spreadsheet, Tally, or a backup."
       />
 
+      {/* Above the gate below, deliberately. Restoring is the one thing you
+          do when you have nothing — it is how you get your assets in the
+          first place, and how you fill a company you just created. Hiding it
+          until an asset exists made it unreachable at the only moment it was
+          needed, which nobody noticed while there was only one set of books
+          to be empty. */}
+        {/* Restoring is an import too: it is a file arriving, not one
+            leaving. Its other half — making the backup — sits on the export
+            page, and both call the same hook so the format cannot drift. */}
+        <Card className="p-5">
+          <div className="flex items-center gap-2">
+            <DownloadCloud size={16} className="text-ink-5" />
+            <h2 className="text-sm font-semibold text-ink-3">Restore a backup</h2>
+          </div>
+          <p className="mt-1 text-xs text-ink-5">
+            From a backup file, or from the cloud account you backed up to. Entries are added, not replaced.
+          </p>
+          <input
+            ref={backup.backupFileRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => backup.restoreFromFile(e.target.files?.[0])}
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button variant="ghost" onClick={() => backup.backupFileRef.current?.click()} loading={backup.busy}>
+              {!backup.busy && <FileUp size={16} />} Restore from file
+            </Button>
+            {backup.providers.length > 0 && (
+              <>
+                <select
+                  className="field-input w-auto"
+                  aria-label="Cloud account"
+                  value={backup.providerId}
+                  onChange={(e) => backup.setProviderId(e.target.value)}
+                >
+                  {backup.providers.map((x) => (
+                    <option key={x.id} value={x.id}>{x.label}</option>
+                  ))}
+                </select>
+                <Button variant="ghost" onClick={backup.cloudRestore} loading={backup.busy}>
+                  {!backup.busy && <DownloadCloud size={16} className="text-sky-600" />} Restore from cloud
+                </Button>
+              </>
+            )}
+          </div>
+          {backup.msg && (
+            <div className={`mt-3 flex items-start gap-2 px-3 py-2 text-sm ${backup.msg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+              {backup.msg.ok ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <AlertCircle size={16} className="mt-0.5 shrink-0" />}
+              {backup.msg.text}
+            </div>
+          )}
+        </Card>
+
       {properties.length === 0 ? (
         <EmptyState
           icon={Building2}
@@ -338,53 +392,6 @@ export default function ImportBills() {
         </Card>
 
 
-          {/* Restoring is an import too: it is a file arriving, not one
-              leaving. Its other half — making the backup — sits on the export
-              page, and both call the same hook so the format cannot drift. */}
-          <Card className="p-5">
-            <div className="flex items-center gap-2">
-              <DownloadCloud size={16} className="text-ink-5" />
-              <h2 className="text-sm font-semibold text-ink-3">Restore a backup</h2>
-            </div>
-            <p className="mt-1 text-xs text-ink-5">
-              From a backup file, or from the cloud account you backed up to. Entries are added, not replaced.
-            </p>
-            <input
-              ref={backup.backupFileRef}
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={(e) => backup.restoreFromFile(e.target.files?.[0])}
-            />
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button variant="ghost" onClick={() => backup.backupFileRef.current?.click()} loading={backup.busy}>
-                {!backup.busy && <FileUp size={16} />} Restore from file
-              </Button>
-              {backup.providers.length > 0 && (
-                <>
-                  <select
-                    className="field-input w-auto"
-                    aria-label="Cloud account"
-                    value={backup.providerId}
-                    onChange={(e) => backup.setProviderId(e.target.value)}
-                  >
-                    {backup.providers.map((x) => (
-                      <option key={x.id} value={x.id}>{x.label}</option>
-                    ))}
-                  </select>
-                  <Button variant="ghost" onClick={backup.cloudRestore} loading={backup.busy}>
-                    {!backup.busy && <DownloadCloud size={16} className="text-sky-600" />} Restore from cloud
-                  </Button>
-                </>
-              )}
-            </div>
-            {backup.msg && (
-              <div className={`mt-3 flex items-start gap-2 px-3 py-2 text-sm ${backup.msg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                {backup.msg.ok ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <AlertCircle size={16} className="mt-0.5 shrink-0" />}
-                {backup.msg.text}
-              </div>
-            )}
-          </Card>
 
           <div className="space-y-6 border-t border-border-light pt-6">
             <h2 className="text-sm font-semibold uppercase tracking-[1px] text-ink-5">Bills from Gmail</h2>
