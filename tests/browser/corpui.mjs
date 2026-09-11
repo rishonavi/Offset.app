@@ -61,6 +61,10 @@ await p.waitForTimeout(350)
 ok('but Operations still waits for one', !/Operations/.test(await p.locator('[role="dialog"]').innerText()))
 await p.keyboard.press('Escape')
 await p.waitForTimeout(300)
+// And the account card carries no books switch yet: with no company there is
+// nothing to switch between, and the card above already offers to make one.
+ok('the account card has no books switch yet',
+  (await p.locator('#main-content h2', { hasText: /^Account$/ }).locator('xpath=..').locator('[role="tablist"]').count()) === 0)
 
 // ── 2. Creating the first company ──
 console.log('\n── THE FIRST COMPANY ──')
@@ -292,6 +296,32 @@ ok('with the screen and the stored choice agreeing', stored === shown, `stored $
 await p.reload({ waitUntil: 'networkidle' })
 await p.waitForTimeout(700)
 ok('and a reload does not move you somewhere else', (await p.evaluate(() => localStorage.getItem('pl_corp_active'))) === stored)
+
+// ── 9c. The same control on Settings ──
+// Which books you are in is a fact about the account, so it is on the account
+// card too — the same component, so the two cannot drift apart.
+console.log('\n── AND ON THE ACCOUNT CARD ──')
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+const account = p.locator('#main-content h2', { hasText: /^Account$/ }).locator('xpath=..')
+ok('the account card carries the books switch', (await account.locator('[role="tablist"]').count()) === 1,
+  (await account.innerText()).replace(/\n+/g, ' | ').slice(0, 200))
+ok('and says what it decides', /Your own, or a company/.test(await account.innerText()))
+// Switching here has to move the whole app, not just this card.
+await account.getByRole('tab', { name: /personal/i }).click()
+await p.waitForTimeout(700)
+ok('switching on Settings moves the side bar too',
+  /PERSONAL/i.test(await chosen()), await chosen())
+ok('and it is the same choice, not a second one',
+  (await p.evaluate(() => localStorage.getItem('pl_corp_active'))) === '__personal__')
+await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+ok('so Operations follows it', /You are in your personal books/.test(await p.locator('#main-content').innerText()))
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+await account.getByRole('tab', { name: /company/i }).click()
+await p.waitForTimeout(700)
+ok('and back again', !/PERSONAL/i.test(await chosen()), await chosen())
 
 // ── 10. Layout ──
 console.log('\n── LAYOUT ──')

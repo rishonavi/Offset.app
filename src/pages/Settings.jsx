@@ -9,6 +9,7 @@ import { useToast } from '../context/ToastContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useReport } from '../context/ReportContext'
 import { useEntity } from '../context/EntityContext'
+import BooksSwitcher from '../components/BooksSwitcher'
 import { hasSampleData, removeSampleData } from '../lib/sampleData'
 import { listReports, deleteReport, formatReportText, mailtoLink, kindLabel, SUPPORT_EMAIL } from '../lib/reports'
 import { startCheckout, openBillingPortal } from '../lib/billing'
@@ -281,6 +282,24 @@ export default function Settings() {
             </Button>
           )}
         </div>
+
+        {/* The same control as the one in the side bar, and the same component:
+            which books you are in is a fact about the account, so this is where
+            someone looking at their account expects to find it. Absent while
+            there is no company — the card below offers to make one instead. */}
+        {hasCompany && (
+          <div className="mt-4 border-t border-line-soft pt-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink-2">Books</p>
+                <p className="mt-0.5 text-xs text-ink-5">
+                  Your own, or a company’s. Your assets and entries are the same either way.
+                </p>
+              </div>
+              <BooksSwitcher variant="card" className="w-full sm:w-64" />
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Appearance */}
