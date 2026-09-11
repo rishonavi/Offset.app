@@ -29,6 +29,7 @@ for Vite's resolver.
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
+| `money.test.mjs` | 44 | what counts as an amount, and what a row is cleaned to on its way in |
 | `metalbill.test.mjs` | 43 | reading a jeweller's bill into a metal holding |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
@@ -39,7 +40,7 @@ for Vite's resolver.
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 79 | corporate storage layer, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,342** | |
+| | **1,386** | |
 
 ## Browser — `tests/browser/`
 
@@ -75,6 +76,7 @@ node tests/browser/rtlui.mjs
 | `navui.mjs` | 22 | the side bar: grouping, what is waiting, a short screen, and its own padding |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
+| `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
 | `owedui.mjs` | 22 | what is owed in both directions, and how old it is |
 | `opsui.mjs` | 92 | stock, advances, payroll — in the report, in a backup, and on their own page |
 | `reportui.mjs` | 33 | the problem-report flow |
@@ -82,7 +84,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **884** | |
+| | **977** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

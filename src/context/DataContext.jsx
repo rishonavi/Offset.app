@@ -3,6 +3,7 @@ import { db, isCloud } from '../lib/storage'
 import { useAuth } from './AuthContext'
 import { useWorkspace } from './WorkspaceContext'
 import { useEntity } from './EntityContext'
+import { cleanMoney } from '../lib/money'
 
 const DataContext = createContext(null)
 
@@ -102,19 +103,24 @@ export function DataProvider({ children }) {
   )
   const propertyNameById = useCallback((id) => propertyNames.get(id), [propertyNames])
 
+  // Money is cleaned here rather than in each caller. Rows arrive from forms,
+  // from a backup file, from a bank statement, from Tally, from a spreadsheet
+  // and from an inbox; the forms refuse a number the app cannot add up, but a
+  // restored backup went straight past them and put 1e308 in the ledger. This
+  // is the one place all six already meet.
   // A new row belongs to the books it was created in. `stamp()` is the company
   // when you are in one and nothing at all when you are in your own — so a
   // personal install writes exactly the rows it always did.
   // ── Properties ──
   const addProperty = async (data) => {
     guard()
-    const row = await db.addProperty({ ...data, ...stamp() })
+    const row = await db.addProperty(cleanMoney({ ...data, ...stamp() }, 'property'))
     setProperties((prev) => [...prev, row].sort(byNameAsc))
     return row
   }
   const updateProperty = async (id, data) => {
     guard()
-    const row = await db.updateProperty(id, data)
+    const row = await db.updateProperty(id, cleanMoney(data, 'property'))
     setProperties((prev) => prev.map((p) => (p.id === id ? row : p)).sort(byNameAsc))
     return row
   }
@@ -130,13 +136,13 @@ export function DataProvider({ children }) {
   // ── Expenses ──
   const addExpense = async (data) => {
     guard()
-    const row = await db.addExpense({ ...data, ...stamp() })
+    const row = await db.addExpense(cleanMoney({ ...data, ...stamp() }, 'expense'))
     setExpenses((prev) => [row, ...prev].sort(byDateDesc))
     return row
   }
   const updateExpense = async (id, data) => {
     guard()
-    const row = await db.updateExpense(id, data)
+    const row = await db.updateExpense(id, cleanMoney(data, 'expense'))
     setExpenses((prev) => prev.map((e) => (e.id === id ? row : e)).sort(byDateDesc))
     return row
   }
@@ -154,13 +160,13 @@ export function DataProvider({ children }) {
   // ── Income ──
   const addIncome = async (data) => {
     guard()
-    const row = await db.addIncome({ ...data, ...stamp() })
+    const row = await db.addIncome(cleanMoney({ ...data, ...stamp() }, 'income'))
     setIncome((prev) => [row, ...prev].sort(byDateDesc))
     return row
   }
   const updateIncome = async (id, data) => {
     guard()
-    const row = await db.updateIncome(id, data)
+    const row = await db.updateIncome(id, cleanMoney(data, 'income'))
     setIncome((prev) => prev.map((e) => (e.id === id ? row : e)).sort(byDateDesc))
     return row
   }

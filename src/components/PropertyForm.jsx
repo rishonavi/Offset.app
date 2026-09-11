@@ -7,6 +7,7 @@ import {
 import { iconForAssetType } from '../lib/assetIcon'
 import { monthlyPayment } from '../lib/loan'
 import { usual } from '../lib/defaults'
+import { amountError } from '../lib/money'
 import { currencySymbol, formatCurrency } from '../lib/format'
 import {
   METALS, METAL_KEYS, PURITIES, UNITS, UNIT_KEYS,
@@ -278,6 +279,19 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
     }
     if (holding?.error) {
       setError(holding.error)
+      return
+    }
+    // Every figure on this form, not only the obvious one: a loan principal or
+    // a deposit that cannot be added up breaks the same totals an asset value
+    // would, and is typed the same way — a stuck zero key, a pasted number.
+    const money =
+      amountError(form.value) ||
+      amountError(form.monthly_budget) ||
+      amountError(form.loan_principal) ||
+      amountError(form.deposit) ||
+      amountError(form.metal_rate)
+    if (money) {
+      setError(money)
       return
     }
     setSaving(true)

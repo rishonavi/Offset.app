@@ -35,6 +35,10 @@ it was built the way it was:
 
 ### Assets and entries
 
+- **Amounts that can be added up** — an entry above what the app can total
+  exactly is refused rather than stored. A pasted phone number or a stuck zero
+  key produces a number no ledger should contain, and the cleaning happens where
+  every write already passes, so a restored backup cannot get one in either.
 - **Assets** — property, vehicles, and anything else you want costs attributed
   to. Every expense and every receipt of income belongs to one. The form asks
   only what the chosen type can have: an address for things fixed to a place, a

@@ -5,6 +5,7 @@ import { useT } from '../context/LanguageContext'
 import { draftKey, readDraft, writeDraft, clearDraft, draftDiffers } from '../lib/draft'
 import { useEntity } from '../context/EntityContext'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
+import { amountError } from '../lib/money'
 import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
 import { db } from '../lib/storage'
@@ -263,6 +264,12 @@ export default function IncomeForm({ initial, properties, payers = [], history =
     if (!form.source) return setError('Please choose a source.')
     const amount = Number(form.amount)
     if (!amount || amount <= 0) return setError(t('entry.needAmount'))
+    // Above zero was the only test, which let 1e308 through — a number the app
+    // cannot add up rather than a large one. Every money field on the form is
+    // checked, not just this one, because a tax or a deposit poisons a total
+    // just as thoroughly as an amount does.
+    const money = amountError(form.amount, { required: true }) || amountError(form.tax)
+    if (money) return setError(money)
 
     setSaving(true)
     setError(null)
