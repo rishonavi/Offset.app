@@ -179,6 +179,80 @@ await p.waitForTimeout(900)
 shown = await main()
 ok('and the company from its own', /0042/.test(shown) && !/0007/.test(shown), shown.slice(0, 300))
 
+// ── 7. The bin ──
+// It reads the store directly rather than through DataProvider, so it does its
+// own scoping — and did not, which put a company's deleted entries, vendors
+// and amounts and all, in your personal bin.
+console.log('\n── AND THE BIN ──')
+await p.goto(B, { waitUntil: 'networkidle' })
+await pick('personal')
+await p.evaluate(() => {
+  const rows = JSON.parse(localStorage.getItem('pl_expenses'))
+  const gone = new Date().toISOString()
+  rows.push({ id: 'd-own', property_id: 'p1', category: 'Other', vendor: 'Binned Personally',
+    amount: 100, date: '2026-05-01', status: 'paid', deleted_at: gone })
+  rows.push({ id: 'd-co', property_id: 'p1', entity_id: 'ent-1', category: 'Other', vendor: 'Binned By Acme',
+    amount: 200, date: '2026-05-01', status: 'paid', deleted_at: gone })
+  localStorage.setItem('pl_expenses', JSON.stringify(rows))
+})
+await p.goto(`${B}/bin`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+// The bin lists category, asset and amount rather than the vendor, so the
+// amount is what tells the two rows apart.
+let bin = await main()
+ok('your bin holds only what you deleted', /₹100/.test(bin) && !/₹200/.test(bin),
+  bin.replace(/\n+/g, ' | ').slice(0, 260))
+await p.goto(B, { waitUntil: 'networkidle' })
+await pick('company')
+await p.goto(`${B}/bin`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+bin = await main()
+ok('and the company only what it deleted', /₹200/.test(bin) && !/₹100/.test(bin),
+  bin.replace(/\n+/g, ' | ').slice(0, 260))
+
+// ── 8. Drafts and remembered searches ──
+// Small things, and the more confusing kind of leak: a half-typed company
+// expense restoring itself into a personal form arrives unannounced in a form
+// you had just opened.
+console.log('\n── HALF-TYPED ENTRIES AND WHAT YOU SEARCHED ──')
+await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+await p.locator('input[placeholder="e.g. Asian Paints"]').fill('Company Vendor Draft')
+await p.waitForTimeout(900)
+const draftKeys = await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pl_draft_')))
+ok('a company draft is kept under its own key', draftKeys.some((k) => k.includes('@ent-1')), JSON.stringify(draftKeys))
+await p.goto(B, { waitUntil: 'networkidle' })
+await pick('personal')
+await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+ok('and does not restore into a personal form',
+  (await p.locator('input[placeholder="e.g. Asian Paints"]').inputValue()) !== 'Company Vendor Draft',
+  await p.locator('input[placeholder="e.g. Asian Paints"]').inputValue())
+
+await p.evaluate(() => {
+  const now = Date.now()
+  localStorage.setItem('pl_search_history', JSON.stringify([{ q: 'personal search', at: now }]))
+  localStorage.setItem('pl_search_history:ent-1', JSON.stringify([{ q: 'acme search', at: now }]))
+})
+const palette = async () => {
+  await p.locator('body').click({ position: { x: 5, y: 5 } })
+  await p.keyboard.press('Control+k')
+  await p.locator('[role="dialog"] input').first().waitFor({ state: 'visible' })
+  await p.waitForTimeout(400)
+  const t = await p.locator('[role="dialog"]').innerText()
+  await p.keyboard.press('Escape')
+  await p.waitForTimeout(300)
+  return t
+}
+await p.goto(B, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+let pal = await palette()
+ok('your own recent searches are yours', /personal search/.test(pal) && !/acme search/.test(pal), pal.slice(0, 200))
+await pick('company')
+await p.waitForTimeout(500)
+pal = await palette()
+ok('and the company\'s are its own', /acme search/.test(pal) && !/personal search/.test(pal), pal.slice(0, 200))
+
 console.log(`\n${pass} passed, ${fail} failed`)
 console.log('errors:', errs.length ? errs.slice(0, 4) : 'none')
 await b.close()

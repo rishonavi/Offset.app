@@ -103,11 +103,20 @@ export function EntityProvider({ children }) {
       allDepartments: departments,
       policy: corporate && !isConsolidated(active) ? store.approvalPolicy(active) : { enabled: false, threshold: 0, alwaysCategories: [] },
 
-      // Rows carry an entity_id once the corporate layer is on. Personal rows
-      // never had one, so with it off everything is in scope.
+      // Which rows belong to the books you are in. The one definition of it:
+      // DataProvider filters the ledger with this, and the bin filters the
+      // deleted rows with it, so the two cannot disagree about what "personal"
+      // means.
+      //
+      // A row carries the company it belongs to; a row with none belongs to
+      // you. That is also the migration and it needs none: everything written
+      // before companies existed is unstamped, so it is all personal, which is
+      // what it already was.
       inEntity: (rows) => {
-        if (!corporate) return rows
-        if (isConsolidated(active)) return rows.filter((r) => entities.some((e) => e.id === r.entity_id))
+        if (!corporate) return rows.filter((r) => !r.entity_id)
+        // Consolidated is every company at once, and only companies — your own
+        // books are not one of the things being consolidated.
+        if (isConsolidated(active)) return rows.filter((r) => r.entity_id && entities.some((e) => e.id === r.entity_id))
         return rows.filter((r) => r.entity_id === active)
       },
       // What to stamp on a new row.

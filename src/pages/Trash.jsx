@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Trash2, RotateCcw, Undo2 } from 'lucide-react'
 import { db } from '../lib/storage'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
 import { usePersonal } from '../context/PersonalContext'
 import { useToast } from '../context/ToastContext'
 import { formatCurrency, formatDate } from '../lib/format'
@@ -13,6 +14,10 @@ const KIND_LABEL = { expense: 'Expense', income: 'Income', personal: 'Personal' 
 
 export default function Trash() {
   const { propertyNameById, refresh: refreshData } = useData()
+  // The bin reads the store directly rather than through DataProvider, so it
+  // has to do its own scoping — and did not, which put a company's deleted
+  // entries, vendors and amounts and all, in your personal bin.
+  const { inEntity, corporate } = useEntity()
   const { refresh: refreshPersonal } = usePersonal()
   const toast = useToast()
   const [items, setItems] = useState([])
@@ -23,11 +28,14 @@ export default function Trash() {
     setLoading(true)
     try {
       const t = await db.getTrash()
-      const tag = (rows, kind) => rows.map((r) => ({ ...r, kind }))
+      const tag = (rows, kind) => inEntity(rows).map((r) => ({ ...r, kind }))
       const all = [
         ...tag(t.expenses, 'expense'),
         ...tag(t.income, 'income'),
-        ...tag(t.personal, 'personal'),
+        // Personal spending is the personal side by definition — it has no
+        // company to belong to, so it is not filtered, only hidden while you
+        // are looking at a company's books.
+        ...(corporate ? [] : t.personal.map((r) => ({ ...r, kind: 'personal' }))),
       ].sort((a, b) => (b.deleted_at || '').localeCompare(a.deleted_at || ''))
       setItems(all)
     } catch {
@@ -35,7 +43,7 @@ export default function Trash() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [inEntity, corporate])
 
   useEffect(() => {
     load()

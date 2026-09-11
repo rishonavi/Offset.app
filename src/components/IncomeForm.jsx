@@ -3,6 +3,7 @@ import { Paperclip, X, Loader2, Sparkles, Camera, Upload } from 'lucide-react'
 import { INCOME_SOURCES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
 import { useT } from '../context/LanguageContext'
 import { draftKey, readDraft, writeDraft, clearDraft, draftDiffers } from '../lib/draft'
+import { useEntity } from '../context/EntityContext'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { parseEntry } from '../lib/ai'
 import { currencySymbol, todayISO } from '../lib/format'
@@ -21,7 +22,10 @@ export default function IncomeForm({ initial, properties, payers = [], history =
   const t = useT()
   // A draft only ever fills what the blank form would have left empty or
   // default; it never overwrites the record being edited.
-  const key = draftKey('income', initial?.id)
+  // Scoped to the books being filled in, so a company draft never lands in a
+  // personal form.
+  const ent = useEntity()
+  const key = draftKey('income', initial?.id, ent?.corporate && !ent.consolidated ? ent.activeId : '')
   // Filled in from what this person actually does, rather than left blank or set
   // to whichever asset happens to sort first. All three decline to answer unless
   // the history is one-sided — lib/defaults.js says why that matters.

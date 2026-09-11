@@ -14,7 +14,7 @@ const byDateDesc = (a, b) => (b.date || '').localeCompare(a.date || '')
 export function DataProvider({ children }) {
   const { user } = useAuth()
   const { activeOwner, isOwnWorkspace, canWriteActive } = useWorkspace()
-  const { corporate, consolidated, activeId, entities, stamp } = useEntity()
+  const { inEntity, stamp } = useEntity()
   const [properties, setProperties] = useState([])
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
@@ -70,29 +70,13 @@ export function DataProvider({ children }) {
     [activeOwner],
   )
 
-  // And then by which set of books you are in. A row carries the company it
-  // belongs to; a row with none belongs to you.
+  // And then by which set of books you are in — `inEntity` from EntityContext,
+  // which is the one place that rule is written. The bin filters with the same
+  // function, so the two cannot drift apart about what "personal" means.
   //
-  // That is also the migration, and it needs no migrating: everything written
-  // before companies existed has no entity_id, so it is all personal — which is
-  // exactly what it was. Nobody logs in one day to find their flat has become
-  // company property.
-  //
-  // A personal install never reaches the filter at all: with no company,
-  // `corporate` is false and every row is unstamped, so the whole thing is a
-  // no-op on the app most people are running.
-  const inBooks = useCallback(
-    (rows) => {
-      if (!corporate) return rows.filter((r) => !r.entity_id)
-      // The consolidated view is every company at once — and only companies.
-      // Your own books are not one of the things being consolidated.
-      if (consolidated) return rows.filter((r) => r.entity_id && entities.some((e) => e.id === r.entity_id))
-      return rows.filter((r) => r.entity_id === activeId)
-    },
-    [corporate, consolidated, activeId, entities],
-  )
-
-  const visible = useCallback((rows) => inBooks(inScope(rows)), [inBooks, inScope])
+  // A personal install never narrows anything: with no company every row is
+  // unstamped, so this is a no-op on the app most people are running.
+  const visible = useCallback((rows) => inEntity(inScope(rows)), [inEntity, inScope])
   const scopedProperties = useMemo(() => visible(properties), [properties, visible])
   const scopedExpenses = useMemo(() => visible(expenses), [expenses, visible])
   const scopedIncome = useMemo(() => visible(income), [income, visible])

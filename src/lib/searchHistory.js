@@ -14,25 +14,31 @@
 // cannot be read back even once.
 
 const KEY = 'pl_search_history'
+
+// Searches run over the rows you can see, so what you searched for belongs to
+// the books you searched in. A company's vendor names turning up as suggestions
+// in your own books is a small leak, but it is still one — and it makes the
+// list read as though it is remembering the wrong things.
+const keyFor = (books) => (books ? `${KEY}:${books}` : KEY)
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 // Enough to be useful in a dropdown, few enough to scan without reading.
 const MAX = 8
 // One letter is a keystroke, not a search worth remembering.
 const MIN_LENGTH = 2
 
-const load = () => {
+const load = (books = '') => {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY))
+    const raw = JSON.parse(localStorage.getItem(keyFor(books)))
     return Array.isArray(raw) ? raw : []
   } catch {
     return []
   }
 }
 
-const save = (rows) => {
+const save = (rows, books = '') => {
   try {
-    if (rows.length) localStorage.setItem(KEY, JSON.stringify(rows))
-    else localStorage.removeItem(KEY)
+    if (rows.length) localStorage.setItem(keyFor(books), JSON.stringify(rows))
+    else localStorage.removeItem(keyFor(books))
   } catch {
     /* a browser refusing to store this is not worth an error to the user */
   }
@@ -49,28 +55,27 @@ const clean = (rows, now) =>
     .sort((a, b) => b.at - a.at)
     .slice(0, MAX)
 
-export function readSearches(now = Date.now()) {
-  const rows = clean(load(), now)
-  return rows
+export function readSearches(now = Date.now(), books = '') {
+  return clean(load(books), now)
 }
 
 // The queries alone, which is all the UI wants.
-export const recentSearches = (now = Date.now()) => readSearches(now).map((r) => r.q)
+export const recentSearches = (now = Date.now(), books = '') => readSearches(now, books).map((r) => r.q)
 
-export function recordSearch(q, now = Date.now()) {
+export function recordSearch(q, now = Date.now(), books = '') {
   const text = String(q ?? '').trim()
-  if (text.length < MIN_LENGTH) return recentSearches(now)
+  if (text.length < MIN_LENGTH) return recentSearches(now, books)
   // Searching the same thing again moves it to the top rather than listing it
   // twice — and matching case-insensitively, because "Villa" and "villa" are
   // one search to the person who typed them.
-  const rest = clean(load(), now).filter((r) => r.q.toLowerCase() !== text.toLowerCase())
+  const rest = clean(load(books), now).filter((r) => r.q.toLowerCase() !== text.toLowerCase())
   const rows = [{ q: text, at: now }, ...rest].slice(0, MAX)
-  save(rows)
+  save(rows, books)
   return rows.map((r) => r.q)
 }
 
-export function clearSearches() {
-  save([])
+export function clearSearches(books = '') {
+  save([], books)
   return []
 }
 

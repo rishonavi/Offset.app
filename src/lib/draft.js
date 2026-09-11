@@ -16,7 +16,12 @@ const PREFIX = 'pl_draft_'
 // fresh form is worse than losing it.
 const MAX_AGE_MS = 24 * 60 * 60 * 1000
 
-export const draftKey = (kind, id) => `${PREFIX}${kind}_${id || 'new'}`
+// `books` is the company whose books the form is being filled in, or '' for
+// your own. A half-typed company expense restoring itself into a personal form
+// is the same leak as the ledger's, in miniature — and the more confusing kind,
+// because it arrives unannounced in a form you had just opened.
+export const draftKey = (kind, id, books = '') =>
+  `${PREFIX}${kind}_${id || 'new'}${books ? `@${books}` : ''}`
 
 // Only plain scalars. A File cannot be serialised and a data URL would put a
 // photograph into every keystroke's worth of writes, so attachments are

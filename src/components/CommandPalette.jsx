@@ -76,7 +76,9 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
   const navigate = useNavigate()
   const { properties, expenses, income, documents, propertyNameById, canWrite } = useData()
   const { theme, toggle } = useTheme()
-  const { enabled: corporate } = useEntity()
+  const { enabled: corporate, corporate: inCompany, consolidated, activeId } = useEntity()
+  // What you searched for belongs to the books you searched in.
+  const books = inCompany && !consolidated ? activeId : ''
   const [q, setQ] = useState('')
   const [active, setActive] = useState(0)
   // Read when the palette opens rather than held across the session, so a week
@@ -90,10 +92,13 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
     if (!open) return
     setQ('')
     setActive(0)
-    setRecents(recentSearches())
+    setRecents(recentSearches(Date.now(), books))
     const t = setTimeout(() => inputRef.current?.focus(), 10)
     return () => clearTimeout(t)
-  }, [open])
+    // books too: switching them while the palette is shut must not leave the
+    // previous set's searches sitting in it when it next opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, books])
 
   useEffect(() => setActive(0), [q])
 
@@ -120,7 +125,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
       }
       if (recents.length) {
         push('Recent searches', 'Clear recent searches', `Kept on this device for ${RETENTION_DAYS} days`, Eraser,
-          () => setRecents(clearSearches()))
+          () => setRecents(clearSearches(books)))
       }
     }
 
@@ -197,7 +202,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
   // new search, so it does not re-record itself.
   const run = (item) => {
     if (!item) return
-    if (item.group !== 'Recent searches') recordSearch(q)
+    if (item.group !== 'Recent searches') recordSearch(q, Date.now(), books)
     item.action()
   }
 

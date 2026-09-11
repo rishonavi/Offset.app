@@ -195,6 +195,38 @@ assertions:
 - `EntityProvider` moved above `DataProvider`, because the ledger now has to ask
   which books it is in. It only ever needed auth, so it could
 
+### What is per books, and what is not
+
+Every store in the app had to be put on one side of this line, so the decision
+is written down rather than re-argued each time something new is added.
+
+**Per books** — it is a fact about a ledger, or about who is issuing something:
+
+| | Why |
+|---|---|
+| assets, expenses, income, documents, comments | the ledger itself; a row carries its company |
+| bills, reports, exports, the dashboard, nav counts | all read those rows, so they follow for free |
+| the bin | deleted rows keep their company; without this a company's entries sat in your personal bin |
+| invoice issuer, numbering series, habits | an invoice says who it is *from*; a company's GSTIN on a personal invoice is the wrong entity on a tax document |
+| drafts | a half-typed company expense restoring into a personal form is the same leak in miniature |
+| remembered searches | searches run over the rows you can see |
+
+**Not per books** — it is a fact about you, your account, or this browser:
+
+| | Why |
+|---|---|
+| theme, accent, tone, avatar, language | how the app looks to you, not whose books you are in |
+| plan, scan count | billing is per account |
+| problem reports you filed | yours, not a ledger's |
+| invoice templates | a template is a page layout; wanting the same one on both sides is reasonable |
+| the Personal page | it is the personal side by definition |
+
+The rule itself lives in exactly one function — `inEntity` in `EntityContext` —
+which both `DataProvider` and the bin filter with, so they cannot drift apart
+about what "personal" means. It had drifted once already: it returned *every*
+row in personal books rather than only the unstamped ones, which was harmless
+while nothing called it and wrong the moment something did.
+
 **Done and verified** — the Supabase schema and row-level security,
 `supabase/corporate.sql`, 57 assertions against a real PostgreSQL:
 

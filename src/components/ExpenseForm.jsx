@@ -3,6 +3,7 @@ import { Paperclip, X, Loader2, Sparkles, Camera, Upload, Wand2 } from 'lucide-r
 import { CATEGORIES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
 import { useT } from '../context/LanguageContext'
 import { draftKey, readDraft, writeDraft, clearDraft, draftDiffers } from '../lib/draft'
+import { useEntity } from '../context/EntityContext'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { buildVendorIndex, suggestCategory } from '../lib/categorize'
 import { parseEntry } from '../lib/ai'
@@ -22,7 +23,10 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
   const t = useT()
   // A draft only ever fills what the blank form would have left empty or
   // default; it never overwrites the record being edited.
-  const key = draftKey('expense', initial?.id)
+  // Scoped to the books being filled in, so a company draft never lands in a
+  // personal form.
+  const ent = useEntity()
+  const key = draftKey('expense', initial?.id, ent?.corporate && !ent.consolidated ? ent.activeId : '')
   // Filled in from what this person actually does, rather than left blank or set
   // to whichever asset happens to sort first. Both of these decline to answer
   // unless the history is one-sided — lib/defaults.js says why that matters.
