@@ -44,8 +44,15 @@ console.log('\n── AND YET THERE IS A WAY IN ──')
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(500)
 const settings = await p.locator('#main-content').innerText()
-ok('Settings asks whether you run a business', /Running a business\?/.test(settings), settings.slice(0, 200))
-ok('and offers to add a company', (await p.locator('#main-content a[href="/companies"]').count()) === 1)
+// Directly under the account card, because it is about the account: which sets
+// of books this login has. Personal is stated as a fact — it already exists and
+// there is nothing to create — and the company side is the one to ask for.
+ok('Settings lays out the two sets of books', /Your books/.test(settings), settings.slice(0, 240))
+ok('and says the personal side is already there', /nothing to set up/.test(settings))
+ok('and offers to create a company', (await p.locator('#main-content a[href="/companies"]').count()) === 1)
+const order = settings.split('\n').map((l) => l.trim()).filter((l) => ['Account', 'Your books', 'Appearance'].includes(l))
+ok('sitting between the account and the appearance',
+  JSON.stringify(order) === JSON.stringify(['Account', 'Your books', 'Appearance']), JSON.stringify(order))
 await p.locator('body').click({ position: { x: 5, y: 5 } })
 await p.keyboard.press('Control+k')
 await p.locator('[role="dialog"] input').first().waitFor({ state: 'visible' })
@@ -100,8 +107,10 @@ ok('the personal books are untouched', (await ls('pl_expenses')).length === 1)
 // books tabs are how you get back, and a third copy in Settings would be noise.
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(500)
-ok('and Settings stops asking, now that there is one',
-  !/Running a business\?/.test(await p.locator('#main-content').innerText()))
+// After that the books tabs on the account card are how you move between them,
+// and this would be a second copy of a control that already exists.
+ok('and Settings stops offering, now that there is one',
+  !/Your books/.test(await p.locator('#main-content').innerText()))
 
 // ── 3. Departments ──
 console.log('\n── DEPARTMENTS ──')

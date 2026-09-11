@@ -323,10 +323,12 @@ audit trail — plus **stock, advances and payroll** on their own page.
 **The whole layer stays dormant until you create a company.** A personal install
 sees no Companies nav, no books tabs, and writes no `pl_corp_*` keys.
 
-Dormant, but not hidden: **Settings** asks whether you run a business and links
-straight to it, and ⌘K finds it from *company*, *business* or *entity*. Press
-*Add a company*, give it a name, and the nav entry and the books tabs appear
-from then on — after which Settings stops asking, because the nav is the door.
+Dormant, but not hidden. **Settings** lays out both sets of books directly under
+your account: Personal, marked as already there with nothing to set up, and
+Company, with the button that creates one. ⌘K finds it from *company*,
+*business* or *entity* too. Give the company a name and the nav entry and the
+books tabs appear from then on — after which that card steps aside, because the
+tabs on the account card are the door.
 
 Once a company exists, two tabs — **Personal** and **Company** — appear with
 your account: in the side bar's footer, and on the Account card in Settings.

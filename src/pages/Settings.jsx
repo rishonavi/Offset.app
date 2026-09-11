@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail, Sparkles, Building2 } from 'lucide-react'
+import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail, Sparkles, Building2, PiggyBank } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAppearance } from '../context/ThemeContext'
 import { usePlan } from '../context/PlanContext'
@@ -302,39 +302,54 @@ export default function Settings() {
         )}
       </Card>
 
-      {/* Appearance */}
-      <AppearanceCard />
-
-      {/* The way in to the corporate side.
+      {/* Directly under the account, because it is about the account: which
+       * sets of books this login has. The personal side always exists and is
+       * stated as a fact rather than offered as a choice — there is nothing to
+       * create. The company side is the one that has to be asked for.
        *
-       * The whole layer is dormant until the first company exists, which is
-       * right — but it was dormant to the point of being unreachable: no nav
-       * entry, no link on any page, and the word "company" appeared nowhere in
-       * the app. The only route was typing /companies into the address bar.
-       * Shown only while there is nothing yet; after that the nav entry and the
-       * books tabs are the door and this would be a third copy of it. */}
+       * Shown only while there is no company yet. After that the books tabs on
+       * the card above are how you move between them, and this would be a
+       * second copy of a control that already exists. */}
       {!hasCompany && (
         <Card className="p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-gold">
-                <Building2 size={20} />
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-ink-3">Running a business?</h2>
-                <p className="mt-1 text-xs text-ink-5">
-                  Add a company to keep its books beside your own: entities, roles, departments, approvals, and
-                  stock, advances and payroll. Your assets and entries stay exactly as they are, and you can switch
-                  between the two sets of books whenever you like.
-                </p>
+          <h2 className="text-sm font-semibold text-ink-3">Your books</h2>
+          <p className="mt-1 text-xs text-ink-5">
+            One set today. Add a company and you get a second, kept separately, with a switch between them.
+          </p>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-line bg-surface-sunk p-4">
+              <div className="flex items-center gap-2">
+                <PiggyBank size={16} className="text-ink-4" />
+                <h3 className="text-sm font-medium text-ink-2">Personal</h3>
+                <span className="ms-auto inline-flex items-center gap-1 text-[0.65rem] font-semibold uppercase tracking-[1px] text-emerald-700 dark:text-emerald-400">
+                  <Check size={12} /> Active
+                </span>
               </div>
+              <p className="mt-2 text-xs text-ink-5">
+                Your own assets, income and expenses. Already here — nothing to set up.
+              </p>
             </div>
-            <Link to="/companies" className="btn-ghost shrink-0">
-              <Building2 size={16} /> Add a company
-            </Link>
+
+            <div className="rounded-lg border border-line p-4">
+              <div className="flex items-center gap-2">
+                <Building2 size={16} className="text-gold" />
+                <h3 className="text-sm font-medium text-ink-2">Company</h3>
+              </div>
+              <p className="mt-2 text-xs text-ink-5">
+                Separate books for a business: roles, departments, approvals, and stock, advances and payroll.
+                Your personal side stays exactly as it is.
+              </p>
+              <Link to="/companies" className="btn-ghost mt-3 w-full">
+                <Building2 size={16} /> Create a company
+              </Link>
+            </div>
           </div>
         </Card>
       )}
+
+      {/* Appearance */}
+      <AppearanceCard />
 
       {/* Team / sharing (cloud only) */}
       {isCloud && (
