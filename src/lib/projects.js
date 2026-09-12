@@ -72,11 +72,24 @@ const belongs = (row, projectId) => row?.project_id === projectId
 // `spent` is every expense booked to the site, whether or not it has been paid:
 // an unpaid bill is money committed, and a cost report that only counts what
 // has left the bank tells you the job is cheaper than it is.
-export function projectSummary(project, expenses = [], income = []) {
+export function projectSummary(project, expenses = [], income = [], { materialCost = 0 } = {}) {
   const mine = expenses.filter((e) => belongs(e, project.id) && !e.deleted_at)
   const earned = income.filter((e) => belongs(e, project.id) && !e.deleted_at)
 
-  const spent = round2(mine.reduce((t, e) => t + amountOf(e), 0))
+  // Two kinds of cost, and they have to be added or the job looks cheap.
+  //
+  //   `directCost`   bills booked to the site — labour, subcontractors, hire,
+  //                  the sand that was bought and delivered straight to it.
+  //   `materialCost` stock issued to the site from the stores. It was paid for
+  //                  when it was bought, so it is not a bill; it becomes a cost
+  //                  of *this* job at the moment it leaves the shelf for it.
+  //
+  // A builder with a central store who counts only the bills will find every
+  // job profitable and the company losing money, which is the classic way of
+  // not knowing where it went.
+  const directCost = round2(mine.reduce((t, e) => t + amountOf(e), 0))
+  const materials = round2(Math.max(0, Number(materialCost) || 0))
+  const spent = round2(directCost + materials)
   const paid = round2(mine.filter((e) => e.status === 'paid').reduce((t, e) => t + amountOf(e), 0))
   const billed = round2(earned.reduce((t, e) => t + amountOf(e), 0))
   const received = round2(earned.filter((e) => e.status === 'received').reduce((t, e) => t + amountOf(e), 0))
@@ -87,9 +100,13 @@ export function projectSummary(project, expenses = [], income = []) {
   return {
     project,
     spent,
+    directCost,
+    materialCost: materials,
     // Committed but not yet out of the bank. The number a site manager is
-    // asked for and the one nobody can ever find.
-    unpaid: round2(spent - paid),
+    // asked for and the one nobody can ever find. Measured against the bills
+    // alone: material off the shelf was paid for when it was bought, and
+    // counting it here would report a debt that does not exist.
+    unpaid: round2(directCost - paid),
     billed,
     // Work done and invoiced that the client has not paid for. On a running
     // account this is most of the money on the job.
@@ -116,11 +133,11 @@ export function projectSummary(project, expenses = [], income = []) {
 
 // Every job at once, worst first. A portfolio report is read to find the one
 // that is going wrong, so the one going wrong is at the top.
-export function projectReport(projects = [], expenses = [], income = [], { openOnly = false } = {}) {
+export function projectReport(projects = [], expenses = [], income = [], { openOnly = false, materialCosts = {} } = {}) {
   const lines = projects
     .filter((p) => !p.deleted_at)
     .filter((p) => !openOnly || isOpen(p.status))
-    .map((p) => projectSummary(p, expenses, income))
+    .map((p) => projectSummary(p, expenses, income, { materialCost: materialCosts[p.id] || 0 }))
 
   const sum = (pick) => round2(lines.reduce((t, l) => t + (pick(l) || 0), 0))
   const overrunning = lines.filter((l) => l.overEstimate)
@@ -140,7 +157,11 @@ export function projectReport(projects = [], expenses = [], income = [], { openO
     unpaid: sum((l) => l.unpaid),
     contract: sum((l) => l.contract),
     estimate: sum((l) => l.estimate),
+    directCost: sum((l) => l.directCost),
+    materialCost: sum((l) => l.materialCost),
+    received: sum((l) => l.received),
     overrunning: overrunning.length,
+    late: lines.filter((l) => daysLate(l.project) !== null).length,
     // What it would take to bring every overrunning job back to its estimate.
     // Summing the negatives in as well would net a disaster against a saving
     // and report neither.

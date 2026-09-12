@@ -14,6 +14,7 @@ import { mark, claim, claimAll, pending } from '../lib/filled'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
 import { Field, FormSection, Input, Select, Textarea, Button, MoreDetails } from './ui'
+import SiteField from './SiteField'
 
 const DETAIL_FIELDS = ['tax', 'payment_method', 'status', 'due_date', 'recurrence', 'description']
 // What each of those looks like when it holds nothing worth showing. 'paid' and
@@ -52,6 +53,9 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
     due_date: initial?.due_date || '',
     recurrence: initial?.recurrence || 'none',
     description: initial?.description || '',
+    // Which job this belongs to. Blank in personal books and in any company
+    // with no sites, where the field is not shown at all.
+    project_id: initial?.project_id || '',
   }
   const [restored] = useState(() => {
     const draft = readDraft(key)
@@ -302,6 +306,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         recurrence: form.recurrence,
         description: form.description.trim(),
         receipt_url: receipt_url || null,
+        project_id: form.project_id || null,
       })
       // The entry exists now; the draft of it is only a way to lose track of
       // which is which.
@@ -373,6 +378,8 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
             ))}
           </Select>
         </Field>
+
+        <SiteField value={form.project_id} onChange={(v) => setForm((f) => ({ ...f, project_id: v }))} />
 
         <FormSection title="The cost" />
 

@@ -268,7 +268,7 @@ await p.waitForTimeout(700)
 ok('coming back lands on a company', !/PERSONAL/i.test(await chosen()))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(600)
-ok('and Operations works again', /Add a material/.test(await p.locator('#main-content').innerText()))
+ok('and Operations works again', /Add a site/.test(await p.locator('#main-content').innerText()))
 ok('the dropdown is back, with two companies to choose from',
   await p.locator('select[aria-label="Switch company"]').isVisible())
 

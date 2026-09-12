@@ -45,6 +45,15 @@ await p.evaluate(() => {
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(700)
 
+// The page opens on Projects — a cost belongs to a job before it belongs to a
+// ledger — so this suite has to ask for Materials.
+const OUTER = ['Projects', 'Materials', 'Advances', 'Payroll']
+const outerTab = async (name) => {
+  await p.locator('#main-content button[aria-pressed]').nth(OUTER.indexOf(name)).click()
+  await p.waitForTimeout(450)
+}
+await outerTab('Materials')
+
 console.log('\n── THE FOUR QUESTIONS ──')
 const opened = await main()
 ok('the tab is Materials, not a generic Stock', /Add a material/.test(opened), opened.slice(0, 160))
@@ -233,10 +242,21 @@ ok('the quotation says it was delivered', /delivered/i.test(await main()))
 
 console.log('\n── USAGE ──')
 await view('Usage')
-ok('with no sites it says nothing has been issued', /Nothing has been issued yet|Not booked to a site/.test(await main()))
-await p.locator('input[aria-label="Site name"]').fill('Marine Drive Tower')
-await p.locator('button', { hasText: 'Add site' }).click()
-await p.waitForTimeout(500)
+// Sites are made on the Projects tab, not here: two forms writing the same
+// store is how the two quietly stop agreeing about what a site is.
+ok('with no sites it points at where they are made', /No sites yet/.test(await main()), (await main()).slice(0, 300))
+ok('and offers no second way to create one',
+  (await p.locator('#main-content input[aria-label="Site name"]').count()) === 0)
+await p.evaluate(() => {
+  localStorage.setItem('pl_corp_projects', JSON.stringify([{
+    id: 'site-md', entity_id: 'ent-mat-1', name: 'Marine Drive Tower', code: 'MD-1', client: '',
+    contract_value: 0, estimate: 0, status: 'active', created_at: new Date().toISOString(),
+  }]))
+})
+await p.reload({ waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+await outerTab('Materials')
+await view('Usage')
 const sites = await ls('pl_corp_projects')
 ok('the site is stored', sites.length === 1, JSON.stringify(sites[0] || {}).slice(0, 80))
 ok('and scoped to the company', sites[0]?.entity_id === 'ent-mat-1')

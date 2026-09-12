@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Boxes, HandCoins, Users, Plus, Check } from 'lucide-react'
+import { Boxes, HandCoins, Users, HardHat, Plus, Check } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
+import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import * as store from '../lib/storage/corporate'
 import { makeAdvance, makeAdjustment, outstandingAdvances, advancesByParty, balanceOf, canAdjust, ADVANCE_PARTIES } from '../lib/advances'
@@ -9,8 +10,9 @@ import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import Materials from '../components/MaterialsTabs'
+import Projects from '../components/ProjectsTabs'
 
-// Materials, advances and payroll — the three ledgers a company keeps that a
+// Sites, materials, advances and payroll — what a company runs on and a
 // landlord does not.
 //
 // All three were written and tested a while ago and had no screen at all, which
@@ -19,6 +21,9 @@ import Materials from '../components/MaterialsTabs'
 // the side bar, because they are one job — running the company behind the
 // property — and because eleven destinations was already too many.
 const TABS = [
+  // Sites first: everything else on this page is a cost, and a cost belongs to
+  // a job before it belongs to a ledger.
+  { id: 'projects', label: 'Projects', icon: HardHat },
   { id: 'materials', label: 'Materials', icon: Boxes },
   { id: 'advances', label: 'Advances', icon: HandCoins },
   { id: 'payroll', label: 'Payroll', icon: Users },
@@ -29,8 +34,11 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 export default function Operations() {
   const ent = useEntity()
+  // Bills and invoices live in the main ledger, not the corporate store, and a
+  // site's cost is meaningless without them.
+  const { expenses, income } = useData()
   const toast = useToast()
-  const [tab, setTab] = useState('materials')
+  const [tab, setTab] = useState('projects')
   // The corporate store is synchronous and outside React, so a counter is what
   // tells the page something changed. It is the same pattern EntityContext uses.
   const [version, setVersion] = useState(0)
@@ -49,18 +57,20 @@ export default function Operations() {
       advances: store.advances.list(eid),
       adjustments: store.adjustments.list(),
       employees: store.employees.list(eid),
+      expenses,
+      income,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scoped, eid, version])
+  }, [scoped, eid, version, expenses, income])
 
   if (!ent?.enabled) {
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Materials, advances and payroll." />
+        <PageHeader title="Operations" subtitle="Sites, materials, advances and payroll." />
         <EmptyState
           icon={Boxes}
           title="Add a company first"
-          subtitle="Materials, advances and payroll belong to a company. Create one under Companies and this fills in."
+          subtitle="Sites, materials, advances and payroll belong to a company. Create one under Companies and this fills in."
         />
       </div>
     )
@@ -69,13 +79,13 @@ export default function Operations() {
     const personal = ent.personal
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Materials, advances and payroll." />
+        <PageHeader title="Operations" subtitle="Sites, materials, advances and payroll." />
         <EmptyState
           icon={Boxes}
           title={personal ? 'You are in your personal books' : 'Pick one company'}
           subtitle={
             personal
-              ? 'Materials, advances and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
+              ? 'Sites, materials, advances and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
               : 'These are kept per company, so the consolidated view has nothing to show. Switch to a single company above.'
           }
         />
@@ -88,7 +98,7 @@ export default function Operations() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader title="Operations" subtitle={`Materials, advances and payroll for ${ent.entity?.name || 'this company'}.`} />
+      <PageHeader title="Operations" subtitle={`Sites, materials, advances and payroll for ${ent.entity?.name || 'this company'}.`} />
 
       <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-surface-raised p-1">
         {TABS.map((t) => (
@@ -106,6 +116,7 @@ export default function Operations() {
         ))}
       </div>
 
+      {tab === 'projects' && <Projects {...shared} />}
       {tab === 'materials' && <Materials {...shared} />}
       {tab === 'advances' && <Advances {...shared} />}
       {tab === 'payroll' && <Payroll {...shared} />}

@@ -563,6 +563,14 @@ begin
   end loop;
 end $$;
 
+-- A cost belongs to a job as well as to a company. Nullable, like entity_id and
+-- for the same reason: an entry booked to no site is the ordinary case, and
+-- every row written before there were sites is one.
+alter table public.expenses add column if not exists project_id uuid references public.projects(id) on delete set null;
+alter table public.income   add column if not exists project_id uuid references public.projects(id) on delete set null;
+create index if not exists expenses_project_idx on public.expenses (project_id);
+create index if not exists income_project_idx   on public.income (project_id);
+
 -- ── Entries inside an entity ─────────────────────────────────────
 -- schema.sql already restricts expenses/income to their owner. These add the
 -- entity case alongside it: a row tagged to an entity is visible to that

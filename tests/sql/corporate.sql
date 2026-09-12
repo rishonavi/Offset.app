@@ -333,6 +333,31 @@ select t.refuses('a quotation cannot be marked expired',
   $$insert into public.material_quotes (entity_id, vendor, date, status)
     values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody', current_date, 'expired')$$);
 
+-- A cost belongs to a job as well as to a company, and has to survive the job
+-- being closed later.
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('a bill is booked to a site',
+  $$insert into public.expenses (id, user_id, property_id, entity_id, project_id, date, amount, category, created_by)
+    values ('cccccccc-0000-0000-0000-00000000001a','33333333-3333-3333-3333-333333333333',
+            'bbbbbbbb-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001', current_date, 250000, 'Materials',
+            '33333333-3333-3333-3333-333333333333')$$);
+select t.check('and it knows which one',
+  (select project_id from public.expenses where id = 'cccccccc-0000-0000-0000-00000000001a')
+    = 'dddddddd-0000-0000-0000-000000000001');
+select t.allows('an invoice can be raised against one too',
+  $$insert into public.income (id, user_id, property_id, entity_id, project_id, date, amount, source)
+    values ('cccccccc-0000-0000-0000-00000000001b','33333333-3333-3333-3333-333333333333',
+            'bbbbbbbb-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001', current_date, 900000, 'Rent')$$);
+-- A cost with no site is the ordinary case, and every row written before there
+-- were sites is one.
+select t.allows('and a bill with no site is still a bill',
+  $$insert into public.expenses (id, user_id, property_id, entity_id, date, amount, category, created_by)
+    values ('cccccccc-0000-0000-0000-00000000001c','33333333-3333-3333-3333-333333333333',
+            'bbbbbbbb-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            current_date, 4000, 'Utilities','33333333-3333-3333-3333-333333333333')$$);
+
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';  -- dave, auditor
 select t.check('an auditor sees the sites', (select count(*) from public.projects) = 1);
 select t.check('and the quotations', (select count(*) from public.material_quotes) = 1);

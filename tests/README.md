@@ -30,19 +30,19 @@ for Vite's resolver.
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `money.test.mjs` | 44 | what counts as an amount, and what a row is cleaned to on its way in |
-| `materials.test.mjs` | 139 | construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
+| `materials.test.mjs` | 145 | construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
 | `metalbill.test.mjs` | 43 | reading a jeweller's bill into a metal holding |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 211 | inventory, payables, advances, payroll, and each over a period |
-| `projects.test.mjs` | 51 | a site against its contract and its estimate, which are not the same number |
+| `projects.test.mjs` | 64 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 79 | corporate storage layer, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,579** | |
+| | **1,598** | |
 
 ## Browser — `tests/browser/`
 
@@ -73,21 +73,22 @@ node tests/browser/rtlui.mjs
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 24 | the sign-in screen, its three providers, and what it says when one refuses |
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
-| `materialsui.mjs` | 68 | the trades on screen, rejection kept out of the job's cost, prices and quotes |
+| `materialsui.mjs` | 69 | the trades on screen, rejection kept out of the job's cost, prices and quotes |
 | `metalbillui.mjs` | 15 | filling a holding from a purchase bill |
 | `metalsui.mjs` | 27 | metal holdings on screen |
 | `navui.mjs` | 22 | the side bar: grouping, what is waiting, a short screen, and its own padding |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
 | `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
+| `projectsui.mjs` | 53 | sites against contract and estimate, where the money went, what the client owes |
 | `owedui.mjs` | 22 | what is owed in both directions, and how old it is |
-| `opsui.mjs` | 92 | materials, advances, payroll — in the report, in a backup, and on their own page |
+| `opsui.mjs` | 94 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,045** | |
+| | **1,101** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
@@ -130,7 +131,7 @@ learn to ignore.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 85 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; that a personal install is untouched |
+| `corporate.sql` | 89 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; that a personal install is untouched |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

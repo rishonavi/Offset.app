@@ -103,7 +103,34 @@ ok('the worst is first', report.lines[0].overEstimate, report.lines[0].project.n
 ok('and the deeper overrun leads', report.lines[0].overrun >= report.lines[1].overrun)
 eq('open-only leaves the finished one out', projectReport(sites, all, income, { openOnly: true }).count, 4)
 eq('a site with nothing costed is counted as such', report.uncosted, 2)
+eq('and none of these is past its date', report.late, 0)
+eq('one that is, is counted',
+  projectReport([makeProject({ name: 'Overdue', dueOn: '2020-01-01', status: 'active' })], [], []).late, 1)
 eq('an empty portfolio is zero, not a crash', projectReport([], [], []).spent, 0)
+
+console.log('\n── STOCK OFF THE SHELF IS A COST OF THE JOB ──')
+// A builder with a central store who counts only the bills finds every job
+// profitable and the company losing money. The material was paid for when it
+// was bought; it becomes a cost of *this* job when it leaves the shelf for it.
+const store = makeProject({ entityId: 'e1', name: 'Store-fed', contractValue: 1000000, estimate: 800000 })
+const bills = [{ project_id: store.id, amount: 300000, status: 'paid' }]
+const withStock = projectSummary(store, bills, [], { materialCost: 600000 })
+eq('bills alone would say three lakh', projectSummary(store, bills, []).spent, 300000)
+eq('with the stores it is nine', withStock.spent, 900000)
+eq('and the two are still told apart', [withStock.directCost, withStock.materialCost], [300000, 600000])
+ok('which turns an apparent profit into an overrun', withStock.overEstimate && !projectSummary(store, bills, []).overEstimate)
+// Material off the shelf was paid for at purchase. Counting it as unpaid would
+// report a debt to nobody.
+eq('nothing is owed for material already bought', withStock.unpaid, 0)
+const halfBilled = projectSummary(store, [...bills, { project_id: store.id, amount: 200000, status: 'unpaid' }], [], { materialCost: 600000 })
+eq('an unpaid bill still is owed', halfBilled.unpaid, 200000)
+eq('and does not drag the stores in with it', halfBilled.spent, 1100000)
+eq('a negative material cost cannot flatter a job', projectSummary(store, bills, [], { materialCost: -999 }).spent, 300000)
+
+const storeReport = projectReport([store], bills, [], { materialCosts: { [store.id]: 600000 } })
+eq('the portfolio counts the stores too', storeReport.spent, 900000)
+eq('and keeps the split', [storeReport.directCost, storeReport.materialCost], [300000, 600000])
+eq('a site with no material costed is unaffected', projectReport([store], bills, []).spent, 300000)
 
 console.log('\n── WHAT WAS NEVER BOOKED TO A SITE ──')
 // The number that quietly grows. A site's true cost is wrong by whatever sits

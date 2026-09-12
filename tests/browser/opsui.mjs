@@ -23,7 +23,7 @@ const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[
 const main = () => p.locator('#main-content').innerText()
 // The tab buttons carry an icon, so their text has leading whitespace and an
 // anchored match never fires. They are the only aria-pressed controls here.
-const TABS = ['Materials', 'Advances', 'Payroll']
+const TABS = ['Projects', 'Materials', 'Advances', 'Payroll']
 const tab = async (name) => { await p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)).click(); await p.waitForTimeout(350) }
 
 // ── 1. Dormant without a company ──
@@ -72,8 +72,13 @@ ok('Operations appears in the sidebar', /OPERATIONS/i.test(await p.locator('asid
 await p.locator('aside nav a[href="/operations"]').click()
 await p.waitForURL('**/operations')
 await p.waitForTimeout(500)
+// A cost belongs to a job before it belongs to a ledger, so the page opens on
+// Projects and Materials is one click away.
+const landed = await main()
+ok('the page opens on Projects', /Add a site/.test(landed), landed.slice(0, 200))
+await tab('Materials')
 const opened = await main()
-ok('the page opens on Materials', /Add a material/.test(opened) && /No materials yet/.test(opened))
+ok('and Materials is a click away', /Add a material/.test(opened) && /No materials yet/.test(opened))
 ok('and names the company', /Acme/.test(opened), opened.slice(0, 120))
 
 // The palette is where people who know what they want go. "Payroll" and
@@ -239,6 +244,8 @@ await p.waitForTimeout(600)
 ok('all-companies says these are kept per company', /Pick one company/.test(await main()), (await main()).slice(0, 160))
 await p.locator('select[aria-label="Switch company"]').selectOption('ent-test-2')
 await p.waitForTimeout(600)
+// Switching companies re-mounts the page, which lands on Projects again.
+await tab('Materials')
 const other = await main()
 // Not \`/Cement/\`: the add-material form offers a catalogue, so the word now
 // appears on an empty page as a suggestion. The question is whether the first
@@ -252,7 +259,7 @@ await p.waitForTimeout(500)
 ok('switching back brings the first company\u2019s stock with it', /Cement/.test(await main()))
 const h1s = await p.locator('#main-content h1').count()
 ok('exactly one h1', h1s === 1, `${h1s}`)
-for (const name of ['Materials', 'Advances', 'Payroll']) {
+for (const name of ['Projects', 'Materials', 'Advances', 'Payroll']) {
   await tab(name)
   const unlabelled = await p.evaluate(() =>
     [...document.querySelectorAll('#main-content input,#main-content select,#main-content textarea')]
@@ -391,6 +398,7 @@ ok('the restore says how many company records came back', /company records/.test
 ok('the companies are back', (await ls('pl_corp_entities')).length === 2)
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(600)
+await tab('Materials')
 const back = await main()
 ok('and the stock is back with it', /Cement 50kg/.test(back), back.slice(0, 200))
 await tab('Payroll')

@@ -13,6 +13,7 @@ import { usePlan } from '../context/PlanContext'
 import { usual, lastUsed, hasDetail } from '../lib/defaults'
 import { mark, claim, claimAll, pending } from '../lib/filled'
 import { Field, FormSection, Input, Select, Textarea, Button, MoreDetails } from './ui'
+import SiteField from './SiteField'
 
 const DETAIL_FIELDS = ['tax', 'payment_method', 'status', 'due_date', 'recurrence', 'description']
 // What each of those looks like when it holds nothing worth showing. 'received'
@@ -52,6 +53,9 @@ export default function IncomeForm({ initial, properties, payers = [], history =
     due_date: initial?.due_date || '',
     recurrence: initial?.recurrence || 'none',
     description: initial?.description || '',
+    // The job this was billed against, so a running account can be read per
+    // site rather than as one heap.
+    project_id: initial?.project_id || '',
   }
   const [restored] = useState(() => {
     const draft = readDraft(key)
@@ -289,6 +293,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
         recurrence: form.recurrence,
         description: form.description.trim(),
         receipt_url: receipt_url || null,
+        project_id: form.project_id || null,
       })
       // The entry exists now; the draft of it is only a way to lose track of
       // which is which.
@@ -360,6 +365,12 @@ export default function IncomeForm({ initial, properties, payers = [], history =
             ))}
           </Select>
         </Field>
+
+        <SiteField
+          value={form.project_id}
+          onChange={(v) => setForm((f) => ({ ...f, project_id: v }))}
+          hint="Bill against the job and the running account reads per site."
+        />
 
         <FormSection title="The receipt" />
 

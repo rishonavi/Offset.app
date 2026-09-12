@@ -16,9 +16,9 @@ import {
   makeQuote, makeQuoteLine, quoteTotals, quoteState, quoteBook, compareQuotes,
   priceList, receiptsFromQuote, GST_RATES, DEFAULT_GST, QUOTE_STATE_LABELS,
 } from '../lib/quotes'
-import { makeProject, PROJECT_STATUS, PROJECT_STATUS_IDS } from '../lib/projects'
+
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Badge, cx } from './ui'
+import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
 
 // Materials, for a company that builds things.
 //
@@ -625,8 +625,7 @@ function Quotations({ data, eid, actor, canWrite, bump, toast }) {
 }
 
 // ── Usage ───────────────────────────────────────────────────────────────────
-function Usage({ data, eid, actor, canWrite, bump, toast }) {
-  const [site, setSite] = useState({ name: '', client: '', status: 'active' })
+function Usage({ data, canWrite }) {
   const [filter, setFilter] = useState({ kind: '', projectId: '' })
 
   const usage = useMemo(
@@ -643,47 +642,11 @@ function Usage({ data, eid, actor, canWrite, bump, toast }) {
   )
   const siteName = (id) => data.projects.find((p) => p.id === id)?.name || 'Not booked to a site'
 
-  const addSite = (e) => {
-    e.preventDefault()
-    if (!site.name.trim()) return
-    store.projects.add(makeProject({ entityId: eid, ...site }), actor)
-    setSite({ name: '', client: '', status: 'active' })
-    bump()
-    toast('Site added')
-  }
-
   return (
     <div className="space-y-4">
-      {canWrite && (
+      {data.projects.length === 0 && (
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-ink-3">Sites</h3>
-          <p className="mt-1 text-xs text-ink-5">
-            Material is booked to a site when it is issued. A company that knows what it consumed but not which job
-            consumed it knows nothing useful.
-          </p>
-          <form onSubmit={addSite} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-4">
-            <Field label="Site" required className="sm:col-span-2">
-              <Input aria-label="Site name" value={site.name} onChange={(e) => setSite({ ...site, name: e.target.value })} placeholder="Marine Drive Tower" />
-            </Field>
-            <Field label="Client">
-              <Input aria-label="Site client" value={site.client} onChange={(e) => setSite({ ...site, client: e.target.value })} />
-            </Field>
-            <Field label="Status">
-              <Select value={site.status} onChange={(e) => setSite({ ...site, status: e.target.value })} aria-label="Site status">
-                {PROJECT_STATUS_IDS.map((id) => <option key={id} value={id}>{PROJECT_STATUS[id].label}</option>)}
-              </Select>
-            </Field>
-            <div className="sm:col-span-4"><Button type="submit"><Plus size={16} /> Add site</Button></div>
-          </form>
-          {data.projects.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {data.projects.map((p) => (
-                <li key={p.id} className="rounded-full border border-line px-3 py-1 text-xs text-ink-4">
-                  {p.name} <span className="text-ink-6">· {PROJECT_STATUS[p.status]?.label || p.status}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <EmptyStateSites canWrite={canWrite} />
         </Card>
       )}
 
@@ -766,6 +729,23 @@ function Usage({ data, eid, actor, canWrite, bump, toast }) {
         )}
       </Card>
     </div>
+  )
+}
+
+// Sites are created and edited on the Projects tab. Two forms writing the same
+// store is how the two quietly stop agreeing about what a site is, so this one
+// points there rather than offering a second way in.
+function EmptyStateSites({ canWrite }) {
+  return (
+    <EmptyState
+      icon={HardHat}
+      title="No sites yet"
+      subtitle={
+        canWrite
+          ? 'Add one under Projects and material can be issued against it. Until then everything issued shows as booked to no site.'
+          : 'Nothing has been issued against a site yet.'
+      }
+    />
   )
 }
 

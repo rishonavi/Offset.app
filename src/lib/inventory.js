@@ -294,31 +294,68 @@ export function stockOverPeriod(items, movements, { from = null, to = null } = {
 // balance — the shelf has no site on it.
 export function usageBySite(items, movements, { projects = [] } = {}) {
   const byItem = new Map(items.map((i) => [i.id, i]))
-  const rate = new Map(items.map((i) => [i.id, stockOf(i, movements).avgCost]))
   const groups = new Map()
 
-  for (const m of movements) {
-    if (m.kind !== 'issue' && m.kind !== 'wastage') continue
-    const item = byItem.get(m.item_id)
-    if (!item) continue
-    const key = m.project_id || ''
-    const cur = groups.get(key) || {
-      projectId: m.project_id || null,
-      // A name is resolved here rather than at the call site so the "not booked
-      // to any site" row reads as a finding instead of a blank.
-      project: projects.find((p) => p.id === m.project_id) || null,
-      issued: 0, wasted: 0, value: 0, wastedValue: 0, entries: 0, items: new Set(),
+  // Each issue is valued at the average prevailing *at that moment*, which
+  // means walking the movements the same way `stockOf` does rather than asking
+  // it for one number at the end.
+  //
+  // The shortcut — take the item's current average and multiply — reads fine
+  // and is wrong in the case that matters most: once a material has been fully
+  // issued there is none left, so its average is zero, and the job that
+  // consumed every last kilo of it is reported as having consumed nothing. A
+  // site that used the whole lot is exactly the site you are looking for.
+  for (const item of byItem.values()) {
+    const rows = movements
+      .filter((m) => m.item_id === item.id)
+      .slice()
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
+
+    let qty = 0
+    let value = 0
+
+    for (const m of rows) {
+      if (m.kind === 'receipt') {
+        qty += m.qty
+        value += m.qty * (Number(m.unit_cost) || 0) + (Number(m.other_cost) || 0)
+        continue
+      }
+      const avg = qty > 0 ? value / qty : 0
+      if (m.kind === 'rejected') {
+        const rate = m.unit_cost ? Number(m.unit_cost) : avg
+        qty -= m.qty
+        value -= Math.min(m.qty, Math.max(0, qty + m.qty)) * rate
+        continue
+      }
+      if (m.kind === 'adjustment') {
+        qty += m.qty
+        value += m.qty * (m.unit_cost ? Number(m.unit_cost) : avg)
+        continue
+      }
+      // An issue or a wastage: this is the movement being attributed.
+      const cost = round2(m.qty * avg)
+      qty -= m.qty
+      value -= Math.min(m.qty, Math.max(0, qty + m.qty)) * avg
+
+      const key = m.project_id || ''
+      const cur = groups.get(key) || {
+        projectId: m.project_id || null,
+        // Resolved here rather than at the call site so the "not booked to any
+        // site" row reads as a finding instead of a blank.
+        project: projects.find((p) => p.id === m.project_id) || null,
+        issued: 0, wasted: 0, value: 0, wastedValue: 0, entries: 0, items: new Set(),
+      }
+      if (m.kind === 'wastage') {
+        cur.wasted = round2(cur.wasted + m.qty)
+        cur.wastedValue = round2(cur.wastedValue + cost)
+      } else {
+        cur.issued = round2(cur.issued + m.qty)
+      }
+      cur.value = round2(cur.value + cost)
+      cur.entries += 1
+      cur.items.add(m.item_id)
+      groups.set(key, cur)
     }
-    // Valued at the item's average cost. Exact per-issue costing would need the
-    // running average at that moment kept per movement, which is more machinery
-    // than a site report is worth.
-    const cost = round2(m.qty * (rate.get(m.item_id) || 0))
-    if (m.kind === 'wastage') { cur.wasted = round2(cur.wasted + m.qty); cur.wastedValue = round2(cur.wastedValue + cost) }
-    else cur.issued = round2(cur.issued + m.qty)
-    cur.value = round2(cur.value + cost)
-    cur.entries += 1
-    cur.items.add(m.item_id)
-    groups.set(key, cur)
   }
 
   return [...groups.values()]

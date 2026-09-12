@@ -194,6 +194,43 @@ ok('material nobody booked to a site is still shown',
 eq('the site name is resolved for the report', usage[0].project.name, 'Marine Drive')
 eq('nothing issued is no rows at all', usageBySite([steel], [], { projects: sites }).length, 0)
 
+// The case a current-average shortcut gets wrong, and the one that matters
+// most: a material issued down to nothing has no stock left, so its average is
+// zero. Valued that way, the job that consumed every last kilo is reported as
+// having consumed nothing — and a site that used the whole lot is exactly the
+// site you are looking for.
+const gone = makeItem({ entityId: 'e1', name: 'Cement, all of it', category: 'cement', unit: 'bag' })
+const emptied = [
+  makeMovement({ itemId: gone.id, entityId: 'e1', kind: 'receipt', qty: 500, unitCost: 400, date: '2026-01-01' }),
+  makeMovement({ itemId: gone.id, entityId: 'e1', kind: 'issue', qty: 500, date: '2026-01-15', projectId: 'site-a' }),
+]
+eq('there is none left on the shelf', stockOf(gone, emptied).qty, 0)
+eq('and no average cost to multiply by', stockOf(gone, emptied).avgCost, 0)
+const spentIt = usageBySite([gone], emptied, { projects: sites })
+eq('yet the site is charged what it actually used', spentIt[0].value, 200000)
+
+// Two deliveries at different rates: what the site is charged depends on when
+// it drew the material, not on where the average ended up.
+const moving = makeItem({ entityId: 'e1', name: 'Steel, two rates', category: 'steel', unit: 'kg' })
+const drawn = [
+  makeMovement({ itemId: moving.id, entityId: 'e1', kind: 'receipt', qty: 100, unitCost: 50, date: '2026-01-01' }),
+  makeMovement({ itemId: moving.id, entityId: 'e1', kind: 'issue', qty: 100, date: '2026-01-05', projectId: 'site-a' }),
+  makeMovement({ itemId: moving.id, entityId: 'e1', kind: 'receipt', qty: 100, unitCost: 90, date: '2026-02-01' }),
+  makeMovement({ itemId: moving.id, entityId: 'e1', kind: 'issue', qty: 100, date: '2026-02-05', projectId: 'site-b' }),
+]
+const twoRates = usageBySite([moving], drawn, { projects: sites })
+eq('the site that drew early pays the early rate',
+  twoRates.find((u) => u.projectId === 'site-a').value, 5000)
+eq('and the one that drew later pays the later one',
+  twoRates.find((u) => u.projectId === 'site-b').value, 9000)
+// Freight is part of what the material cost, so it is part of what the job is
+// charged.
+const carried = usageBySite([sand], [
+  ...load,
+  makeMovement({ itemId: sand.id, entityId: 'e1', kind: 'issue', qty: 10, date: '2026-01-20', projectId: 'site-a' }),
+], { projects: sites })
+eq('a site is charged the landed cost, freight included', carried[0].value, 54000)
+
 console.log('\n── THE MOVEMENT LOG ──')
 const log = movementLog([cement, steel], [...mv, ...used])
 ok('the newest movement is first', log[0].movement.date >= log[log.length - 1].movement.date)
