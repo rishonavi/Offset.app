@@ -250,6 +250,113 @@ select t.refuses('nor log a cost against one they do not belong to',
             'aaaaaaaa-0000-0000-0000-000000000002', current_date, 10, 'Materials','55555555-5555-5555-5555-555555555555')$$);
 
 \echo ''
+\echo '── MATERIALS, SITES AND QUOTATIONS ──'
+-- The construction ledgers. The one that matters here is the movement kind: an
+-- earlier version of this schema allowed only 'receipt' and 'issue', which
+-- forces a rejected delivery to be recorded as a cost of the job. Whether the
+-- widened constraint actually applied to an existing table cannot be read off
+-- the file — re-applying it has to be tried.
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('finance opens a site',
+  $$insert into public.projects (id, entity_id, name, contract_value, estimate, status)
+    values ('dddddddd-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'Marine Drive Tower', 10000000, 8000000, 'active')$$);
+select t.refuses('but not one with a status nobody defined',
+  $$insert into public.projects (entity_id, name, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Nowhere','abandoned')$$);
+select t.refuses('nor a contract worth less than nothing',
+  $$insert into public.projects (entity_id, name, contract_value)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Upside Down', -1)$$);
+
+select t.allows('and adds a material with its trade',
+  $$insert into public.inventory_items (id, entity_id, name, unit, category, brand, hsn, reorder_level)
+    values ('eeeeeeee-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'Cement OPC 53 grade','bag','cement','UltraTech','2523',20)$$);
+
+-- All five, one at a time, because the reason the constraint was widened is
+-- that three of them did not exist.
+select t.allows('a receipt is recorded',
+  $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty, unit_cost, vendor)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'receipt', current_date, 200, 400, 'Shree Traders')$$);
+select t.allows('a delivery carries its freight',
+  $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty, unit_cost, other_cost, vendor)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'receipt', current_date, 10, 4500, 9000, 'Kokan Sand')$$);
+select t.refuses('but not freight owed the other way',
+  $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty, other_cost)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'receipt', current_date, 1, -100)$$);
+select t.allows('an issue to a site is recorded',
+  $$insert into public.inventory_movements (entity_id, item_id, project_id, kind, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001','issue', current_date, 100)$$);
+select t.allows('wastage is recorded',
+  $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'wastage', current_date, 10)$$);
+select t.allows('a rejection is recorded, with its reason',
+  $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty, unit_cost, vendor, reason)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'rejected', current_date, 10, 400, 'Shree Traders', 'Set hard in transit')$$);
+select t.allows('and a stock-take adjustment',
+  $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'adjustment', current_date, -5)$$);
+select t.refuses('a kind the app never writes is still refused',
+  $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'stolen', current_date, 1)$$);
+select t.check('the rejection kept its reason',
+  (select reason from public.inventory_movements
+    where kind = 'rejected' and item_id = 'eeeeeeee-0000-0000-0000-000000000001') = 'Set hard in transit');
+select t.check('and the issue knows which site it went to',
+  (select project_id from public.inventory_movements
+    where kind = 'issue' and item_id = 'eeeeeeee-0000-0000-0000-000000000001')
+    = 'dddddddd-0000-0000-0000-000000000001');
+
+select t.allows('a quotation is filed',
+  $$insert into public.material_quotes (id, entity_id, vendor, date, valid_until, status)
+    values ('ffffffff-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'Konkan Cement', current_date, current_date + 30, 'sent')$$);
+select t.allows('with a line carrying its own tax rate',
+  $$insert into public.material_quote_lines (entity_id, quote_id, item_id, name, qty, rate, unit, gst_percent)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','ffffffff-0000-0000-0000-000000000001',
+            'eeeeeeee-0000-0000-0000-000000000001','Cement OPC 53 grade',100,400,'bag',28)$$);
+-- Vendors quote for things the company has never stocked, and refusing those
+-- would make a quote useless exactly when it is most useful.
+select t.allows('and a line for something not stocked at all',
+  $$insert into public.material_quote_lines (entity_id, quote_id, name, qty, rate)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','ffffffff-0000-0000-0000-000000000001',
+            'Scaffolding hire', 1, 45000)$$);
+select t.refuses('a quotation cannot be marked expired',
+  $$insert into public.material_quotes (entity_id, vendor, date, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody', current_date, 'expired')$$);
+
+set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';  -- dave, auditor
+select t.check('an auditor sees the sites', (select count(*) from public.projects) = 1);
+select t.check('and the quotations', (select count(*) from public.material_quotes) = 1);
+select t.refuses('but cannot open a site',
+  $$insert into public.projects (entity_id, name) values ('aaaaaaaa-0000-0000-0000-000000000001','Ghost')$$);
+select t.touches_nothing('nor close one',
+  $$update public.projects set status = 'completed' where id = 'dddddddd-0000-0000-0000-000000000001'$$);
+
+-- Mallory owns a company of her own, which is the interesting case: not a
+-- stranger with no login, but a real user of the product looking at somebody
+-- else's stores. Eve is no longer the outsider here — an owner added her to
+-- Acme earlier in this file, and asserting on her would pass for the wrong
+-- reason the day that changes.
+set request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';  -- mallory, another company
+select t.check('another company sees no sites of this one', (select count(*) from public.projects) = 0);
+select t.check('no materials', (select count(*) from public.inventory_items) = 0);
+select t.check('no movements', (select count(*) from public.inventory_movements) = 0);
+select t.check('and no quotations', (select count(*) from public.material_quotes) = 0);
+select t.check('nor the lines inside them', (select count(*) from public.material_quote_lines) = 0);
+select t.refuses('and cannot file one against a company they are not in',
+  $$insert into public.material_quotes (entity_id, vendor, date)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Mallory Supplies', current_date)$$);
+
+\echo ''
 \echo '── A PERSONAL INSTALL IS UNTOUCHED ──'
 -- Everything above is scoped to an entity. Someone who never creates one must
 -- keep exactly the behaviour schema.sql gave them, which is the whole basis for

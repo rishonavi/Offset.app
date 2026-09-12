@@ -87,12 +87,46 @@ for (const route of ROUTES) {
     // Close whatever opened, so the next button is still reachable.
     await p.keyboard.press('Escape').catch(() => {})
   }
+  // A snapshot taken once cannot reach a tabbed page. Pressing a tab replaces
+  // the panel under it, so every index after that one resolves to something
+  // else or to nothing, and the pass above quietly skips it. Operations grew
+  // from five controls to nine and the total did not move — the suite was
+  // green and had stopped looking. So each tab is opened in turn and whatever
+  // it reveals is pressed on its own terms.
+  const tabs = p.locator('#main-content [role="tab"], #main-content button[aria-pressed]')
+  const tabCount = Math.min(await tabs.count(), 12)
+  for (let t = 0; t < tabCount; t += 1) {
+    const tabEl = tabs.nth(t)
+    if (!(await tabEl.isVisible().catch(() => false))) continue
+    await tabEl.click({ timeout: 3000 }).catch(() => {})
+    await p.waitForTimeout(250)
+    // Only what this panel added: the tab strip itself is handled by the loop.
+    const inner = await p.evaluate(() =>
+      [...document.querySelectorAll('#main-content button')]
+        .map((el, i) => ({ i, label: (el.getAttribute('aria-label') || el.innerText || el.title || '').trim().slice(0, 30) }))
+        .filter(({ i }) => {
+          const el = document.querySelectorAll('#main-content button')[i]
+          return !el.hasAttribute('aria-pressed') && el.getAttribute('role') !== 'tab'
+        }))
+    for (const { i, label } of inner) {
+      if (DESTRUCTIVE.test(label)) continue
+      const btn = p.locator('#main-content button').nth(i)
+      if (!(await btn.isVisible().catch(() => false))) continue
+      await btn.click({ timeout: 3000 }).catch(() => {})
+      pressedHere += 1
+      clicked += 1
+      await p.waitForTimeout(110)
+      await p.keyboard.press('Escape').catch(() => {})
+    }
+  }
   await p.waitForTimeout(400)
   ok(`${route} survives ${pressedHere} presses`, errs.length === 0, errs.slice(0, 2).join(' | '))
   await ctx.close()
 }
 
-ok('and something was actually pressed', clicked > 40, `${clicked} presses`)
+// A floor, not a target. It exists because this suite once lost a third of its
+// coverage to a change elsewhere and went on reporting a clean pass.
+ok('and something was actually pressed', clicked > 120, `${clicked} presses`)
 console.log(`\n${pass} passed, ${fail} failed · ${clicked} controls pressed`)
 await b.close()
 process.exit(fail ? 1 : 0)

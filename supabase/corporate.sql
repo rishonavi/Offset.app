@@ -87,31 +87,144 @@ create table if not exists public.audit_events (
 create index if not exists audit_events_entity_idx on public.audit_events (entity_id, created_at desc);
 
 -- ── The four operational ledgers ─────────────────────────────────
+-- A site is a job: a client, a contract value, a start and an end. It is not an
+-- asset the company owns — it is what the work produces — so it is its own
+-- table rather than a row in properties.
+create table if not exists public.projects (
+  id             uuid primary key default gen_random_uuid(),
+  entity_id      uuid not null references public.entities(id) on delete cascade,
+  name           text not null,
+  code           text,
+  client         text,
+  site_address   text,
+  -- Deliberately two numbers. The contract is what the client agreed to pay and
+  -- the estimate is what the work was costed at; margin is measured against the
+  -- first and overrun against the second, and a job can be over its estimate and
+  -- still make money.
+  contract_value numeric(16,2) not null default 0 check (contract_value >= 0),
+  estimate       numeric(16,2) not null default 0 check (estimate >= 0),
+  started_on     date,
+  due_on         date,
+  status         text not null default 'planned'
+                 check (status in ('planned', 'active', 'onHold', 'completed')),
+  department_id  uuid references public.departments(id) on delete set null,
+  notes          text,
+  created_at     timestamptz not null default now()
+);
+create index if not exists projects_entity_idx on public.projects (entity_id, status);
+
 create table if not exists public.inventory_items (
   id            uuid primary key default gen_random_uuid(),
   entity_id     uuid not null references public.entities(id) on delete cascade,
   name          text not null,
   sku           text,
   unit          text,
+  -- The trade it belongs to, from the materials catalogue. Null is allowed and
+  -- means uncategorised: stock kept before there were trades is still stock.
+  category      text,
+  brand         text,
+  spec          text,
+  hsn           text,
+  reorder_level numeric(16,4) not null default 0,
+  department_id uuid references public.departments(id) on delete set null,
   opening_qty   numeric(16,4) not null default 0,
   opening_value numeric(16,2) not null default 0,
   created_at    timestamptz not null default now()
 );
+-- Installs that applied an earlier version of this file get the new columns
+-- rather than a table that silently disagrees with the app.
+alter table public.inventory_items add column if not exists category      text;
+alter table public.inventory_items add column if not exists brand         text;
+alter table public.inventory_items add column if not exists spec          text;
+alter table public.inventory_items add column if not exists hsn           text;
+alter table public.inventory_items add column if not exists reorder_level numeric(16,4) not null default 0;
+alter table public.inventory_items add column if not exists department_id uuid references public.departments(id) on delete set null;
 
+-- Five kinds, and the three that reduce stock are three on purpose. Issued
+-- material is in the building and wasted material is gone — both are costs of
+-- the job. Rejected material arrived damaged or off-spec and went back to the
+-- supplier: it is a credit they owe, not a cost, and a schema that can only say
+-- 'issue' forces it to be recorded as one.
 create table if not exists public.inventory_movements (
   id         uuid primary key default gen_random_uuid(),
   entity_id  uuid not null references public.entities(id) on delete cascade,
   item_id    uuid not null references public.inventory_items(id) on delete cascade,
-  kind       text not null check (kind in ('receipt', 'issue')),
+  project_id uuid references public.projects(id) on delete set null,
+  kind       text not null,
   date       date not null,
   qty        numeric(16,4) not null,
   -- Null on an issue: an issue consumes at the running weighted average and
   -- does not carry a value of its own.
   value      numeric(16,2),
+  unit_cost  numeric(16,4),
+  -- Freight, loading and unloading for the whole delivery. On a lorry of sand
+  -- this can be a fifth of the bill, and stock valued at the invoice rate alone
+  -- understates what the material cost to have on site.
+  other_cost numeric(16,2) not null default 0 check (other_cost >= 0),
+  vendor     text,
+  -- Why it was rejected. A rejection nobody wrote a reason for is one nobody
+  -- can claim.
+  reason     text,
+  ref        text,
   note       text,
   created_at timestamptz not null default now()
 );
+alter table public.inventory_movements add column if not exists project_id uuid references public.projects(id) on delete set null;
+alter table public.inventory_movements add column if not exists unit_cost  numeric(16,4);
+alter table public.inventory_movements add column if not exists other_cost numeric(16,2) not null default 0;
+alter table public.inventory_movements add column if not exists vendor     text;
+alter table public.inventory_movements add column if not exists reason     text;
+alter table public.inventory_movements add column if not exists ref        text;
+-- Named, so re-applying this file can widen it. The unnamed inline check an
+-- earlier version created is dropped by its generated name.
+alter table public.inventory_movements drop constraint if exists inventory_movements_kind_check;
+alter table public.inventory_movements drop constraint if exists inventory_movements_kind;
+alter table public.inventory_movements add constraint inventory_movements_kind
+  check (kind in ('receipt', 'issue', 'rejected', 'wastage', 'adjustment'));
 create index if not exists inventory_movements_item_idx on public.inventory_movements (item_id, date);
+create index if not exists inventory_movements_project_idx on public.inventory_movements (project_id, date);
+
+-- Three quotes for the same material are how anyone knows the accepted one was
+-- reasonable, so a declined quote is kept rather than deleted.
+create table if not exists public.material_quotes (
+  id          uuid primary key default gen_random_uuid(),
+  entity_id   uuid not null references public.entities(id) on delete cascade,
+  project_id  uuid references public.projects(id) on delete set null,
+  vendor      text not null,
+  contact     text,
+  date        date not null,
+  -- A quote expires by the calendar. There is no 'expired' status because a
+  -- stored flag is wrong every morning until somebody runs the job that sets it.
+  valid_until date,
+  status      text not null default 'draft'
+              check (status in ('draft', 'sent', 'accepted', 'declined')),
+  ref         text,
+  notes       text,
+  created_by  uuid references auth.users(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists material_quotes_entity_idx on public.material_quotes (entity_id, date desc);
+
+create table if not exists public.material_quote_lines (
+  id          uuid primary key default gen_random_uuid(),
+  -- Carried on the line as well as the quote so the one row-level security
+  -- policy that covers every ledger covers this too, without a join.
+  entity_id   uuid not null references public.entities(id) on delete cascade,
+  quote_id    uuid not null references public.material_quotes(id) on delete cascade,
+  item_id     uuid references public.inventory_items(id) on delete set null,
+  -- Vendors quote for things the company has never stocked. Refusing those
+  -- would make a quote useless exactly when it is most useful.
+  name        text not null,
+  qty         numeric(16,4) not null default 0,
+  rate        numeric(16,4) not null default 0,
+  unit        text,
+  -- Per line, because cement at 28% and sand at 5% are not the same price
+  -- however similar the rate looks.
+  gst_percent numeric(5,2) not null default 18,
+  note        text
+);
+create index if not exists material_quote_lines_quote_idx on public.material_quote_lines (quote_id);
+create index if not exists material_quote_lines_item_idx on public.material_quote_lines (item_id);
 
 -- An advance is an asset until it is used up. Booking it as a cost
 -- double-counts it when the invoice lands.
@@ -350,11 +463,14 @@ alter table public.entity_members      enable row level security;
 alter table public.departments         enable row level security;
 alter table public.approval_policies   enable row level security;
 alter table public.audit_events        enable row level security;
+alter table public.projects            enable row level security;
 alter table public.inventory_items     enable row level security;
 alter table public.inventory_movements enable row level security;
 alter table public.advances            enable row level security;
 alter table public.advance_adjustments enable row level security;
 alter table public.employees           enable row level security;
+alter table public.material_quotes     enable row level security;
+alter table public.material_quote_lines enable row level security;
 
 -- Entities: members see it, owners change it. Creation is separate because at
 -- the moment of insert there is no membership yet to be a member of.
@@ -434,7 +550,7 @@ create policy "members append to the log" on public.audit_events
 do $$
 declare t text;
 begin
-  foreach t in array array['inventory_items','inventory_movements','advances','advance_adjustments','employees']
+  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines']
   loop
     execute format('drop policy if exists "members read %1$s" on public.%1$I', t);
     execute format(

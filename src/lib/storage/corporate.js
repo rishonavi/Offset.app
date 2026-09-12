@@ -27,6 +27,8 @@ const KEYS = {
   advances: 'pl_corp_advances',
   adjustments: 'pl_corp_adjustments',
   employees: 'pl_corp_employees',
+  projects: 'pl_corp_projects',
+  quotes: 'pl_corp_quotes',
 }
 
 const read = (key) => {
@@ -242,6 +244,8 @@ export const movements = collection(KEYS.movements)
 export const advances = collection(KEYS.advances)
 export const adjustments = collection(KEYS.adjustments)
 export const employees = collection(KEYS.employees)
+export const projects = collection(KEYS.projects)
+export const quotes = collection(KEYS.quotes)
 
 // ── Whole-account helpers ──────────────────────────────────────────
 export function exportCorporate() {

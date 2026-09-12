@@ -23,7 +23,7 @@ const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[
 const main = () => p.locator('#main-content').innerText()
 // The tab buttons carry an icon, so their text has leading whitespace and an
 // anchored match never fires. They are the only aria-pressed controls here.
-const TABS = ['Stock', 'Advances', 'Payroll']
+const TABS = ['Materials', 'Advances', 'Payroll']
 const tab = async (name) => { await p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)).click(); await p.waitForTimeout(350) }
 
 // ── 1. Dormant without a company ──
@@ -73,7 +73,7 @@ await p.locator('aside nav a[href="/operations"]').click()
 await p.waitForURL('**/operations')
 await p.waitForTimeout(500)
 const opened = await main()
-ok('the page opens on Stock', /On hand/.test(opened) && /No items yet/.test(opened))
+ok('the page opens on Materials', /Add a material/.test(opened) && /No materials yet/.test(opened))
 ok('and names the company', /Acme/.test(opened), opened.slice(0, 120))
 
 // The palette is where people who know what they want go. "Payroll" and
@@ -101,11 +101,20 @@ await p.waitForTimeout(300)
 
 // ── 3. Stock ──
 console.log('\n── STOCK ──')
-await p.locator('input[placeholder="Cement, 50kg bag"]').fill('Cement 50kg')
-await p.locator('#main-content input').nth(1).fill('cem50')
-await p.locator('#main-content select').first().selectOption('bag')
-await p.locator('#main-content input[type="number"]').first().fill('10')
-await p.locator('button', { hasText: 'Add item' }).click()
+const record = async (fields) => {
+  const form = p.locator('#main-content form').nth(1)
+  await form.locator('select[aria-label="Material"]').selectOption({ label: 'Cement 50kg' })
+  await form.locator('select[aria-label="What happened"]').selectOption(fields.kind)
+  await form.locator('input[aria-label="Quantity"]').fill(String(fields.qty))
+  if (fields.rate) await form.locator('input[aria-label="Rate per unit"]').fill(String(fields.rate))
+  await form.locator('button', { hasText: 'Record' }).click()
+  await p.waitForTimeout(600)
+}
+await p.locator('input[aria-label="Material name"]').fill('Cement 50kg')
+await p.locator('input[aria-label="SKU"]').fill('cem50')
+await p.locator('select[aria-label="Unit"]').selectOption('bag')
+await p.locator('input[aria-label="Reorder level"]').fill('10')
+await p.locator('button', { hasText: 'Add material' }).click()
 await p.waitForTimeout(500)
 const items = await ls('pl_corp_items')
 ok('the item is stored', items.length === 1, JSON.stringify(items[0] || {}).slice(0, 90))
@@ -114,17 +123,8 @@ ok('and it is scoped to the company', items[0]?.entity_id === 'ent-test-1')
 ok('it appears in the on-hand table', /Cement 50kg/.test(await main()))
 
 // 40 bags at ₹350 in, 15 out. 25 left, worth 8750.
-const moveForm = p.locator('#main-content form').nth(1)
-await moveForm.locator('select').first().selectOption({ label: 'Cement 50kg' })
-await moveForm.locator('input[type="number"]').first().fill('40')
-await moveForm.locator('input[type="number"]').nth(1).fill('350')
-await moveForm.locator('button', { hasText: 'Record' }).click()
-await p.waitForTimeout(500)
-await moveForm.locator('select').first().selectOption({ label: 'Cement 50kg' })
-await moveForm.locator('select').nth(1).selectOption('issue')
-await moveForm.locator('input[type="number"]').first().fill('15')
-await moveForm.locator('button', { hasText: 'Record' }).click()
-await p.waitForTimeout(600)
+await record({ kind: 'receipt', qty: 40, rate: 350 })
+await record({ kind: 'issue', qty: 15 })
 ok('both movements are stored', (await ls('pl_corp_movements')).length === 2)
 const stockText = await main()
 ok('the quantity on hand is 25', /25 bag/.test(stockText), stockText.slice(0, 200))
@@ -132,11 +132,7 @@ ok('the value is the average cost times what is left', /8,750/.test(stockText))
 ok('and 25 is above the reorder level of 10, so no warning', !/Negative stock first/.test(stockText))
 
 // Take it below the reorder level and the warning has to appear.
-await moveForm.locator('select').first().selectOption({ label: 'Cement 50kg' })
-await moveForm.locator('select').nth(1).selectOption('issue')
-await moveForm.locator('input[type="number"]').first().fill('20')
-await moveForm.locator('button', { hasText: 'Record' }).click()
-await p.waitForTimeout(600)
+await record({ kind: 'issue', qty: 20 })
 const lowText = await main()
 ok('going below the reorder level warns', /Negative stock first/.test(lowText))
 ok('and negative stock is called negative', /NEGATIVE/i.test(lowText), lowText.slice(0, 160))
@@ -244,7 +240,10 @@ ok('all-companies says these are kept per company', /Pick one company/.test(awai
 await p.locator('select[aria-label="Switch company"]').selectOption('ent-test-2')
 await p.waitForTimeout(600)
 const other = await main()
-ok('the second company has its own empty books', /No items yet/.test(other) && !/Cement/.test(other), other.slice(0, 200))
+// Not \`/Cement/\`: the add-material form offers a catalogue, so the word now
+// appears on an empty page as a suggestion. The question is whether the first
+// company's stored item leaked, and that has a name.
+ok('the second company has its own empty books', /No materials yet/.test(other) && !/Cement 50kg/.test(other), other.slice(0, 200))
 
 // ── 8. Layout and accessibility ──
 console.log('\n── LAYOUT ──')
@@ -253,7 +252,7 @@ await p.waitForTimeout(500)
 ok('switching back brings the first company\u2019s stock with it', /Cement/.test(await main()))
 const h1s = await p.locator('#main-content h1').count()
 ok('exactly one h1', h1s === 1, `${h1s}`)
-for (const name of ['Stock', 'Advances', 'Payroll']) {
+for (const name of ['Materials', 'Advances', 'Payroll']) {
   await tab(name)
   const unlabelled = await p.evaluate(() =>
     [...document.querySelectorAll('#main-content input,#main-content select,#main-content textarea')]
@@ -264,7 +263,7 @@ for (const name of ['Stock', 'Advances', 'Payroll']) {
 }
 await p.setViewportSize({ width: 390, height: 800 })
 await p.waitForTimeout(400)
-for (const name of ['Stock', 'Advances', 'Payroll']) {
+for (const name of ['Materials', 'Advances', 'Payroll']) {
   await tab(name)
   const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   ok(`no sideways scroll on ${name} on a phone`, overflow <= 2, `${overflow}px`)

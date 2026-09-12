@@ -65,7 +65,14 @@ const CORPORATE_COMMANDS = [
     label: 'Operations',
     to: '/operations',
     icon: Briefcase,
-    also: 'stock inventory items movements goods reorder advances imprest payroll salary salaries payslip employees staff pf esi',
+    // The words a site engineer types, not the words the code uses. Somebody
+    // looking for where the cement is will type "cement", and a palette that
+    // answers nothing sends them to look through the side bar instead.
+    also: 'stock inventory items movements goods reorder materials material cement steel sand aggregate '
+      + 'bricks blocks tiles paint doors windows plumbing bathroom kitchen fittings lifts electrical '
+      + 'quotation quotations quote quotes vendor supplier rate rates price prices gst landed '
+      + 'rejected rejection wastage issued consumed usage site sites project projects '
+      + 'advances imprest payroll salary salaries payslip employees staff pf esi',
   },
 ]
 

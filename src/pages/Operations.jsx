@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react'
-import { Boxes, HandCoins, Users, AlertTriangle, Plus, Check } from 'lucide-react'
+import { Boxes, HandCoins, Users, Plus, Check } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import * as store from '../lib/storage/corporate'
-import { makeItem, makeMovement, stockReport, reorderList, UNITS, MOVEMENT_KINDS } from '../lib/inventory'
 import { makeAdvance, makeAdjustment, outstandingAdvances, advancesByParty, balanceOf, canAdjust, ADVANCE_PARTIES } from '../lib/advances'
 import { makeEmployee, runPayroll } from '../lib/payroll'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx } from '../components/ui'
 import PageHeader from '../components/PageHeader'
+import Materials from '../components/MaterialsTabs'
 
-// Stock, advances and payroll — the three ledgers a company keeps that a
+// Materials, advances and payroll — the three ledgers a company keeps that a
 // landlord does not.
 //
 // All three were written and tested a while ago and had no screen at all, which
@@ -19,7 +19,7 @@ import PageHeader from '../components/PageHeader'
 // the side bar, because they are one job — running the company behind the
 // property — and because eleven destinations was already too many.
 const TABS = [
-  { id: 'stock', label: 'Stock', icon: Boxes },
+  { id: 'materials', label: 'Materials', icon: Boxes },
   { id: 'advances', label: 'Advances', icon: HandCoins },
   { id: 'payroll', label: 'Payroll', icon: Users },
 ]
@@ -30,7 +30,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 export default function Operations() {
   const ent = useEntity()
   const toast = useToast()
-  const [tab, setTab] = useState('stock')
+  const [tab, setTab] = useState('materials')
   // The corporate store is synchronous and outside React, so a counter is what
   // tells the page something changed. It is the same pattern EntityContext uses.
   const [version, setVersion] = useState(0)
@@ -44,6 +44,8 @@ export default function Operations() {
     return {
       items: store.items.list(eid),
       movements: store.movements.list(eid),
+      quotes: store.quotes.list(eid),
+      projects: store.projects.list(eid),
       advances: store.advances.list(eid),
       adjustments: store.adjustments.list(),
       employees: store.employees.list(eid),
@@ -54,11 +56,11 @@ export default function Operations() {
   if (!ent?.enabled) {
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Stock, advances and payroll." />
+        <PageHeader title="Operations" subtitle="Materials, advances and payroll." />
         <EmptyState
           icon={Boxes}
           title="Add a company first"
-          subtitle="Stock, advances and payroll belong to a company. Create one under Companies and this fills in."
+          subtitle="Materials, advances and payroll belong to a company. Create one under Companies and this fills in."
         />
       </div>
     )
@@ -67,13 +69,13 @@ export default function Operations() {
     const personal = ent.personal
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Stock, advances and payroll." />
+        <PageHeader title="Operations" subtitle="Materials, advances and payroll." />
         <EmptyState
           icon={Boxes}
           title={personal ? 'You are in your personal books' : 'Pick one company'}
           subtitle={
             personal
-              ? 'Stock, advances and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
+              ? 'Materials, advances and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
               : 'These are kept per company, so the consolidated view has nothing to show. Switch to a single company above.'
           }
         />
@@ -86,7 +88,7 @@ export default function Operations() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader title="Operations" subtitle={`Stock, advances and payroll for ${ent.entity?.name || 'this company'}.`} />
+      <PageHeader title="Operations" subtitle={`Materials, advances and payroll for ${ent.entity?.name || 'this company'}.`} />
 
       <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-surface-raised p-1">
         {TABS.map((t) => (
@@ -104,145 +106,9 @@ export default function Operations() {
         ))}
       </div>
 
-      {tab === 'stock' && <Stock {...shared} />}
+      {tab === 'materials' && <Materials {...shared} />}
       {tab === 'advances' && <Advances {...shared} />}
       {tab === 'payroll' && <Payroll {...shared} />}
-    </div>
-  )
-}
-
-// ── Stock ───────────────────────────────────────────────────────────────────
-function Stock({ data, eid, actor, canWrite, bump, toast }) {
-  const [form, setForm] = useState({ name: '', sku: '', unit: 'pcs', reorderLevel: '' })
-  const [move, setMove] = useState({ itemId: '', kind: 'receipt', qty: '', unitCost: '', note: '' })
-  const report = useMemo(() => stockReport(data.items, data.movements), [data])
-  const low = useMemo(() => reorderList(data.items, data.movements), [data])
-
-  const addItem = (e) => {
-    e.preventDefault()
-    if (!form.name.trim()) return
-    store.items.add(makeItem({ entityId: eid, ...form, reorderLevel: Number(form.reorderLevel) || 0 }), actor)
-    setForm({ name: '', sku: '', unit: 'pcs', reorderLevel: '' })
-    bump()
-    toast('Item added')
-  }
-  const addMovement = (e) => {
-    e.preventDefault()
-    if (!move.itemId || !Number(move.qty)) return
-    store.movements.add(makeMovement({
-      entityId: eid, itemId: move.itemId, kind: move.kind,
-      qty: Number(move.qty), unitCost: Number(move.unitCost) || 0, note: move.note, date: today(), createdBy: actor?.id,
-    }), actor)
-    setMove({ itemId: '', kind: 'receipt', qty: '', unitCost: '', note: '' })
-    bump()
-    toast('Movement recorded')
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Stat label="Items" value={String(data.items.length)} />
-        <Stat label="Stock value" value={formatCurrency(report.totalValue)} />
-        <Stat label="Below reorder" value={String(report.itemsBelowReorder)} tone={report.itemsBelowReorder ? 'warn' : undefined} />
-      </div>
-
-      {low.length > 0 && (
-        <Card className="p-5">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-600" />
-            <h2 className="text-sm font-semibold text-ink-3">Reorder</h2>
-          </div>
-          <p className="mt-1 text-xs text-ink-5">Negative stock first — the books and the shelf disagree there.</p>
-          <ul className="mt-3 divide-y divide-line-soft">
-            {low.map((l) => (
-              <li key={l.item.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <span className="min-w-0 truncate text-ink-2">{l.item.name}</span>
-                <span className="flex shrink-0 items-center gap-2">
-                  {l.negative && <Badge color="#dc2626">negative</Badge>}
-                  <span className="tabular text-ink-4">{l.qty} {l.item.unit} · reorder at {l.item.reorder_level}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-
-      {canWrite && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card className="p-5">
-            <h2 className="text-sm font-semibold text-ink-3">Add an item</h2>
-            <form onSubmit={addItem} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-              <Field className="sm:col-span-2" label="Name" required>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cement, 50kg bag" />
-              </Field>
-              <Field label="SKU"><Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} /></Field>
-              <Field label="Unit">
-                <Select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
-                  {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                </Select>
-              </Field>
-              <Field className="sm:col-span-2" label="Reorder level" hint="Zero means never warn.">
-                <Input type="number" min="0" value={form.reorderLevel} onChange={(e) => setForm({ ...form, reorderLevel: e.target.value })} />
-              </Field>
-              <div className="sm:col-span-2"><Button type="submit"><Plus size={16} /> Add item</Button></div>
-            </form>
-          </Card>
-
-          <Card className="p-5">
-            <h2 className="text-sm font-semibold text-ink-3">Record a movement</h2>
-            <p className="mt-1 text-xs text-ink-5">
-              Receipts move the average cost; issues consume at it. An adjustment may be negative — a stock-take found less.
-            </p>
-            <form onSubmit={addMovement} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-              <Field className="sm:col-span-2" label="Item" required>
-                <Select value={move.itemId} onChange={(e) => setMove({ ...move, itemId: e.target.value })}>
-                  <option value="">Choose…</option>
-                  {data.items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
-                </Select>
-              </Field>
-              <Field label="Kind">
-                <Select value={move.kind} onChange={(e) => setMove({ ...move, kind: e.target.value })}>
-                  {Object.entries(MOVEMENT_KINDS).map(([id, k]) => (
-                    <option key={id} value={id}>{k.label || id}</option>
-                  ))}
-                </Select>
-              </Field>
-              <Field label="Quantity" required>
-                <Input type="number" step="any" value={move.qty} onChange={(e) => setMove({ ...move, qty: e.target.value })} />
-              </Field>
-              <Field className="sm:col-span-2" label="Unit cost" hint="Only receipts need one.">
-                <Input type="number" step="0.01" min="0" value={move.unitCost} onChange={(e) => setMove({ ...move, unitCost: e.target.value })} />
-              </Field>
-              <div className="sm:col-span-2"><Button type="submit" disabled={!move.itemId}><Plus size={16} /> Record</Button></div>
-            </form>
-          </Card>
-        </div>
-      )}
-
-      <Card className="p-5">
-        <h2 className="text-sm font-semibold text-ink-3">On hand</h2>
-        {report.lines.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-5">No items yet.</p>
-        ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase tracking-wide text-ink-5">
-                <tr><th className="py-2 text-start">Item</th><th className="text-end">Qty</th><th className="text-end">Avg cost</th><th className="text-end">Value</th></tr>
-              </thead>
-              <tbody className="divide-y divide-line-soft">
-                {report.lines.map((l) => (
-                  <tr key={l.item.id}>
-                    <td className="py-2 text-ink-2">{l.item.name} <span className="text-ink-6">{l.item.sku}</span></td>
-                    <td className="text-end tabular">{l.qty} {l.item.unit}</td>
-                    <td className="text-end tabular text-ink-4">{formatCurrency(l.avgCost)}</td>
-                    <td className="text-end tabular font-medium">{formatCurrency(l.value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
     </div>
   )
 }

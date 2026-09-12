@@ -110,6 +110,14 @@ export default function OperationsSummary({ summary }) {
             {itemCount === 1 ? '1 item' : `${itemCount} items`}, valued at average cost. Used up is what left the
             shelf — issues, wastage and anything a stock-take could not account for.
           </p>
+          {/* Kept out of "used up" on purpose: material returned to a supplier
+              never became part of the job, and charging it to the period would
+              overstate what the work cost by exactly the supplier's mistake. */}
+          {stock.rejectedValue > 0 && (
+            <p className="mt-1 text-xs text-amber-600">
+              {formatCurrency(stock.rejectedValue)} went back to suppliers as rejected and is not counted as used up.
+            </p>
+          )}
         </div>
       )}
 

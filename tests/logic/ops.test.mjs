@@ -47,7 +47,13 @@ s = stockOf(cement, mv)
 eq('a negative adjustment is allowed', s.qty, 135)
 eq('valued at the prevailing average', s.value, 54000)
 eq('receipts are tracked', s.received, 200)
-eq('and issues', s.issued, 60)
+// 50, not 60. Issued material is in the building and wasted material is gone;
+// a single figure covering both cannot answer either question, and the wastage
+// percentage a site is judged on is unrecoverable from it.
+eq('issues are counted on their own', s.issued, 50)
+eq('and wastage on its own', s.wasted, 10)
+eq('with the pair available as what the job consumed', s.consumed, 60)
+eq('wastage as a share of what was used', s.wastagePercent, 16.7)
 eq('the last movement date is kept', s.lastMovement, '2026-03-03')
 ok('above the reorder level, no flag', !s.belowReorder)
 
