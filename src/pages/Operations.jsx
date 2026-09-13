@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Boxes, HandCoins, Users, HardHat, Truck, Building2, Wallet, Plus, Check } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
@@ -47,7 +47,12 @@ export default function Operations() {
   // site's cost is meaningless without them.
   const { expenses, income } = useData()
   const toast = useToast()
-  const [tab, setTab] = useState('projects')
+  // In the URL, so a finding somewhere else can send somebody straight to the
+  // thing it is about. A note saying "₹60,000 of plant hire has no log sheet"
+  // that then makes you hunt through seven tabs is a note people stop reading.
+  const [params, setParams] = useSearchParams()
+  const tab = TABS.some((t) => t.id === params.get('tab')) ? params.get('tab') : 'projects'
+  const setTab = (id) => setParams(id === 'projects' ? {} : { tab: id }, { replace: true })
   // The corporate store is synchronous and outside React, so a counter is what
   // tells the page something changed. It is the same pattern EntityContext uses.
   const [version, setVersion] = useState(0)

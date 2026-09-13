@@ -106,6 +106,9 @@ await p.waitForTimeout(300)
 
 // ── 3. Stock ──
 console.log('\n── STOCK ──')
+// The tab is in the URL now, so going to /operations from the palette lands on
+// the default one — which is what a bare link to the page should do.
+await tab('Materials')
 const record = async (fields) => {
   const form = p.locator('#main-content form').nth(1)
   await form.locator('select[aria-label="Material"]').selectOption({ label: 'Cement 50kg' })

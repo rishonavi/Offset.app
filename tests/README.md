@@ -19,6 +19,7 @@ for Vite's resolver.
 |---|---|---|
 | `apiguard.test.mjs` | 25 | what the endpoints refuse, and the rate ceiling |
 | `appearance.test.mjs` | 110 | accents, tones, avatars, and the two places that must agree |
+| `attention.test.mjs` | 49 | what is going wrong, ranked — and why wrong outranks large |
 | `assettypes.test.mjs` | 75 | which fields an asset type has, how it is grouped and what it looks like |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
@@ -47,7 +48,7 @@ for Vite's resolver.
 | `syncwire.test.mjs` | 41 | what a pull asks for, what a push sends, and one table failing |
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **2,075** | |
+| | **2,124** | |
 
 ## Browser — `tests/browser/`
 
@@ -62,6 +63,7 @@ node tests/browser/rtlui.mjs
 | Suite | Assertions | Covers |
 |---|---|---|
 | `assetformui.mjs` | 60 | the asset form: picking a type, and asking for one thing at a time |
+| `attentionui.mjs` | 19 | the findings on the page people open, and the links that reach them |
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
 | `approvalsui.mjs` | 35 | the switch that used to change nothing, and one queue for four documents |
 | `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
@@ -98,7 +100,7 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,294** | |
+| | **1,313** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

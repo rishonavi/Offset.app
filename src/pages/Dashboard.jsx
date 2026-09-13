@@ -44,6 +44,7 @@ import { monthSpendByProperty, budgetStatus } from '../lib/budget'
 import { outstandingTotal, isOverdue } from '../lib/payments'
 import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/recurring'
 import { leasesNeedingAttention } from '../lib/lease'
+import Attention from '../components/Attention'
 import { expiringDocuments } from '../lib/documents'
 import { spendingAnomalies } from '../lib/anomalies'
 import { Card, Button, EmptyState, Skeleton, ChartKey } from '../components/ui'
@@ -301,6 +302,12 @@ export default function Dashboard() {
 
   return (
     <div className="animate-fade-in space-y-6">
+      {/* Before anything else. Every module in this app works out something
+          nobody will go looking for, and all of it sits three clicks deep in a
+          sub-tab — so a company that opens the app is told what is wrong before
+          it is told how it is doing. */}
+      <Attention />
+
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-ink-1">Dashboard</h1>
