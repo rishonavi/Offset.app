@@ -23,7 +23,7 @@ const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[
 const main = () => p.locator('#main-content').innerText()
 // The tab buttons carry an icon, so their text has leading whitespace and an
 // anchored match never fires. They are the only aria-pressed controls here.
-const TABS = ['Projects', 'Materials', 'Labour', 'Plant', 'Advances', 'Payroll']
+const TABS = ['Projects', 'Materials', 'Labour', 'Plant', 'Sales', 'Advances', 'Payroll']
 const tab = async (name) => { await p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)).click(); await p.waitForTimeout(350) }
 
 // ── 1. Dormant without a company ──
@@ -259,7 +259,7 @@ await p.waitForTimeout(500)
 ok('switching back brings the first company\u2019s stock with it', /Cement/.test(await main()))
 const h1s = await p.locator('#main-content h1').count()
 ok('exactly one h1', h1s === 1, `${h1s}`)
-for (const name of ['Projects', 'Materials', 'Labour', 'Plant', 'Advances', 'Payroll']) {
+for (const name of ['Projects', 'Materials', 'Labour', 'Plant', 'Sales', 'Advances', 'Payroll']) {
   await tab(name)
   const unlabelled = await p.evaluate(() =>
     [...document.querySelectorAll('#main-content input,#main-content select,#main-content textarea')]

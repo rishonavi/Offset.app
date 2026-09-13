@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Boxes, HandCoins, Users, HardHat, Truck, Wallet, Plus, Check } from 'lucide-react'
+import { Boxes, HandCoins, Users, HardHat, Truck, Building2, Wallet, Plus, Check } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
@@ -13,6 +13,7 @@ import Materials from '../components/MaterialsTabs'
 import Projects from '../components/ProjectsTabs'
 import Labour from '../components/LabourTabs'
 import Plant from '../components/PlantTabs'
+import Sales from '../components/SalesTabs'
 
 // Sites, materials, labour, plant, advances and payroll — what a company runs
 // on and a landlord does not.
@@ -29,6 +30,8 @@ const TABS = [
   { id: 'materials', label: 'Materials', icon: Boxes },
   { id: 'labour', label: 'Labour', icon: Users },
   { id: 'plant', label: 'Plant', icon: Truck },
+  // The other side of the ledger: what the company is building to sell.
+  { id: 'sales', label: 'Sales', icon: Building2 },
   { id: 'advances', label: 'Advances', icon: HandCoins },
   { id: 'payroll', label: 'Payroll', icon: Wallet },
 ]
@@ -65,6 +68,9 @@ export default function Operations() {
       measurements: store.measurements.list(eid),
       plant: store.plant.list(eid),
       plantLogs: store.plantLogs.list(eid),
+      units: store.units.list(eid),
+      planStages: store.planStages.list(),
+      receipts: store.receipts.list(eid),
       advances: store.advances.list(eid),
       adjustments: store.adjustments.list(),
       employees: store.employees.list(eid),
@@ -77,11 +83,11 @@ export default function Operations() {
   if (!ent?.enabled) {
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Sites, materials, labour, plant and payroll." />
+        <PageHeader title="Operations" subtitle="Sites, materials, labour, plant, sales and payroll." />
         <EmptyState
           icon={Boxes}
           title="Add a company first"
-          subtitle="Sites, materials, labour, plant and payroll belong to a company. Create one under Companies and this fills in."
+          subtitle="Sites, materials, labour, plant, sales and payroll belong to a company. Create one under Companies and this fills in."
         />
       </div>
     )
@@ -90,13 +96,13 @@ export default function Operations() {
     const personal = ent.personal
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Sites, materials, labour, plant and payroll." />
+        <PageHeader title="Operations" subtitle="Sites, materials, labour, plant, sales and payroll." />
         <EmptyState
           icon={Boxes}
           title={personal ? 'You are in your personal books' : 'Pick one company'}
           subtitle={
             personal
-              ? 'Sites, materials, labour, plant and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
+              ? 'Sites, materials, labour, plant, sales and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
               : 'These are kept per company, so the consolidated view has nothing to show. Switch to a single company above.'
           }
         />
@@ -109,7 +115,7 @@ export default function Operations() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader title="Operations" subtitle={`Sites, materials, labour, plant and payroll for ${ent.entity?.name || 'this company'}.`} />
+      <PageHeader title="Operations" subtitle={`Sites, materials, labour, plant, sales and payroll for ${ent.entity?.name || 'this company'}.`} />
 
       <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-surface-raised p-1">
         {TABS.map((t) => (
@@ -131,6 +137,7 @@ export default function Operations() {
       {tab === 'materials' && <Materials {...shared} />}
       {tab === 'labour' && <Labour {...shared} />}
       {tab === 'plant' && <Plant {...shared} />}
+      {tab === 'sales' && <Sales {...shared} />}
       {tab === 'advances' && <Advances {...shared} />}
       {tab === 'payroll' && <Payroll {...shared} />}
     </div>

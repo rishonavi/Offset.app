@@ -19,6 +19,7 @@ p.on('dialog', (d) => d.accept())
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
+const rows = (page, key) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), key)
 const main = () => p.locator('#main-content').innerText()
 // The sub-tabs are pills, not the aria-pressed row the outer tabs use.
 const view = async (label) => {
@@ -47,7 +48,7 @@ await p.waitForTimeout(700)
 
 // The page opens on Projects — a cost belongs to a job before it belongs to a
 // ledger — so this suite has to ask for Materials.
-const OUTER = ['Projects', 'Materials', 'Labour', 'Plant', 'Advances', 'Payroll']
+const OUTER = ['Projects', 'Materials', 'Labour', 'Plant', 'Sales', 'Advances', 'Payroll']
 const outerTab = async (name) => {
   await p.locator('#main-content button[aria-pressed]').nth(OUTER.indexOf(name)).click()
   await p.waitForTimeout(450)
@@ -131,6 +132,8 @@ const record = async (o) => {
   if (o.freight !== undefined) await form.locator('input[aria-label="Freight and handling"]').fill(String(o.freight))
   if (o.vendor) await form.locator('input[aria-label="Vendor"]').fill(o.vendor)
   if (o.reason) await form.locator('input[aria-label="Rejection reason"]').fill(o.reason)
+  if (o.store !== undefined) await form.locator('select[aria-label="Store"]').selectOption(o.store ? { label: o.store } : '')
+  if (o.into) await form.locator('select[aria-label="Into store"]').selectOption({ label: o.into })
   if (o.site) await form.locator('select[aria-label="Site"]').selectOption({ label: o.site })
   await form.locator('button', { hasText: 'Record' }).click()
   await p.waitForTimeout(500)
@@ -282,9 +285,51 @@ ok('issued and wasted stay apart there too', /400/.test(usage) && /50/.test(usag
 ok('and material nobody booked to a site is called that',
   /Not booked to a site/.test(usage), usage.slice(0, 700))
 
+console.log('\n── A YARD AND A STORE ON EVERY SITE ──')
+await outerTab('Materials')
+await view('Inventory')
+let stores = await main()
+// The total, and the two halves it is made of. A builder who knows only the
+// total will buy again for a site that already has it.
+ok('the yard and the sites are shown apart from the total',
+  /in the yard/i.test(stores) && /out on sites/i.test(stores), stores.slice(0, 500))
+// Everything recorded so far had no store on it, which is what every movement
+// written before there were stores says: it was all at the yard.
+ok('everything recorded so far is in the yard', /out on sites[\s\S]{0,40}₹0/i.test(stores), stores.slice(0, 600))
+
+// A delivery straight to site: the lorry never sees the yard.
+await record({ material: 'Cement OPC 53 grade', kind: 'receipt', qty: 50, rate: 400, store: 'Marine Drive Tower' })
+stores = await main()
+ok('a delivery to a site lands there', /where the stock is/i.test(stores), stores.slice(0, 900))
+ok('and the yard and the site are listed separately',
+  /central store/i.test(stores) && /Marine Drive Tower/.test(stores), stores.slice(0, 900))
+const afterDirect = await rows(p, 'pl_corp_movements')
+ok('the delivery carries the store it landed at',
+  afterDirect.some((m) => m.kind === 'receipt' && m.store_id === 'site-md'),
+  JSON.stringify(afterDirect.slice(-1)))
+
+// Moving it between the company's own stores.
+await record({ material: 'Cement OPC 53 grade', kind: 'transfer', qty: 20, store: 'Central store', into: 'Marine Drive Tower' })
+const moved = (await rows(p, 'pl_corp_movements')).find((m) => m.kind === 'transfer')
+ok('a transfer is one row, not two', Boolean(moved), JSON.stringify(moved || {}))
+ok('carrying both ends', moved?.store_id === null && moved?.to_store_id === 'site-md',
+  `${moved?.store_id} → ${moved?.to_store_id}`)
+stores = await main()
+ok('the material now sits in two stores',
+  /in the yard/i.test(stores) && !/out on sites[\s\S]{0,40}₹0/i.test(stores), stores.slice(0, 600))
+// The company did not buy anything, so the company did not gain anything.
+ok('and each material says how it is split between them',
+  /in the yard ·/i.test(stores), stores.slice(0, 1400))
+
 console.log('\n── THE MOVEMENT LOG ──')
-ok('the log lists what happened', /Movement log/.test(usage))
-ok('including the rejection, with its reason', /Set hard in transit/.test(usage), usage.slice(-900))
+// The log lives on the Usage view, and the stores work above left us on
+// Inventory.
+await view('Usage')
+const logText = await main()
+ok('the log lists what happened', /Movement log/.test(logText))
+ok('and says which store each movement was at', /central store/i.test(logText), logText.slice(-900))
+ok('a transfer names both ends', /Central store → Marine Drive Tower/.test(logText), logText.slice(-1200))
+ok('including the rejection, with its reason', /Set hard in transit/.test(logText), logText.slice(-900))
 await p.locator('select[aria-label="Filter by movement"]').selectOption('rejected')
 await p.waitForTimeout(450)
 const filtered = await main()

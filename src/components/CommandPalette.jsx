@@ -77,6 +77,10 @@ const CORPORATE_COMMANDS = [
       + 'progress boq schedule quantity measurement measured built earned '
       + 'plant equipment machine machinery jcb excavator crane hoist mixer pump generator tipper '
       + 'roller compactor diesel fuel operator log sheet utilisation idle breakdown depreciation hire '
+      + 'sales flat flats shop shops office commercial villa plot unit units tower wing carpet '
+      + 'booking booked sold available inventory buyer collections demand instalment installment '
+      + 'received due overdue possession registration agreement payment plan '
+      + 'store yard transfer godown central '
       + 'advances imprest payroll salary salaries payslip employees staff pf esi',
   },
 ]

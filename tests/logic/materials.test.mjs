@@ -9,8 +9,8 @@ import {
   categoryOf, isBulk, isFitted, unitFor, fromCatalogue, catalogueFor, byCategory,
 } from '../../src/lib/materials.js'
 import {
-  makeItem, makeMovement, stockOf, stockReport, stockOverPeriod,
-  usageBySite, movementLog, UNITS, MOVEMENT_KINDS,
+  makeItem, makeMovement, stockOf, stockAt, stockReport, stockOverPeriod,
+  usageBySite, movementLog, UNITS, MOVEMENT_KINDS, CENTRAL, isCentral,
 } from '../../src/lib/inventory.js'
 import {
   makeQuote, makeQuoteLine, quoteTotals, quoteState, isLiveQuote,
@@ -18,6 +18,7 @@ import {
   QUOTE_STATUS_IDS, GST_RATES,
 } from '../../src/lib/quotes.js'
 
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
 const eq = (n, a, b) => ok(n, JSON.stringify(a) === JSON.stringify(b), `got ${JSON.stringify(a)}, want ${JSON.stringify(b)}`)
@@ -170,6 +171,115 @@ eq('and its own claim against suppliers', groups[0].rejectedValue, 4500)
 eq('an empty shelf groups into nothing', byCategory([]).length, 0)
 eq('uncategorised stock still gets a heading',
   byCategory([{ item: { id: 'q' }, value: 10, rejectedValue: 0 }])[0].category.label, 'Uncategorised')
+
+console.log('\n── A YARD AND A STORE ON EVERY SITE ──')
+// Two different questions, and folding them into one field is a mistake that
+// looks harmless until a site issues material out of the yard:
+//   where the material physically is, and which job is paying for it.
+const rebar = makeItem({ entityId: 'e1', name: 'TMT 16mm', category: 'steel', unit: 'kg' })
+const yard = [
+  makeMovement({ itemId: rebar.id, entityId: 'e1', kind: 'receipt', qty: 1000, unitCost: 60, date: '2026-01-01' }),
+]
+eq('a delivery with no store named lands in the yard', stockAt(rebar, yard, CENTRAL).qty, 1000)
+ok('which is what every movement written before there were stores says', isCentral(null) && isCentral(CENTRAL))
+eq('and the company total is the same figure', stockOf(rebar, yard).qty, 1000)
+eq('with nothing on any site', stockOf(rebar, yard).onSites, 0)
+
+// Delivered direct to site: the lorry never sees the yard.
+const direct = [...yard, makeMovement({
+  itemId: rebar.id, entityId: 'e1', kind: 'receipt', qty: 500, unitCost: 64, date: '2026-01-05', storeId: 'site-a',
+})]
+eq('a delivery to a site lands there', stockAt(rebar, direct, 'site-a').qty, 500)
+eq('and not in the yard', stockAt(rebar, direct, CENTRAL).qty, 1000)
+eq('the company holds both', stockOf(rebar, direct).qty, 1500)
+eq('each store keeps its own average', stockAt(rebar, direct, 'site-a').avgCost, 64)
+eq('and the yard keeps its own', stockAt(rebar, direct, CENTRAL).avgCost, 60)
+// One company-wide average would move a site's stock value every time an
+// unrelated delivery landed somewhere else.
+ok('which are not the same number', stockAt(rebar, direct, 'site-a').avgCost !== stockAt(rebar, direct, CENTRAL).avgCost)
+
+console.log('\n── MOVING IT ──')
+const moved = [...direct, makeMovement({
+  itemId: rebar.id, entityId: 'e1', kind: 'transfer', qty: 400, date: '2026-01-10',
+  storeId: CENTRAL, toStoreId: 'site-b',
+})]
+const afterMove = stockOf(rebar, moved)
+eq('the yard is lighter', stockAt(rebar, moved, CENTRAL).qty, 600)
+eq('the site is heavier', stockAt(rebar, moved, 'site-b').qty, 400)
+// The company did not buy anything, so the company did not gain anything.
+eq('and the company total has not moved', afterMove.qty, 1500)
+eq('nor its value', afterMove.value, stockOf(rebar, direct).value)
+// The transfer note says what the yard's stock was worth, and that is what the
+// receiving site is now holding.
+eq('the value travels at the sending store’s average', stockAt(rebar, moved, 'site-b').value, 24000)
+eq('a transfer is not consumption', afterMove.consumed, 0)
+eq('nor is it a receipt', afterMove.received, 1500)
+eq('it is counted as what it is', afterMove.transferred, 400)
+
+console.log('\n── WHERE IT ALL IS ──')
+const placed = stockOf(rebar, moved)
+eq('every store with something in it is listed', placed.byLocation.filter((l) => l.qty !== 0).length, 3)
+// The line everyone reads first, so it does not move around.
+eq('the yard leads whatever it holds', placed.byLocation[0].locationId, null)
+eq('the yard holds this much', placed.central.qty, 600)
+eq('the sites between them hold the rest', placed.onSites, 900)
+eq('and that is worth this much', placed.onSitesValue, round2(placed.value - placed.central.value))
+eq('two sites are holding stock', placed.sites, 2)
+eq('a store nobody used is not invented', stockAt(rebar, moved, 'site-zzz').qty, 0)
+
+console.log('\n── ISSUING FROM WHEREVER IT IS ──')
+// The case the two fields exist for: material issued straight out of the yard
+// to a job. The yard loses it and the job is charged for it, and both are true
+// at once.
+const issuedFromYard = [...moved, makeMovement({
+  itemId: rebar.id, entityId: 'e1', kind: 'issue', qty: 100, date: '2026-01-20',
+  storeId: CENTRAL, projectId: 'site-a',
+})]
+eq('the yard loses it', stockAt(rebar, issuedFromYard, CENTRAL).qty, 500)
+eq('site A’s own store is untouched', stockAt(rebar, issuedFromYard, 'site-a').qty, 500)
+eq('and site A is charged for it', usageBySite([rebar], issuedFromYard, { projects: [] })
+  .find((u) => u.projectId === 'site-a').value, 6000)
+
+// And the other way: a site issuing from its own store.
+const issuedOnSite = [...moved, makeMovement({
+  itemId: rebar.id, entityId: 'e1', kind: 'issue', qty: 100, date: '2026-01-20',
+  storeId: 'site-a', projectId: 'site-a',
+})]
+eq('the site’s own store falls', stockAt(rebar, issuedOnSite, 'site-a').qty, 400)
+eq('the yard is untouched', stockAt(rebar, issuedOnSite, CENTRAL).qty, 600)
+// At 64, not 60: it is charged what that store paid.
+eq('and it is charged at its own store’s rate',
+  usageBySite([rebar], issuedOnSite, { projects: [] }).find((u) => u.projectId === 'site-a').value, 6400)
+
+console.log('\n── A SITE THAT ISSUED WHAT IT NEVER RECEIVED ──')
+// A stores control finding, not an error to swallow. The company can be square
+// overall and still have a site short, and that is exactly worth seeing.
+const short = [...yard, makeMovement({
+  itemId: rebar.id, entityId: 'e1', kind: 'issue', qty: 50, date: '2026-02-01',
+  storeId: 'site-c', projectId: 'site-c',
+})]
+const shortLine = stockOf(rebar, short)
+eq('the site goes short', stockAt(rebar, short, 'site-c').qty, -50)
+ok('and is flagged', stockAt(rebar, short, 'site-c').negative)
+ok('the item is flagged even though the company has plenty', shortLine.negative && shortLine.qty > 0,
+  `${shortLine.qty}`)
+eq('the value of a store cannot go below nothing', stockAt(rebar, short, 'site-c').value, 0)
+// Transferring out more than a store holds cannot invent value at the far end.
+const overMove = [...yard, makeMovement({
+  itemId: rebar.id, entityId: 'e1', kind: 'transfer', qty: 200, date: '2026-02-01',
+  storeId: 'site-d', toStoreId: 'site-e',
+})]
+eq('a transfer out of an empty store moves no value', stockAt(rebar, overMove, 'site-e').value, 0)
+ok('and the empty store is flagged', stockAt(rebar, overMove, 'site-d').negative)
+
+console.log('\n── THE REPORT, BY STORE ──')
+const storeRep = stockReport([rebar], moved)
+eq('the company total is the yard plus the sites', storeRep.totalValue, round2(storeRep.centralValue + storeRep.onSitesValue))
+eq('and the yard leads', storeRep.byLocation[0].locationId, null)
+eq('three stores hold something', storeRep.byLocation.filter((l) => l.value > 0).length, 3)
+eq('an empty company has a yard all the same', stockReport([], []).byLocation.length, 0)
+ok('a transfer is one row, not two',
+  MOVEMENT_KINDS.transfer.direction === 'move' && MOVEMENT_KINDS.transfer.sign === 0)
 
 console.log('\n── WHICH SITE BURNED IT ──')
 const sites = [{ id: 'site-a', name: 'Marine Drive' }, { id: 'site-b', name: 'Powai Annexe' }]

@@ -6,7 +6,7 @@ import {
 import * as store from '../lib/storage/corporate'
 import {
   makeItem, makeMovement, stockReport, reorderList, usageBySite, movementLog,
-  UNITS, MOVEMENT_KINDS, MOVEMENT_KIND_IDS,
+  UNITS, MOVEMENT_KINDS, MOVEMENT_KIND_IDS, CENTRAL,
 } from '../lib/inventory'
 import {
   MATERIAL_CATEGORIES, MATERIAL_CATEGORY_IDS, CATALOGUE,
@@ -70,9 +70,14 @@ export default function Materials(shared) {
 
 // ── Inventory ───────────────────────────────────────────────────────────────
 function Inventory({ data, eid, actor, canWrite, bump, toast }) {
+  // The yard has no row of its own anywhere, so it needs a name here.
+  const storeName = (id) => (id ? data.projects.find((p) => p.id === id)?.name || 'Unknown site' : 'Central store')
   const blank = { category: 'cement', name: '', brand: '', spec: '', sku: '', unit: 'bag', reorderLevel: '' }
   const [form, setForm] = useState(blank)
-  const [move, setMove] = useState({ itemId: '', kind: 'receipt', qty: '', unitCost: '', otherCost: '', vendor: '', projectId: '', reason: '', note: '' })
+  const [move, setMove] = useState({
+    itemId: '', kind: 'receipt', qty: '', unitCost: '', otherCost: '',
+    vendor: '', storeId: '', toStoreId: '', projectId: '', reason: '', note: '',
+  })
 
   const report = useMemo(() => stockReport(data.items, data.movements), [data])
   const low = useMemo(() => reorderList(data.items, data.movements), [data])
@@ -111,19 +116,32 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
     store.movements.add(makeMovement({
       entityId: eid, itemId: move.itemId, kind: move.kind,
       qty: num(move.qty), unitCost: num(move.unitCost), otherCost: num(move.otherCost),
-      vendor: move.vendor, projectId: move.projectId || null, reason: move.reason, note: move.note,
+      vendor: move.vendor, storeId: move.storeId || null, toStoreId: move.toStoreId || null,
+      // An issue from a store on a site is charged to that site unless somebody
+      // says otherwise, because that is what it almost always means. Issuing
+      // out of the yard says nothing about who pays, so it has to be asked.
+      projectId: move.projectId || (move.kind !== 'transfer' ? move.storeId || null : null),
+      reason: move.reason, note: move.note,
       date: today(), createdBy: actor?.id,
     }), actor)
-    setMove({ itemId: '', kind: move.kind, qty: '', unitCost: '', otherCost: '', vendor: '', projectId: '', reason: '', note: '' })
+    setMove({
+      itemId: '', kind: move.kind, qty: '', unitCost: '', otherCost: '', vendor: '',
+      // The store stays: a stores clerk enters a run of movements at one place.
+      storeId: move.storeId, toStoreId: '', projectId: '', reason: '', note: '',
+    })
     bump()
     toast(move.kind === 'rejected' ? 'Rejection recorded' : 'Movement recorded')
   }
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <Stat label="Materials" value={String(data.items.length)} />
+        {/* The company total, and the two halves it is made of. A builder who
+            knows only the total will buy again for a site that already has it. */}
         <Stat label="Stock value" value={formatCurrency(report.totalValue)} />
+        <Stat label="In the yard" value={formatCurrency(report.centralValue)} />
+        <Stat label="Out on sites" value={formatCurrency(report.onSitesValue)} />
         <Stat label="Below reorder" value={String(report.itemsBelowReorder)} tone={report.itemsBelowReorder ? 'warn' : undefined} />
         {/* Not part of the stock value: this is money a supplier owes back, not
             an asset on the shelf, and adding the two would inflate both. */}
@@ -133,6 +151,30 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
           tone={report.rejectedValue > 0 ? 'warn' : undefined}
         />
       </div>
+
+      {report.byLocation.filter((l) => l.value !== 0 || l.items > 0).length > 1 && (
+        <Card className="p-5">
+          <h3 className="text-sm font-semibold text-ink-3">Where the stock is</h3>
+          <p className="mt-1 text-xs text-ink-5">
+            The yard and every site store. A company holding forty tonnes of steel and not knowing which site has it
+            is a company that will buy forty more.
+          </p>
+          <ul className="mt-3 divide-y divide-line-soft">
+            {report.byLocation.filter((l) => l.value !== 0 || l.items > 0).map((l) => (
+              <li key={l.locationId || 'central'} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
+                <span className={cx('min-w-0 truncate', l.locationId ? 'text-ink-2' : 'font-medium text-ink-1')}>
+                  {storeName(l.locationId)}
+                  {l.negative > 0 && <span className="ms-2"><Badge color="#dc2626">{l.negative} short</Badge></span>}
+                </span>
+                <span className="tabular text-ink-4">
+                  {l.items} {l.items === 1 ? 'material' : 'materials'} ·{' '}
+                  <span className="font-medium text-ink-2">{formatCurrency(l.value)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {low.length > 0 && (
         <Card className="p-5">
@@ -207,7 +249,8 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
             <h3 className="text-sm font-semibold text-ink-3">Record a movement</h3>
             <p className="mt-1 text-xs text-ink-5">
               Issued material is in the building and wasted material is gone. Rejected material went back to the
-              supplier — it is a credit they owe, not a cost of the job.
+              supplier — it is a credit they owe, not a cost of the job. A transfer only changes which store holds
+              it; the company gains nothing.
             </p>
             <form onSubmit={addMovement} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
               <Field className="sm:col-span-2" label="Material" required>
@@ -252,8 +295,28 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
                   <Input aria-label="Rejection reason" value={move.reason} onChange={(e) => setMove({ ...move, reason: e.target.value })} placeholder="Set hard in transit" />
                 </Field>
               )}
-              {data.projects.length > 0 && kind.direction === 'out' && (
-                <Field className="sm:col-span-2" label="Site" hint="Material with no site is material no job is charged for.">
+              <Field
+                label={move.kind === 'transfer' ? 'Out of' : 'Store'}
+                hint={move.kind === 'receipt' ? 'Where the lorry unloaded.' : undefined}
+              >
+                <Select aria-label="Store" value={move.storeId} onChange={(e) => setMove({ ...move, storeId: e.target.value })}>
+                  <option value={CENTRAL}>Central store</option>
+                  {data.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </Select>
+              </Field>
+              {move.kind === 'transfer' && (
+                <Field label="Into" hint="The company gains nothing; it only changes shelf.">
+                  <Select aria-label="Into store" value={move.toStoreId} onChange={(e) => setMove({ ...move, toStoreId: e.target.value })}>
+                    <option value={CENTRAL}>Central store</option>
+                    {data.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </Select>
+                </Field>
+              )}
+              {/* Where it physically is and who pays for it are different
+                  questions, and they only differ when material goes straight
+                  out of the yard to a job — so the second is asked only then. */}
+              {data.projects.length > 0 && kind.direction === 'out' && !move.storeId && (
+                <Field className="sm:col-span-2" label="Charge to site" hint="Material with no site is material no job is charged for.">
                   <Select value={move.projectId} onChange={(e) => setMove({ ...move, projectId: e.target.value })} aria-label="Site">
                     <option value="">Not booked to a site</option>
                     {data.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -261,7 +324,9 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
                 </Field>
               )}
               <div className="sm:col-span-2">
-                <Button type="submit" disabled={!move.itemId}><Plus size={16} /> Record</Button>
+                <Button type="submit" disabled={!move.itemId || (move.kind === 'transfer' && move.toStoreId === move.storeId)}>
+                  <Plus size={16} /> Record
+                </Button>
               </div>
             </form>
           </Card>
@@ -310,7 +375,14 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
                       <td className={cx('text-end tabular', l.rejected > 0 ? 'text-amber-600' : 'text-ink-4')}>
                         {l.rejected}{l.rejectionPercent !== null && l.rejected > 0 ? ` (${l.rejectionPercent}%)` : ''}
                       </td>
-                      <td className="text-end tabular text-ink-2">{l.qty} {l.item.unit}</td>
+                      <td className="text-end tabular text-ink-2">
+                        {l.qty} {l.item.unit}
+                        {l.sites > 0 && (
+                          <span className="block text-[0.7rem] font-normal text-ink-6">
+                            {l.central.qty} in the yard · {l.onSites} on {l.sites} {l.sites === 1 ? 'site' : 'sites'}
+                          </span>
+                        )}
+                      </td>
                       <td className="text-end tabular text-ink-4">{formatCurrency(l.avgCost)}</td>
                       <td className="text-end tabular font-medium">{formatCurrency(l.value)}</td>
                     </tr>
@@ -627,6 +699,7 @@ function Quotations({ data, eid, actor, canWrite, bump, toast }) {
 // ── Usage ───────────────────────────────────────────────────────────────────
 function Usage({ data, canWrite }) {
   const [filter, setFilter] = useState({ kind: '', projectId: '' })
+  const logStore = (id) => (id ? data.projects.find((p) => p.id === id)?.name || 'Unknown site' : 'Central store')
 
   const usage = useMemo(
     () => usageBySite(data.items, data.movements, { projects: data.projects }),
@@ -715,9 +788,13 @@ function Usage({ data, canWrite }) {
                   <span className="text-ink-5">{l.movement.date}</span>{' '}
                   {l.kind.label} · {l.item?.name || 'Unknown material'}
                   {l.movement.reason && <span className="block text-xs text-amber-600">{l.movement.reason}</span>}
-                  {l.movement.project_id && (
-                    <span className="block text-xs text-ink-6">{siteName(l.movement.project_id)}</span>
-                  )}
+                  <span className="block text-xs text-ink-6">
+                    {l.movement.kind === 'transfer'
+                      ? `${logStore(l.movement.store_id)} → ${logStore(l.movement.to_store_id)}`
+                      : logStore(l.movement.store_id)}
+                    {l.movement.project_id && l.movement.project_id !== l.movement.store_id &&
+                      ` · charged to ${siteName(l.movement.project_id)}`}
+                  </span>
                 </span>
                 <span className="tabular text-ink-4">
                   {l.movement.qty} {l.item?.unit || ''}

@@ -303,6 +303,29 @@ select t.allows('and a stock-take adjustment',
   $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty)
     values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
             'adjustment', current_date, -5)$$);
+-- A yard and a store on every site. The central store is the absence of a
+-- site, which is what every row written before stores existed already says.
+select t.allows('a delivery straight to a site names the store it landed at',
+  $$insert into public.inventory_movements (entity_id, item_id, store_id, kind, date, qty, unit_cost)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001','receipt', current_date, 50, 400)$$);
+select t.allows('and a transfer between two of the company’s own stores',
+  $$insert into public.inventory_movements (entity_id, item_id, store_id, to_store_id, kind, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            null,'dddddddd-0000-0000-0000-000000000001','transfer', current_date, 20)$$);
+select t.check('a transfer is one row carrying both ends',
+  (select count(*) from public.inventory_movements
+    where kind = 'transfer' and to_store_id is not null) = 1);
+-- Where it physically is and who pays for it are different questions.
+select t.allows('material can leave the yard and be charged to a site',
+  $$insert into public.inventory_movements (entity_id, item_id, store_id, project_id, kind, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
+            null,'dddddddd-0000-0000-0000-000000000001','issue', current_date, 10)$$);
+select t.check('and the two are separate columns, not one',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'inventory_movements'
+      and column_name in ('store_id', 'project_id')) = 2);
+
 select t.refuses('a kind the app never writes is still refused',
   $$insert into public.inventory_movements (entity_id, item_id, kind, date, qty)
     values ('aaaaaaaa-0000-0000-0000-000000000001','eeeeeeee-0000-0000-0000-000000000001',
@@ -310,10 +333,13 @@ select t.refuses('a kind the app never writes is still refused',
 select t.check('the rejection kept its reason',
   (select reason from public.inventory_movements
     where kind = 'rejected' and item_id = 'eeeeeeee-0000-0000-0000-000000000001') = 'Set hard in transit');
-select t.check('and the issue knows which site it went to',
-  (select project_id from public.inventory_movements
-    where kind = 'issue' and item_id = 'eeeeeeee-0000-0000-0000-000000000001')
-    = 'dddddddd-0000-0000-0000-000000000001');
+-- Counted rather than read as a single row: there is more than one issue by
+-- the time this runs, and a scalar subquery that happens to work today is an
+-- assertion that breaks the next time a row is added above it.
+select t.check('and every issue knows which site it went to',
+  (select count(*) from public.inventory_movements
+    where kind = 'issue' and item_id = 'eeeeeeee-0000-0000-0000-000000000001'
+      and project_id is distinct from 'dddddddd-0000-0000-0000-000000000001') = 0);
 
 select t.allows('a quotation is filed',
   $$insert into public.material_quotes (id, entity_id, vendor, date, valid_until, status)
@@ -444,6 +470,52 @@ select t.refuses('hours cannot run backwards',
   $$insert into public.plant_logs (entity_id, plant_id, date, working_hours)
     values ('aaaaaaaa-0000-0000-0000-000000000001','33333333-aaaa-0000-0000-000000000001', current_date, -4)$$);
 
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('a flat goes on the shelf',
+  $$insert into public.sale_units (id, entity_id, project_id, name, kind, carpet_area, area_basis, rate_per_area, agreed_price, status)
+    values ('44444444-aaaa-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001','A-1204','flat', 1100, 'carpet', 10000, 11000000, 'booked')$$);
+select t.allows('and a shop beside it',
+  $$insert into public.sale_units (entity_id, project_id, name, kind, carpet_area, rate_per_area, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',
+            'S-01','shop', 400, 25000, 'available')$$);
+-- Available and held back are both unsold and are not the same thing, so both
+-- exist, and a cancelled booking returns the flat to the shelf rather than
+-- being deleted.
+-- Tried rather than read off the catalogue: what matters is that the rows go
+-- in, not that a constraint string contains a word.
+select t.allows('a flat can be held back rather than merely unsold',
+  $$insert into public.sale_units (entity_id, name, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','A-1203','held')$$);
+select t.allows('and a fallen-through booking returns it to the shelf',
+  $$insert into public.sale_units (entity_id, name, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','A-1205','cancelled')$$);
+select t.refuses('a status nobody defined is refused',
+  $$insert into public.sale_units (entity_id, name, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','X-1','reserved-ish')$$);
+-- A rate per square foot means nothing without saying which area it is on.
+select t.refuses('and so is an area basis that means nothing',
+  $$insert into public.sale_units (entity_id, name, area_basis)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','X-2','approximate')$$);
+
+select t.allows('an instalment can name a stage of the building',
+  $$insert into public.sale_plan_stages (entity_id, unit_id, label, percent, work_stage, trigger_at, sequence)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','44444444-aaaa-0000-0000-000000000001',
+            'On structure', 40, 'structure', 100, 3)$$);
+select t.allows('or a date instead',
+  $$insert into public.sale_plan_stages (entity_id, unit_id, label, amount, due_on, sequence)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','44444444-aaaa-0000-0000-000000000001',
+            'On booking', 1000000, current_date, 1)$$);
+select t.refuses('a share of more than the whole flat is a typo',
+  $$insert into public.sale_plan_stages (entity_id, unit_id, label, percent)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','44444444-aaaa-0000-0000-000000000001','Everything', 150)$$);
+select t.allows('and money against it is recorded',
+  $$insert into public.sale_receipts (entity_id, unit_id, project_id, date, amount, mode)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','44444444-aaaa-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001', current_date, 1600000, 'cheque')$$);
+select t.check('the flat keeps both its area and what it is priced on',
+  (select area_basis from public.sale_units where id = '44444444-aaaa-0000-0000-000000000001') = 'carpet');
+
 set request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';  -- mallory, another company
 select t.check('another company sees no muster', (select count(*) from public.labour_muster) = 0);
 select t.check('no work orders', (select count(*) from public.work_orders) = 0);
@@ -451,7 +523,10 @@ select t.check('no running account bills', (select count(*) from public.ra_bills
 select t.check('no schedule of work', (select count(*) from public.work_items) = 0);
 select t.check('no measurements', (select count(*) from public.work_measurements) = 0);
 select t.check('no plant', (select count(*) from public.plant) = 0);
-select t.check('and no log sheets', (select count(*) from public.plant_logs) = 0);
+select t.check('no log sheets', (select count(*) from public.plant_logs) = 0);
+select t.check('no flats or shops', (select count(*) from public.sale_units) = 0);
+select t.check('no payment plans', (select count(*) from public.sale_plan_stages) = 0);
+select t.check('and no money anybody paid', (select count(*) from public.sale_receipts) = 0);
 
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';  -- dave, auditor
 select t.check('an auditor sees the sites', (select count(*) from public.projects) = 1);

@@ -150,6 +150,18 @@ create table if not exists public.inventory_movements (
   entity_id  uuid not null references public.entities(id) on delete cascade,
   item_id    uuid not null references public.inventory_items(id) on delete cascade,
   project_id uuid references public.projects(id) on delete set null,
+  -- Two different questions, and folding them into one column is a mistake
+  -- that looks harmless until a site issues material out of the yard:
+  --   `store_id`   which shelf this moved. Null is the central store — the
+  --                yard — which is what every row written before there were
+  --                site stores already says, so they stay right untouched.
+  --   `project_id` which job is charged. On an issue straight from the yard to
+  --                a job these differ, and both are true.
+  store_id    uuid references public.projects(id) on delete set null,
+  -- Where it went, on a transfer. A transfer is one row and not two: recorded
+  -- as a pair, one half can be entered and the other forgotten, and the
+  -- company's total silently changes.
+  to_store_id uuid references public.projects(id) on delete set null,
   kind       text not null,
   date       date not null,
   qty        numeric(16,4) not null,
@@ -169,7 +181,9 @@ create table if not exists public.inventory_movements (
   note       text,
   created_at timestamptz not null default now()
 );
-alter table public.inventory_movements add column if not exists project_id uuid references public.projects(id) on delete set null;
+alter table public.inventory_movements add column if not exists project_id  uuid references public.projects(id) on delete set null;
+alter table public.inventory_movements add column if not exists store_id    uuid references public.projects(id) on delete set null;
+alter table public.inventory_movements add column if not exists to_store_id uuid references public.projects(id) on delete set null;
 alter table public.inventory_movements add column if not exists unit_cost  numeric(16,4);
 alter table public.inventory_movements add column if not exists other_cost numeric(16,2) not null default 0;
 alter table public.inventory_movements add column if not exists vendor     text;
@@ -180,9 +194,10 @@ alter table public.inventory_movements add column if not exists ref        text;
 alter table public.inventory_movements drop constraint if exists inventory_movements_kind_check;
 alter table public.inventory_movements drop constraint if exists inventory_movements_kind;
 alter table public.inventory_movements add constraint inventory_movements_kind
-  check (kind in ('receipt', 'issue', 'rejected', 'wastage', 'adjustment'));
+  check (kind in ('receipt', 'transfer', 'issue', 'rejected', 'wastage', 'adjustment'));
 create index if not exists inventory_movements_item_idx on public.inventory_movements (item_id, date);
 create index if not exists inventory_movements_project_idx on public.inventory_movements (project_id, date);
+create index if not exists inventory_movements_store_idx   on public.inventory_movements (store_id, date);
 
 -- Three quotes for the same material are how anyone knows the accepted one was
 -- reasonable, so a declined quote is kept rather than deleted.
@@ -395,6 +410,83 @@ create table if not exists public.plant_logs (
 );
 create index if not exists plant_logs_plant_idx   on public.plant_logs (plant_id, date);
 create index if not exists plant_logs_project_idx on public.plant_logs (project_id, date);
+
+-- What the company is building to sell. The rest of this schema is a cost
+-- ledger; these three tables are the other side of it.
+create table if not exists public.sale_units (
+  id                  uuid primary key default gen_random_uuid(),
+  entity_id           uuid not null references public.entities(id) on delete cascade,
+  project_id          uuid references public.projects(id) on delete set null,
+  name                text not null,
+  kind                text not null default 'flat'
+                      check (kind in ('flat', 'shop', 'office', 'villa', 'plot', 'parking', 'other')),
+  tower               text,
+  floor               integer,
+  configuration       text,
+  -- Three numbers describe the same flat in India and they are not close:
+  -- carpet is what you can walk on, super built-up adds a share of the lobby
+  -- and can be 30% more. A rate per square foot means nothing without saying
+  -- which one it is quoted on, so the basis is stored beside them.
+  carpet_area         numeric(12,2) not null default 0 check (carpet_area >= 0),
+  built_up_area       numeric(12,2) not null default 0 check (built_up_area >= 0),
+  super_built_up_area numeric(12,2) not null default 0 check (super_built_up_area >= 0),
+  area_basis          text not null default 'carpet' check (area_basis in ('carpet', 'builtUp', 'superBuiltUp')),
+  rate_per_area       numeric(14,2) not null default 0 check (rate_per_area >= 0),
+  agreed_price        numeric(16,2) not null default 0 check (agreed_price >= 0),
+  -- Floor rise, parking, club, deposits. Real money and not part of the unit's
+  -- price, so a rate per square foot stays a rate per square foot.
+  other_charges       numeric(16,2) not null default 0 check (other_charges >= 0),
+  -- `available` and `held` are both unsold and are not the same thing: one can
+  -- be sold tomorrow and the other cannot. A developer who counts them together
+  -- believes he has stock he does not have. `cancelled` exists so a booking
+  -- that fell through returns the flat to the shelf rather than being deleted.
+  status              text not null default 'available'
+                      check (status in ('available', 'blocked', 'held', 'booked',
+                                        'agreement', 'registered', 'possession', 'cancelled')),
+  note                text,
+  created_by          uuid references auth.users(id) on delete set null,
+  created_at          timestamptz not null default now()
+);
+create index if not exists sale_units_entity_idx  on public.sale_units (entity_id, status);
+create index if not exists sale_units_project_idx on public.sale_units (project_id);
+
+-- One instalment of a payment plan. A construction-linked plan — the Indian
+-- standard — names a stage of the building rather than a date: "10% on
+-- completion of the structure" is a fact about the structure, and it falls due
+-- when the site says so rather than when somebody remembers to write a letter.
+create table if not exists public.sale_plan_stages (
+  id          uuid primary key default gen_random_uuid(),
+  entity_id   uuid not null references public.entities(id) on delete cascade,
+  unit_id     uuid not null references public.sale_units(id) on delete cascade,
+  label       text not null,
+  percent     numeric(6,2) not null default 0 check (percent between 0 and 100),
+  -- A flat amount instead of a share, for the instalments that are one: a
+  -- booking amount is usually a round number.
+  amount      numeric(16,2) not null default 0 check (amount >= 0),
+  work_stage  text,
+  -- How far that stage must have got. 100 means finished.
+  trigger_at  numeric(6,2) not null default 100 check (trigger_at between 0 and 100),
+  due_on      date,
+  sequence    integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+create index if not exists sale_plan_stages_unit_idx on public.sale_plan_stages (unit_id, sequence);
+
+create table if not exists public.sale_receipts (
+  id         uuid primary key default gen_random_uuid(),
+  entity_id  uuid not null references public.entities(id) on delete cascade,
+  unit_id    uuid not null references public.sale_units(id) on delete cascade,
+  project_id uuid references public.projects(id) on delete set null,
+  date       date not null,
+  amount     numeric(16,2) not null check (amount >= 0),
+  mode       text not null default 'bank' check (mode in ('bank', 'cheque', 'cash', 'loan', 'upi')),
+  reference  text,
+  towards    text,
+  note       text,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists sale_receipts_unit_idx on public.sale_receipts (unit_id, date);
 
 -- An advance is an asset until it is used up. Booking it as a cost
 -- double-counts it when the invoice lands.
@@ -648,6 +740,9 @@ alter table public.work_items          enable row level security;
 alter table public.work_measurements   enable row level security;
 alter table public.plant               enable row level security;
 alter table public.plant_logs          enable row level security;
+alter table public.sale_units          enable row level security;
+alter table public.sale_plan_stages    enable row level security;
+alter table public.sale_receipts       enable row level security;
 
 -- Entities: members see it, owners change it. Creation is separate because at
 -- the moment of insert there is no membership yet to be a member of.
@@ -727,7 +822,7 @@ create policy "members append to the log" on public.audit_events
 do $$
 declare t text;
 begin
-  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements','plant','plant_logs']
+  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements','plant','plant_logs','sale_units','sale_plan_stages','sale_receipts']
   loop
     execute format('drop policy if exists "members read %1$s" on public.%1$I', t);
     execute format(

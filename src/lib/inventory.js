@@ -45,7 +45,11 @@ export const UNITS = [
 //               supplier keep money that was never earned.
 export const MOVEMENT_KINDS = {
   receipt: { id: 'receipt', label: 'Received', sign: 1, needsCost: true, direction: 'in' },
-  issue: { id: 'issue', label: 'Issued to site', sign: -1, needsCost: false, direction: 'out' },
+  // Between two of the company's own stores. One row and not two, because a
+  // transfer is a single event: recorded as a pair, one half can be entered
+  // and the other forgotten, and the company's total silently changes.
+  transfer: { id: 'transfer', label: 'Transferred', sign: 0, needsCost: false, direction: 'move' },
+  issue: { id: 'issue', label: 'Issued to work', sign: -1, needsCost: false, direction: 'out' },
   rejected: { id: 'rejected', label: 'Rejected — returned', sign: -1, needsCost: true, direction: 'out', returnable: true },
   wastage: { id: 'wastage', label: 'Wastage', sign: -1, needsCost: false, direction: 'out' },
   adjustment: { id: 'adjustment', label: 'Adjusted', sign: 1, needsCost: false, direction: 'in' },
@@ -80,15 +84,28 @@ export function makeItem({
 
 export function makeMovement({
   id, itemId, entityId, kind = 'receipt', qty = 0, unitCost = 0, date,
-  note = '', ref = '', createdBy = null, projectId = null, vendor = '', reason = '',
-  otherCost = 0,
+  note = '', ref = '', createdBy = null, projectId = null,
+  storeId = null, toStoreId = null, vendor = '', reason = '', otherCost = 0,
 } = {}) {
   return {
     id: id || newId(),
     item_id: itemId,
     entity_id: entityId,
-    // The site it went to. Without this a company knows what it consumed and
-    // not which job consumed it, which is the same as not knowing.
+    // Two different questions, and folding them into one field is a mistake
+    // that looks harmless until a site issues material from the yard.
+    //
+    //   `store_id`   which shelf this moved. Null is the central store — the
+    //                yard — and a site's id is that site's own store.
+    //   `project_id` which job is charged. On an issue from the yard straight
+    //                to a job these differ, and both are true.
+    //
+    // Null is deliberately the default for the store, and it is what every
+    // movement recorded before site stores existed already says: they were all
+    // at the yard, so they stay right without anybody touching them.
+    store_id: storeId || null,
+    // Where it went, on a transfer. Meaningless on every other kind.
+    to_store_id: kind === 'transfer' ? (toStoreId || null) : null,
+    // The job charged. Unchanged in meaning from before there were stores.
     project_id: projectId || null,
     vendor: String(vendor).trim().slice(0, 120),
     // Freight, loading, unloading, hamali. On a lorry of sand these can be a
@@ -113,22 +130,107 @@ export function makeMovement({
   }
 }
 
-// Walks an item's movements oldest-first and returns where it ended up.
-// Receipts move the average; issues leave it alone and consume at it.
+// The central store is the absence of a site. Every movement written before
+// there were site stores has no site on it, so they are all at the yard, which
+// is where they were.
+export const CENTRAL = ''
+export const isCentral = (locationId) => !locationId
+export const locationOf = (movement) => movement?.store_id || CENTRAL
+
+// Walks one item's movements oldest-first, keeping a separate running balance
+// for every store, and hands each movement to `visit` along with the state at
+// that moment.
+//
+// Per store, not per company, because that is what a stores ledger is. A
+// transfer out of the yard carries value at **the yard's** average, which is
+// what the transfer note says and what the receiving site is then holding. One
+// company-wide average would move a site's stock value every time an unrelated
+// delivery landed somewhere else.
+function walkStock(item, movements, visit) {
+  const rows = movements
+    .filter((m) => m.item_id === item.id && !m.deleted_at)
+    .slice()
+    .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
+
+  const stores = new Map()
+  const at = (id) => {
+    const key = id || CENTRAL
+    if (!stores.has(key)) stores.set(key, { id: key, qty: 0, valuePaise: 0 })
+    return stores.get(key)
+  }
+  // The yard always exists, even empty: a company with stock only on its sites
+  // still has a yard, and a report that omits it reads as though it does not.
+  at(CENTRAL)
+
+  for (const m of rows) {
+    const here = at(m.store_id)
+    const avg = here.qty > 0 ? here.valuePaise / here.qty : 0
+
+    if (m.kind === 'receipt') {
+      // Landed cost: the rate on the invoice plus what it took to get it here.
+      const landed = Math.round(m.qty * paise(m.unit_cost)) + paise(m.other_cost || 0)
+      here.qty += m.qty
+      here.valuePaise += landed
+      visit?.(m, { store: here, avg, landed, stores })
+    } else if (m.kind === 'transfer') {
+      const there = at(m.to_store_id)
+      // Capped at what is actually on the shelf, the same way an over-issue is:
+      // moving value that was never there would invent it at the far end.
+      const moved = Math.min(m.qty, Math.max(0, here.qty))
+      const value = Math.round(moved * avg)
+      here.qty -= m.qty
+      here.valuePaise -= value
+      there.qty += m.qty
+      there.valuePaise += value
+      visit?.(m, { store: here, to: there, avg, moved: value, stores })
+    } else if (m.kind === 'rejected') {
+      // Comes off at the rate it was invoiced at, not the blended average: a
+      // return to the supplier reverses that delivery and the credit note has
+      // to match the bill.
+      const rate = m.unit_cost ? paise(m.unit_cost) : avg
+      const off = Math.min(m.qty, Math.max(0, here.qty))
+      here.qty -= m.qty
+      here.valuePaise -= Math.round(off * rate)
+      visit?.(m, { store: here, avg, rate, off, stores })
+    } else if (m.kind === 'issue' || m.kind === 'wastage') {
+      const out = Math.min(m.qty, Math.max(0, here.qty))
+      const cost = Math.round(out * avg)
+      here.qty -= m.qty
+      here.valuePaise -= cost
+      visit?.(m, { store: here, avg, cost, stores })
+    } else if (m.kind === 'adjustment') {
+      here.qty += m.qty
+      // A positive adjustment with no cost is valued at the current average —
+      // there is nothing better to value it at.
+      here.valuePaise += Math.round(m.qty * (m.unit_cost ? paise(m.unit_cost) : avg))
+      visit?.(m, { store: here, avg, stores })
+    }
+  }
+
+  return { rows, stores }
+}
+
+const settle = (store) => {
+  // Stock cannot be worth less than nothing, whatever the movements say.
+  const paiseValue = store.qty <= 0 ? Math.max(0, store.qty === 0 ? 0 : store.valuePaise) : store.valuePaise
+  const value = round2(Math.max(0, rupees(Math.round(paiseValue))))
+  return {
+    qty: round2(store.qty),
+    value,
+    avgCost: store.qty > 0 ? round2(value / store.qty) : 0,
+    negative: store.qty < 0,
+  }
+}
+
+// What one item is holding, everywhere, and where.
 //
 // What goes out is counted in three separate buckets rather than one. They all
 // reduce the quantity on the shelf and they mean entirely different things:
 // issued material is in the building, wasted material is a cost with nothing to
 // show for it, and rejected material was never really ours — it is money the
-// supplier owes back. A single "out" figure hides all three.
+// supplier owes back. A single "out" figure hides all three. A transfer is in
+// none of them: it changes which shelf, not how much there is.
 export function stockOf(item, movements) {
-  const rows = movements
-    .filter((m) => m.item_id === item.id)
-    .slice()
-    .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
-
-  let qty = 0
-  let valuePaise = 0
   let received = 0
   let receivedPaise = 0
   let issued = 0
@@ -136,63 +238,52 @@ export function stockOf(item, movements) {
   let rejected = 0
   let rejectedPaise = 0
   let carriage = 0
+  let transferred = 0
   let lastMovement = null
 
-  for (const m of rows) {
+  const { rows, stores } = walkStock(item, movements, (m, ctx) => {
     lastMovement = m.date || lastMovement
     if (m.kind === 'receipt') {
-      // Landed cost: the rate on the invoice plus what it took to get it here.
-      // Ind AS 2 says the same thing in longer words, and a site engineer who
-      // has paid for two lorries knows it without being told.
-      const landed = Math.round(m.qty * paise(m.unit_cost)) + paise(m.other_cost || 0)
-      qty += m.qty
-      valuePaise += landed
-      receivedPaise += landed
       received += m.qty
+      receivedPaise += ctx.landed
       carriage += Number(m.other_cost) || 0
+    } else if (m.kind === 'transfer') {
+      transferred += m.qty
     } else if (m.kind === 'rejected') {
-      // Comes off at the rate it was invoiced at, not at the blended average:
-      // a return to the supplier is a reversal of that delivery, and the credit
-      // note has to match the bill. With no rate given the average is the only
-      // figure available, so it is used and the claim is approximate.
-      //
-      // Freight is deliberately not reversed with it. The lorry came either way
-      // and no carrier refunds a trip because the cement was wet, so that cost
-      // stays on the job — which is itself worth knowing about a bad supplier.
-      const avg = qty > 0 ? valuePaise / qty : 0
-      const rate = m.unit_cost ? paise(m.unit_cost) : avg
-      const off = Math.min(m.qty, Math.max(0, qty))
-      qty -= m.qty
-      valuePaise -= Math.round(off * rate)
       rejected += m.qty
-      rejectedPaise += Math.round(m.qty * rate)
-    } else if (m.kind === 'issue' || m.kind === 'wastage') {
-      // Issue at the average cost prevailing right now.
-      const avg = qty > 0 ? valuePaise / qty : 0
-      const out = Math.min(m.qty, Math.max(0, qty))
-      qty -= m.qty
-      valuePaise -= Math.round(out * avg)
-      if (m.kind === 'wastage') wasted += m.qty
-      else issued += m.qty
-    } else if (m.kind === 'adjustment') {
-      const avg = qty > 0 ? valuePaise / qty : 0
-      qty += m.qty
-      // A positive adjustment with no cost is valued at the current average —
-      // there is nothing better to value it at.
-      valuePaise += Math.round(m.qty * (m.unit_cost ? paise(m.unit_cost) : avg))
+      rejectedPaise += Math.round(m.qty * ctx.rate)
+    } else if (m.kind === 'wastage') {
+      wasted += m.qty
+    } else if (m.kind === 'issue') {
+      issued += m.qty
     }
-  }
+  })
 
-  // Stock cannot be worth less than nothing, whatever the movements say.
-  if (qty <= 0) valuePaise = Math.max(0, qty === 0 ? 0 : valuePaise)
-  const value = rupees(Math.round(valuePaise))
+  const byLocation = [...stores.values()]
+    .map((store) => ({ locationId: store.id || null, ...settle(store) }))
+    // Biggest holding first, but the yard leads whatever it holds: it is the
+    // line everyone reads first and moving it around is disorienting.
+    .sort((a, b) => Number(Boolean(a.locationId)) - Number(Boolean(b.locationId)) || b.value - a.value)
+
+  const qty = round2(byLocation.reduce((t, l) => t + l.qty, 0))
+  const value = round2(byLocation.reduce((t, l) => t + l.value, 0))
   const consumed = round2(issued + wasted)
 
   return {
     item,
-    qty: round2(qty),
-    value: round2(Math.max(0, value)),
+    // The company's total, across the yard and every site. The figure the old
+    // single-pool model gave, and still the one a balance sheet wants.
+    qty,
+    value,
     avgCost: qty > 0 ? round2(value / qty) : 0,
+    // Where it is. A company holding forty tonnes of steel and not knowing
+    // which site has it is a company that will buy forty more.
+    byLocation,
+    central: byLocation.find((l) => !l.locationId) || { locationId: null, qty: 0, value: 0, avgCost: 0, negative: false },
+    onSites: round2(byLocation.filter((l) => l.locationId).reduce((t, l) => t + l.qty, 0)),
+    onSitesValue: round2(byLocation.filter((l) => l.locationId).reduce((t, l) => t + l.value, 0)),
+    sites: byLocation.filter((l) => l.locationId && (l.qty !== 0 || l.value !== 0)).length,
+
     received: round2(received),
     receivedValue: round2(rupees(receivedPaise)),
     // What of that was freight and handling rather than the material itself.
@@ -200,8 +291,10 @@ export function stockOf(item, movements) {
     issued: round2(issued),
     wasted: round2(wasted),
     // Everything that genuinely left for the job: issued plus wasted. Rejected
-    // material is not in here, because it never became part of the building.
+    // material is not in here, because it never became part of the building,
+    // and neither is a transfer, which only changed shelves.
     consumed,
+    transferred: round2(transferred),
     rejected: round2(rejected),
     // What the suppliers owe back for it. Nobody chases a number nobody prints.
     rejectedValue: round2(rupees(rejectedPaise)),
@@ -212,19 +305,53 @@ export function stockOf(item, movements) {
     // Rejections against what was delivered — a supplier's quality record.
     rejectionPercent: received > 0 ? Math.round((rejected / received) * 1000) / 10 : null,
     lastMovement,
-    // Negative stock means the books and the shelf disagree — worth saying so
-    // rather than displaying a minus sign and hoping someone notices.
-    negative: qty < 0,
+    movements: rows.length,
+    // Negative stock means the books and a shelf disagree — worth saying so
+    // rather than displaying a minus sign and hoping someone notices. True if
+    // *any* store is short, because a company can be square overall and still
+    // have a site that has issued what it never received.
+    negative: byLocation.some((l) => l.negative),
     belowReorder: item.reorder_level > 0 && qty <= item.reorder_level,
   }
+}
+
+// One item at one store. The central store is `CENTRAL`, which is also what a
+// movement with no site on it means.
+export function stockAt(item, movements, locationId = CENTRAL) {
+  const line = stockOf(item, movements)
+  const key = locationId || null
+  return line.byLocation.find((l) => l.locationId === key)
+    || { locationId: key, qty: 0, value: 0, avgCost: 0, negative: false }
 }
 
 export function stockReport(items, movements) {
   const lines = items.map((item) => stockOf(item, movements))
   const sum = (pick) => round2(lines.reduce((t, l) => t + (pick(l) || 0), 0))
+
+  // The same stock read the other way round: by store rather than by material.
+  // A company holding forty tonnes of steel and not knowing which site has it
+  // is a company that will buy forty more.
+  const stores = new Map()
+  for (const line of lines) {
+    for (const loc of line.byLocation) {
+      const key = loc.locationId || CENTRAL
+      const cur = stores.get(key) || { locationId: loc.locationId, value: 0, items: 0, negative: 0 }
+      cur.value = round2(cur.value + loc.value)
+      cur.items += loc.qty !== 0 || loc.value !== 0 ? 1 : 0
+      cur.negative += loc.negative ? 1 : 0
+      stores.set(key, cur)
+    }
+  }
+  const byLocation = [...stores.values()]
+    .sort((a, b) => Number(Boolean(a.locationId)) - Number(Boolean(b.locationId)) || b.value - a.value)
+
   return {
     lines,
+    // The company's total, which is the yard plus every site.
     totalValue: sum((l) => l.value),
+    byLocation,
+    centralValue: byLocation.find((l) => !l.locationId)?.value || 0,
+    onSitesValue: round2(byLocation.filter((l) => l.locationId).reduce((t, l) => t + l.value, 0)),
     receivedValue: sum((l) => l.receivedValue),
     carriage: sum((l) => l.carriage),
     // Held apart from the stock value on purpose: this is a receivable from
@@ -293,50 +420,19 @@ export function stockOverPeriod(items, movements, { from = null, to = null } = {
 // issued, so this reads the issue and wastage movements rather than the stock
 // balance — the shelf has no site on it.
 export function usageBySite(items, movements, { projects = [] } = {}) {
-  const byItem = new Map(items.map((i) => [i.id, i]))
   const groups = new Map()
 
-  // Each issue is valued at the average prevailing *at that moment*, which
-  // means walking the movements the same way `stockOf` does rather than asking
-  // it for one number at the end.
-  //
-  // The shortcut — take the item's current average and multiply — reads fine
-  // and is wrong in the case that matters most: once a material has been fully
-  // issued there is none left, so its average is zero, and the job that
-  // consumed every last kilo of it is reported as having consumed nothing. A
-  // site that used the whole lot is exactly the site you are looking for.
-  for (const item of byItem.values()) {
-    const rows = movements
-      .filter((m) => m.item_id === item.id)
-      .slice()
-      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
-
-    let qty = 0
-    let value = 0
-
-    for (const m of rows) {
-      if (m.kind === 'receipt') {
-        qty += m.qty
-        value += m.qty * (Number(m.unit_cost) || 0) + (Number(m.other_cost) || 0)
-        continue
-      }
-      const avg = qty > 0 ? value / qty : 0
-      if (m.kind === 'rejected') {
-        const rate = m.unit_cost ? Number(m.unit_cost) : avg
-        qty -= m.qty
-        value -= Math.min(m.qty, Math.max(0, qty + m.qty)) * rate
-        continue
-      }
-      if (m.kind === 'adjustment') {
-        qty += m.qty
-        value += m.qty * (m.unit_cost ? Number(m.unit_cost) : avg)
-        continue
-      }
-      // An issue or a wastage: this is the movement being attributed.
-      const cost = round2(m.qty * avg)
-      qty -= m.qty
-      value -= Math.min(m.qty, Math.max(0, qty + m.qty)) * avg
-
+  for (const item of items) {
+    if (item?.deleted_at) continue
+    walkStock(item, movements, (m, ctx) => {
+      if (m.kind !== 'issue' && m.kind !== 'wastage') return
+      // Charged at the average prevailing **at that store** at that moment.
+      // A site that drew before a price rise pays the old rate, and a material
+      // issued down to nothing is still charged what it cost — the shortcut of
+      // multiplying by the item's closing average reports zero for exactly the
+      // job that used the whole lot.
+      // `ctx.avg` is the walk's internal unit, which is paise.
+      const cost = round2(m.qty * rupees(ctx.avg))
       const key = m.project_id || ''
       const cur = groups.get(key) || {
         projectId: m.project_id || null,
@@ -355,7 +451,7 @@ export function usageBySite(items, movements, { projects = [] } = {}) {
       cur.entries += 1
       cur.items.add(m.item_id)
       groups.set(key, cur)
-    }
+    })
   }
 
   return [...groups.values()]

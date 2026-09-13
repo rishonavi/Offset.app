@@ -36,6 +36,9 @@ const KEYS = {
   measurements: 'pl_corp_measurements',
   plant: 'pl_corp_plant',
   plantLogs: 'pl_corp_plant_logs',
+  units: 'pl_corp_units',
+  planStages: 'pl_corp_plan_stages',
+  receipts: 'pl_corp_receipts',
 }
 
 const read = (key) => {
@@ -260,6 +263,9 @@ export const workItems = collection(KEYS.workItems)
 export const measurements = collection(KEYS.measurements)
 export const plant = collection(KEYS.plant)
 export const plantLogs = collection(KEYS.plantLogs)
+export const units = collection(KEYS.units)
+export const planStages = collection(KEYS.planStages)
+export const receipts = collection(KEYS.receipts)
 
 // ── Whole-account helpers ──────────────────────────────────────────
 export function exportCorporate() {
