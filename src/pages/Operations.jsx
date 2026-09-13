@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Boxes, HandCoins, Users, HardHat, Truck, Building2, Wallet, Plus, Check } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
@@ -7,6 +8,7 @@ import * as store from '../lib/storage/corporate'
 import { makeAdvance, makeAdjustment, outstandingAdvances, advancesByParty, balanceOf, canAdjust, ADVANCE_PARTIES } from '../lib/advances'
 import { makeEmployee, runPayroll } from '../lib/payroll'
 import { formatCurrency } from '../lib/format'
+import { approvalQueue } from '../lib/corporate'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import Materials from '../components/MaterialsTabs'
@@ -80,6 +82,20 @@ export default function Operations() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scoped, eid, version, expenses, income])
 
+  // A control nobody finds gets switched off, and the queue lives on another
+  // page — so the page where the documents are raised says when something is
+  // held up, rather than waiting to be visited.
+  const waiting = useMemo(() => {
+    if (!scoped || !ent.policy?.enabled) return approvalQueue([])
+    return approvalQueue([
+      { kind: 'expense', rows: expenses.filter((e) => e.entity_id === eid) },
+      { kind: 'advance', rows: data?.advances || [] },
+      { kind: 'workorder', rows: data?.workOrders || [] },
+      { kind: 'rabill', rows: data?.raBills || [] },
+    ], { role: ent.role, userId: ent.actor?.id })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scoped, eid, data, expenses, ent.policy?.enabled, ent.role])
+
   if (!ent?.enabled) {
     return (
       <div className="animate-fade-in space-y-6">
@@ -111,11 +127,26 @@ export default function Operations() {
   }
 
   const canWrite = ent.canWrite && ent.can('entry.create')
-  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast }
+  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast, gate: ent.gate, role: ent.role }
 
   return (
     <div className="animate-fade-in space-y-6">
       <PageHeader title="Operations" subtitle={`Sites, materials, labour, plant, sales and payroll for ${ent.entity?.name || 'this company'}.`} />
+
+      {waiting.count > 0 && (
+        <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="text-sm text-ink-3">
+            <strong className="text-ink-1">
+              {waiting.count} {waiting.count === 1 ? 'document is' : 'documents are'} waiting for approval
+            </strong>
+            , holding {formatCurrency(waiting.total)}.
+            {waiting.mine > 0 && ` ${waiting.mine} you can sign.`}
+          </p>
+          <Link to="/companies" className="text-sm font-semibold text-brand underline-offset-4 hover:underline">
+            Review them
+          </Link>
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-surface-raised p-1">
         {TABS.map((t) => (
@@ -145,7 +176,7 @@ export default function Operations() {
 }
 
 // ── Advances ────────────────────────────────────────────────────────────────
-function Advances({ data, eid, actor, canWrite, bump, toast }) {
+function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
   const [form, setForm] = useState({ party: '', partyType: 'vendor', amount: '', purpose: '', expectedBy: '' })
   const [settle, setSettle] = useState({ advanceId: '', amount: '', note: '' })
   const out = useMemo(() => outstandingAdvances(data.advances, data.adjustments, { entityId: eid }), [data, eid])
@@ -154,7 +185,8 @@ function Advances({ data, eid, actor, canWrite, bump, toast }) {
   const add = (e) => {
     e.preventDefault()
     if (!form.party.trim() || !Number(form.amount)) return
-    store.advances.add(makeAdvance({ entityId: eid, ...form, amount: Number(form.amount), date: today(), createdBy: actor?.id }), actor)
+    const row = makeAdvance({ entityId: eid, ...form, amount: Number(form.amount), date: today(), createdBy: actor?.id })
+    store.advances.add({ ...row, ...gate(row, 'advance') }, actor)
     setForm({ party: '', partyType: 'vendor', amount: '', purpose: '', expectedBy: '' })
     bump()
     toast('Advance recorded')

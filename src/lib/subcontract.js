@@ -124,7 +124,11 @@ const deductionsOf = (b) =>
 // worth. The whole module exists for the first line of this loop.
 export function billLadder(order, bills = []) {
   const rows = bills
-    .filter((b) => b.work_order_id === order?.id && !b.deleted_at)
+    // A refused certification did not certify anything, so it is not in the
+    // ladder at all. A pending one is: the work was done and the company owes
+    // for it whether or not finance has cleared the payment, and leaving it out
+    // would report the job as costing less than it did.
+    .filter((b) => b.work_order_id === order?.id && !b.deleted_at && b.approval_status !== 'rejected')
     .slice()
     .sort((a, b) => a.number - b.number || (a.date || '').localeCompare(b.date || ''))
 
@@ -209,7 +213,7 @@ export function billLadder(order, bills = []) {
 // Every order at once, the ones in trouble first.
 export function subcontractReport(orders = [], bills = [], { entityId = null, projectId = undefined, openOnly = false } = {}) {
   const lines = orders
-    .filter((o) => !o.deleted_at)
+    .filter((o) => !o.deleted_at && o.approval_status !== 'rejected')
     .filter((o) => !entityId || o.entity_id === entityId)
     .filter((o) => projectId === undefined || (projectId === null ? !o.project_id : o.project_id === projectId))
     .filter((o) => !openOnly || isOrderOpen(o.status))

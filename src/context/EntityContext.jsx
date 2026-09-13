@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useAuth } from './AuthContext'
-import { CONSOLIDATED, PERSONAL, isConsolidated, isPersonal, can, canWriteIn, roleFor } from '../lib/corporate'
+import { CONSOLIDATED, PERSONAL, isConsolidated, isPersonal, can, canWriteIn, roleFor, initialApprovalStatus } from '../lib/corporate'
 import * as store from '../lib/storage/corporate'
 
 const EntityContext = createContext(null)
@@ -121,6 +121,22 @@ export function EntityProvider({ children }) {
       },
       // What to stamp on a new row.
       stamp: () => (corporate && !isConsolidated(active) ? { entity_id: active } : {}),
+
+      // And whether it has to wait for somebody.
+      //
+      // Separate from `stamp` because it needs the row: whether a thing needs
+      // signing off depends on how much it is for. Personal books have no
+      // approvals — there is nobody else to approve — so this is empty there,
+      // which is also why it cannot live inside `stamp`.
+      gate: (row, kind = 'expense') => {
+        if (!corporate || isConsolidated(active)) return {}
+        const policy = store.approvalPolicy(active)
+        return {
+          approval_status: initialApprovalStatus(row, policy, kind),
+          // Who raised it, because they are the one person who may not sign it.
+          created_by: row?.created_by || actor?.id || null,
+        }
+      },
     }
   }, [enabled, corporate, entities, entity, active, switchTo, reload, version, role, actor, members, departments])
 

@@ -418,5 +418,16 @@ eq('April is the cheaper month', quarter.months[0].gross < quarter.months[1].gro
 eq('an empty range runs to zero', payrollOverPeriods([oldHand], []).gross, 0)
 eq('and so does an empty payroll', payrollOverPeriods([], periodsBetween('2026-04-01', '2026-06-30')).gross, 0)
 
+console.log('\n── AN ADVANCE NOBODY APPROVED ──')
+// A refused advance was never paid, so nobody is holding the company's money.
+// A pending one was — the cash went out and finance is catching up.
+const refusedAdv = { ...makeAdvance({ entityId: 'e1', party: 'Nobody', amount: 100000 }), approval_status: 'rejected' }
+const pendingAdv = { ...makeAdvance({ entityId: 'e1', party: 'Sharma', amount: 50000 }), approval_status: 'pending' }
+eq('a refused advance is not outstanding',
+  outstandingAdvances([refusedAdv], [], { entityId: 'e1' }).total, 0)
+eq('a pending one is', outstandingAdvances([pendingAdv], [], { entityId: 'e1' }).total, 50000)
+eq('and a period statement agrees',
+  advancesOverPeriod([refusedAdv, pendingAdv], [], { entityId: 'e1' }).closingOutstanding, 50000)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

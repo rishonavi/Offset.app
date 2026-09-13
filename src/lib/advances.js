@@ -92,7 +92,9 @@ export function canAdjust(advance, adjustments, amount) {
 
 export function outstandingAdvances(advances, adjustments, { entityId = null, asOf = null } = {}) {
   const lines = advances
-    .filter((a) => !a.deleted_at)
+    // A refused advance was never paid, so nobody is holding the company's
+    // money. A pending one was — the cash went out and finance is catching up.
+    .filter((a) => !a.deleted_at && a.approval_status !== 'rejected')
     .filter((a) => !entityId || a.entity_id === entityId)
     .map((a) => {
       const b = balanceOf(a, adjustments)
@@ -145,7 +147,7 @@ export function advancesByParty(advances, adjustments, opts = {}) {
 // bill turned around — how long has this been outstanding — so the buckets,
 // the day counting and the no-due-date line are all already tested.
 export function advancesOverPeriod(advances, adjustments, { entityId = null, from = null, to = null } = {}) {
-  const mine = advances.filter((a) => !a.deleted_at && (!entityId || a.entity_id === entityId))
+  const mine = advances.filter((a) => !a.deleted_at && a.approval_status !== 'rejected' && (!entityId || a.entity_id === entityId))
   const ids = new Set(mine.map((a) => a.id))
   const theirs = adjustments.filter((x) => ids.has(x.advance_id))
 

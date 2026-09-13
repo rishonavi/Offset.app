@@ -516,6 +516,26 @@ select t.allows('and money against it is recorded',
 select t.check('the flat keeps both its area and what it is priced on',
   (select area_basis from public.sale_units where id = '44444444-aaaa-0000-0000-000000000001') = 'carpet');
 
+-- The documents that commit money carry who signed them.
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.check('a certification can be waiting on somebody',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'ra_bills'
+      and column_name in ('approval_status', 'approved_by', 'approved_at')) = 3);
+select t.check('and so can a work order and an advance',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and column_name = 'approval_status'
+      and table_name in ('work_orders', 'advances', 'expenses')) = 3);
+select t.allows('a bill can be marked as waiting',
+  $$update public.ra_bills set approval_status = 'pending' where number = 1$$);
+select t.refuses('but not into a state nobody defined',
+  $$update public.ra_bills set approval_status = 'maybe' where number = 1$$);
+-- An observation is not a decision: a muster roll has nothing to approve, and a
+-- queue full of them would teach people to click through without reading.
+select t.check('and an observation carries no approval at all',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'labour_muster' and column_name = 'approval_status') = 0);
+
 set request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';  -- mallory, another company
 select t.check('another company sees no muster', (select count(*) from public.labour_muster) = 0);
 select t.check('no work orders', (select count(*) from public.work_orders) = 0);

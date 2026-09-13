@@ -5,7 +5,7 @@ import {
   listMembers, addMember, setMemberRole, removeMember,
   listDepartments, createDepartment, updateDepartment, deleteDepartment,
   approvalPolicy, setApprovalPolicy, listAudit, recordAudit,
-  items, movements, advances, employees, projects, quotes, raBills, units,
+  items, movements, advances, employees, projects, quotes, raBills, units, workOrders,
   exportCorporate, importCorporate, hasCorporateData, clearCorporate,
 } from '../../src/lib/storage/corporate.js'
 import { makeItem, makeMovement } from '../../src/lib/inventory.js'
@@ -254,6 +254,44 @@ ok('and no entry carries the whole row',
 const adv = advances.add(makeAdvance({ entityId: site.id, party: 'Sharma', amount: 50000 }), actor)
 eq('an advance is recorded', listAudit({ entityId: site.id })[0].action, 'advance.create')
 ok('against the right company', listAudit({ entityId: site.id })[0].entity_id === site.id, String(adv.entity_id))
+
+console.log('\n── SIGNING SOMETHING OFF ──')
+// The rule lives in the store, not in the screen. A control enforced only by a
+// disabled button is not a control: whoever reaches the store gets to decide,
+// and a second screen or a restored backup goes through the store.
+reset()
+const firm = createEntity({ name: 'Navi Builders' }, actor)
+const raiser = { id: 'carol', email: 'carol@example.com' }
+const pending = raBills.add({
+  id: 'rb1', entity_id: firm.id, work_order_id: 'wo1', number: 1,
+  certified_to_date: 1750000, approval_status: 'pending', created_by: raiser.id,
+}, raiser)
+
+let refused = ''
+try { raBills.decide('rb1', 'approved', raiser, 'owner') } catch (e) { refused = e.message }
+ok('the person who raised it cannot sign it, however senior', /your own/i.test(refused), refused)
+try { raBills.decide('rb1', 'approved', actor, 'member') } catch (e) { refused = e.message }
+ok('nor can a role without the permission', /role/i.test(refused), refused)
+eq('and nothing moved', raBills.list(firm.id)[0].approval_status, 'pending')
+
+const signed = raBills.decide('rb1', 'approved', actor, 'owner')
+eq('somebody else can', signed.approval_status, 'approved')
+eq('and it records who', signed.approved_by, actor.id)
+ok('and when', Boolean(signed.approved_at))
+eq('the signing is audited', listAudit({ entityId: firm.id })[0].action, 'rabill.approve')
+eq('and reads as a sentence', listAudit({ entityId: firm.id })[0].summary, 'approved a running account bill')
+try { raBills.decide('rb1', 'approved', actor, 'owner') } catch (e) { refused = e.message }
+ok('signing it twice is refused', /waiting/i.test(refused), refused)
+
+const bad = workOrders.add({
+  id: 'wo9', entity_id: firm.id, contractor: 'Nobody', order_value: 900000,
+  approval_status: 'pending', created_by: raiser.id,
+}, raiser)
+const turned = workOrders.decide(bad.id, 'rejected', actor, 'owner')
+eq('refusing works the same way', turned.approval_status, 'rejected')
+eq('and is audited as a refusal', listAudit({ entityId: firm.id })[0].action, 'workorder.reject')
+ok('a row that has gone cannot be signed',
+  (() => { try { raBills.decide('nope', 'approved', actor, 'owner'); return false } catch { return true } })())
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

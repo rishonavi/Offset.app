@@ -152,6 +152,22 @@ eq('one site can be asked for', subcontractReport([order, order2], [...bills, ..
 eq('and costs come out per site', subcontractCostsBySite([order, order2], [...bills, ...bills2])['site-a'], 1750000)
 eq('an empty report is zero', subcontractReport([], []).certified, 0)
 
+console.log('\n── A REFUSAL IS NOT A CERTIFICATION ──')
+// Somebody refused it, so it certified nothing. A pending one is different: the
+// work was done and the company owes for it whether or not finance has cleared
+// the payment, and leaving that out would report the job as costing less than
+// it did.
+const refusedBill = { ...makeRaBill({ workOrderId: order.id, entityId: 'e1', number: 4, claimedToDate: 2000000, certifiedToDate: 2000000 }), approval_status: 'rejected' }
+eq('a refused bill is not in the ladder', billLadder(order, [...bills, refusedBill]).count, 3)
+eq('so nothing was certified by it', billLadder(order, [...bills, refusedBill]).certifiedToDate, 1750000)
+const pendingBill = { ...makeRaBill({ workOrderId: order.id, entityId: 'e1', number: 4, claimedToDate: 2000000, certifiedToDate: 2000000 }), approval_status: 'pending' }
+eq('a pending one is', billLadder(order, [...bills, pendingBill]).count, 4)
+eq('and the job is charged for it', billLadder(order, [...bills, pendingBill]).certifiedToDate, 2000000)
+// A work order nobody approved commits the company to nothing.
+eq('a refused work order drops out of the report',
+  subcontractReport([{ ...order, approval_status: 'rejected' }], bills, { entityId: 'e1' }).count, 0)
+eq('a pending one does not', subcontractReport([{ ...order, approval_status: 'pending' }], bills, { entityId: 'e1' }).count, 1)
+
 console.log('\n── WHAT IS ACTUALLY BUILT ──')
 const items = [
   makeWorkItem({ entityId: 'e1', projectId: 'site-a', code: 'e-1', description: 'Excavation', stage: 'earthwork', unit: 'cum', plannedQty: 800, rate: 250 }),

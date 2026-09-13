@@ -257,7 +257,7 @@ function Muster({ data, eid, actor, canWrite, bump, toast }) {
 }
 
 // ── Contractors ─────────────────────────────────────────────────────────────
-function Contractors({ data, eid, actor, canWrite, bump, toast }) {
+function Contractors({ data, eid, actor, canWrite, bump, toast, gate }) {
   const blankOrder = {
     contractor: '', scope: '', orderValue: '', pricing: 'lumpSum',
     retentionPercent: '5', tdsPercent: '1', projectId: '', dueOn: '', status: 'running',
@@ -275,12 +275,13 @@ function Contractors({ data, eid, actor, canWrite, bump, toast }) {
   const addOrder = (e) => {
     e.preventDefault()
     if (!order.contractor.trim()) return
-    store.workOrders.add(makeWorkOrder({
+    const row = makeWorkOrder({
       entityId: eid, projectId: order.projectId || null, contractor: order.contractor,
       scope: order.scope, orderValue: num(order.orderValue), pricing: order.pricing,
       retentionPercent: num(order.retentionPercent), tdsPercent: num(order.tdsPercent),
       dueOn: order.dueOn, status: order.status, createdBy: actor?.id,
-    }), actor)
+    })
+    store.workOrders.add({ ...row, ...gate(row, 'workorder') }, actor)
     setOrder(blankOrder)
     bump()
     toast('Work order created')
@@ -290,7 +291,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast }) {
     e.preventDefault()
     const line = report.lines.find((l) => l.order.id === billing)
     if (!line || !num(bill.certifiedToDate)) return
-    store.raBills.add(makeRaBill({
+    const row = makeRaBill({
       workOrderId: line.order.id, entityId: eid, projectId: line.order.project_id,
       number: line.count + 1, date: bill.date,
       claimedToDate: num(bill.claimedToDate) || num(bill.certifiedToDate),
@@ -299,7 +300,8 @@ function Contractors({ data, eid, actor, canWrite, bump, toast }) {
       materialRecovered: num(bill.materialRecovered),
       penalty: num(bill.penalty),
       createdBy: actor?.id,
-    }), actor)
+    })
+    store.raBills.add({ ...row, ...gate(row, 'rabill') }, actor)
     setBill({ claimedToDate: '', certifiedToDate: '', advanceRecovered: '', materialRecovered: '', penalty: '', date: today() })
     setBilling(null)
     bump()
@@ -449,6 +451,8 @@ function Contractors({ data, eid, actor, canWrite, bump, toast }) {
                   <Badge color={l.order.status === 'closed' ? '#64748b' : '#2563eb'}>
                     {ORDER_STATUS[l.order.status]?.label || l.order.status}
                   </Badge>
+                  {l.order.approval_status === 'pending' && <Badge color="#d97706">waiting for approval</Badge>}
+                  {l.order.approval_status === 'rejected' && <Badge color="#dc2626">refused</Badge>}
                   {l.overOrder && <Badge color="#d97706">past the order value</Badge>}
                   {l.problems > 0 && <Badge color="#dc2626">{l.problems} to check</Badge>}
                 </p>
@@ -498,6 +502,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast }) {
                         <td className="py-2 text-ink-2">
                           RA {r.bill.number}
                           <span className="block text-[0.7rem] text-ink-6">{r.bill.date}</span>
+                          {r.bill.approval_status === 'pending' && <span className="block text-[0.7rem] text-amber-600">waiting for approval</span>}
                           {r.overClaimed && <span className="block text-[0.7rem] text-red-600">certified above the claim</span>}
                           {r.negative && <span className="block text-[0.7rem] text-amber-600">certifies less than the last</span>}
                         </td>

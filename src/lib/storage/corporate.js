@@ -12,7 +12,7 @@
 
 import {
   makeEntity, makeDepartment, makeMember, makeApprovalPolicy, makeAuditEvent,
-  canRemoveMember, canChangeRole,
+  canRemoveMember, canChangeRole, canApprove, whyCannotApprove, APPROVAL_STATUS,
 } from '../corporate'
 
 const KEYS = {
@@ -299,6 +299,28 @@ const collection = (key, noun) => ({
     const row = read(key).find((r) => r.id === id)
     write(key, read(key).filter((r) => r.id !== id))
     if (noun && row) audit(actor, row.entity_id, `${noun}.delete`, id, summarise(row))
+  },
+  // Signing something off, or refusing it.
+  //
+  // The rule lives here rather than in the screen that calls it, because a
+  // control enforced only by a disabled button is not a control: whoever gets
+  // to the store gets to decide, and the store is what a second screen or a
+  // restored backup will go through.
+  decide: (id, status, actor, role) => {
+    const row = read(key).find((r) => r.id === id)
+    if (!row) throw new Error('That has already gone.')
+    if (!canApprove(role, row, actor?.id)) throw new Error(whyCannotApprove(role, row, actor?.id))
+    const patch = {
+      approval_status: status,
+      approved_by: actor?.id || null,
+      approved_at: new Date().toISOString(),
+    }
+    const list = read(key).map((r) => (r.id === id ? { ...r, ...patch } : r))
+    write(key, list)
+    if (noun) {
+      audit(actor, row.entity_id, `${noun}.${status === APPROVAL_STATUS.approved ? 'approve' : 'reject'}`, id, summarise(row))
+    }
+    return list.find((r) => r.id === id)
   },
 })
 

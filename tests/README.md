@@ -22,13 +22,13 @@ for Vite's resolver.
 | `assettypes.test.mjs` | 75 | which fields an asset type has, how it is grouped and what it looks like |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
-| `corp.test.mjs` | 106 | entities, control, ledgers, audit events |
+| `corp.test.mjs` | 139 | entities, control, ledgers, audit events, and what needs a second pair of eyes |
 | `dedupe.test.mjs` | 25 | not importing the same row twice |
 | `defaults.test.mjs` | 30 | filling a form in from history, and when not to |
 | `filled.test.mjs` | 22 | which values on a form the app put there |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
-| `labour.test.mjs` | 109 | the muster roll, cumulative running-account bills, and what is actually built |
+| `labour.test.mjs` | 115 | the muster roll, cumulative running-account bills, and what is actually built |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `money.test.mjs` | 44 | what counts as an amount, and what a row is cleaned to on its way in |
 | `materials.test.mjs` | 187 | construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
@@ -36,16 +36,16 @@ for Vite's resolver.
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
-| `ops.test.mjs` | 211 | inventory, payables, advances, payroll, and each over a period |
+| `ops.test.mjs` | 214 | inventory, payables, advances, payroll, and each over a period |
 | `plant.test.mjs` | 62 | what a machine costs per hour it works, not per hour it is hired |
 | `projects.test.mjs` | 71 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
 | `sales.test.mjs` | 69 | flats and shops, and instalments that fall due when the building says so |
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
-| `store.test.mjs` | 95 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
+| `store.test.mjs` | 107 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,903** | |
+| | **1,957** | |
 
 ## Browser — `tests/browser/`
 
@@ -61,6 +61,7 @@ node tests/browser/rtlui.mjs
 |---|---|---|
 | `assetformui.mjs` | 60 | the asset form: picking a type, and asking for one thing at a time |
 | `auditui.mjs` | 17 | every page in both themes, on a phone, and under 2,400 entries |
+| `approvalsui.mjs` | 35 | the switch that used to change nothing, and one queue for four documents |
 | `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
 | `booksui.mjs` | 27 | one login, two sets of books, and nothing leaking between them |
@@ -94,7 +95,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,242** | |
+| | **1,277** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
@@ -137,7 +138,7 @@ learn to ignore.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 135 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; flats and shops with construction-linked payment plans; that a personal install is untouched |
+| `corporate.sql` | 140 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; flats and shops with construction-linked payment plans; that a personal install is untouched |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

@@ -6,7 +6,11 @@ import {
   makeApprovalPolicy, APPROVAL_STATUS, needsApproval, initialApprovalStatus, canApprove, whyCannotApprove,
   splitByApproval, sumAmount, consolidate, makeAuditEvent, AUDIT_ACTIONS,
   makeMember, roleFor, canRemoveMember, canChangeRole,
-} from '../../src/lib/corporate.js'
+  APPROVABLE,
+  APPROVABLE_IDS,
+  approvalQueue,
+  isRefused,
+  isPending,} from '../../src/lib/corporate.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
@@ -191,6 +195,87 @@ ok('it summarises in plain words', /approved/.test(ev.summary), ev.summary)
 ok('every audit action has wording', Object.values(AUDIT_ACTIONS).every((v) => v && v.length > 3))
 ok('an unknown action still produces a usable event',
   Boolean(makeAuditEvent({ entityId: 'a', actorId: 'u', action: 'weird.thing' }).summary))
+
+console.log('\n── A SECOND PAIR OF EYES, PER DOCUMENT ──')
+// The scales are not comparable. A ₹50,000 expense is unusual enough to look
+// at; a ₹50,000 running account bill is a Tuesday. One threshold for both means
+// either the bills drown the queue or the expenses walk through it.
+const perDoc = makeApprovalPolicy({ enabled: true, threshold: 50000, thresholds: { rabill: 1000000, workorder: 500000 } })
+eq('four documents commit money', APPROVABLE_IDS.length, 4)
+ok('and each names the field that says how much',
+  APPROVABLE_IDS.every((k) => APPROVABLE[k].field && APPROVABLE[k].label))
+ok('a big bill still needs signing', needsApproval({ amount: 60000 }, perDoc, 'expense'))
+ok('while the same figure on a certification does not',
+  !needsApproval({ certified_to_date: 60000 }, perDoc, 'rabill'))
+ok('but a large certification does', needsApproval({ certified_to_date: 1200000 }, perDoc, 'rabill'))
+ok('and a large work order', needsApproval({ order_value: 800000 }, perDoc, 'workorder'))
+ok('an advance falls back to the one threshold nobody overrode',
+  needsApproval({ amount: 60000 }, perDoc, 'advance'))
+// A policy written before any of this existed has to keep behaving as it did.
+const old = makeApprovalPolicy({ enabled: true, threshold: 50000 })
+ok('an old policy still gates expenses', needsApproval({ amount: 60000 }, old, 'expense'))
+ok('and now gates the rest at the same figure', needsApproval({ certified_to_date: 60000 }, old, 'rabill'))
+// Only what somebody set is stored. Writing the base figure into all four
+// looks equivalent and freezes them: turn approvals on before setting a
+// threshold and every document is pinned at zero — everything needs sign-off —
+// and raising the base afterwards changes nothing.
+eq('an override nobody set is not invented', Object.keys(old.thresholds).length, 0)
+const raised = makeApprovalPolicy({ ...old, threshold: 200000 })
+ok('so raising the base moves every document that has no override',
+  !needsApproval({ certified_to_date: 60000 }, raised, 'rabill') &&
+  !needsApproval({ amount: 60000 }, raised, 'expense'))
+const pinned = makeApprovalPolicy({ enabled: true, threshold: 200000, thresholds: { rabill: 50000 } })
+eq('and one that does have an override keeps it', pinned.thresholds.rabill, 50000)
+ok('while the rest follow the base', !needsApproval({ amount: 60000 }, pinned, 'expense'))
+// The case that produced the bug: switched on before anybody typed a figure.
+const freshOn = makeApprovalPolicy({ enabled: true })
+ok('a policy switched on with no threshold gates everything, as zero means',
+  needsApproval({ amount: 1 }, freshOn, 'expense'))
+ok('and setting a threshold afterwards actually takes effect',
+  !needsApproval({ amount: 1 }, makeApprovalPolicy({ ...freshOn, threshold: 50000 }), 'expense'))
+// Categories are an expense idea. A certification has none, and a rule that
+// quietly matched one would be a rule nobody could explain.
+const byCategory = makeApprovalPolicy({ enabled: true, threshold: 1000000, alwaysCategories: ['Legal'] })
+ok('a watched category needs signing whatever it cost', needsApproval({ amount: 10, category: 'Legal' }, byCategory))
+ok('but categories do not reach across to a certification',
+  !needsApproval({ certified_to_date: 10, category: 'Legal' }, byCategory, 'rabill'))
+ok('with approvals off, nothing waits for anybody',
+  !needsApproval({ certified_to_date: 99999999 }, makeApprovalPolicy({ threshold: 1 }), 'rabill'))
+eq('and a new row is stamped accordingly',
+  initialApprovalStatus({ certified_to_date: 1200000 }, perDoc, 'rabill'), 'pending')
+eq('or not, when it is under the line',
+  initialApprovalStatus({ certified_to_date: 10 }, perDoc, 'rabill'), 'none')
+
+console.log('\n── ONE QUEUE, NOT FOUR ──')
+// An approval that lives on the page where the document was raised is an
+// approval nobody finds, and a control nobody finds gets switched off.
+const waiting = approvalQueue([
+  { kind: 'rabill', rows: [
+    { id: 'b1', certified_to_date: 1750000, approval_status: 'pending', created_by: 'carol' },
+    { id: 'b2', certified_to_date: 900000, approval_status: 'approved', created_by: 'carol' },
+  ] },
+  { kind: 'expense', rows: [{ id: 'x1', amount: 60000, approval_status: 'pending', created_by: 'alice' }] },
+  { kind: 'advance', rows: [{ id: 'a1', amount: 200000, approval_status: 'pending', created_by: 'carol', deleted_at: null }] },
+], { role: 'owner', userId: 'alice' })
+eq('only what is waiting is in it', waiting.count, 3)
+eq('biggest first, because that is what gets looked at', waiting.lines[0].row.id, 'b1')
+eq('and the total is what is held up', waiting.total, 2010000)
+// The whole point of an approval: not the person who raised it, however senior.
+eq('the owner can sign the two she did not raise', waiting.mine, 2)
+eq('and cannot sign her own', waiting.ownRaised, 1)
+ok('which it says rather than just refusing',
+  /your own/i.test(waiting.lines.find((l) => l.mine).why), waiting.lines.find((l) => l.mine).why)
+const asMember = approvalQueue([{ kind: 'expense', rows: [{ id: 'x1', amount: 60000, approval_status: 'pending', created_by: 'alice' }] }], { role: 'member', userId: 'bob' })
+eq('a member sees the queue', asMember.count, 1)
+eq('and can sign none of it', asMember.mine, 0)
+ok('with a reason', /role/i.test(asMember.lines[0].why), asMember.lines[0].why)
+eq('an empty queue is empty', approvalQueue([]).count, 0)
+
+console.log('\n── A REFUSAL IS NOT A DOCUMENT ──')
+ok('a refused row is refused', isRefused({ approval_status: 'rejected' }))
+ok('a pending one is not', !isRefused({ approval_status: 'pending' }) && isPending({ approval_status: 'pending' }))
+ok('and a row from before any of this is neither',
+  !isRefused({}) && !isPending({}))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

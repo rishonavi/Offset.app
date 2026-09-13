@@ -716,6 +716,26 @@ create trigger income_no_self_approval
   before update on public.income
   for each row execute function public.no_self_approval();
 
+
+-- ── Approvals on the documents that commit money ─────────────────
+-- Not everything a company records. A muster roll, a measurement and a plant
+-- log sheet are observations, and putting those through a queue would be
+-- bureaucracy that teaches people to click Approve without reading. These
+-- commit money, so each carries who signed it and when.
+alter table public.advances    add column if not exists approval_status text not null default 'none'
+  check (approval_status in ('none', 'pending', 'approved', 'rejected'));
+alter table public.advances    add column if not exists approved_by uuid references auth.users(id) on delete set null;
+alter table public.advances    add column if not exists approved_at timestamptz;
+alter table public.advances    add column if not exists created_by  uuid references auth.users(id) on delete set null;
+alter table public.work_orders add column if not exists approval_status text not null default 'none'
+  check (approval_status in ('none', 'pending', 'approved', 'rejected'));
+alter table public.work_orders add column if not exists approved_by uuid references auth.users(id) on delete set null;
+alter table public.work_orders add column if not exists approved_at timestamptz;
+alter table public.ra_bills    add column if not exists approval_status text not null default 'none'
+  check (approval_status in ('none', 'pending', 'approved', 'rejected'));
+alter table public.ra_bills    add column if not exists approved_by uuid references auth.users(id) on delete set null;
+alter table public.ra_bills    add column if not exists approved_at timestamptz;
+
 -- ════════════════════════════════════════════════════════════════
 --  Row-level security
 -- ════════════════════════════════════════════════════════════════

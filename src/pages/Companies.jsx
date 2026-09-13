@@ -3,7 +3,10 @@ import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, ScrollTe
 import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import { useData } from '../context/DataContext'
-import { ROLES, ROLE_IDS, roleLabel, departmentLabel, CONSOLIDATED } from '../lib/corporate'
+import {
+  ROLES, ROLE_IDS, roleLabel, departmentLabel, CONSOLIDATED,
+  APPROVABLE, APPROVABLE_IDS, approvalQueue,
+} from '../lib/corporate'
 import * as store from '../lib/storage/corporate'
 import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button, Field, Input, Select, EmptyState } from '../components/ui'
@@ -14,7 +17,7 @@ import PageHeader from '../components/PageHeader'
 // gated on the role the current user holds in the active company.
 export default function Companies() {
   const ent = useEntity()
-  const { expenses, income } = useData()
+  const { expenses, income, updateExpense } = useData()
   const toast = useToast()
   const [creating, setCreating] = useState(false)
   const [draft, setDraft] = useState({ name: '', gstin: '', registration: '', currency: 'INR' })
@@ -27,6 +30,39 @@ export default function Companies() {
     // Re-read whenever anything on this page changes something.
     [ent.enabled, ent.activeId, ent.consolidated, ent.version],
   )
+
+  // Everything waiting on somebody, across every kind of document. Read from
+  // the store rather than from props because three of the four kinds live in
+  // the corporate ledgers and never pass through DataContext.
+  const queue = useMemo(() => {
+    if (!ent.enabled || ent.consolidated || !ent.activeId) return approvalQueue([])
+    const eid = ent.activeId
+    return approvalQueue([
+      { kind: 'expense', rows: expenses.filter((e) => e.entity_id === eid) },
+      { kind: 'advance', rows: store.advances.list(eid) },
+      { kind: 'workorder', rows: store.workOrders.list(eid) },
+      { kind: 'rabill', rows: store.raBills.list(eid) },
+    ], { role: ent.role, userId: ent.actor?.id })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ent.enabled, ent.activeId, ent.consolidated, ent.version, ent.role, expenses])
+
+  const STORES = { advance: store.advances, workorder: store.workOrders, rabill: store.raBills }
+  const decide = (line, status) => {
+    const done = status === 'approved' ? 'Approved.' : 'Refused.'
+    const collection = STORES[line.kind]
+    if (collection) {
+      act(() => collection.decide(line.row.id, status, ent.actor, ent.role), done)
+      return
+    }
+    // Bills and expenses live in the main ledger rather than the corporate
+    // store, so the same decision is written through DataContext. The rule is
+    // the queue's: it only offers a button where `canApprove` said yes.
+    updateExpense(line.row.id, {
+      approval_status: status,
+      approved_by: ent.actor?.id || null,
+      approved_at: new Date().toISOString(),
+    }).then(() => { ent.reload(); toast(done) }).catch((e) => toast(e?.message || String(e)))
+  }
 
   const act = (fn, done) => {
     try {
@@ -278,13 +314,86 @@ export default function Companies() {
                     <Input
                       type="number"
                       min="0"
+                      aria-label="Approval threshold"
                       value={ent.policy.threshold}
                       disabled={!ent.can('approve') || !ent.policy.enabled}
                       onChange={(e) => act(() => store.setApprovalPolicy(ent.activeId, { ...ent.policy, threshold: e.target.value }, ent.actor))}
                     />
                   </Field>
+                  {/* Per document, because the scales are not comparable. A
+                      ₹50,000 expense is unusual enough to look at; a ₹50,000
+                      running account bill is a Tuesday, and one figure for both
+                      means either the bills drown the queue or the expenses
+                      walk through it. */}
+                  {ent.policy.enabled && (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {APPROVABLE_IDS.map((kind) => (
+                        <Field key={kind} label={APPROVABLE[kind].label} hint="Blank uses the threshold above.">
+                          <Input
+                            type="number"
+                            min="0"
+                            aria-label={`${APPROVABLE[kind].label} threshold`}
+                            value={ent.policy.thresholds?.[kind] ?? ''}
+                            disabled={!ent.can('approve')}
+                            onChange={(e) => act(() => store.setApprovalPolicy(
+                              ent.activeId,
+                              { ...ent.policy, thresholds: { ...ent.policy.thresholds, [kind]: e.target.value } },
+                              ent.actor,
+                            ))}
+                          />
+                        </Field>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
+
+              {/* One queue and not four. An approval that lives on the page
+                  where the document was raised is an approval nobody finds, and
+                  a control nobody finds gets switched off. */}
+              {ent.policy.enabled && (
+                <Card className="p-5">
+                  <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3">
+                    <ShieldCheck size={16} className="text-gold" /> Waiting for approval
+                  </h2>
+                  {queue.count === 0 ? (
+                    <p className="mt-2 text-sm text-ink-5">Nothing is waiting.</p>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-xs text-ink-5">
+                        {queue.count} {queue.count === 1 ? 'document' : 'documents'} holding{' '}
+                        {formatCurrency(queue.total)}. {queue.mine} you can sign
+                        {queue.ownRaised > 0 && `, ${queue.ownRaised} you raised yourself`}.
+                      </p>
+                      <ul className="mt-3 divide-y divide-border-subtle">
+                        {queue.lines.map((l) => (
+                          <li key={`${l.kind}-${l.row.id}`} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
+                            <span className="min-w-0">
+                              <span className="text-ink-2">
+                                {l.row.contractor || l.row.party || l.row.vendor || l.row.category || l.doc.label}
+                              </span>
+                              <span className="block text-[0.7rem] text-ink-6">
+                                {l.doc.label}
+                                {l.row.number ? ` · RA ${l.row.number}` : ''}
+                                {!l.canSign && l.why ? ` · ${l.why}` : ''}
+                              </span>
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <span className="tabular font-medium text-ink-2">{formatCurrency(l.amount)}</span>
+                              {l.canSign && (
+                                <>
+                                  <Button variant="ghost" aria-label={`Approve ${l.doc.label} ${l.amount}`} onClick={() => decide(l, 'approved')}>Approve</Button>
+                                  <Button variant="ghost" aria-label={`Refuse ${l.doc.label} ${l.amount}`} onClick={() => decide(l, 'rejected')}>Refuse</Button>
+                                </>
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </Card>
+              )}
 
               {/* Audit */}
               {ent.can('audit.view') && (

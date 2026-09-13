@@ -161,28 +161,75 @@ export function departmentSubtree(departments, id) {
 // ── Approvals ──────────────────────────────────────────────────────
 // The rule a company actually states: anything over X needs sign-off, and
 // certain categories always do regardless of size.
-export function makeApprovalPolicy({ threshold = 0, alwaysCategories = [], enabled = false } = {}) {
+// What a second pair of eyes is for: the documents that commit money.
+//
+// Not everything a company records. A muster roll, a measurement and a plant
+// log sheet are observations — somebody writing down what happened — and
+// putting them through an approval queue would be bureaucracy that teaches
+// people to click Approve without reading. These four are decisions to part
+// with money, and each names the field that says how much.
+export const APPROVABLE = {
+  expense: { id: 'expense', label: 'Bills and expenses', field: 'amount' },
+  advance: { id: 'advance', label: 'Advances', field: 'amount' },
+  workorder: { id: 'workorder', label: 'Work orders', field: 'order_value' },
+  rabill: { id: 'rabill', label: 'Running account bills', field: 'certified_to_date' },
+}
+export const APPROVABLE_IDS = Object.keys(APPROVABLE)
+
+export function makeApprovalPolicy({ threshold = 0, alwaysCategories = [], enabled = false, thresholds = {} } = {}) {
+  const base = Math.max(0, Number(threshold) || 0)
+  // Per document, because the scales are not comparable. A ₹50,000 expense is
+  // unusual enough to look at; a ₹50,000 running account bill is a Tuesday, and
+  // one threshold for both means either the bills drown the queue or the
+  // expenses walk through it.
+  //
+  // Only what somebody actually set is kept. Resolving the fallback here
+  // instead — writing the base figure into all four — looks equivalent and is
+  // not: it freezes them at whatever the base happened to be when the policy
+  // was first saved, so turning approvals on before setting a threshold pins
+  // every document at zero (meaning everything needs sign-off) and raising the
+  // base afterwards changes nothing. Unset has to stay unset, and the fallback
+  // happens when the figure is read.
+  const per = {}
+  for (const kind of APPROVABLE_IDS) {
+    const v = thresholds?.[kind]
+    if (v === undefined || v === null || v === '') continue
+    per[kind] = Math.max(0, Number(v) || 0)
+  }
   return {
     enabled: Boolean(enabled),
-    threshold: Math.max(0, Number(threshold) || 0),
+    threshold: base,
+    thresholds: per,
     alwaysCategories: [...new Set(alwaysCategories.filter(Boolean))],
   }
 }
 
 export const APPROVAL_STATUS = { none: 'none', pending: 'pending', approved: 'approved', rejected: 'rejected' }
 
-export function needsApproval(entry, policy) {
+export function needsApproval(entry, policy, kind = 'expense') {
   if (!policy?.enabled) return false
-  const amount = Math.abs(Number(entry?.amount) || 0)
-  if (policy.alwaysCategories.includes(entry?.category)) return true
+  const doc = APPROVABLE[kind] || APPROVABLE.expense
+  const amount = Math.abs(Number(entry?.[doc.field]) || 0)
+  // Categories are an expense idea; a running account bill has no category, and
+  // a rule that quietly matched one would be a rule nobody could explain.
+  if (kind === 'expense' && policy.alwaysCategories.includes(entry?.category)) return true
+  const limit = policy.thresholds?.[kind] ?? policy.threshold
   // A threshold of zero means everything needs sign-off, which is a legitimate
   // (if strict) policy — so compare inclusively only when it is above zero.
-  return policy.threshold === 0 ? true : amount >= policy.threshold
+  return limit === 0 ? true : amount >= limit
 }
 
-export function initialApprovalStatus(entry, policy) {
-  return needsApproval(entry, policy) ? APPROVAL_STATUS.pending : APPROVAL_STATUS.none
+export function initialApprovalStatus(entry, policy, kind = 'expense') {
+  return needsApproval(entry, policy, kind) ? APPROVAL_STATUS.pending : APPROVAL_STATUS.none
 }
+
+// A rejected document is not a document. A certification somebody refused did
+// not certify anything and an advance somebody refused was never paid, so the
+// arithmetic has to leave them out — whereas a pending one is a real commitment
+// that has not cleared a control yet, and leaving *that* out would report a
+// company as owing less than it does.
+export const isRefused = (row) => row?.approval_status === APPROVAL_STATUS.rejected
+export const isPending = (row) => row?.approval_status === APPROVAL_STATUS.pending
 
 // Who may sign this off. Not the person who raised it, however senior — that is
 // the whole point of an approval.
@@ -211,6 +258,45 @@ export function splitByApproval(entries) {
 }
 
 export const sumAmount = (rows) => rows.reduce((total, r) => total + (Number(r.amount) || 0), 0)
+
+// Everything waiting on somebody, across every kind of document, with whether
+// *this* person can sign it off.
+//
+// One queue and not four. An approval that lives on the page where the document
+// was raised is an approval nobody finds, and a control nobody finds is a
+// control that gets switched off.
+export function approvalQueue(groups = [], { role = 'member', userId = null } = {}) {
+  const lines = []
+  for (const { kind, rows = [] } of groups) {
+    for (const row of rows) {
+      if (row?.deleted_at) continue
+      if (row?.approval_status !== APPROVAL_STATUS.pending) continue
+      const doc = APPROVABLE[kind] || APPROVABLE.expense
+      lines.push({
+        kind,
+        doc,
+        row,
+        amount: Math.abs(Number(row?.[doc.field]) || 0),
+        mine: row?.created_by === userId,
+        canSign: canApprove(role, row, userId),
+        why: whyCannotApprove(role, row, userId),
+      })
+    }
+  }
+  lines.sort((a, b) => b.amount - a.amount)
+  return {
+    lines,
+    count: lines.length,
+    total: Math.round(lines.reduce((t, l) => t + l.amount, 0) * 100) / 100,
+    // What this person can actually clear. The rest is waiting on somebody
+    // else, and saying so beats a queue that never empties for the person
+    // looking at it.
+    mine: lines.filter((l) => l.canSign).length,
+    // Raised by the person looking at the queue. They cannot sign these however
+    // senior they are, which is the whole point of an approval.
+    ownRaised: lines.filter((l) => l.mine).length,
+  }
+}
 
 // ── Consolidation ──────────────────────────────────────────────────
 // The number a group finance director asks for: each entity's own figures, and
@@ -316,6 +402,12 @@ export const AUDIT_ACTIONS = {
   'receipt.create': 'recorded money received',
   'receipt.update': 'changed a receipt',
   'receipt.delete': 'removed a receipt',
+  'advance.approve': 'approved an advance',
+  'advance.reject': 'refused an advance',
+  'workorder.approve': 'approved a work order',
+  'workorder.reject': 'refused a work order',
+  'rabill.approve': 'approved a running account bill',
+  'rabill.reject': 'refused a running account bill',
   'advance.create': 'paid an advance',
   'advance.update': 'edited an advance',
   'advance.delete': 'removed an advance',

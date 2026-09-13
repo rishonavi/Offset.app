@@ -15,7 +15,7 @@ const byDateDesc = (a, b) => (b.date || '').localeCompare(a.date || '')
 export function DataProvider({ children }) {
   const { user } = useAuth()
   const { activeOwner, isOwnWorkspace, canWriteActive } = useWorkspace()
-  const { inEntity, stamp } = useEntity()
+  const { inEntity, stamp, gate } = useEntity()
   const [properties, setProperties] = useState([])
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
@@ -136,7 +136,9 @@ export function DataProvider({ children }) {
   // ── Expenses ──
   const addExpense = async (data) => {
     guard()
-    const row = await db.addExpense(cleanMoney({ ...data, ...stamp() }, 'expense'))
+    // Gated on the way in, so a bill over the company's limit is pending from
+    // the moment it exists rather than from whenever somebody remembers.
+    const row = await db.addExpense(cleanMoney({ ...data, ...stamp(), ...gate(data, 'expense') }, 'expense'))
     setExpenses((prev) => [row, ...prev].sort(byDateDesc))
     return row
   }
