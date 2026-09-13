@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  Boxes, IndianRupee, FileText, HardHat, Plus, AlertTriangle,
+  Boxes, IndianRupee, FileText, HardHat, Plus, AlertTriangle, Printer,
   TrendingDown, Undo2, Trash2,
 } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
@@ -17,6 +17,8 @@ import {
   priceList, receiptsFromQuote, GST_RATES, DEFAULT_GST, QUOTE_STATE_LABELS,
 } from '../lib/quotes'
 
+import { stockStatement, materialIndent } from '../lib/siteDocs'
+import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
 
@@ -69,7 +71,7 @@ export default function Materials(shared) {
 }
 
 // ── Inventory ───────────────────────────────────────────────────────────────
-function Inventory({ data, eid, actor, canWrite, bump, toast }) {
+function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
   // The yard has no row of its own anywhere, so it needs a name here.
   const storeName = (id) => (id ? data.projects.find((p) => p.id === id)?.name || 'Unknown site' : 'Central store')
   const blank = { category: 'cement', name: '', brand: '', spec: '', sku: '', unit: 'bag', reorderLevel: '' }
@@ -135,6 +137,37 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
 
   return (
     <div className="space-y-4">
+      {/* Carried round a yard with a pen, and handed to a supplier. Neither is
+          a screenshot of a table. */}
+      {data.items.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="ghost"
+            aria-label="Print stock statement"
+            onClick={async () => {
+              try {
+                await documentToPDF(stockStatement(data.items, data.movements, { company, storeName }))
+              } catch (e) { toast(e?.message || String(e)) }
+            }}
+          >
+            <Printer size={14} /> Stock statement
+          </Button>
+          {low.length > 0 && (
+            <Button
+              variant="ghost"
+              aria-label="Print material indent"
+              onClick={async () => {
+                try {
+                  await documentToPDF(materialIndent(data.items, data.movements, { company }))
+                } catch (e) { toast(e?.message || String(e)) }
+              }}
+            >
+              <Printer size={14} /> Indent
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <Stat label="Materials" value={String(data.items.length)} />
         {/* The company total, and the two halves it is made of. A builder who

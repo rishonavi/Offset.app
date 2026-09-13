@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Users, FileSignature, Plus, AlertTriangle, Clock } from 'lucide-react'
+import { Users, FileSignature, Plus, AlertTriangle, Clock, Printer } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import { makeMuster, musterCost, labourReport, TRADES, TRADE_IDS } from '../lib/labour'
 import {
   makeWorkOrder, makeRaBill, billLadder, subcontractReport,
   ORDER_STATUS, ORDER_STATUS_IDS, PRICING, PRICING_IDS,
 } from '../lib/subcontract'
+import { paymentCertificate, musterSheet } from '../lib/siteDocs'
+import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
 
@@ -56,7 +58,7 @@ export default function Labour(shared) {
 }
 
 // ── Muster roll ─────────────────────────────────────────────────────────────
-function Muster({ data, eid, actor, canWrite, bump, toast }) {
+function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
   const blank = {
     date: today(), trade: 'mason', headcount: '', rate: '',
     overtimeHours: '', overtimeRate: '', projectId: '', contractor: '', note: '',
@@ -215,7 +217,26 @@ function Muster({ data, eid, actor, canWrite, bump, toast }) {
       </div>
 
       <Card className="p-5">
-        <h3 className="text-sm font-semibold text-ink-3">The register</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-ink-3">The register</h3>
+          {/* Signed at the gate, which a screen cannot be. */}
+          {recent.length > 0 && (
+            <Button
+              variant="ghost"
+              aria-label="Print muster roll"
+              onClick={async () => {
+                try {
+                  await documentToPDF(musterSheet(data.muster, {
+                    company, date: recent[0].date, entityId: eid,
+                    siteName: (id) => data.projects.find((p) => p.id === id)?.name || 'Not booked to a site',
+                  }))
+                } catch (e) { toast(e?.message || String(e)) }
+              }}
+            >
+              <Printer size={14} /> Muster roll
+            </Button>
+          )}
+        </div>
         {recent.length === 0 ? (
           <p className="mt-3 text-sm text-ink-5">Nothing recorded yet.</p>
         ) : (
@@ -257,7 +278,15 @@ function Muster({ data, eid, actor, canWrite, bump, toast }) {
 }
 
 // ── Contractors ─────────────────────────────────────────────────────────────
-function Contractors({ data, eid, actor, canWrite, bump, toast, gate }) {
+function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company }) {
+  // The document with legal weight: what was measured, what was certified
+  // before, and therefore what is payable now.
+  const certify = async (order, bill) => {
+    try {
+      await documentToPDF(paymentCertificate(order, data.raBills, { company, billId: bill.id }),
+        { filename: `payment-certificate-RA${bill.number}.pdf` })
+    } catch (e) { toast(e?.message || String(e)) }
+  }
   const blankOrder = {
     contractor: '', scope: '', orderValue: '', pricing: 'lumpSum',
     retentionPercent: '5', tdsPercent: '1', projectId: '', dueOn: '', status: 'running',
@@ -504,6 +533,14 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate }) {
                           <span className="block text-[0.7rem] text-ink-6">{r.bill.date}</span>
                           {r.bill.approval_status === 'pending' && <span className="block text-[0.7rem] text-amber-600">waiting for approval</span>}
                           {r.overClaimed && <span className="block text-[0.7rem] text-red-600">certified above the claim</span>}
+                          <button
+                            type="button"
+                            aria-label={`Payment certificate for RA ${r.bill.number}`}
+                            onClick={() => certify(l.order, r.bill)}
+                            className="mt-1 inline-flex items-center gap-1 text-[0.7rem] font-semibold text-brand underline-offset-4 hover:underline"
+                          >
+                            <Printer size={11} /> Certificate
+                          </button>
                           {r.negative && <span className="block text-[0.7rem] text-amber-600">certifies less than the last</span>}
                         </td>
                         <td className="text-end tabular text-ink-4">{formatCurrency(r.certifiedToDate)}</td>

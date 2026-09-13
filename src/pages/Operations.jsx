@@ -132,7 +132,9 @@ export default function Operations() {
   }
 
   const canWrite = ent.canWrite && ent.can('entry.create')
-  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast, gate: ent.gate, role: ent.role }
+  // What goes at the top of anything that leaves the building.
+  const company = { name: ent.entity?.name || 'Company', gstin: ent.entity?.gstin || '', address: ent.entity?.address || '' }
+  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast, gate: ent.gate, role: ent.role, company }
 
   return (
     <div className="animate-fade-in space-y-6">

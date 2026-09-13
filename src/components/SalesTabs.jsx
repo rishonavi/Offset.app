@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Building2, IndianRupee, Plus, AlertTriangle, Wallet } from 'lucide-react'
+import { Building2, IndianRupee, Plus, AlertTriangle, Wallet, Printer } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
   makeUnit, makePlanStage, makeReceipt, unitLedger, salesReport, salesAgainstBuild,
@@ -7,6 +7,8 @@ import {
   isSold, isSellable,
 } from '../lib/sales'
 import { siteProgress, WORK_STAGES, WORK_STAGE_IDS } from '../lib/progress'
+import { demandLetter } from '../lib/siteDocs'
+import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
 
@@ -275,7 +277,7 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
 }
 
 // ── Collections ─────────────────────────────────────────────────────────────
-function Collections({ data, eid, actor, canWrite, bump, toast }) {
+function Collections({ data, eid, actor, canWrite, bump, toast, company }) {
   const [site, setSite] = useState(data.projects[0]?.id || '')
   const [planning, setPlanning] = useState(null)
   const [stage, setStage] = useState({ label: '', percent: '', amount: '', workStage: '', triggerAt: '100', dueOn: '' })
@@ -426,11 +428,32 @@ function Collections({ data, eid, actor, canWrite, bump, toast }) {
                   )}
                 </p>
               </div>
-              {canWrite && (
-                <Button variant="ghost" onClick={() => setPlanning(planning === l.unit.id ? null : l.unit.id)}>
-                  <Plus size={14} /> Instalment
-                </Button>
-              )}
+              <span className="flex flex-wrap gap-2">
+                {/* What actually collects money, and it says which stage of
+                    work made the instalment due — the sentence that turns a
+                    demand a buyer queries into one they pay. */}
+                {l.dueNow > 0 && (
+                  <Button
+                    variant="ghost"
+                    aria-label={`Demand letter for ${l.unit.name}`}
+                    onClick={async () => {
+                      try {
+                        await documentToPDF(
+                          demandLetter(l.unit, data.planStages, data.receipts, { company, progressStages: stages }),
+                          { filename: `demand-${l.unit.name}.pdf` },
+                        )
+                      } catch (e) { toast(e?.message || String(e)) }
+                    }}
+                  >
+                    <Printer size={14} /> Demand letter
+                  </Button>
+                )}
+                {canWrite && (
+                  <Button variant="ghost" onClick={() => setPlanning(planning === l.unit.id ? null : l.unit.id)}>
+                    <Plus size={14} /> Instalment
+                  </Button>
+                )}
+              </span>
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  HardHat, IndianRupee, ReceiptText, Ruler, Plus, AlertTriangle, CalendarClock, Pencil, Check, X,
+  HardHat, IndianRupee, ReceiptText, Ruler, Plus, AlertTriangle, CalendarClock, Pencil, Check, X, Printer,
 } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
@@ -15,6 +15,8 @@ import {
   makeWorkItem, makeMeasurement, siteProgress, progressAgainstSpend,
   WORK_STAGES, WORK_STAGE_IDS, stageOf,
 } from '../lib/progress'
+import { measurementSheet } from '../lib/siteDocs'
+import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx } from './ui'
 
@@ -311,7 +313,7 @@ function SiteLine({ line, onEdit }) {
 // Everything else here counts money. This counts cubic metres and square feet,
 // and it exists so the two can be put side by side — because a site 40% built
 // that has spent 60% of its budget is in trouble, and no ledger will say so.
-function Progress({ data, eid, actor, canWrite, bump, toast }) {
+function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
   const [siteId, setSiteId] = useState(data.projects[0]?.id || '')
   const blankItem = { code: '', description: '', stage: 'structure', unit: 'cum', plannedQty: '', rate: '' }
   const [item, setItem] = useState(blankItem)
@@ -378,11 +380,27 @@ function Progress({ data, eid, actor, canWrite, bump, toast }) {
   return (
     <div className="space-y-4">
       <Card className="p-5">
-        <Field label="Site" className="max-w-md">
-          <Select aria-label="Progress site" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-            {data.projects.map((pr) => <option key={pr.id} value={pr.id}>{pr.name}</option>)}
-          </Select>
-        </Field>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <Field label="Site" className="max-w-md grow">
+            <Select aria-label="Progress site" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+              {data.projects.map((pr) => <option key={pr.id} value={pr.id}>{pr.name}</option>)}
+            </Select>
+          </Field>
+          {/* What a contractor's bill is checked against, and argues with. */}
+          {progress.count > 0 && site && (
+            <Button
+              variant="ghost"
+              aria-label="Print measurement sheet"
+              onClick={async () => {
+                try {
+                  await documentToPDF(measurementSheet(site, data.workItems, data.measurements, { company }))
+                } catch (e) { toast(e?.message || String(e)) }
+              }}
+            >
+              <Printer size={14} /> Measurement sheet
+            </Button>
+          )}
+        </div>
       </Card>
 
       {/* The comparison the whole view exists for. */}
