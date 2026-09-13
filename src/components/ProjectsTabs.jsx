@@ -10,6 +10,7 @@ import {
 import { usageBySite } from '../lib/inventory'
 import { labourCostsBySite } from '../lib/labour'
 import { subcontractCostsBySite } from '../lib/subcontract'
+import { plantCostsBySite } from '../lib/plant'
 import {
   makeWorkItem, makeMeasurement, siteProgress, progressAgainstSpend,
   WORK_STAGES, WORK_STAGE_IDS, stageOf,
@@ -34,9 +35,10 @@ const VIEWS = [
 const num = (v) => Number(v) || 0
 
 // A job is not its bills. It is its bills, the material issued to it, the
-// muster roll and what its subcontractors were certified for — and leaving any
-// one of those out makes the job look cheaper than it is. Worked out once here
-// because three of the four views need the same four maps.
+// muster roll, what its subcontractors were certified for, and the machines
+// that worked on it — and leaving any one of those out makes the job look
+// cheaper than it is. Worked out once here because three views need the same
+// four maps.
 const costsBy = (data, eid) => {
   const materialCosts = {}
   for (const u of usageBySite(data.items, data.movements, { projects: data.projects })) {
@@ -46,6 +48,7 @@ const costsBy = (data, eid) => {
     materialCosts,
     labourCosts: labourCostsBySite(data.muster, { entityId: eid }),
     subcontractCosts: subcontractCostsBySite(data.workOrders, data.raBills, { entityId: eid }),
+    plantCosts: plantCostsBySite(data.plant, data.plantLogs, { entityId: eid }),
   }
 }
 
@@ -326,6 +329,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast }) {
       materialCost: costs.materialCosts[site.id] || 0,
       labourCost: costs.labourCosts[site.id] || 0,
       subcontractCost: costs.subcontractCosts[site.id] || 0,
+      plantCost: costs.plantCosts[site.id] || 0,
     }) : null),
     [site, data, costs],
   )
@@ -564,28 +568,29 @@ function Costs({ data, eid }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <Stat label="Total on jobs" value={formatCurrency(report.spent)} />
         <Stat label="Bills booked" value={formatCurrency(report.directCost)} />
         <Stat label="Material issued" value={formatCurrency(report.materialCost)} />
         <Stat label="Labour" value={formatCurrency(report.labourCost)} />
         {/* Certified, not paid: retention and TDS change when the money leaves,
             not whether the work was done. */}
         <Stat label="Subcontractors" value={formatCurrency(report.subcontractCost)} />
-        <Stat label="Total on jobs" value={formatCurrency(report.spent)} />
+        <Stat label="Plant" value={formatCurrency(report.plantCost)} />
       </div>
 
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-ink-3">Where the money went</h3>
         <p className="mt-1 text-xs text-ink-5">
           Bills booked to the site, material issued to it from the stores, the muster roll, and what its
-          subcontractors were certified for. A builder who counts only the bills finds every job profitable and the
-          company losing money.
+          subcontractors were certified for, and the machines that worked on it. A builder who counts only the bills
+          finds every job profitable and the company losing money.
         </p>
         {report.count === 0 ? (
           <p className="mt-3 text-sm text-ink-5">No sites yet.</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[44rem] text-sm">
+            <table className="w-full min-w-[50rem] text-sm">
               <thead className="text-xs uppercase tracking-wide text-ink-5">
                 <tr>
                   <th className="py-2 text-start">Site</th>
@@ -593,6 +598,7 @@ function Costs({ data, eid }) {
                   <th className="text-end">Material</th>
                   <th className="text-end">Labour</th>
                   <th className="text-end">Contractors</th>
+                  <th className="text-end">Plant</th>
                   <th className="text-end">Spent</th>
                   <th className="text-end">Of estimate</th>
                 </tr>
@@ -605,6 +611,7 @@ function Costs({ data, eid }) {
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.materialCost)}</td>
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.labourCost)}</td>
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.subcontractCost)}</td>
+                    <td className="text-end tabular text-ink-4">{formatCurrency(l.plantCost)}</td>
                     <td className="text-end tabular font-medium">{formatCurrency(l.spent)}</td>
                     <td className={cx('text-end tabular', l.overEstimate ? 'text-amber-600' : 'text-ink-4')}>
                       {l.usedPercent === null ? '—' : `${l.usedPercent}%`}

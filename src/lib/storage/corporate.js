@@ -34,6 +34,8 @@ const KEYS = {
   raBills: 'pl_corp_ra_bills',
   workItems: 'pl_corp_work_items',
   measurements: 'pl_corp_measurements',
+  plant: 'pl_corp_plant',
+  plantLogs: 'pl_corp_plant_logs',
 }
 
 const read = (key) => {
@@ -256,6 +258,8 @@ export const workOrders = collection(KEYS.workOrders)
 export const raBills = collection(KEYS.raBills)
 export const workItems = collection(KEYS.workItems)
 export const measurements = collection(KEYS.measurements)
+export const plant = collection(KEYS.plant)
+export const plantLogs = collection(KEYS.plantLogs)
 
 // ── Whole-account helpers ──────────────────────────────────────────
 export function exportCorporate() {

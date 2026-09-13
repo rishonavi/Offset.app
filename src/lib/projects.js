@@ -74,7 +74,7 @@ const belongs = (row, projectId) => row?.project_id === projectId
 // has left the bank tells you the job is cheaper than it is.
 export function projectSummary(
   project, expenses = [], income = [],
-  { materialCost = 0, labourCost = 0, subcontractCost = 0 } = {},
+  { materialCost = 0, labourCost = 0, subcontractCost = 0, plantCost = 0 } = {},
 ) {
   const mine = expenses.filter((e) => belongs(e, project.id) && !e.deleted_at)
   const earned = income.filter((e) => belongs(e, project.id) && !e.deleted_at)
@@ -97,7 +97,11 @@ export function projectSummary(
   // leaves and not whether the work was done.
   const labour = round2(Math.max(0, Number(labourCost) || 0))
   const subcontract = round2(Math.max(0, Number(subcontractCost) || 0))
-  const spent = round2(directCost + materials + labour + subcontract)
+  // Machines, charged by where they worked rather than where they are parked.
+  // A job charged nothing for the excavator that dug it is a job that looks
+  // cheap, and it is how owned plant comes to seem free.
+  const plant = round2(Math.max(0, Number(plantCost) || 0))
+  const spent = round2(directCost + materials + labour + subcontract + plant)
   const paid = round2(mine.filter((e) => e.status === 'paid').reduce((t, e) => t + amountOf(e), 0))
   const billed = round2(earned.reduce((t, e) => t + amountOf(e), 0))
   const received = round2(earned.filter((e) => e.status === 'received').reduce((t, e) => t + amountOf(e), 0))
@@ -112,6 +116,7 @@ export function projectSummary(
     materialCost: materials,
     labourCost: labour,
     subcontractCost: subcontract,
+    plantCost: plant,
     // Committed but not yet out of the bank. The number a site manager is
     // asked for and the one nobody can ever find. Measured against the bills
     // alone: material off the shelf was paid for when it was bought, and
@@ -145,7 +150,7 @@ export function projectSummary(
 // that is going wrong, so the one going wrong is at the top.
 export function projectReport(
   projects = [], expenses = [], income = [],
-  { openOnly = false, materialCosts = {}, labourCosts = {}, subcontractCosts = {} } = {},
+  { openOnly = false, materialCosts = {}, labourCosts = {}, subcontractCosts = {}, plantCosts = {} } = {},
 ) {
   const lines = projects
     .filter((p) => !p.deleted_at)
@@ -154,6 +159,7 @@ export function projectReport(
       materialCost: materialCosts[p.id] || 0,
       labourCost: labourCosts[p.id] || 0,
       subcontractCost: subcontractCosts[p.id] || 0,
+      plantCost: plantCosts[p.id] || 0,
     }))
 
   const sum = (pick) => round2(lines.reduce((t, l) => t + (pick(l) || 0), 0))
@@ -178,6 +184,7 @@ export function projectReport(
     materialCost: sum((l) => l.materialCost),
     labourCost: sum((l) => l.labourCost),
     subcontractCost: sum((l) => l.subcontractCost),
+    plantCost: sum((l) => l.plantCost),
     received: sum((l) => l.received),
     overrunning: overrunning.length,
     late: lines.filter((l) => daysLate(l.project) !== null).length,

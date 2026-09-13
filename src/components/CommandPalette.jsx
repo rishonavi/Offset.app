@@ -75,6 +75,8 @@ const CORPORATE_COMMANDS = [
       + 'labour labor muster mason helper carpenter mestri gang headcount wages overtime daywork '
       + 'subcontractor contractor work order ra bill running account certified retention tds '
       + 'progress boq schedule quantity measurement measured built earned '
+      + 'plant equipment machine machinery jcb excavator crane hoist mixer pump generator tipper '
+      + 'roller compactor diesel fuel operator log sheet utilisation idle breakdown depreciation hire '
       + 'advances imprest payroll salary salaries payslip employees staff pf esi',
   },
 ]

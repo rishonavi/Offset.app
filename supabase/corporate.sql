@@ -336,6 +336,66 @@ create table if not exists public.work_measurements (
 );
 create index if not exists work_measurements_item_idx on public.work_measurements (work_item_id, date);
 
+-- Plant and equipment. Hired or owned, and the distinction changes where the
+-- money comes from and nothing else: an owned machine's daily cost is its
+-- depreciation and is charged to a job exactly like a hire rate. Charging a job
+-- nothing for owned plant is how owning comes to look free.
+create table if not exists public.plant (
+  id                uuid primary key default gen_random_uuid(),
+  entity_id         uuid not null references public.entities(id) on delete cascade,
+  project_id        uuid references public.projects(id) on delete set null,
+  name              text not null,
+  kind              text not null default 'other',
+  ownership         text not null default 'hired' check (ownership in ('hired', 'owned')),
+  -- What a log sheet is headed with, and the only way two identical JCBs are
+  -- told apart.
+  registration      text,
+  vendor            text,
+  hire_rate         numeric(16,2) not null default 0 check (hire_rate >= 0),
+  hire_basis        text not null default 'daily' check (hire_basis in ('hourly', 'daily', 'monthly', 'trip')),
+  -- "Eight hours minimum" is in most hourly contracts: a machine that worked
+  -- three hours bills eight, and the five hours of nothing are invisible
+  -- unless somebody works them out.
+  minimum_hours     numeric(10,2) not null default 0 check (minimum_hours >= 0),
+  hired_from        date,
+  hired_to          date,
+  fuel_included     boolean not null default false,
+  operator_included boolean not null default false,
+  purchase_value    numeric(16,2) not null default 0 check (purchase_value >= 0),
+  purchased_on      date,
+  useful_life_years integer not null default 8 check (useful_life_years >= 1),
+  salvage_value     numeric(16,2) not null default 0 check (salvage_value >= 0),
+  status            text not null default 'active' check (status in ('active', 'idle', 'breakdown', 'returned')),
+  note              text,
+  created_by        uuid references auth.users(id) on delete set null,
+  created_at        timestamptz not null default now()
+);
+create index if not exists plant_entity_idx on public.plant (entity_id, status);
+
+-- The log sheet: one machine, one day. Idle and breakdown are separate columns
+-- on purpose. Idle means there was no work for it — late drawings, a slab not
+-- ready. Breakdown means it could not work. Different people are answerable for
+-- those two, and a single "not working" figure protects both of them.
+create table if not exists public.plant_logs (
+  id              uuid primary key default gen_random_uuid(),
+  entity_id       uuid not null references public.entities(id) on delete cascade,
+  plant_id        uuid not null references public.plant(id) on delete cascade,
+  project_id      uuid references public.projects(id) on delete set null,
+  date            date not null,
+  working_hours   numeric(10,2) not null default 0 check (working_hours >= 0),
+  idle_hours      numeric(10,2) not null default 0 check (idle_hours >= 0),
+  breakdown_hours numeric(10,2) not null default 0 check (breakdown_hours >= 0),
+  trips           integer not null default 0 check (trips >= 0),
+  fuel_litres     numeric(12,2) not null default 0 check (fuel_litres >= 0),
+  fuel_cost       numeric(14,2) not null default 0 check (fuel_cost >= 0),
+  operator        text,
+  note            text,
+  created_by      uuid references auth.users(id) on delete set null,
+  created_at      timestamptz not null default now()
+);
+create index if not exists plant_logs_plant_idx   on public.plant_logs (plant_id, date);
+create index if not exists plant_logs_project_idx on public.plant_logs (project_id, date);
+
 -- An advance is an asset until it is used up. Booking it as a cost
 -- double-counts it when the invoice lands.
 create table if not exists public.advances (
@@ -586,6 +646,8 @@ alter table public.work_orders         enable row level security;
 alter table public.ra_bills            enable row level security;
 alter table public.work_items          enable row level security;
 alter table public.work_measurements   enable row level security;
+alter table public.plant               enable row level security;
+alter table public.plant_logs          enable row level security;
 
 -- Entities: members see it, owners change it. Creation is separate because at
 -- the moment of insert there is no membership yet to be a member of.
@@ -665,7 +727,7 @@ create policy "members append to the log" on public.audit_events
 do $$
 declare t text;
 begin
-  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements']
+  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements','plant','plant_logs']
   loop
     execute format('drop policy if exists "members read %1$s" on public.%1$I', t);
     execute format(

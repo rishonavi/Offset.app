@@ -414,12 +414,44 @@ select t.allows('a correction may be negative',
   $$insert into public.work_measurements (entity_id, work_item_id, date, qty)
     values ('aaaaaaaa-0000-0000-0000-000000000001','22222222-aaaa-0000-0000-000000000001', current_date, -10)$$);
 
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('a hired machine is put on the books',
+  $$insert into public.plant (id, entity_id, name, kind, ownership, registration, hire_rate, hire_basis, hired_from, hired_to)
+    values ('33333333-aaaa-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'JCB 3DX','excavator','hired','MH-04-AB-1234', 12000, 'daily', current_date - 9, current_date)$$);
+select t.allows('and an owned one, which is not free',
+  $$insert into public.plant (entity_id, name, kind, ownership, purchase_value, useful_life_years, salvage_value)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Site mixer','mixer','owned', 900000, 8, 100000)$$);
+select t.refuses('a machine is hired or owned and nothing else',
+  $$insert into public.plant (entity_id, name, ownership) values ('aaaaaaaa-0000-0000-0000-000000000001','Borrowed','leased')$$);
+select t.refuses('and charged on a basis the arithmetic knows',
+  $$insert into public.plant (entity_id, name, hire_basis) values ('aaaaaaaa-0000-0000-0000-000000000001','Odd','per furlong')$$);
+
+-- Idle and breakdown are separate columns on purpose: no work for it against
+-- it could not work. Different people are answerable for those.
+select t.allows('a log sheet records what the machine did',
+  $$insert into public.plant_logs (entity_id, plant_id, project_id, date, working_hours, idle_hours, fuel_cost)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','33333333-aaaa-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001', current_date, 6, 2, 3600)$$);
+select t.allows('and a day it was broken rather than merely standing',
+  $$insert into public.plant_logs (entity_id, plant_id, date, working_hours, breakdown_hours)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','33333333-aaaa-0000-0000-000000000001', current_date - 1, 0, 8)$$);
+select t.check('the two are told apart in the schema, not merged',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'plant_logs'
+      and column_name in ('idle_hours', 'breakdown_hours')) = 2);
+select t.refuses('hours cannot run backwards',
+  $$insert into public.plant_logs (entity_id, plant_id, date, working_hours)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','33333333-aaaa-0000-0000-000000000001', current_date, -4)$$);
+
 set request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';  -- mallory, another company
 select t.check('another company sees no muster', (select count(*) from public.labour_muster) = 0);
 select t.check('no work orders', (select count(*) from public.work_orders) = 0);
 select t.check('no running account bills', (select count(*) from public.ra_bills) = 0);
 select t.check('no schedule of work', (select count(*) from public.work_items) = 0);
-select t.check('and no measurements', (select count(*) from public.work_measurements) = 0);
+select t.check('no measurements', (select count(*) from public.work_measurements) = 0);
+select t.check('no plant', (select count(*) from public.plant) = 0);
+select t.check('and no log sheets', (select count(*) from public.plant_logs) = 0);
 
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';  -- dave, auditor
 select t.check('an auditor sees the sites', (select count(*) from public.projects) = 1);
