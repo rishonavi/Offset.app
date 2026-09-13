@@ -234,38 +234,95 @@ export function setApprovalPolicy(entityId, policy, actor) {
 
 // ── Operational ledgers ────────────────────────────────────────────
 // Thin CRUD; the arithmetic lives in the domain modules, not here.
-const collection = (key, action) => ({
+
+// What the log says about a row, which is not the row.
+//
+// An entry has to say enough to recognise what happened without becoming a
+// second copy of the ledger: the log is capped, and a full row per event would
+// push a month of real history out of it inside a week.
+const IDENTIFYING = [
+  'name', 'label', 'description', 'contractor', 'vendor', 'party', 'trade',
+  'kind', 'number', 'status', 'amount', 'qty', 'headcount', 'certified_to_date',
+]
+const brief = (value) => (typeof value === 'string' ? value.slice(0, 60) : value)
+
+const summarise = (row) => {
+  const out = {}
+  for (const field of IDENTIFYING) {
+    if (Object.keys(out).length >= 5) break
+    const v = row?.[field]
+    if (v === undefined || v === null || v === '') continue
+    out[field] = brief(v)
+  }
+  return Object.keys(out).length ? out : null
+}
+
+// Only the fields that actually moved, and only the ones worth reading. An
+// entry saying `status: booked → cancelled` is the point of having a log; one
+// echoing every field of an unchanged row is how a log becomes unreadable.
+const changed = (before, after) => {
+  const out = {}
+  for (const field of Object.keys(after || {})) {
+    if (Object.keys(out).length >= 8) break
+    if (field === 'id' || field === 'created_at') continue
+    const a = before?.[field]
+    const b = after?.[field]
+    // Objects and arrays are compared shallowly by their JSON, which is enough
+    // to know they differ and too much to print, so they are named and not
+    // quoted.
+    const same = a === b || (a && b && typeof a === 'object' && JSON.stringify(a) === JSON.stringify(b))
+    if (same) continue
+    out[field] = typeof b === 'object' && b !== null ? 'changed' : [brief(a) ?? null, brief(b) ?? null]
+  }
+  return Object.keys(out).length ? out : null
+}
+
+// `noun` names the thing in the audit trail: 'site' gives site.create,
+// site.update and site.delete. A collection without one writes no history,
+// which is a decision and not a default — every ledger below passes one.
+const collection = (key, noun) => ({
   list: (entityId = null) => read(key).filter((r) => !entityId || r.entity_id === entityId),
-  add: (row, actor) => {
+  add: (row, actor, entityId = null) => {
     write(key, [...read(key), row])
-    if (action) audit(actor, row.entity_id, action, row.id, null)
+    if (noun) audit(actor, row.entity_id || entityId, `${noun}.create`, row.id, summarise(row))
     return row
   },
-  update: (id, patch) => {
+  update: (id, patch, actor) => {
+    const before = read(key).find((r) => r.id === id)
     const list = read(key).map((r) => (r.id === id ? { ...r, ...patch, id: r.id } : r))
     write(key, list)
-    return list.find((r) => r.id === id)
+    const after = list.find((r) => r.id === id)
+    if (noun && before) audit(actor, after?.entity_id, `${noun}.update`, id, changed(before, after))
+    return after
   },
-  remove: (id) => write(key, read(key).filter((r) => r.id !== id)),
+  remove: (id, actor) => {
+    const row = read(key).find((r) => r.id === id)
+    write(key, read(key).filter((r) => r.id !== id))
+    if (noun && row) audit(actor, row.entity_id, `${noun}.delete`, id, summarise(row))
+  },
 })
 
-export const items = collection(KEYS.items)
-export const movements = collection(KEYS.movements)
-export const advances = collection(KEYS.advances)
-export const adjustments = collection(KEYS.adjustments)
-export const employees = collection(KEYS.employees)
-export const projects = collection(KEYS.projects)
-export const quotes = collection(KEYS.quotes)
-export const muster = collection(KEYS.muster)
-export const workOrders = collection(KEYS.workOrders)
-export const raBills = collection(KEYS.raBills)
-export const workItems = collection(KEYS.workItems)
-export const measurements = collection(KEYS.measurements)
-export const plant = collection(KEYS.plant)
-export const plantLogs = collection(KEYS.plantLogs)
-export const units = collection(KEYS.units)
-export const planStages = collection(KEYS.planStages)
-export const receipts = collection(KEYS.receipts)
+// Every ledger names itself in the trail. On a construction site a
+// certification decides a payment and a status change decides whether a flat
+// can be sold, so these are precisely the writes worth being able to look up
+// later — and until now not one of them was recorded.
+export const items = collection(KEYS.items, 'material')
+export const movements = collection(KEYS.movements, 'movement')
+export const advances = collection(KEYS.advances, 'advance')
+export const adjustments = collection(KEYS.adjustments, 'adjustment')
+export const employees = collection(KEYS.employees, 'employee')
+export const projects = collection(KEYS.projects, 'site')
+export const quotes = collection(KEYS.quotes, 'quotation')
+export const muster = collection(KEYS.muster, 'muster')
+export const workOrders = collection(KEYS.workOrders, 'workorder')
+export const raBills = collection(KEYS.raBills, 'rabill')
+export const workItems = collection(KEYS.workItems, 'workitem')
+export const measurements = collection(KEYS.measurements, 'measurement')
+export const plant = collection(KEYS.plant, 'plant')
+export const plantLogs = collection(KEYS.plantLogs, 'plantlog')
+export const units = collection(KEYS.units, 'unit')
+export const planStages = collection(KEYS.planStages, 'instalment')
+export const receipts = collection(KEYS.receipts, 'receipt')
 
 // ── Whole-account helpers ──────────────────────────────────────────
 export function exportCorporate() {

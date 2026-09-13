@@ -5,12 +5,16 @@ import {
   listMembers, addMember, setMemberRole, removeMember,
   listDepartments, createDepartment, updateDepartment, deleteDepartment,
   approvalPolicy, setApprovalPolicy, listAudit, recordAudit,
-  items, movements, advances, employees, exportCorporate, importCorporate, hasCorporateData, clearCorporate,
+  items, movements, advances, employees, projects, quotes, raBills, units,
+  exportCorporate, importCorporate, hasCorporateData, clearCorporate,
 } from '../../src/lib/storage/corporate.js'
 import { makeItem, makeMovement } from '../../src/lib/inventory.js'
 import { makeAdvance } from '../../src/lib/advances.js'
 import { makeEmployee } from '../../src/lib/payroll.js'
-import { makeAuditEvent } from '../../src/lib/corporate.js'
+import { makeAuditEvent, AUDIT_ACTIONS } from '../../src/lib/corporate.js'
+import { makeProject } from '../../src/lib/projects.js'
+import { makeRaBill } from '../../src/lib/subcontract.js'
+import { makeUnit } from '../../src/lib/sales.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
@@ -199,6 +203,57 @@ eq('a non-array reads as empty', listEntities(), [])
 map.set('pl_corp_policy', 'nonsense')
 eq('a corrupt policy falls back to off', approvalPolicy('x').enabled, false)
 ok('and a company can still be created over it', Boolean(createEntity({ name: 'Recovered' }, actor).id))
+
+console.log('\n── THE CONSTRUCTION LEDGERS LEAVE A TRAIL ──')
+// They did not, for a while. Every one was registered without a name, so a
+// certification that decided a payment and a status change that decided whether
+// a flat could be sold both went unrecorded — in an app that has an audit log,
+// shows it on a page, and tested it.
+reset()
+const site = createEntity({ name: 'Navi Builders' }, actor)
+const job = projects.add(makeProject({ entityId: site.id, name: 'Marine Drive Tower' }), actor)
+eq('opening a site is recorded', listAudit({ entityId: site.id })[0].action, 'site.create')
+eq('and says which site', listAudit({ entityId: site.id })[0].detail.name, 'Marine Drive Tower')
+eq('with who did it', listAudit({ entityId: site.id })[0].actor_email, 'krish@example.com')
+// The summary is what a reader sees, so an unlabelled action would show as a
+// bare dotted string.
+eq('and reads as a sentence', listAudit({ entityId: site.id })[0].summary, 'opened a site')
+
+projects.update(job.id, { status: 'completed' }, actor)
+const edit = listAudit({ entityId: site.id })[0]
+eq('editing is recorded too', edit.action, 'site.update')
+// The point of a log: what moved, not a second copy of the row.
+eq('saying what moved', edit.detail.status, ['planned', 'completed'])
+ok('and nothing that did not', !('name' in edit.detail), JSON.stringify(edit.detail))
+
+const quote = quotes.add({ id: 'q1', entity_id: site.id, vendor: 'Shree Traders', lines: [] }, actor)
+quotes.remove(quote.id, actor)
+eq('deleting is recorded', listAudit({ entityId: site.id })[0].action, 'quotation.delete')
+eq('with enough to know what went', listAudit({ entityId: site.id })[0].detail.vendor, 'Shree Traders')
+
+// The writes that decide money.
+raBills.add(makeRaBill({ workOrderId: 'wo1', entityId: site.id, number: 1, certifiedToDate: 1750000 }), actor)
+eq('a certification is recorded', listAudit({ entityId: site.id })[0].action, 'rabill.create')
+eq('with the figure that was certified', listAudit({ entityId: site.id })[0].detail.certified_to_date, 1750000)
+const flat = units.add(makeUnit({ entityId: site.id, name: 'A-1204', status: 'booked' }), actor)
+units.update(flat.id, { status: 'cancelled' }, actor)
+eq('and a flat changing hands', listAudit({ entityId: site.id })[0].detail.status, ['booked', 'cancelled'])
+
+// A log nobody can read is not a log.
+const actions = listAudit({ entityId: site.id }).map((e) => e.action)
+ok('every action written has a sentence for it',
+  actions.every((a) => AUDIT_ACTIONS[a]), actions.filter((a) => !AUDIT_ACTIONS[a]).join(', '))
+// It is capped, so an entry has to be small enough that a month of real history
+// survives in it.
+ok('and no entry carries the whole row',
+  listAudit({ entityId: site.id }).every((e) => !e.detail || Object.keys(e.detail).length <= 8),
+  JSON.stringify(listAudit({ entityId: site.id }).map((e) => Object.keys(e.detail || {}).length)))
+
+// An adjustment reaches its company through the advance, but the trail files by
+// company, so it has to carry one.
+const adv = advances.add(makeAdvance({ entityId: site.id, party: 'Sharma', amount: 50000 }), actor)
+eq('an advance is recorded', listAudit({ entityId: site.id })[0].action, 'advance.create')
+ok('against the right company', listAudit({ entityId: site.id })[0].entity_id === site.id, String(adv.entity_id))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

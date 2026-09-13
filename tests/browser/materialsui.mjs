@@ -337,6 +337,38 @@ ok('it can be narrowed to rejections', /Set hard in transit/.test(filtered) && !
 await p.locator('select[aria-label="Filter by movement"]').selectOption('')
 await p.waitForTimeout(400)
 
+console.log('\n── AND IT ALL LEAVES A TRAIL ──')
+// Every construction ledger used to write nothing at all to the audit log, in
+// an app that keeps one, shows it on a page, and tested it — so what went
+// unrecorded was exactly the work that decides money.
+// Deleting is the one write this suite had not exercised, and an untried path
+// is exactly where a silent ledger hides.
+await outerTab('Materials')
+await view('Quotations')
+const quotesBefore = (await ls('pl_corp_quotes')).length
+await p.locator('#main-content button[aria-label^="Delete quotation"]').first().click()
+await p.waitForTimeout(600)
+ok('a quotation can be deleted', (await ls('pl_corp_quotes')).length === quotesBefore - 1,
+  `${quotesBefore} → ${(await ls('pl_corp_quotes')).length}`)
+
+const trail = await ls('pl_corp_audit')
+for (const action of ['material.create', 'movement.create', 'quotation.create', 'quotation.delete']) {
+  ok(`${action} is recorded`, trail.some((a) => a.action === action),
+    [...new Set(trail.map((a) => a.action))].join(', '))
+}
+ok('every entry names the company it belongs to', trail.every((a) => a.entity_id === 'ent-mat-1'))
+ok('and reads as a sentence rather than a dotted string',
+  trail.every((a) => a.summary && !/^[a-z]+\.[a-z]+$/.test(a.summary)),
+  trail.filter((a) => /^[a-z]+\.[a-z]+$/.test(a.summary || '')).map((a) => a.action).join(', '))
+await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
+const shown = await main()
+ok('and the log on screen shows the construction work',
+  /recorded a stock movement|added a material/i.test(shown), shown.slice(-900))
+await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(600)
+await outerTab('Materials')
+
 console.log('\n── FINDING IT ──')
 // Somebody looking for where the cement is types "cement", not "operations".
 await p.locator('body').click({ position: { x: 5, y: 5 } })

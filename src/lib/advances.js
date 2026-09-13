@@ -47,10 +47,13 @@ export function makeAdvance({
   }
 }
 
-export function makeAdjustment({ id, advanceId, amount = 0, against = null, date, note = '' } = {}) {
+export function makeAdjustment({ id, advanceId, entityId = null, amount = 0, against = null, date, note = '' } = {}) {
   return {
     id: id || newId(),
     advance_id: advanceId,
+    // Carried even though the arithmetic reaches it through the advance: the
+    // audit trail files by company, and the cloud schema scopes by it.
+    entity_id: entityId,
     amount: Math.max(0, round2(amount)),
     // The expense (or payroll run) this advance was set against.
     against,

@@ -307,7 +307,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast }) {
   }
 
   const releaseRetention = (line) => {
-    store.workOrders.update(line.order.id, { retention_released: line.retentionAccrued })
+    store.workOrders.update(line.order.id, { retention_released: line.retentionAccrued }, actor)
     bump()
     toast('Retention released')
   }

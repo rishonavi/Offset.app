@@ -171,7 +171,7 @@ function Advances({ data, eid, actor, canWrite, bump, toast }) {
       toast(check.why, { type: 'error' })
       return
     }
-    store.adjustments.add(makeAdjustment({ advanceId: advance.id, amount, note: settle.note, date: today() }), actor)
+    store.adjustments.add(makeAdjustment({ entityId: eid, advanceId: advance.id, amount, note: settle.note, date: today() }), actor)
     setSettle({ advanceId: '', amount: '', note: '' })
     bump()
     toast('Adjusted')
@@ -347,6 +347,7 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
         const amount = Math.round(Math.min(left, fresh.outstanding) * 100) / 100
         if (!canAdjust(l.advance, store.adjustments.list(), amount).ok) continue
         store.adjustments.add(makeAdjustment({
+          entityId: eid,
           advanceId: l.advance.id,
           amount,
           against: `payroll:${period}`,

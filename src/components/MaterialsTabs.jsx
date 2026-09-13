@@ -525,7 +525,7 @@ function Quotations({ data, eid, actor, canWrite, bump, toast }) {
   // 100 bags of cement on the shelf the moment somebody agreed a price, and the
   // stores would be wrong until the lorry turned up — or for ever, if it never
   // did. So accepting only records the decision.
-  const accept = (quote) => { store.quotes.update(quote.id, { status: 'accepted' }); bump(); toast('Quotation accepted') }
+  const accept = (quote) => { store.quotes.update(quote.id, { status: 'accepted' }, actor); bump(); toast('Quotation accepted') }
 
   // The delivery, when it arrives, at the rate that was agreed — so nobody
   // re-keys the rate and nobody re-keys it wrong. Stamped once, because
@@ -536,13 +536,13 @@ function Quotations({ data, eid, actor, canWrite, bump, toast }) {
     for (const r of receiptsFromQuote(quote, { entityId: eid })) {
       store.movements.add(makeMovement({ ...r, createdBy: actor?.id }), actor)
     }
-    store.quotes.update(quote.id, { received_at: new Date().toISOString() })
+    store.quotes.update(quote.id, { received_at: new Date().toISOString() }, actor)
     bump()
     toast('Delivery recorded at the quoted rate')
   }
 
-  const decline = (quote) => { store.quotes.update(quote.id, { status: 'declined' }); bump(); toast('Quotation declined') }
-  const remove = (quote) => { store.quotes.remove(quote.id); bump(); toast('Quotation deleted') }
+  const decline = (quote) => { store.quotes.update(quote.id, { status: 'declined' }, actor); bump(); toast('Quotation declined') }
+  const remove = (quote) => { store.quotes.remove(quote.id, actor); bump(); toast('Quotation deleted') }
 
   return (
     <div className="space-y-4">

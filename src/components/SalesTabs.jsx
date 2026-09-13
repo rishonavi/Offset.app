@@ -103,7 +103,7 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
   }
 
   const setStatus = (unit, status) => {
-    store.units.update(unit.id, { status })
+    store.units.update(unit.id, { status }, actor)
     bump()
     toast(`Marked ${UNIT_STATUS[status].label.toLowerCase()}`)
   }

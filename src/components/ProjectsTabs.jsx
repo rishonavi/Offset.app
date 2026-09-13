@@ -113,7 +113,7 @@ function Sites({ data, eid, actor, canWrite, bump, toast }) {
       // makeProject re-derives the stored shape, then the id and the creation
       // date are put back: editing a site must not make it a different one.
       const next = makeProject({ ...payload, entityId: eid, id: editing.id })
-      store.projects.update(editing.id, { ...next, created_at: editing.created_at })
+      store.projects.update(editing.id, { ...next, created_at: editing.created_at }, actor)
       toast('Site updated')
     } else {
       store.projects.add(makeProject({ ...payload, entityId: eid }), actor)
