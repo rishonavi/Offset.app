@@ -281,6 +281,30 @@ schema on top of whatever was already in the scratch database, so deleting the
 migration that makes a column nullable left it nullable from yesterday with
 every assertion still green. It empties the database first now.
 
+**Done and verified** — the first screen a builder sees, 18 more logic
+assertions and 11 more on screen:
+
+The getting-started checklist told every new install that everything hangs off
+an asset. That is the same sentence that produced the invented "Company Depot",
+and it was still being said on the dashboard after the books underneath had
+stopped requiring one.
+
+- A company gets four different steps, ticked by the same books: add a site,
+  log a cost against it, record what the client has paid, cost one of your jobs.
+  The last replaces the monthly budget and does the same work — until a site has
+  an estimate, Offset can say what a job has cost but not whether that is too
+  much.
+- An asset does not tick "add your first site", and a budget on an asset does
+  not finish a company's list.
+- The checklist is **dismissed per set of books**. Waving away your own says
+  nothing about a company you were added to yesterday, where the list is a
+  different list and none of it is done. Personal keeps the original storage
+  key, so nobody who has already dismissed it sees it again.
+- The sample portfolio — two flats, a car and a year of rent — is not offered
+  inside a company. Loading a landlord's assets into a construction ledger is
+  the invented asset again with a button on it. A construction sample worth
+  offering is a real piece of work and is not built.
+
 **Next**, in order:
 
 1. Departments on entry forms; budgets and reports per cost centre

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, X, Sparkles, ArrowRight } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
+import { useSites } from './SiteField'
 import { useToast } from '../context/ToastContext'
 import { steps as onboardingSteps, progress, dismiss, shouldShow } from '../lib/onboarding'
 import { installSampleData, hasRealData } from '../lib/sampleData'
@@ -13,18 +15,36 @@ import { Card, Button } from './ui'
 export default function GettingStarted() {
   const data = useData()
   const { properties, expenses, income, addProperty, addExpense, addIncome, refresh, canWrite } = data
+  const ent = useEntity()
+  // The sites this company is building, which is what its first step is about.
+  // `useSites` answers with nothing outside a single company's books, so a
+  // personal install reads exactly as it always did.
+  const projects = useSites()
   const toast = useToast()
   const [hidden, setHidden] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  if (hidden || !shouldShow({ properties, expenses, income })) return null
+  // One object, used for every question asked below, so the list, the count and
+  // whether to show at all cannot disagree about which books they are in.
+  const books = {
+    properties,
+    expenses,
+    income,
+    projects,
+    corporate: Boolean(ent?.corporate),
+    entityId: ent?.corporate && !ent.consolidated ? ent.activeId : '',
+  }
+  if (hidden || !shouldShow(books)) return null
 
-  const list = onboardingSteps({ properties, expenses, income })
-  const { done, total } = progress({ properties, expenses, income })
-  const empty = !hasRealData({ properties, expenses, income })
+  const list = onboardingSteps(books)
+  const { done, total } = progress(books)
+  // The sample portfolio is two flats, a car and a year of rent. Offering it
+  // inside a builder's books would put a landlord's assets in a company ledger,
+  // which is the invented-asset problem again with a button on it.
+  const empty = !books.corporate && !hasRealData({ properties, expenses, income })
 
   const hide = () => {
-    dismiss()
+    dismiss(books.entityId)
     setHidden(true)
   }
 

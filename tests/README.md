@@ -36,7 +36,7 @@ for Vite's resolver.
 | `metalbill.test.mjs` | 43 | reading a jeweller's bill into a metal holding |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
-| `onboarding.test.mjs` | 44 | empty install, sample data |
+| `onboarding.test.mjs` | 62 | empty install, sample data, and the different list a builder is given |
 | `ops.test.mjs` | 214 | inventory, payables, advances, payroll, and each over a period |
 | `place.test.mjs` | 29 | what a cost is booked to when the company owns nothing, and what may be left blank |
 | `plant.test.mjs` | 62 | what a machine costs per hour it works, not per hour it is hired |
@@ -50,7 +50,7 @@ for Vite's resolver.
 | `syncwire.test.mjs` | 41 | what a pull asks for, what a push sends, and one table failing |
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **2,220** | |
+| | **2,238** | |
 
 ## Browser — `tests/browser/`
 
@@ -90,7 +90,7 @@ node tests/browser/rtlui.mjs
 | `metalsui.mjs` | 27 | metal holdings on screen |
 | `navui.mjs` | 22 | the side bar: grouping, what is waiting, a short screen, and its own padding |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
-| `onboardui.mjs` | 22 | the empty install |
+| `onboardui.mjs` | 33 | the empty install, and a company's, which starts with a site |
 | `placeui.mjs` | 36 | a builder's costs, which belong to things the builder does not own |
 | `plantui.mjs` | 40 | the yard, log sheets, idle against broken, and days billed with nothing written down |
 | `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
@@ -104,10 +104,10 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,371** | |
+| | **1,382** | |
 
 That total is what one sweep of the demo build reports. The column above it sums
-to 1,395: `loginui.mjs`'s 24 are the difference, because that suite needs the
+to 1,406: `loginui.mjs`'s 24 are the difference, because that suite needs the
 other build and does not run in the same pass.
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from

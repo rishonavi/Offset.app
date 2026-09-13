@@ -34,6 +34,8 @@ import {
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import GettingStarted from '../components/GettingStarted'
+import { useSites } from '../components/SiteField'
+import { useEntity } from '../context/EntityContext'
 import { shouldShow as shouldShowOnboarding } from '../lib/onboarding'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory, CHART_PALETTE } from '../lib/constants'
@@ -149,6 +151,12 @@ function DashboardSkeleton() {
 export default function Dashboard() {
   const { expenses, income, properties, documents, loading, propertyNameById, placeName, placeOfRow, canWrite, addExpense, addIncome } = useData()
   const toast = useToast()
+  // Read here, above every early return, because a hook below one is a hook
+  // that sometimes does not run — which took the consolidated view down once
+  // already. Both feed the getting-started card, whose list is a different list
+  // in a company's books.
+  const ent = useEntity()
+  const projects = useSites()
   const [propertyId, setPropertyId] = useState('')
   const [range, setRange] = useState('all')
 
@@ -274,6 +282,18 @@ export default function Dashboard() {
 
   if (loading) return <DashboardSkeleton />
 
+  // A company can own nothing and still be a going concern, so an empty asset
+  // list is not an empty install. What makes this screen the right one is that
+  // nothing has been logged at all.
+  const books = {
+    properties,
+    expenses,
+    income,
+    projects,
+    corporate: Boolean(ent?.corporate),
+    entityId: ent?.corporate && !ent.consolidated ? ent.activeId : '',
+  }
+
   if (properties.length === 0 && expenses.length === 0) {
     // The checklist is a better first screen than a single line of welcome —
     // it says all four steps and can load a portfolio to look around. Once it
@@ -282,8 +302,21 @@ export default function Dashboard() {
     return (
       <div className="animate-fade-in">
         <h1 className="mb-6 text-2xl font-bold text-ink-1">Dashboard</h1>
-        {shouldShowOnboarding({ properties, expenses, income }) ? (
+        {shouldShowOnboarding(books) ? (
           <GettingStarted />
+        ) : books.corporate ? (
+          /* Telling a builder to start with an asset is how somebody ends up
+             inventing one. Their costs belong to jobs — see lib/place.js. */
+          <EmptyState
+            icon={Building2}
+            title="Welcome to Offset"
+            subtitle="Start with a site — the job everything gets booked to — then log what it costs and what the client pays. Your charts and totals appear here."
+            action={
+              <Link to="/operations" className="btn-primary">
+                <Plus size={16} /> Add your first site
+              </Link>
+            }
+          />
         ) : (
           <EmptyState
             icon={Building2}

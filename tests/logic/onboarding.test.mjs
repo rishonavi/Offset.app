@@ -50,6 +50,51 @@ O.undismiss()
 ok('and can be brought back', O.shouldShow(EMPTY))
 eq('progress is a percentage too', O.progress(withCost).percent, 50)
 
+console.log('\n── A BUILDER IS ASKED SOMETHING ELSE ──')
+// Telling a construction company that everything hangs off an asset is how
+// somebody invents one. Their costs belong to jobs — lib/place.js says why.
+const CO = { properties: [], expenses: [], income: [], projects: [], corporate: true, entityId: 'e1' }
+eq('a company starts with a site, not an asset', O.nextStep(CO).id, 'site')
+eq('it is still four steps', O.progress(CO).total, 4)
+// The control: the same empty books without the flag ask for an asset, so the
+// assertion above is reading the flag and not simply the first step of a list.
+eq('personal books are still asked for an asset', O.nextStep({ ...CO, corporate: false }).id, 'asset')
+// And the one that would have gone unnoticed: an asset must not tick a
+// builder's first step, or the list would report itself part-done for work
+// nobody has started.
+const coWithAsset = { ...CO, properties: [{ id: 'p1', name: 'Head Office' }] }
+eq('owning an office does not tick "add your first site"', O.progress(coWithAsset).done, 0)
+const coSite = { ...CO, projects: [{ id: 's1', name: 'Marine Drive Tower' }] }
+eq('a site does', O.progress(coSite).done, 1)
+eq('then a cost', O.nextStep(coSite).id, 'expense')
+const coCost = { ...coSite, expenses: [{ id: 'e1', amount: 810000 }] }
+eq('logging one moves on to what the client paid', O.nextStep(coCost).id, 'income')
+const coPaid = { ...coCost, income: [{ id: 'i1', amount: 1200000 }] }
+eq('and the last thing is costing the job', O.nextStep(coPaid).id, 'estimate')
+ok('which is not done while the site has no estimate', !O.progress(coPaid).complete)
+const coZero = { ...coPaid, projects: [{ id: 's1', name: 'Marine Drive Tower', estimate: 0 }] }
+ok('an estimate of zero does not count as costed', !O.progress(coZero).complete)
+const coCosted = { ...coPaid, projects: [{ id: 's1', name: 'Marine Drive Tower', estimate: 80000000 }] }
+ok('a real one finishes the list', O.progress(coCosted).complete)
+// A monthly budget is the personal books' version of the same question, and
+// setting one must not finish a builder's list in its place.
+ok('a budget on an asset does not finish a company list',
+  !O.progress({ ...coPaid, properties: [{ id: 'p1', monthly_budget: 50000 }] }).complete)
+
+console.log('\n── WAVED AWAY IN ONE SET OF BOOKS ──')
+// Dismissing your own checklist says nothing about a company you were added to
+// yesterday, where the list is a different list and none of it is done.
+O.dismiss()
+ok('personal is hidden', !O.shouldShow(EMPTY))
+ok('but the company still asks', O.shouldShow(CO))
+O.dismiss('e1')
+ok('until that one is waved away too', !O.shouldShow(CO))
+ok('which does not disturb a second company', O.shouldShow({ ...CO, entityId: 'e2' }))
+O.undismiss('e1')
+ok('and it comes back on its own', O.shouldShow(CO))
+ok('while personal stays hidden', !O.shouldShow(EMPTY))
+O.undismiss()
+
 console.log('\n── SAMPLE DATA IS TAGGED ──')
 ok('a tagged row is recognised', S.isSampleRow({ is_sample: true }))
 ok('a row a user typed is not', !S.isSampleRow({ name: 'My flat' }))
