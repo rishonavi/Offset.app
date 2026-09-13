@@ -170,9 +170,9 @@ export function nextNumber(pattern = 'INV-{FY}-{0001}', seq = 1, dateISO) {
 // ── From the ledger ────────────────────────────────────────────────
 // The point of invoicing from inside Offset rather than a separate app: the
 // lines are entries that already exist.
-export function linesFromIncome(rows, { propertyNameById } = {}) {
+export function linesFromIncome(rows, { placeName } = {}) {
   return rows.map((r) => ({
-    description: [r.source || 'Income', r.property_id && propertyNameById?.(r.property_id), r.date && formatDate(r.date)]
+    description: [r.source || 'Income', placeName?.(r), r.date && formatDate(r.date)]
       .filter(Boolean)
       .join(' · '),
     qty: 1,

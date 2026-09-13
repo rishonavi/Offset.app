@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Receipt, Building2 } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
+import { assetOptional } from '../lib/place'
 import { useToast } from '../context/ToastContext'
 import { applyFilters, emptyFilters, sumAmount, hasActiveFilters } from '../lib/filters'
 import { CATEGORIES } from '../lib/constants'
@@ -12,7 +14,8 @@ import FilterBar from '../components/FilterBar'
 import ExpenseTable from '../components/ExpenseTable'
 
 export default function Expenses() {
-  const { expenses, properties, loading, deleteExpense, restoreExpense, addExpense, updateExpense, propertyNameById, canWrite } = useData()
+  const { expenses, properties, loading, deleteExpense, restoreExpense, addExpense, updateExpense, placeName, canWrite } = useData()
+  const assetFree = assetOptional(useEntity())
   const [filters, setFilters] = useState(emptyFilters)
   const navigate = useNavigate()
   const toast = useToast()
@@ -76,7 +79,9 @@ export default function Expenses() {
 
   if (loading) return <Spinner />
 
-  const noProperties = properties.length === 0
+  // A company's spend need not sit on anything it owns, so an empty asset list
+  // is not an empty page — see lib/place.js.
+  const noProperties = properties.length === 0 && !assetFree
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -125,7 +130,7 @@ export default function Expenses() {
           ) : (
             <ExpenseTable
               expenses={filtered}
-              propertyNameById={propertyNameById}
+              placeName={placeName}
               onEdit={(e) => navigate(`/expenses/${e.id}/edit`)}
               onDelete={removeExpense}
               onMarkSettled={markPaid}

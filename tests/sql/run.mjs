@@ -9,7 +9,8 @@
 //   createdb offset_test
 //   OFFSET_TEST_PG='postgresql:///offset_test' node tests/sql/run.mjs
 //
-// The database is left in place afterwards. Point it at a scratch database.
+// The database is emptied first and left in place afterwards. Point it at a
+// scratch database and nothing else.
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
@@ -54,6 +55,17 @@ do $$ begin
   end if;
 end $$;
 `)
+
+// Emptied before anything is applied, because a suite that runs on top of the
+// last run is a suite that cannot see a migration go missing: drop the line
+// that makes a column nullable and the column stays nullable from yesterday,
+// and every assertion still passes. Found exactly that way.
+const reset = psql(['-q', '-c', 'drop schema if exists public cascade; create schema public;'
+  + ' drop schema if exists auth cascade; drop schema if exists storage cascade;'])
+if (reset.status !== 0) {
+  console.log(`**FAIL**  could not empty the database\n${(reset.stderr || '').trim()}`)
+  process.exit(1)
+}
 
 const steps = [
   ['Supabase stand-ins', stub],

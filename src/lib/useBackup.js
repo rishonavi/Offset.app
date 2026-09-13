@@ -14,7 +14,7 @@ import { exportCorporate, importCorporate, hasCorporateData } from './storage/co
 // one being a bug in the other, which is exactly how a backup quietly stops
 // round-tripping.
 export function useBackup(baseName) {
-  const { expenses, income, properties, propertyNameById, addProperty, addExpense, addIncome } = useData()
+  const { expenses, income, properties, addProperty, addExpense, addIncome } = useData()
   // Companies, departments, stock, advances and payroll live in their own
   // store. exportCorporate had been written and never called, so a backup
   // quietly held only the personal books — and restoring one onto a new browser
@@ -69,11 +69,29 @@ export function useBackup(baseName) {
         createdProps += 1
       }
     }
+    // An entry that never named an asset used to be dropped here without a
+    // word, because the loop could not tell "booked to nothing" from "booked to
+    // something I cannot find". That was nearly survivable when every entry had
+    // an asset; it is not now that a company's costs sit against a job, or
+    // against nothing at all. A builder restoring a backup would have silently
+    // lost every overhead in it.
+    //
+    // An entry naming an asset that is not in the file is still skipped: that
+    // is a broken reference rather than an unbooked cost, and the books it
+    // would land in may still require the asset.
+    const asset = (e) => {
+      if (!e.property_id) return null
+      const found = nameToId.get((oldIdToName.get(e.property_id) || '').trim().toLowerCase())
+      return found || undefined          // undefined = named something missing
+    }
     for (const e of data.expenses || []) {
-      const pid = nameToId.get((oldIdToName.get(e.property_id) || '').trim().toLowerCase())
-      if (!pid) continue
+      const pid = asset(e)
+      if (pid === undefined) continue
       await addExpense({
         property_id: pid,
+        // Sites keep their own ids through importCorporate, so this still
+        // points at the job the cost was actually for.
+        project_id: e.project_id || null,
         date: e.date,
         amount: Number(e.amount) || 0,
         category: e.category || 'Other',
@@ -88,10 +106,11 @@ export function useBackup(baseName) {
       addedExp += 1
     }
     for (const e of data.income || []) {
-      const pid = nameToId.get((oldIdToName.get(e.property_id) || '').trim().toLowerCase())
-      if (!pid) continue
+      const pid = asset(e)
+      if (pid === undefined) continue
       await addIncome({
         property_id: pid,
+        project_id: e.project_id || null,
         date: e.date,
         amount: Number(e.amount) || 0,
         source: e.source || 'Other',

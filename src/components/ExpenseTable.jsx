@@ -4,6 +4,8 @@ import { colorForCategory } from '../lib/constants'
 import { formatCurrency, formatDate } from '../lib/format'
 import { isSettled } from '../lib/payments'
 import { useSorted, SortTh } from '../lib/tableSort'
+import { placeHeading } from '../lib/place'
+import { useEntity } from '../context/EntityContext'
 import { Badge } from './ui'
 import PaymentChip from './PaymentChip'
 import ReceiptViewer from './ReceiptViewer'
@@ -11,15 +13,19 @@ import ReceiptViewer from './ReceiptViewer'
 // Render rows in pages so a few thousand entries don't paint at once.
 const PAGE = 100
 
-export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDelete, onMarkSettled, onDuplicate, onBulkDelete, onBulkSettle, selectable, readOnly }) {
+export default function ExpenseTable({ expenses, placeName, onEdit, onDelete, onMarkSettled, onDuplicate, onBulkDelete, onBulkSettle, selectable, readOnly }) {
   const [viewing, setViewing] = useState(null)
   const [selected, setSelected] = useState(() => new Set())
   const [limit, setLimit] = useState(PAGE)
   const canSelect = selectable && !readOnly
+  // "Property" is exactly right for a landlord and wrong for a builder, whose
+  // costs sit against jobs they will never own.
+  const ent = useEntity()
+  const heading = placeHeading(ent?.corporate)
 
   const { sorted, sort, toggle: onSort } = useSorted(expenses, {
     date: (e) => e.date || '',
-    property: (e) => propertyNameById(e.property_id) || '',
+    property: (e) => placeName(e) || '',
     category: (e) => e.category || '',
     vendor: (e) => e.vendor || '',
     amount: (e) => Number(e.amount) || 0,
@@ -81,7 +87,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
                 </th>
               )}
               <SortTh label="Date" k="date" sort={sort} onSort={onSort} />
-              <SortTh label="Property" k="property" sort={sort} onSort={onSort} />
+              <SortTh label={heading} k="property" sort={sort} onSort={onSort} />
               <SortTh label="Category" k="category" sort={sort} onSort={onSort} />
               <SortTh label="Vendor" k="vendor" sort={sort} onSort={onSort} />
               <SortTh label="Amount" k="amount" sort={sort} onSort={onSort} align="right" />
@@ -97,7 +103,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
                   </td>
                 )}
                 <td className="whitespace-nowrap px-4 py-3 text-ink-4">{formatDate(e.date)}</td>
-                <td className="px-4 py-3 font-medium text-ink-2">{propertyNameById(e.property_id) || '—'}</td>
+                <td className="px-4 py-3 font-medium text-ink-2">{placeName(e) || '—'}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge color={colorForCategory(e.category)}>{e.category}</Badge>
@@ -173,7 +179,7 @@ export default function ExpenseTable({ expenses, propertyNameById, onEdit, onDel
                   <input type="checkbox" className="mt-1" checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label="Select row" />
                 )}
                 <div className="min-w-0">
-                  <div className="truncate font-semibold text-ink-2">{propertyNameById(e.property_id) || '—'}</div>
+                  <div className="truncate font-semibold text-ink-2">{placeName(e) || '—'}</div>
                   <div className="mt-0.5 text-xs text-ink-5">{formatDate(e.date)}</div>
                 </div>
               </div>

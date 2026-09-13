@@ -4,6 +4,7 @@ import { INCOME_SOURCES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from 
 import { useT } from '../context/LanguageContext'
 import { draftKey, readDraft, writeDraft, clearDraft, draftDiffers } from '../lib/draft'
 import { useEntity } from '../context/EntityContext'
+import { assetOptional } from '../lib/place'
 import { RECURRENCE_OPTIONS } from '../lib/recurring'
 import { amountError } from '../lib/money'
 import { parseEntry } from '../lib/ai'
@@ -27,6 +28,11 @@ export default function IncomeForm({ initial, properties, payers = [], history =
   // Scoped to the books being filled in, so a company draft never lands in a
   // personal form.
   const ent = useEntity()
+  // A builder's costs belong to the job, and the job is not theirs. In a
+  // company's books the asset is one answer out of three — asset, site, or an
+  // overhead that is honestly neither. Personal books still insist, because
+  // nothing else in them can carry a cost. lib/place.js says why.
+  const assetFree = assetOptional(ent)
   const key = draftKey('income', initial?.id, ent?.corporate && !ent.consolidated ? ent.activeId : '')
   // Filled in from what this person actually does, rather than left blank or set
   // to whichever asset happens to sort first. All three decline to answer unless
@@ -41,8 +47,12 @@ export default function IncomeForm({ initial, properties, payers = [], history =
     [history, assetIds],
   )
   const blank = {
-    property_id:
-      initial?.property_id || defaultPropertyId || learned.property_id || (properties[0]?.id ?? ''),
+    // An entry being edited keeps what it was booked to, including nothing.
+    // A new one guesses, but never guesses an asset in a company: booking a
+    // site's cement to whichever office sorts first is worse than leaving it.
+    property_id: initial
+      ? initial.property_id || ''
+      : defaultPropertyId || learned.property_id || (assetFree ? '' : properties[0]?.id ?? ''),
     date: initial?.date || todayISO(),
     amount: initial?.amount ?? '',
     tax: initial?.tax ?? '',
@@ -263,7 +273,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.property_id) return setError(t('entry.needProperty'))
+    if (!assetFree && !form.property_id) return setError(t('entry.needProperty'))
     if (!form.date) return setError(t('entry.needDate'))
     if (!form.source) return setError('Please choose a source.')
     const amount = Number(form.amount)
@@ -281,7 +291,7 @@ export default function IncomeForm({ initial, properties, payers = [], history =
       let receipt_url = existingReceipt
       if (file) receipt_url = await db.uploadReceipt(file)
       await onSubmit({
-        property_id: form.property_id,
+        property_id: form.property_id || null,
         date: form.date,
         amount,
         tax: form.tax === '' ? null : Number(form.tax),
@@ -356,15 +366,27 @@ export default function IncomeForm({ initial, properties, payers = [], history =
       </div>
 
       <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-        <Field className="sm:col-span-2" label={t('entry.property')} required origin={originText('property_id')}>
-          <Select value={form.property_id} onChange={set('property_id')}>
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {/* Gone entirely in a company that owns nothing, rather than shown as a
+            select whose only option says "none" — the same reason SiteField
+            hides itself when there are no sites. */}
+        {(!assetFree || properties.length > 0) && (
+          <Field
+            className="sm:col-span-2"
+            label={t('entry.property')}
+            required={!assetFree}
+            origin={originText('property_id')}
+            hint={assetFree ? 'Office rent and the auditor belong to no asset. Leave it, and the dashboard will say what nobody is carrying.' : undefined}
+          >
+            <Select value={form.property_id} onChange={set('property_id')}>
+              {assetFree && <option value="">Not booked to an asset</option>}
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
 
         <SiteField
           value={form.project_id}

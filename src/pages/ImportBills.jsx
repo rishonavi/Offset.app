@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, Loader2, Sparkles, Plus, X, Building2, Inbox, Upload, Calculator, CheckCircle2, AlertCircle, DownloadCloud, FileUp, FileSpreadsheet } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
+import { assetOptional } from '../lib/place'
 import { useToast } from '../context/ToastContext'
 import { usePlan } from '../context/PlanContext'
 import { db } from '../lib/storage'
@@ -34,7 +36,8 @@ function ImportResult({ msg, source }) {
 export default function ImportBills() {
   // expenses and income are read, not written, by the importers: both check
   // what is already in the books before adding to them.
-  const { properties, expenses, income, loading, addExpense, addIncome, addProperty, propertyNameById } = useData()
+  const { properties, expenses, income, loading, addExpense, addIncome, addProperty } = useData()
+  const assetFree = assetOptional(useEntity())
   const toast = useToast()
   const plan = usePlan()
   // Every way data comes in now lives here — a mailbox, a spreadsheet, a Tally
@@ -318,7 +321,9 @@ export default function ImportBills() {
           )}
         </Card>
 
-      {properties.length === 0 ? (
+      {/* A company's imported rows can land on a job, or on nothing — see
+          lib/place.js. Personal books still need somewhere to put them. */}
+      {properties.length === 0 && !assetFree ? (
         <EmptyState
           icon={Building2}
           title="Add an asset first"

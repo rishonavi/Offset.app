@@ -4,6 +4,8 @@ import { useAuth } from './AuthContext'
 import { useWorkspace } from './WorkspaceContext'
 import { useEntity } from './EntityContext'
 import { cleanMoney } from '../lib/money'
+import * as corporate from '../lib/storage/corporate'
+import { placeOf } from '../lib/place'
 
 const DataContext = createContext(null)
 
@@ -15,7 +17,7 @@ const byDateDesc = (a, b) => (b.date || '').localeCompare(a.date || '')
 export function DataProvider({ children }) {
   const { user } = useAuth()
   const { activeOwner, isOwnWorkspace, canWriteActive } = useWorkspace()
-  const { inEntity, stamp, gate } = useEntity()
+  const { inEntity, stamp, gate, corporate: inCompany, consolidated, activeId, entities, version } = useEntity()
   const [properties, setProperties] = useState([])
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
@@ -102,6 +104,35 @@ export function DataProvider({ children }) {
     [scopedProperties],
   )
   const propertyNameById = useCallback((id) => propertyNames.get(id), [propertyNames])
+
+  // The other thing a cost can be booked to. A builder's expenses belong to the
+  // job, and jobs live in the corporate store rather than here — indexed for
+  // the same reason the asset names are, since every row in a table asks.
+  const siteNames = useMemo(() => {
+    const m = new Map()
+    if (!inCompany) return m
+    // Consolidated spans companies whose sites are not interchangeable, but it
+    // only ever reads: naming a site from the books the row came from is right,
+    // and refusing to name it would blank the column in the one view where the
+    // rows are most mixed.
+    const ids = consolidated ? entities.map((e) => e.id) : [activeId]
+    for (const id of ids) for (const s of corporate.projects.list(id)) m.set(s.id, s.name)
+    return m
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inCompany, consolidated, activeId, entities, version])
+
+  // What one row is charged to: the asset if it has one, else the site, else
+  // nothing — which is a real answer and not a missing one.
+  const placeOfRow = useCallback(
+    (row) =>
+      placeOf(row, {
+        assetName: (id) => propertyNames.get(id),
+        siteName: (id) => siteNames.get(id),
+      }),
+    [propertyNames, siteNames],
+  )
+  // The same thing when all a cell wants is the string.
+  const placeName = useCallback((row) => placeOfRow(row).name, [placeOfRow])
 
   // Money is cleaned here rather than in each caller. Rows arrive from forms,
   // from a backup file, from a bank statement, from Tally, from a spreadsheet
@@ -221,6 +252,8 @@ export function DataProvider({ children }) {
       canWrite,
       refresh,
       propertyNameById,
+      placeName,
+      placeOfRow,
       addProperty,
       updateProperty,
       deleteProperty,
@@ -238,7 +271,7 @@ export function DataProvider({ children }) {
       deleteComment,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopedProperties, scopedExpenses, scopedIncome, scopedDocuments, scopedComments, loading, error, canWrite, refresh, propertyNameById],
+    [scopedProperties, scopedExpenses, scopedIncome, scopedDocuments, scopedComments, loading, error, canWrite, refresh, propertyNameById, placeName, placeOfRow],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

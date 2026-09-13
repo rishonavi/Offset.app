@@ -914,6 +914,24 @@ alter table public.income   add column if not exists project_id uuid references 
 create index if not exists expenses_project_idx on public.expenses (project_id);
 create index if not exists income_project_idx   on public.income (project_id);
 
+-- ── A cost need not sit on something the company owns ────────────
+-- schema.sql requires an asset on every entry, which is right for the books it
+-- was written for: a landlord's expenses are all against a flat, and an entry
+-- pointing at nothing there is a mistake. A builder's are not. The cement is
+-- for a tower being sold by the flat, the wages are for the crew pouring it,
+-- and neither is company property; the office rent and the auditor's fee are
+-- against nothing at all.
+--
+-- So the requirement is dropped here rather than in schema.sql, and only here:
+-- an install that never became a company keeps the tighter constraint it has
+-- always had, and gets it back if its only entity is removed only by running
+-- schema.sql again — which is the honest trade. The alternative was what the
+-- app did before, which was to make people invent an asset called "Depot" and
+-- then carry it in every total forever.
+alter table public.expenses  alter column property_id drop not null;
+alter table public.income    alter column property_id drop not null;
+alter table public.documents alter column property_id drop not null;
+
 -- ── Entries inside an entity ─────────────────────────────────────
 -- schema.sql already restricts expenses/income to their owner. These add the
 -- entity case alongside it: a row tagged to an entity is visible to that

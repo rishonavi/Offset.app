@@ -37,7 +37,7 @@ import GettingStarted from '../components/GettingStarted'
 import { shouldShow as shouldShowOnboarding } from '../lib/onboarding'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory, CHART_PALETTE } from '../lib/constants'
-import { totalsByCategory, totalsByProperty, monthlySeries, monthlyIncomeExpense } from '../lib/stats'
+import { totalsByCategory, totalsByPlace, monthlySeries, monthlyIncomeExpense } from '../lib/stats'
 import { portfolioMetrics } from '../lib/metrics'
 import { sumAmount } from '../lib/filters'
 import { monthSpendByProperty, budgetStatus } from '../lib/budget'
@@ -147,7 +147,7 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const { expenses, income, properties, documents, loading, propertyNameById, canWrite, addExpense, addIncome } = useData()
+  const { expenses, income, properties, documents, loading, propertyNameById, placeName, placeOfRow, canWrite, addExpense, addIncome } = useData()
   const toast = useToast()
   const [propertyId, setPropertyId] = useState('')
   const [range, setRange] = useState('all')
@@ -204,7 +204,7 @@ export default function Dashboard() {
 
   const total = useMemo(() => sumAmount(scoped), [scoped])
   const byCategory = useMemo(() => totalsByCategory(scoped), [scoped])
-  const byProperty = useMemo(() => totalsByProperty(scoped, propertyNameById), [scoped, propertyNameById])
+  const byProperty = useMemo(() => totalsByPlace(scoped, placeOfRow), [scoped, placeOfRow])
   const monthly = useMemo(() => monthlySeries(propertyScoped, 12), [propertyScoped])
   const recent = useMemo(() => propertyScoped.slice(0, 5), [propertyScoped])
   const rangeLabel = RANGES.find((r) => r.id === range).label.toLowerCase()
@@ -602,7 +602,7 @@ export default function Dashboard() {
                     className="flex items-center justify-between gap-3 py-2 text-sm transition hover:opacity-80"
                   >
                     <span className="min-w-0 truncate text-ink-3">
-                      {propertyNameById(o.property_id) || '—'} · {o.label || (o.kind === 'income' ? 'Income' : 'Expense')}
+                      {placeName(o) || '—'} · {o.label || (o.kind === 'income' ? 'Income' : 'Expense')}
                     </span>
                     <span className="shrink-0 font-semibold" style={{ color: o.kind === 'income' ? '#2F8F6B' : '#C0492F' }}>
                       {formatCurrency(o.amount)} · {formatDate(o.due_date)}
@@ -717,7 +717,7 @@ export default function Dashboard() {
                 <Link key={e.id} to="/expenses" className="flex items-center gap-3 py-2.5 transition hover:opacity-80">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorForCategory(e.category) }} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-ink-2">{propertyNameById(e.property_id) || '—'}</div>
+                    <div className="truncate text-sm font-medium text-ink-2">{placeName(e) || '—'}</div>
                     <div className="truncate text-xs text-ink-6">
                       {e.category} · {formatDate(e.date)}
                     </div>

@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Plus, Receipt, Building2, Eye } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
+import { assetOptional } from '../lib/place'
 import { Card, EmptyState, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import ExpenseForm from '../components/ExpenseForm'
@@ -14,6 +16,7 @@ export default function ExpenseFormPage() {
   const location = useLocation()
   const [params] = useSearchParams()
   const { expenses, properties, loading, addExpense, updateExpense, canWrite } = useData()
+  const assetFree = assetOptional(useEntity())
 
   // Distinct vendor names already used, for the autocomplete suggestions.
   const vendors = useMemo(() => {
@@ -64,7 +67,11 @@ export default function ExpenseFormPage() {
     )
   }
 
-  if (properties.length === 0) {
+  // A company can own nothing and still have costs: the whole of a builder's
+  // spend is on towers it is selling, plus overheads that sit against nothing
+  // at all. Refusing the form until an asset exists taught people to invent
+  // one, and an invented asset is in every total from then on.
+  if (properties.length === 0 && !assetFree) {
     return (
       <div className="animate-fade-in">
         <EmptyState

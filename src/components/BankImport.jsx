@@ -7,6 +7,9 @@ import { buildVendorIndex, suggestCategory } from '../lib/categorize'
 import { bankSyncEnabled, bankProviderLabel, startBankLink, fetchLiveTransactions } from '../lib/bankSync'
 import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button } from './ui'
+import SiteField from './SiteField'
+import { useEntity } from '../context/EntityContext'
+import { assetOptional } from '../lib/place'
 
 const strip = (e) => {
   const { id, user_id, created_at, ...rest } = e // eslint-disable-line no-unused-vars
@@ -16,11 +19,16 @@ const strip = (e) => {
 // Upload a bank / UPI statement, reconcile it against outstanding bills, then
 // mark matched bills paid/received and (optionally) add the rest.
 export default function BankImport() {
-  const { expenses, income, properties, addExpense, addIncome, updateExpense, updateIncome, propertyNameById, canWrite } = useData()
+  const { expenses, income, properties, addExpense, addIncome, updateExpense, updateIncome, placeName, canWrite } = useData()
   const fileRef = useRef(null)
   const [plan, setPlan] = useState(null)
   const [meta, setMeta] = useState(null)
-  const [assetId, setAssetId] = useState(properties[0]?.id || '')
+  // A builder's statement is full of costs against jobs, not against anything
+  // the company owns — so no asset is pre-picked in a company, and "none of
+  // them" is one of the answers. lib/place.js says why.
+  const assetFree = assetOptional(useEntity())
+  const [assetId, setAssetId] = useState(assetFree ? '' : properties[0]?.id || '')
+  const [siteId, setSiteId] = useState('')
   const [addNew, setAddNew] = useState(true)
   const [busy, setBusy] = useState(false)
   const [linking, setLinking] = useState(false)
@@ -43,7 +51,7 @@ export default function BankImport() {
     }
     setPlan(reconcile(transactions, expenses, income))
     setMeta({ name: sourceName, count: transactions.length })
-    setAssetId((id) => id || properties[0]?.id || '')
+    if (!assetFree) setAssetId((id) => id || properties[0]?.id || '')
   }
 
   const onFile = async (file) => {
@@ -120,12 +128,13 @@ export default function BankImport() {
         received++
       }
       let added = 0
-      if (addNew && assetId) {
+      if (addNew && (assetFree || assetId)) {
         const index = buildVendorIndex(expenses)
         for (const t of plan.newExpenses) {
           const guess = suggestCategory(t.description, index)
           await addExpense({
-            property_id: assetId,
+            property_id: assetId || null,
+            project_id: siteId || null,
             date: t.date,
             amount: t.amount,
             category: guess?.category || 'Other',
@@ -139,7 +148,8 @@ export default function BankImport() {
         }
         for (const t of plan.newIncome) {
           await addIncome({
-            property_id: assetId,
+            property_id: assetId || null,
+            project_id: siteId || null,
             date: t.date,
             amount: t.amount,
             source: 'Other',
@@ -241,7 +251,7 @@ export default function BankImport() {
                 {plan.matchedPaid.map(({ entry, txn }, i) => (
                   <li key={`p${i}`} className="flex items-center justify-between gap-3 py-1.5 text-sm">
                     <span className="min-w-0 truncate text-ink-4">
-                      {entry.category || 'Expense'} · {propertyNameById(entry.property_id) || '—'}
+                      {entry.category || 'Expense'} · {placeName(entry) || '—'}
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-ink-5">
                       {formatCurrency(txn.amount)} · {formatDate(txn.date)}
@@ -252,7 +262,7 @@ export default function BankImport() {
                 {plan.matchedReceived.map(({ entry, txn }, i) => (
                   <li key={`r${i}`} className="flex items-center justify-between gap-3 py-1.5 text-sm">
                     <span className="min-w-0 truncate text-ink-4">
-                      {entry.source || 'Income'} · {propertyNameById(entry.property_id) || '—'}
+                      {entry.source || 'Income'} · {placeName(entry) || '—'}
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-ink-5">
                       {formatCurrency(txn.amount)} · {formatDate(txn.date)}
@@ -278,16 +288,30 @@ export default function BankImport() {
                 </span>
               </label>
               {addNew && (
-                <div className="mt-3">
-                  <span className="mb-1 block text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Add them to asset</span>
-                  <select className="field-input w-full sm:w-auto" aria-label="Assign imported rows to asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
-                    {properties.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-[0.7rem] text-ink-6">Categories are guessed from the description — review them on the Expenses page after.</p>
+                <div className="mt-3 space-y-3">
+                  {/* Gone in a company that owns nothing, the same as on the
+                      entry form: a select whose only option says "none" is a
+                      field people learn to skip. */}
+                  {(!assetFree || properties.length > 0) && (
+                    <div>
+                      <span className="mb-1 block text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Add them to asset</span>
+                      <select className="field-input w-full sm:w-auto" aria-label="Assign imported rows to asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
+                        {assetFree && <option value="">Not booked to an asset</option>}
+                        {properties.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <SiteField
+                    className=""
+                    value={siteId}
+                    onChange={setSiteId}
+                    hint="Every row in this file lands on the same job — split them afterwards if the statement mixes sites."
+                  />
+                  <p className="text-[0.7rem] text-ink-6">Categories are guessed from the description — review them on the Expenses page after.</p>
                 </div>
               )}
             </div>

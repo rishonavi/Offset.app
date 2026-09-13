@@ -7,12 +7,16 @@ import { CATEGORIES } from '../lib/constants'
 import { currencySymbol, todayISO } from '../lib/format'
 import { lastUsed } from '../lib/defaults'
 import { Field, Input, Select, Button } from './ui'
+import SiteField from './SiteField'
+import { useEntity } from '../context/EntityContext'
+import { assetOptional } from '../lib/place'
 
 // A compact modal for logging an expense from anywhere — no page navigation,
 // smart defaults (last-used category, single asset auto-selected), and only
 // the essential fields.
 export default function QuickAddExpense({ open, onClose }) {
   const { properties, expenses, addExpense } = useData()
+  const assetFree = assetOptional(useEntity())
   const toast = useToast()
   const [form, setForm] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -25,8 +29,11 @@ export default function QuickAddExpense({ open, onClose }) {
     // skips values whose asset has since been deleted, so the quick form agrees
     // with the full one instead of guessing differently.
     setForm({
+      // A company's costs mostly belong to a job, so the quick form does not
+      // fall back to whichever asset sorts first the way personal books do.
       property_id: lastUsed(expenses, 'property_id', { among: properties.map((p) => p.id) })
-        || properties[0]?.id || '',
+        || (assetFree ? '' : properties[0]?.id || ''),
+      project_id: '',
       amount: '',
       category: lastUsed(expenses, 'category'),
       date: todayISO(),
@@ -46,12 +53,13 @@ export default function QuickAddExpense({ open, onClose }) {
     e.preventDefault()
     const amount = Number(form.amount)
     if (!amount || amount <= 0) return setError('Enter an amount greater than zero.')
-    if (!form.property_id) return setError('Add an asset first.')
+    if (!assetFree && !form.property_id) return setError('Add an asset first.')
     setSaving(true)
     setError(null)
     try {
       await addExpense({
-        property_id: form.property_id,
+        property_id: form.property_id || null,
+        project_id: form.project_id || null,
         date: form.date,
         amount,
         category: form.category.trim() || 'Other',
@@ -81,7 +89,7 @@ export default function QuickAddExpense({ open, onClose }) {
           </button>
         </div>
 
-        {properties.length === 0 ? (
+        {properties.length === 0 && !assetFree ? (
           <div className="py-4 text-center text-sm text-ink-5">
             Add an asset first, then log expenses against it.
             <div className="mt-3">
@@ -111,15 +119,23 @@ export default function QuickAddExpense({ open, onClose }) {
                 <Input type="date" value={form.date} onChange={set('date')} max={todayISO()} />
               </Field>
             </div>
-            {properties.length > 1 && (
+            {/* One asset and no choice to make is not worth a field — unless
+                "none of them" is now an answer, which in a company it is. */}
+            {(properties.length > 1 || (assetFree && properties.length > 0)) && (
               <Field label="Asset">
                 <Select value={form.property_id} onChange={set('property_id')}>
+                  {assetFree && <option value="">Not booked to an asset</option>}
                   {properties.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </Select>
               </Field>
             )}
+            <SiteField
+              className=""
+              value={form.project_id}
+              onChange={(v) => setForm((f) => ({ ...f, project_id: v }))}
+            />
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={onClose}>

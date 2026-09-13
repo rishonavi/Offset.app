@@ -58,7 +58,7 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
 export default function PropertyDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { properties, expenses, income, documents, loading, propertyNameById, deleteProperty, deleteExpense, restoreExpense, deleteIncome, restoreIncome, addDocument, deleteDocument, canWrite } = useData()
+  const { properties, expenses, income, documents, loading, placeName, deleteProperty, deleteExpense, restoreExpense, deleteIncome, restoreIncome, addDocument, deleteDocument, canWrite } = useData()
   const toast = useToast()
 
   const removeExpense = async (e) => {
@@ -413,7 +413,7 @@ export default function PropertyDetail() {
         ) : (
           <ExpenseTable
             expenses={items}
-            propertyNameById={propertyNameById}
+            placeName={placeName}
             onEdit={(e) => navigate(`/expenses/${e.id}/edit`)}
             onDelete={removeExpense}
             readOnly={!canWrite}
@@ -445,7 +445,7 @@ export default function PropertyDetail() {
         ) : (
           <IncomeTable
             income={incomeItems}
-            propertyNameById={propertyNameById}
+            placeName={placeName}
             onEdit={(e) => navigate(`/income/${e.id}/edit`)}
             onDelete={removeIncome}
             readOnly={!canWrite}

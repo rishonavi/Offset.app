@@ -54,7 +54,7 @@ const EMPTY_ISSUER = { name: '', address: '', gstin: '', pan: '', email: '', pho
 const BUILT_IN = { id: '', name: 'Offset default', html: DEFAULT_TEMPLATE_HTML, paper: 'a4', builtIn: true }
 
 export default function Invoices() {
-  const { properties, income, propertyNameById } = useData()
+  const { properties, income, placeName } = useData()
   const { corporate, consolidated, activeId, entity } = useEntity()
   const toast = useToast()
   const fileRef = useRef(null)
@@ -203,7 +203,7 @@ export default function Invoices() {
       toast('No income entries match that asset and period.', { type: 'error' })
       return
     }
-    setLines(linesFromIncome(rows, { propertyNameById }))
+    setLines(linesFromIncome(rows, { placeName }))
     toast(`${rows.length} entr${rows.length === 1 ? 'y' : 'ies'} added as lines.`)
   }
 

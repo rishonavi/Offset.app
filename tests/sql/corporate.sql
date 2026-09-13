@@ -384,6 +384,45 @@ select t.allows('and a bill with no site is still a bill',
             'bbbbbbbb-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
             current_date, 4000, 'Utilities','33333333-3333-3333-3333-333333333333')$$);
 
+-- A builder owns almost nothing it spends money on. The cement is for a tower
+-- being sold by the flat; the office rent is against nothing at all. schema.sql
+-- requires an asset on every entry and corporate.sql drops that requirement,
+-- which is the whole point of the pair: books that never became a company keep
+-- the constraint they have always had.
+select t.check('an entry in a company need not name an asset',
+  (select is_nullable from information_schema.columns
+    where table_schema = 'public' and table_name = 'expenses' and column_name = 'property_id') = 'YES');
+select t.allows('so the office rent is a bill against nothing',
+  $$insert into public.expenses (id, user_id, entity_id, date, amount, category, created_by)
+    values ('cccccccc-0000-0000-0000-00000000001d','33333333-3333-3333-3333-333333333333',
+            'aaaaaaaa-0000-0000-0000-000000000001', current_date, 65000, 'Office rent',
+            '33333333-3333-3333-3333-333333333333')$$);
+select t.check('and it is booked to nothing, rather than to something invisible',
+  (select property_id from public.expenses where id = 'cccccccc-0000-0000-0000-00000000001d') is null);
+select t.allows('a cost can name the job and no asset, which is the ordinary case',
+  $$insert into public.expenses (id, user_id, entity_id, project_id, date, amount, category, created_by)
+    values ('cccccccc-0000-0000-0000-00000000001e','33333333-3333-3333-3333-333333333333',
+            'aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',
+            current_date, 810000, 'Cement','33333333-3333-3333-3333-333333333333')$$);
+select t.allows('and money can come in against a job with no asset either',
+  $$insert into public.income (id, user_id, entity_id, project_id, date, amount, source)
+    values ('cccccccc-0000-0000-0000-00000000001f','33333333-3333-3333-3333-333333333333',
+            'aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',
+            current_date, 1200000, 'Instalment')$$);
+select t.check('income lost the requirement too',
+  (select is_nullable from information_schema.columns
+    where table_schema = 'public' and table_name = 'income' and column_name = 'property_id') = 'YES');
+select t.check('and so did documents, which a company files about itself',
+  (select is_nullable from information_schema.columns
+    where table_schema = 'public' and table_name = 'documents' and column_name = 'property_id') = 'YES');
+-- The control: dropping not-null is not the same as dropping the check that
+-- the asset, when named, is a real one.
+select t.refuses('an asset that does not exist is still refused',
+  $$insert into public.expenses (user_id, property_id, entity_id, date, amount, category, created_by)
+    values ('33333333-3333-3333-3333-333333333333','bbbbbbbb-0000-0000-0000-0000000000ff',
+            'aaaaaaaa-0000-0000-0000-000000000001', current_date, 1, 'Nonsense',
+            '33333333-3333-3333-3333-333333333333')$$);
+
 \echo ''
 \echo '── LABOUR, CONTRACTS AND WHAT IS BUILT ──'
 set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance

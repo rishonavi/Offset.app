@@ -16,7 +16,7 @@ import FilterBar from '../components/FilterBar'
 // spreadsheet, a Tally file, a backup — is on Import, including restoring the
 // backup this page makes.
 export default function Exports() {
-  const { expenses, income, properties, loading, propertyNameById } = useData()
+  const { expenses, income, properties, loading, placeName } = useData()
   const [filters, setFilters] = useFilterParams()
   const { search } = useLocation()
 
@@ -39,16 +39,16 @@ export default function Exports() {
   const subtitle = `${filtered.length} expense${filtered.length === 1 ? '' : 's'} · Total ${formatCurrency(total)}`
 
   const doExport = (kind) => {
-    const rows = toExportRows(filtered, propertyNameById)
+    const rows = toExportRows(filtered, placeName)
     if (kind === 'xlsx')
-      exportWorkbook({ expenses: rows, income: toIncomeRows(incomeFiltered, propertyNameById) }, baseName)
+      exportWorkbook({ expenses: rows, income: toIncomeRows(incomeFiltered, placeName) }, baseName)
     if (kind === 'csv') exportCSV(rows, baseName)
     if (kind === 'pdf') exportPDF(rows, { title: 'Offset — Expense Report', subtitle })
   }
 
   // Tally-importable XML (Payment vouchers for expenses, Receipt for income).
   const exportTally = () => {
-    const xml = toTallyXML({ expenses: filtered, income: incomeFiltered, propertyNameById, company: 'Offset' })
+    const xml = toTallyXML({ expenses: filtered, income: incomeFiltered, placeName, company: 'Offset' })
     const blob = new Blob([xml], { type: 'application/xml' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

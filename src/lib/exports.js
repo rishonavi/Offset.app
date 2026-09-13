@@ -8,12 +8,18 @@ import { format, parseISO, isValid } from 'date-fns'
 const autoTable = autoTableImport?.default || autoTableImport
 import { formatCurrency, formatDate } from './format'
 
-// Convert expense rows (joined with a property-name lookup) into the
-// flat, human-friendly shape used for every export format.
-export function toExportRows(expenses, propertyNameById) {
+// Convert expense rows (joined with a place lookup) into the flat,
+// human-friendly shape used for every export format.
+//
+// `placeName` takes the whole row rather than an id: in a company's books a
+// cost can belong to a job instead of to something the company owns, and a
+// column that only knew about assets exported a dash for most of a builder's
+// ledger. The column keeps its name so a spreadsheet built on last month's
+// export still opens.
+export function toExportRows(expenses, placeName) {
   return expenses.map((e) => ({
     Date: e.date,
-    Property: propertyNameById(e.property_id) || '—',
+    Property: placeName(e) || '—',
     Category: e.category || '',
     Vendor: e.vendor || '',
     'Payment Method': e.payment_method || '',
@@ -24,10 +30,10 @@ export function toExportRows(expenses, propertyNameById) {
 }
 
 // Same idea for income rows.
-export function toIncomeRows(income, propertyNameById) {
+export function toIncomeRows(income, placeName) {
   return income.map((e) => ({
     Date: e.date,
-    Property: propertyNameById(e.property_id) || '—',
+    Property: placeName(e) || '—',
     Source: e.source || '',
     'From (payer)': e.payer || '',
     'Payment Method': e.payment_method || '',

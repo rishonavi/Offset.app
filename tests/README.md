@@ -38,6 +38,7 @@ for Vite's resolver.
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 214 | inventory, payables, advances, payroll, and each over a period |
+| `place.test.mjs` | 29 | what a cost is booked to when the company owns nothing, and what may be left blank |
 | `plant.test.mjs` | 62 | what a machine costs per hour it works, not per hour it is hired |
 | `projects.test.mjs` | 71 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
 | `sales.test.mjs` | 69 | flats and shops, and instalments that fall due when the building says so |
@@ -49,7 +50,7 @@ for Vite's resolver.
 | `syncwire.test.mjs` | 41 | what a pull asks for, what a push sends, and one table failing |
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **2,191** | |
+| | **2,220** | |
 
 ## Browser — `tests/browser/`
 
@@ -90,6 +91,7 @@ node tests/browser/rtlui.mjs
 | `navui.mjs` | 22 | the side bar: grouping, what is waiting, a short screen, and its own padding |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 22 | the empty install |
+| `placeui.mjs` | 36 | a builder's costs, which belong to things the builder does not own |
 | `plantui.mjs` | 40 | the yard, log sheets, idle against broken, and days billed with nothing written down |
 | `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
 | `projectsui.mjs` | 53 | sites against contract and estimate, where the money went, what the client owes |
@@ -102,7 +104,7 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,335** | |
+| | **1,371** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
@@ -143,9 +145,15 @@ Without `OFFSET_TEST_PG` it prints how to run it and exits 0 — most machines
 have no PostgreSQL, and a suite that fails for want of a server is one people
 learn to ignore.
 
+The database is **emptied first**. It used not to be, and a suite that runs on
+top of the last run cannot see a migration go missing: delete the line that
+makes a column nullable and the column stays nullable from yesterday, with
+every assertion still green. Point `OFFSET_TEST_PG` at a scratch database and
+nothing else.
+
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 145 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched |
+| `corporate.sql` | 153 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched; that a company may book a cost to no asset, which the books it grew out of require |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

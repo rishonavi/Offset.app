@@ -12,15 +12,39 @@ export function totalsByCategory(expenses) {
     .sort((a, b) => b.value - a.value)
 }
 
-export function totalsByProperty(expenses, nameById) {
-  const map = new Map()
-  for (const e of expenses) {
-    map.set(e.property_id, (map.get(e.property_id) || 0) + (Number(e.amount) || 0))
+// What was spent against each thing it was spent on — an asset the company
+// owns, or a job it is building. Keyed on the id rather than on the label,
+// because two assets called "Shop" are two assets and merging them because
+// they share a name is a chart that lies.
+//
+// Rows booked to neither share one bucket and are named out loud. They used to
+// be named "Unknown", which reads as a lookup that failed; a builder's office
+// rent is not unknown, it is simply nobody's job to carry, and a slice on this
+// chart is how that gets noticed.
+export function totalsByPlace(rows, place) {
+  // Named from the first row in each bucket, which is any row in it: they all
+  // carry the same booking. Three cases, and they must stay three.
+  //
+  //  - No booking at all: an overhead. Named, not shrugged at.
+  //  - A booking that resolves: the asset or the job.
+  //  - A booking that does not: an asset deleted out from under its costs. It
+  //    is still booked to something, so it is not an overhead — and it must not
+  //    borrow the name of the job on the same row, or a site ends up drawn as
+  //    two slices with one name, which is the lie this keying exists to avoid.
+  const named = (row, key) => {
+    if (!key) return 'Not booked'
+    const at = place(row)
+    return at?.id === key ? at.name : 'Unknown'
   }
-  return [...map.entries()]
-    .map(([id, value]) => ({ id, name: nameById(id) || 'Unknown', value }))
-    .filter((d) => d.value > 0)
-    .sort((a, b) => b.value - a.value)
+  const map = new Map()
+  for (const r of rows) {
+    const key = r.property_id || r.project_id || ''
+    const at = map.get(key)
+    const amount = Number(r.amount) || 0
+    if (at) at.value += amount
+    else map.set(key, { id: key, name: named(r, key), value: amount })
+  }
+  return [...map.values()].filter((d) => d.value > 0).sort((a, b) => b.value - a.value)
 }
 
 export function monthlySeries(expenses, months = 12) {

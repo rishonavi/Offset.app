@@ -41,7 +41,7 @@ function ladderRows({ payable, receivable }) {
 // What the year came to. Moving the rows anywhere else is Export & import,
 // which shares this page's filter through the URL.
 export default function Reports() {
-  const { expenses, income, properties, propertyNameById } = useData()
+  const { expenses, income, properties, propertyNameById, placeName } = useData()
   const [filters, setFilters] = useFilterParams()
   const { search } = useLocation()
   // Left behind when this page was split from Export: downloadYearEndPDF still
@@ -421,7 +421,7 @@ export default function Reports() {
                 {preview.map((e) => (
                   <tr key={e.id}>
                     <td className="whitespace-nowrap px-5 py-2.5 text-ink-4">{formatDate(e.date)}</td>
-                    <td className="px-5 py-2.5 font-medium text-ink-2">{propertyNameById(e.property_id) || '—'}</td>
+                    <td className="px-5 py-2.5 font-medium text-ink-2">{placeName(e) || '—'}</td>
                     <td className="px-5 py-2.5">
                       <Badge color={colorForCategory(e.category)}>{e.category}</Badge>
                     </td>

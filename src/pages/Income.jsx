@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Banknote, Building2, Search, X } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
+import { assetOptional } from '../lib/place'
 import { useToast } from '../context/ToastContext'
 import { sumAmount } from '../lib/filters'
 import { formatCurrency, todayISO } from '../lib/format'
@@ -12,7 +14,8 @@ import IncomeTable from '../components/IncomeTable'
 const EMPTY = { propertyId: '', from: '', to: '', q: '' }
 
 export default function Income() {
-  const { income, properties, loading, deleteIncome, restoreIncome, addIncome, updateIncome, propertyNameById, canWrite } = useData()
+  const { income, properties, loading, deleteIncome, restoreIncome, addIncome, updateIncome, placeName, canWrite } = useData()
+  const assetFree = assetOptional(useEntity())
   const [filters, setFilters] = useState(EMPTY)
   const navigate = useNavigate()
   const toast = useToast()
@@ -85,7 +88,9 @@ export default function Income() {
   const set = (k) => (e) => setFilters((f) => ({ ...f, [k]: e.target.value }))
 
   if (loading) return <Spinner />
-  const noProperties = properties.length === 0
+  // A company's spend need not sit on anything it owns, so an empty asset list
+  // is not an empty page — see lib/place.js.
+  const noProperties = properties.length === 0 && !assetFree
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -154,7 +159,7 @@ export default function Income() {
           ) : (
             <IncomeTable
               income={filtered}
-              propertyNameById={propertyNameById}
+              placeName={placeName}
               onEdit={(e) => navigate(`/income/${e.id}/edit`)}
               onDelete={removeIncome}
               onMarkSettled={markReceived}

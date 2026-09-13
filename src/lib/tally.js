@@ -95,7 +95,7 @@ export function parseTallyXML(xml) {
   return out
 }
 
-export function toTallyXML({ expenses = [], income = [], propertyNameById = () => '', company = 'Offset' } = {}) {
+export function toTallyXML({ expenses = [], income = [], placeName = () => '', company = 'Offset' } = {}) {
   const messages = []
   let n = 0
   for (const e of expenses) {
@@ -105,7 +105,7 @@ export function toTallyXML({ expenses = [], income = [], propertyNameById = () =
         type: 'Payment',
         date: e.date,
         number: n,
-        narration: [e.category, e.vendor, propertyNameById(e.property_id)].filter(Boolean).join(' · '),
+        narration: [e.category, e.vendor, placeName(e)].filter(Boolean).join(' · '),
         ledger: e.category || 'Expenses',
         counter: counterLedgerFor(e.payment_method),
         amount: e.amount,
@@ -120,7 +120,7 @@ export function toTallyXML({ expenses = [], income = [], propertyNameById = () =
         type: 'Receipt',
         date: e.date,
         number: n,
-        narration: [e.source, e.payer, propertyNameById(e.property_id)].filter(Boolean).join(' · '),
+        narration: [e.source, e.payer, placeName(e)].filter(Boolean).join(' · '),
         ledger: e.source || 'Income',
         counter: counterLedgerFor(e.payment_method),
         amount: e.amount,

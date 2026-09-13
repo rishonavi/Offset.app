@@ -244,16 +244,57 @@ anywhere, and running it is what found the two policies that were wrong. See
 `tests/README.md`. What remains unverified is only the Supabase-specific
 surface — `auth.uid()` and friends are stood in for by the runner.
 
+**Done and verified** — a cost that belongs to nothing the company owns, 29
+logic assertions, 36 on screen and 8 against PostgreSQL:
+
+Every expense in this app required an asset. That is right for the books it
+grew out of — a landlord's costs are all against a flat, and an entry pointing
+at nothing there is a mistake — and wrong for a builder, whose spend is on
+towers being sold by the flat and whose overheads sit against nothing at all.
+The app's answer was to refuse the form, and the answer to the refusal was an
+invented asset. Four of this repo's own test fixtures carry one called
+"Company Depot", which is the app telling you it is wrong.
+
+- **Personal books are unchanged.** They still insist, and the constraint is
+  still `not null` in `schema.sql`; `corporate.sql` drops it, so an install that
+  never became a company keeps the tighter rule it has always had.
+- `lib/place.js` holds the whole rule: asset, else site, else nothing. An asset
+  id that will not resolve falls through to the site rather than showing
+  nothing, and "not booked" and "cannot be found" stay different answers —
+  the dashboard used to call both of them *Unknown*.
+- The column over that answer is headed **Property** in personal books and
+  **Booked to** in a company's, because a site under a column headed "Property"
+  is a category error.
+- Nothing is pre-picked in a company. Defaulting to whichever asset sorts first
+  is how a site's cement ends up on the head office every time somebody does
+  not notice the field.
+- The entry forms, the quick-add, the bank-statement importer and the list
+  pages no longer refuse to open until an asset exists.
+- Restore used to drop any entry it could not match to an asset, silently. It
+  could not tell "booked to nothing" from "booked to something missing"; a
+  builder restoring a backup would have lost every overhead in it. It now
+  carries the unbooked through, and carries `project_id` so a restored cost
+  still knows its job.
+
+One thing this found in the test harness itself: `tests/sql/run.mjs` applied the
+schema on top of whatever was already in the scratch database, so deleting the
+migration that makes a column nullable left it nullable from yesterday with
+every assertion still green. It empties the database first now.
+
 **Next**, in order:
 
 1. Departments on entry forms; budgets and reports per cost centre
-2. The approvals queue
+2. ~~The approvals queue~~ — built; four documents share one queue
 3. A record of payroll runs, so a past month is history rather than a
    projection from today's salaries
 4. The client storage layer talking to those tables — `storage/corporate.js` is
    still browser-only under both backends, and is synchronous throughout, so
    this is an async refactor of `EntityContext` and `Companies.jsx` rather than
-   a swap of one backend for another
+   a swap of one backend for another. `lib/storage/corporateSync.js` and
+   `lib/sync.js` are the half of it that exists: reconciliation is tested
+   against a stub and the schema against a real PostgreSQL, but the two have
+   never met a live Supabase, so column names could still disagree on first
+   contact
 5. SSO (Google Workspace / SAML) *(unverifiable here)*
 
 Billing for the corporate tier is deliberately not built yet.

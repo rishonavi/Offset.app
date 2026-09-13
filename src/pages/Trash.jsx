@@ -13,7 +13,7 @@ const RETENTION_DAYS = 30
 const KIND_LABEL = { expense: 'Expense', income: 'Income', personal: 'Personal' }
 
 export default function Trash() {
-  const { propertyNameById, refresh: refreshData } = useData()
+  const { placeName, refresh: refreshData } = useData()
   // The bin reads the store directly rather than through DataProvider, so it
   // has to do its own scoping — and did not, which put a company's deleted
   // entries, vendors and amounts and all, in your personal bin.
@@ -127,7 +127,7 @@ export default function Trash() {
                     <Badge>{KIND_LABEL[it.kind]}</Badge>
                     <span className="text-sm font-medium text-ink-2">{label(it)}</span>
                     {it.kind !== 'personal' && (
-                      <span className="text-xs text-ink-6">· {propertyNameById(it.property_id) || 'asset'}</span>
+                      <span className="text-xs text-ink-6">· {placeName(it) || 'asset'}</span>
                     )}
                   </div>
                   <div className="mt-0.5 text-xs text-ink-6">

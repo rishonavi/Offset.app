@@ -90,7 +90,7 @@ const CORPORATE_COMMANDS = [
 // round-trips until you pick a result.
 export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onReport }) {
   const navigate = useNavigate()
-  const { properties, expenses, income, documents, propertyNameById, canWrite } = useData()
+  const { properties, expenses, income, documents, propertyNameById, placeName, canWrite } = useData()
   const { theme, toggle } = useTheme()
   const { enabled: corporate, corporate: inCompany, consolidated, activeId } = useEntity()
   // What you searched for belongs to the books you searched in.
@@ -174,16 +174,19 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
       n = 0
       for (const e of expenses) {
         if (n >= 6) break
-        if (matchesAll([e.vendor, e.category, e.description, propertyNameById(e.property_id)], words)) {
-          push('Expenses', `${e.vendor || e.category || 'Expense'} · ${formatCurrency(e.amount)}`, `${propertyNameById(e.property_id) || ''} · ${formatDate(e.date)}`, Receipt, go(`/properties/${e.property_id}`), score([e.vendor, e.category, e.description], words))
+        if (matchesAll([e.vendor, e.category, e.description, placeName(e)], words)) {
+          // A company's cost may sit against a job rather than an asset, and
+          // then there is no asset page to open — the list it is on is the
+          // nearest true answer, and beats /properties/null.
+          push('Expenses', `${e.vendor || e.category || 'Expense'} · ${formatCurrency(e.amount)}`, `${placeName(e) || ''} · ${formatDate(e.date)}`, Receipt, go(e.property_id ? `/properties/${e.property_id}` : '/expenses'), score([e.vendor, e.category, e.description], words))
           n++
         }
       }
       n = 0
       for (const e of income) {
         if (n >= 6) break
-        if (matchesAll([e.source, e.payer, e.description, propertyNameById(e.property_id)], words)) {
-          push('Income', `${e.source || 'Income'} · ${formatCurrency(e.amount)}`, `${propertyNameById(e.property_id) || ''} · ${formatDate(e.date)}`, Banknote, go(`/properties/${e.property_id}`), score([e.source, e.payer, e.description], words))
+        if (matchesAll([e.source, e.payer, e.description, placeName(e)], words)) {
+          push('Income', `${e.source || 'Income'} · ${formatCurrency(e.amount)}`, `${placeName(e) || ''} · ${formatDate(e.date)}`, Banknote, go(e.property_id ? `/properties/${e.property_id}` : '/income'), score([e.source, e.payer, e.description], words))
           n++
         }
       }
@@ -191,7 +194,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
       for (const d of documents) {
         if (n >= 5) break
         if (matchesAll([d.title, d.doc_type, propertyNameById(d.property_id)], words)) {
-          push('Documents', d.title, `${d.doc_type || ''} · ${propertyNameById(d.property_id) || ''}`, FileText, go(`/properties/${d.property_id}`), score([d.title, d.doc_type], words))
+          push('Documents', d.title, `${d.doc_type || ''} · ${propertyNameById(d.property_id) || ''}`, FileText, go(d.property_id ? `/properties/${d.property_id}` : '/documents'), score([d.title, d.doc_type], words))
           n++
         }
       }
