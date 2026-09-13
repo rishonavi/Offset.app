@@ -15,6 +15,7 @@ import { makeAuditEvent, AUDIT_ACTIONS } from '../../src/lib/corporate.js'
 import { makeProject } from '../../src/lib/projects.js'
 import { makeRaBill } from '../../src/lib/subcontract.js'
 import { makeUnit } from '../../src/lib/sales.js'
+import { isDirty } from '../../src/lib/sync.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
@@ -292,6 +293,27 @@ eq('refusing works the same way', turned.approval_status, 'rejected')
 eq('and is audited as a refusal', listAudit({ entityId: firm.id })[0].action, 'workorder.reject')
 ok('a row that has gone cannot be signed',
   (() => { try { raBills.decide('nope', 'approved', actor, 'owner'); return false } catch { return true } })())
+
+console.log('\n── A WRITE CARRIES A VERSION, AND A DELETE LEAVES A MARK ──')
+reset()
+const shop = createEntity({ name: 'Navi Builders' }, actor)
+const one = projects.add(makeProject({ entityId: shop.id, name: 'Tower A' }), actor)
+ok('a new row is stamped', Boolean(one.updated_at))
+ok('and is unsent, because nothing has acknowledged it', isDirty(one))
+const later = projects.update(one.id, { status: 'active' }, actor)
+ok('editing moves the version on', later.updated_at !== one.updated_at, `${one.updated_at} → ${later.updated_at}`)
+
+// A row that is simply gone cannot reach the other devices: each would keep its
+// copy, re-send it, and the thing somebody deleted would come back.
+projects.remove(one.id, actor)
+eq('a deleted row is out of the list', projects.list(shop.id).length, 0)
+eq('but it is still there, marked', projects.list(shop.id, { withDeleted: true }).length, 1)
+ok('with the day it went', Boolean(projects.list(shop.id, { withDeleted: true })[0].deleted_at))
+ok('and a version that says the deletion has not been sent',
+  isDirty(projects.list(shop.id, { withDeleted: true })[0]))
+eq('deleting it is still audited', listAudit({ entityId: shop.id })[0].action, 'site.delete')
+eq('and deleting something already gone is not an error',
+  (() => { projects.remove('nope', actor); return projects.list(shop.id).length })(), 0)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

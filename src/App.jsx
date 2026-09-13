@@ -7,6 +7,7 @@ import { PlanProvider } from './context/PlanContext'
 import { PersonalProvider } from './context/PersonalContext'
 import { ReportProvider } from './context/ReportContext'
 import { EntityProvider } from './context/EntityContext'
+import { SyncProvider } from './context/SyncContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import { Spinner } from './components/ui'
@@ -97,6 +98,10 @@ export default function App() {
                   books you are in and DataProvider has to be able to ask.
                   EntityProvider itself only needs auth, so it can sit here. */}
               <EntityProvider>
+                {/* Below EntityProvider, because it reconciles that company's
+                    books and needs to know which ones exist. Above the ledger
+                    so a screen can say what is still waiting to go out. */}
+                <SyncProvider>
                 <DataProvider>
                   <PlanProvider>
                     <PersonalProvider>
@@ -106,6 +111,7 @@ export default function App() {
                     </PersonalProvider>
                   </PlanProvider>
                 </DataProvider>
+                </SyncProvider>
               </EntityProvider>
             </WorkspaceProvider>
           </ProtectedRoute>

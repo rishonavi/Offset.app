@@ -345,11 +345,17 @@ console.log('\n── AND IT ALL LEAVES A TRAIL ──')
 // is exactly where a silent ledger hides.
 await outerTab('Materials')
 await view('Quotations')
-const quotesBefore = (await ls('pl_corp_quotes')).length
+const quotesBefore = (await ls('pl_corp_quotes')).filter((q) => !q.deleted_at).length
 await p.locator('#main-content button[aria-label^="Delete quotation"]').first().click()
 await p.waitForTimeout(600)
-ok('a quotation can be deleted', (await ls('pl_corp_quotes')).length === quotesBefore - 1,
-  `${quotesBefore} → ${(await ls('pl_corp_quotes')).length}`)
+const quotesAfter = await ls('pl_corp_quotes')
+ok('a quotation can be deleted', quotesAfter.filter((q) => !q.deleted_at).length === quotesBefore - 1,
+  `${quotesBefore} → ${quotesAfter.filter((q) => !q.deleted_at).length}`)
+// A tombstone rather than a hole: a row that is simply gone cannot reach the
+// other devices, so each would keep its copy, re-send it, and the thing
+// somebody deleted would come back.
+ok('and leaves a mark rather than a hole', quotesAfter.some((q) => q.deleted_at),
+  JSON.stringify(quotesAfter.map((q) => Boolean(q.deleted_at))))
 
 const trail = await ls('pl_corp_audit')
 for (const action of ['material.create', 'movement.create', 'quotation.create', 'quotation.delete']) {

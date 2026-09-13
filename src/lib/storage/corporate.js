@@ -14,6 +14,7 @@ import {
   makeEntity, makeDepartment, makeMember, makeApprovalPolicy, makeAuditEvent,
   canRemoveMember, canChangeRole, canApprove, whyCannotApprove, APPROVAL_STATUS,
 } from '../corporate'
+import { touch } from '../sync'
 
 const KEYS = {
   entities: 'pl_corp_entities',
@@ -281,25 +282,40 @@ const changed = (before, after) => {
 // site.update and site.delete. A collection without one writes no history,
 // which is a decision and not a default — every ledger below passes one.
 const collection = (key, noun) => ({
-  list: (entityId = null) => read(key).filter((r) => !entityId || r.entity_id === entityId),
+  // Deleted rows are filtered here rather than removed from storage, so every
+  // caller sees what it saw before. `withDeleted` is for the one caller that
+  // needs them: whatever is carrying changes to the other devices, which cannot
+  // tell "deleted" from "never existed" if the row is simply gone.
+  list: (entityId = null, { withDeleted = false } = {}) =>
+    read(key)
+      .filter((r) => withDeleted || !r.deleted_at)
+      .filter((r) => !entityId || r.entity_id === entityId),
   add: (row, actor, entityId = null) => {
-    write(key, [...read(key), row])
+    const stamped = touch(row)
+    write(key, [...read(key), stamped])
     if (noun) audit(actor, row.entity_id || entityId, `${noun}.create`, row.id, summarise(row))
-    return row
+    return stamped
   },
   update: (id, patch, actor) => {
     const before = read(key).find((r) => r.id === id)
-    const list = read(key).map((r) => (r.id === id ? { ...r, ...patch, id: r.id } : r))
+    const list = read(key).map((r) => (r.id === id ? touch({ ...r, ...patch, id: r.id }) : r))
     write(key, list)
     const after = list.find((r) => r.id === id)
     if (noun && before) audit(actor, after?.entity_id, `${noun}.update`, id, changed(before, after))
     return after
   },
+  // A tombstone, not a hole. A row that is simply gone cannot reach the other
+  // devices — they would each keep their copy and re-send it, and the thing
+  // somebody deleted would come back.
   remove: (id, actor) => {
     const row = read(key).find((r) => r.id === id)
-    write(key, read(key).filter((r) => r.id !== id))
-    if (noun && row) audit(actor, row.entity_id, `${noun}.delete`, id, summarise(row))
+    if (!row) return
+    write(key, read(key).map((r) => (r.id === id ? touch({ ...r, deleted_at: new Date().toISOString() }) : r)))
+    if (noun) audit(actor, row.entity_id, `${noun}.delete`, id, summarise(row))
   },
+  // Replacing the lot, which only whatever is reconciling with the server has
+  // any business doing. Every other caller goes through add, update or remove.
+  replaceAll: (rows) => write(key, rows),
   // Signing something off, or refusing it.
   //
   // The rule lives here rather than in the screen that calls it, because a
@@ -315,7 +331,7 @@ const collection = (key, noun) => ({
       approved_by: actor?.id || null,
       approved_at: new Date().toISOString(),
     }
-    const list = read(key).map((r) => (r.id === id ? { ...r, ...patch } : r))
+    const list = read(key).map((r) => (r.id === id ? touch({ ...r, ...patch }) : r))
     write(key, list)
     if (noun) {
       audit(actor, row.entity_id, `${noun}.${status === APPROVAL_STATUS.approved ? 'approve' : 'reject'}`, id, summarise(row))
@@ -345,6 +361,18 @@ export const plantLogs = collection(KEYS.plantLogs, 'plantlog')
 export const units = collection(KEYS.units, 'unit')
 export const planStages = collection(KEYS.planStages, 'instalment')
 export const receipts = collection(KEYS.receipts, 'receipt')
+
+// Every ledger by name, so whatever is carrying changes between devices can
+// walk them without a second list that drifts out of step with the first.
+export const collections = {
+  entities: { list: (e, o) => listEntities().filter((r) => (!e || r.id === e) && (o?.withDeleted || !r.deleted_at)), replaceAll: (rows) => write(KEYS.entities, rows) },
+  members: { list: (e, o) => listMembers(e).filter((r) => o?.withDeleted || !r.deleted_at), replaceAll: (rows) => write(KEYS.members, rows) },
+  departments: { list: (e, o) => listDepartments(e).filter((r) => o?.withDeleted || !r.deleted_at), replaceAll: (rows) => write(KEYS.departments, rows) },
+  audit: { list: () => read(KEYS.audit), replaceAll: (rows) => write(KEYS.audit, rows) },
+  items, movements, quotes, projects, muster, workOrders, raBills,
+  workItems, measurements, plant, plantLogs, units, planStages, receipts,
+  advances, adjustments, employees,
+}
 
 // ── Whole-account helpers ──────────────────────────────────────────
 export function exportCorporate() {

@@ -43,9 +43,11 @@ for Vite's resolver.
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
-| `store.test.mjs` | 107 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
+| `sync.test.mjs` | 68 | which version survives when two devices disagree, and who is told |
+| `syncwire.test.mjs` | 41 | what a pull asks for, what a push sends, and one table failing |
+| `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,957** | |
+| | **2,075** | |
 
 ## Browser — `tests/browser/`
 
@@ -78,7 +80,7 @@ node tests/browser/rtlui.mjs
 | `loginui.mjs` | 24 | the sign-in screen, its three providers, and what it says when one refuses |
 | `labourui.mjs` | 63 | the muster roll, RA bills stated to date, retention, and built against spent |
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
-| `materialsui.mjs` | 88 | the trades on screen, rejection kept out of the job's cost, prices and quotes |
+| `materialsui.mjs` | 89 | the trades on screen, rejection kept out of the job's cost, prices and quotes |
 | `metalbillui.mjs` | 15 | filling a holding from a purchase bill |
 | `metalsui.mjs` | 27 | metal holdings on screen |
 | `navui.mjs` | 22 | the side bar: grouping, what is waiting, a short screen, and its own padding |
@@ -93,9 +95,10 @@ node tests/browser/rtlui.mjs
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `salesui.mjs` | 40 | flats and shops, the demand moving with the building, cancellations |
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
+| `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,277** | |
+| | **1,294** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
@@ -138,7 +141,7 @@ learn to ignore.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 140 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; flats and shops with construction-linked payment plans; that a personal install is untouched |
+| `corporate.sql` | 145 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

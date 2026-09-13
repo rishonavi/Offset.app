@@ -736,6 +736,57 @@ alter table public.ra_bills    add column if not exists approval_status text not
 alter table public.ra_bills    add column if not exists approved_by uuid references auth.users(id) on delete set null;
 alter table public.ra_bills    add column if not exists approved_at timestamptz;
 
+
+-- ── A version to sync against ────────────────────────────────────
+-- Every synced table carries `updated_at`, and a trigger maintains it rather
+-- than the client. A timestamp the client sets is a timestamp the client can
+-- get wrong: a phone with a slow clock would win every race it should lose, and
+-- a phone with a fast one would lose every race it should win. The server's
+-- clock is the only one all the devices share.
+create or replace function public.touch_updated_at() returns trigger
+language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end $$;
+
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'entities','departments','entity_members','approval_policies','audit_events',
+    'projects','inventory_items','inventory_movements','material_quotes','material_quote_lines',
+    'labour_muster','work_orders','ra_bills','work_items','work_measurements',
+    'plant','plant_logs','sale_units','sale_plan_stages','sale_receipts',
+    'advances','advance_adjustments','employees']
+  loop
+    execute format('alter table public.%I add column if not exists updated_at timestamptz not null default now()', t);
+    -- An index on it, because every pull asks the same question: what has
+    -- changed since I last looked.
+    execute format('create index if not exists %I on public.%I (updated_at)', t || '_updated_idx', t);
+    execute format('drop trigger if exists %I on public.%I', t || '_touch', t);
+    execute format(
+      'create trigger %I before update on public.%I for each row execute function public.touch_updated_at()',
+      t || '_touch', t);
+  end loop;
+end $$;
+
+-- A row deleted on one device has to be able to reach the others, and a row
+-- that is simply gone cannot. So the synced tables tombstone rather than
+-- vanish, the same way the personal ledger already does.
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'projects','inventory_items','inventory_movements','material_quotes','material_quote_lines',
+    'labour_muster','work_orders','ra_bills','work_items','work_measurements',
+    'plant','plant_logs','sale_units','sale_plan_stages','sale_receipts',
+    'advances','advance_adjustments','employees']
+  loop
+    execute format('alter table public.%I add column if not exists deleted_at timestamptz', t);
+  end loop;
+end $$;
+
 -- ════════════════════════════════════════════════════════════════
 --  Row-level security
 -- ════════════════════════════════════════════════════════════════

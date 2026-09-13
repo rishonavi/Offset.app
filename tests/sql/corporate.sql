@@ -536,6 +536,33 @@ select t.check('and an observation carries no approval at all',
   (select count(*) from information_schema.columns
     where table_schema = 'public' and table_name = 'labour_muster' and column_name = 'approval_status') = 0);
 
+\echo ''
+\echo '── A VERSION TO SYNC AGAINST ──'
+-- The server keeps the clock. A timestamp the client sets is a timestamp the
+-- client can get wrong: a phone running slow would win every race it should
+-- lose, and one running fast would lose every race it should win.
+reset role;
+select t.check('every synced table carries a version',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and column_name = 'updated_at'
+      and table_name in ('projects','inventory_movements','labour_muster','ra_bills',
+                         'work_measurements','plant_logs','sale_units','sale_receipts')) = 8);
+select t.check('and a trigger maintains it, not the client',
+  (select count(*) from pg_trigger where tgname like '%\_touch' and not tgisinternal) >= 23);
+-- Tried rather than read off the catalogue.
+set role offset_app;
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('a client can try to set the version and be overruled',
+  $$update public.projects set updated_at = '1999-01-01'
+     where id = 'dddddddd-0000-0000-0000-000000000001'$$);
+select t.check('because the server stamps its own',
+  (select updated_at from public.projects where id = 'dddddddd-0000-0000-0000-000000000001') > '2020-01-01');
+-- A row that is simply gone cannot reach the other devices.
+select t.check('and a deletion can be carried rather than vanishing',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and column_name = 'deleted_at'
+      and table_name in ('projects','labour_muster','plant_logs','sale_units')) = 4);
+
 set request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';  -- mallory, another company
 select t.check('another company sees no muster', (select count(*) from public.labour_muster) = 0);
 select t.check('no work orders', (select count(*) from public.work_orders) = 0);

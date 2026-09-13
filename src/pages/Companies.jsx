@@ -11,6 +11,7 @@ import * as store from '../lib/storage/corporate'
 import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button, Field, Input, Select, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
+import SyncStatus from '../components/SyncStatus'
 
 // The corporate control panel: the companies themselves, who is in them, how
 // they are divided up, and what needs signing off. Everything on this page is
@@ -394,6 +395,8 @@ export default function Companies() {
                   )}
                 </Card>
               )}
+
+              <SyncStatus />
 
               {/* Audit */}
               {ent.can('audit.view') && (
