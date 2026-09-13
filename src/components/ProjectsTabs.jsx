@@ -1,13 +1,19 @@
 import { useMemo, useState } from 'react'
 import {
-  HardHat, IndianRupee, ReceiptText, Plus, AlertTriangle, CalendarClock, Pencil, Check, X,
+  HardHat, IndianRupee, ReceiptText, Ruler, Plus, AlertTriangle, CalendarClock, Pencil, Check, X,
 } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
-  makeProject, projectReport, unattributed, daysLate,
+  makeProject, projectSummary, projectReport, unattributed, daysLate,
   PROJECT_STATUS, PROJECT_STATUS_IDS, isOpen,
 } from '../lib/projects'
 import { usageBySite } from '../lib/inventory'
+import { labourCostsBySite } from '../lib/labour'
+import { subcontractCostsBySite } from '../lib/subcontract'
+import {
+  makeWorkItem, makeMeasurement, siteProgress, progressAgainstSpend,
+  WORK_STAGES, WORK_STAGE_IDS, stageOf,
+} from '../lib/progress'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx } from './ui'
 
@@ -20,20 +26,27 @@ import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx } f
 // four screens.
 const VIEWS = [
   { id: 'sites', label: 'Sites', icon: HardHat },
+  { id: 'progress', label: 'Progress', icon: Ruler },
   { id: 'costs', label: 'Costs', icon: IndianRupee },
   { id: 'billing', label: 'Billing', icon: ReceiptText },
 ]
 
 const num = (v) => Number(v) || 0
 
-// Material leaves the stores and becomes a cost of whichever job it went to.
-// Both views need it, so it is worked out once here.
-const materialCostsBy = (data) => {
-  const out = {}
+// A job is not its bills. It is its bills, the material issued to it, the
+// muster roll and what its subcontractors were certified for — and leaving any
+// one of those out makes the job look cheaper than it is. Worked out once here
+// because three of the four views need the same four maps.
+const costsBy = (data, eid) => {
+  const materialCosts = {}
   for (const u of usageBySite(data.items, data.movements, { projects: data.projects })) {
-    if (u.projectId) out[u.projectId] = u.value
+    if (u.projectId) materialCosts[u.projectId] = u.value
   }
-  return out
+  return {
+    materialCosts,
+    labourCosts: labourCostsBySite(data.muster, { entityId: eid }),
+    subcontractCosts: subcontractCostsBySite(data.workOrders, data.raBills, { entityId: eid }),
+  }
 }
 
 export default function Projects(shared) {
@@ -61,6 +74,7 @@ export default function Projects(shared) {
       </div>
 
       {view === 'sites' && <Sites {...shared} />}
+      {view === 'progress' && <Progress {...shared} />}
       {view === 'costs' && <Costs {...shared} />}
       {view === 'billing' && <Billing {...shared} />}
     </div>
@@ -78,10 +92,10 @@ function Sites({ data, eid, actor, canWrite, bump, toast }) {
   const [editing, setEditing] = useState(null)
   const [openOnly, setOpenOnly] = useState(false)
 
-  const materialCosts = useMemo(() => materialCostsBy(data), [data])
+  const costs = useMemo(() => costsBy(data, eid), [data, eid])
   const report = useMemo(
-    () => projectReport(data.projects, data.expenses, data.income, { openOnly, materialCosts }),
-    [data, openOnly, materialCosts],
+    () => projectReport(data.projects, data.expenses, data.income, { openOnly, ...costs }),
+    [data, openOnly, costs],
   )
 
   const save = (e) => {
@@ -288,12 +302,258 @@ function SiteLine({ line, onEdit }) {
   )
 }
 
+// ── Progress ────────────────────────────────────────────────────────────────
+// The one screen in this app that is not financial.
+//
+// Everything else here counts money. This counts cubic metres and square feet,
+// and it exists so the two can be put side by side — because a site 40% built
+// that has spent 60% of its budget is in trouble, and no ledger will say so.
+function Progress({ data, eid, actor, canWrite, bump, toast }) {
+  const [siteId, setSiteId] = useState(data.projects[0]?.id || '')
+  const blankItem = { code: '', description: '', stage: 'structure', unit: 'cum', plannedQty: '', rate: '' }
+  const [item, setItem] = useState(blankItem)
+  const [measure, setMeasure] = useState({ workItemId: '', qty: '', date: new Date().toISOString().slice(0, 10), note: '' })
+
+  const site = data.projects.find((p) => p.id === siteId) || null
+  const items = useMemo(
+    () => data.workItems.filter((i) => i.entity_id === eid && i.project_id === siteId),
+    [data, eid, siteId],
+  )
+  const progress = useMemo(() => siteProgress(items, data.measurements), [items, data])
+  const costs = useMemo(() => costsBy(data, eid), [data, eid])
+  const summary = useMemo(
+    () => (site ? projectSummary(site, data.expenses, data.income, {
+      materialCost: costs.materialCosts[site.id] || 0,
+      labourCost: costs.labourCosts[site.id] || 0,
+      subcontractCost: costs.subcontractCosts[site.id] || 0,
+    }) : null),
+    [site, data, costs],
+  )
+  const against = useMemo(
+    () => progressAgainstSpend({
+      earned: progress.earned,
+      value: progress.value,
+      spent: summary?.spent || 0,
+      estimate: summary?.estimate || 0,
+    }),
+    [progress, summary],
+  )
+
+  const addItem = (e) => {
+    e.preventDefault()
+    if (!siteId || !item.description.trim()) return
+    store.workItems.add(makeWorkItem({
+      entityId: eid, projectId: siteId, ...item,
+      plannedQty: num(item.plannedQty), rate: num(item.rate),
+    }), actor)
+    setItem({ ...blankItem, stage: item.stage, unit: item.unit })
+    bump()
+    toast('Work item added')
+  }
+
+  const addMeasurement = (e) => {
+    e.preventDefault()
+    if (!measure.workItemId || !num(measure.qty)) return
+    store.measurements.add(makeMeasurement({
+      workItemId: measure.workItemId, entityId: eid, projectId: siteId,
+      date: measure.date, qty: num(measure.qty), note: measure.note, recordedBy: actor?.id,
+    }), actor)
+    setMeasure({ ...measure, workItemId: '', qty: '', note: '' })
+    bump()
+    toast('Measurement recorded')
+  }
+
+  if (data.projects.length === 0) {
+    return (
+      <Card className="p-5">
+        <EmptyState icon={Ruler} title="No sites yet" subtitle="Add a site under Sites and its schedule of work goes here." />
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-5">
+        <Field label="Site" className="max-w-md">
+          <Select aria-label="Progress site" value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+            {data.projects.map((pr) => <option key={pr.id} value={pr.id}>{pr.name}</option>)}
+          </Select>
+        </Field>
+      </Card>
+
+      {/* The comparison the whole view exists for. */}
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-ink-3">Built against spent</h3>
+        {!against.known ? (
+          <p className="mt-2 text-sm text-ink-5">{against.why}</p>
+        ) : (
+          <>
+            <div className="mt-3 space-y-3">
+              <Bar label="Of the building" percent={against.built} tone="brand" />
+              <Bar label="Of the budget" percent={against.burnt} tone={against.behind ? 'warn' : 'muted'} />
+            </div>
+            <p className={cx('mt-3 flex items-center gap-2 text-sm font-medium',
+              against.behind ? 'text-amber-600' : against.ahead ? 'text-emerald-600' : 'text-ink-3')}>
+              {against.behind && <AlertTriangle size={15} />}
+              {against.why}
+            </p>
+            {against.forecast !== null && (
+              <p className="mt-1 text-xs text-ink-6">
+                At this rate the job finishes at about {formatCurrency(against.forecast)} against an estimate of{' '}
+                {formatCurrency(summary.estimate)}. A projection, not a figure — it assumes the rest costs what the
+                part already built cost, which is optimistic while the finishes are still to come.
+              </p>
+            )}
+          </>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat label="Schedule value" value={formatCurrency(progress.value)} />
+        <Stat label="Built" value={progress.percent === null ? '—' : `${progress.percent}%`} />
+        <Stat label="Items done" value={`${progress.itemsComplete}/${progress.count}`} />
+        <Stat label="Left to build" value={formatCurrency(progress.remainingValue)} />
+      </div>
+
+      {canWrite && (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <Card className="p-5">
+            <h3 className="text-sm font-semibold text-ink-3">Add to the schedule</h3>
+            <p className="mt-1 text-xs text-ink-5">
+              What is to be built, how much of it, and the rate it was priced at. The rate is what weights progress —
+              half the items done means nothing if the other half is the expensive half.
+            </p>
+            <form onSubmit={addItem} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-4">
+              <Field label="Stage" className="sm:col-span-2">
+                <Select aria-label="Work stage" value={item.stage} onChange={(e) => setItem({ ...item, stage: e.target.value })}>
+                  {WORK_STAGE_IDS.map((id) => <option key={id} value={id}>{WORK_STAGES[id].label}</option>)}
+                </Select>
+              </Field>
+              <Field label="Code">
+                <Input aria-label="Item code" value={item.code} onChange={(e) => setItem({ ...item, code: e.target.value })} placeholder="S-1" />
+              </Field>
+              <Field label="Unit">
+                <Input aria-label="Item unit" value={item.unit} onChange={(e) => setItem({ ...item, unit: e.target.value })} placeholder="cum" />
+              </Field>
+              <Field label="Description" required className="sm:col-span-4">
+                <Input aria-label="Item description" value={item.description} onChange={(e) => setItem({ ...item, description: e.target.value })} placeholder="RCC framed structure" />
+              </Field>
+              <Field label="Planned quantity" className="sm:col-span-2">
+                <Input aria-label="Planned quantity" type="number" min="0" step="any" value={item.plannedQty} onChange={(e) => setItem({ ...item, plannedQty: e.target.value })} />
+              </Field>
+              <Field label="Rate" className="sm:col-span-2">
+                <Input aria-label="Item rate" type="number" min="0" step="0.01" value={item.rate} onChange={(e) => setItem({ ...item, rate: e.target.value })} />
+              </Field>
+              <div className="sm:col-span-4"><Button type="submit"><Plus size={16} /> Add item</Button></div>
+            </form>
+          </Card>
+
+          <Card className="p-5">
+            <h3 className="text-sm font-semibold text-ink-3">Record a measurement</h3>
+            <p className="mt-1 text-xs text-ink-5">
+              Quantities, not percentages. A site engineer measures 42 cubic metres; a percentage asked for directly
+              is a guess dressed up as a measurement. A negative quantity corrects an earlier one.
+            </p>
+            <form onSubmit={addMeasurement} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+              <Field label="Item" required className="sm:col-span-2">
+                <Select aria-label="Measured item" value={measure.workItemId} onChange={(e) => setMeasure({ ...measure, workItemId: e.target.value })}>
+                  <option value="">Choose…</option>
+                  {items.map((i) => <option key={i.id} value={i.id}>{i.code ? `${i.code} · ` : ''}{i.description}</option>)}
+                </Select>
+              </Field>
+              <Field label="Quantity" required>
+                <Input aria-label="Measured quantity" type="number" step="any" value={measure.qty} onChange={(e) => setMeasure({ ...measure, qty: e.target.value })} />
+              </Field>
+              <Field label="Date">
+                <Input aria-label="Measured on" type="date" value={measure.date} onChange={(e) => setMeasure({ ...measure, date: e.target.value })} />
+              </Field>
+              <Field label="Note" className="sm:col-span-2">
+                <Input aria-label="Measurement note" value={measure.note} onChange={(e) => setMeasure({ ...measure, note: e.target.value })} placeholder="Slab, 4th floor" />
+              </Field>
+              <div className="sm:col-span-2">
+                <Button type="submit" disabled={!measure.workItemId}><Plus size={16} /> Record</Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {progress.count === 0 ? (
+        <Card className="p-5">
+          <EmptyState icon={Ruler} title="No schedule yet" subtitle="Add what is to be built and progress can be measured against it." />
+        </Card>
+      ) : (
+        progress.stages.map((st) => (
+          <Card key={st.stage.id} className="p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-ink-3">{st.stage.label}</h3>
+              <span className="text-xs text-ink-5">
+                {st.percent === null ? 'unpriced' : `${st.percent}%`} · {formatCurrency(st.earned)} of {formatCurrency(st.value)}
+              </span>
+            </div>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[38rem] text-sm">
+                <thead className="text-xs uppercase tracking-wide text-ink-5">
+                  <tr>
+                    <th className="py-2 text-start">Item</th>
+                    <th className="text-end">Planned</th>
+                    <th className="text-end">Done</th>
+                    <th className="text-end">Left</th>
+                    <th className="text-end">Progress</th>
+                    <th className="text-end">Value built</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line-soft">
+                  {progress.lines.filter((l) => l.item.stage === st.stage.id).map((l) => (
+                    <tr key={l.item.id}>
+                      <td className="py-2 text-ink-2">
+                        {l.item.code && <span className="text-ink-6">{l.item.code} · </span>}
+                        {l.item.description}
+                        {l.over && <span className="block text-[0.7rem] text-amber-600">more built than scheduled</span>}
+                      </td>
+                      <td className="text-end tabular text-ink-4">{l.planned} {l.item.unit}</td>
+                      <td className="text-end tabular text-ink-3">{l.done}</td>
+                      <td className="text-end tabular text-ink-4">{l.remaining}</td>
+                      <td className={cx('text-end tabular', l.complete ? 'text-emerald-600' : 'text-ink-3')}>
+                        {l.percent === null ? '—' : `${l.percent}%`}
+                      </td>
+                      <td className="text-end tabular font-medium">{formatCurrency(l.earned)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ))
+      )}
+    </div>
+  )
+}
+
+function Bar({ label, percent, tone }) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-xs">
+        <span className="text-ink-5">{label}</span>
+        <span className="tabular font-semibold text-ink-2">{percent}%</span>
+      </div>
+      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-line-soft">
+        <div
+          className={cx('h-full rounded-full',
+            tone === 'warn' ? 'bg-amber-500' : tone === 'brand' ? 'bg-brand' : 'bg-ink-6')}
+          style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ── Costs ───────────────────────────────────────────────────────────────────
-function Costs({ data }) {
-  const materialCosts = useMemo(() => materialCostsBy(data), [data])
+function Costs({ data, eid }) {
+  const costs = useMemo(() => costsBy(data, eid), [data, eid])
   const report = useMemo(
-    () => projectReport(data.projects, data.expenses, data.income, { materialCosts }),
-    [data, materialCosts],
+    () => projectReport(data.projects, data.expenses, data.income, costs),
+    [data, costs],
   )
   const loose = useMemo(() => unattributed(data.expenses, data.income), [data])
   const usage = useMemo(
@@ -304,29 +564,35 @@ function Costs({ data }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Stat label="Bills booked" value={formatCurrency(report.directCost)} />
         <Stat label="Material issued" value={formatCurrency(report.materialCost)} />
+        <Stat label="Labour" value={formatCurrency(report.labourCost)} />
+        {/* Certified, not paid: retention and TDS change when the money leaves,
+            not whether the work was done. */}
+        <Stat label="Subcontractors" value={formatCurrency(report.subcontractCost)} />
         <Stat label="Total on jobs" value={formatCurrency(report.spent)} />
-        <Stat label="Owed on bills" value={formatCurrency(report.unpaid)} />
       </div>
 
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-ink-3">Where the money went</h3>
         <p className="mt-1 text-xs text-ink-5">
-          Bills booked to the site plus material issued to it from the stores. A builder who counts only the bills
-          finds every job profitable and the company losing money.
+          Bills booked to the site, material issued to it from the stores, the muster roll, and what its
+          subcontractors were certified for. A builder who counts only the bills finds every job profitable and the
+          company losing money.
         </p>
         {report.count === 0 ? (
           <p className="mt-3 text-sm text-ink-5">No sites yet.</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[36rem] text-sm">
+            <table className="w-full min-w-[44rem] text-sm">
               <thead className="text-xs uppercase tracking-wide text-ink-5">
                 <tr>
                   <th className="py-2 text-start">Site</th>
                   <th className="text-end">Bills</th>
                   <th className="text-end">Material</th>
+                  <th className="text-end">Labour</th>
+                  <th className="text-end">Contractors</th>
                   <th className="text-end">Spent</th>
                   <th className="text-end">Of estimate</th>
                 </tr>
@@ -337,6 +603,8 @@ function Costs({ data }) {
                     <td className="py-2 text-ink-2">{l.project.name}</td>
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.directCost)}</td>
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.materialCost)}</td>
+                    <td className="text-end tabular text-ink-4">{formatCurrency(l.labourCost)}</td>
+                    <td className="text-end tabular text-ink-4">{formatCurrency(l.subcontractCost)}</td>
                     <td className="text-end tabular font-medium">{formatCurrency(l.spent)}</td>
                     <td className={cx('text-end tabular', l.overEstimate ? 'text-amber-600' : 'text-ink-4')}>
                       {l.usedPercent === null ? '—' : `${l.usedPercent}%`}
@@ -372,11 +640,11 @@ function Costs({ data }) {
 }
 
 // ── Billing ─────────────────────────────────────────────────────────────────
-function Billing({ data }) {
-  const materialCosts = useMemo(() => materialCostsBy(data), [data])
+function Billing({ data, eid }) {
+  const costs = useMemo(() => costsBy(data, eid), [data, eid])
   const report = useMemo(
-    () => projectReport(data.projects, data.expenses, data.income, { materialCosts }),
-    [data, materialCosts],
+    () => projectReport(data.projects, data.expenses, data.income, costs),
+    [data, costs],
   )
 
   // Work done that has not been invoiced at all. On a running account this is

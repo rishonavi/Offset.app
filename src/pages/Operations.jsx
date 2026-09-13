@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Boxes, HandCoins, Users, HardHat, Plus, Check } from 'lucide-react'
+import { Boxes, HandCoins, Users, HardHat, Wallet, Plus, Check } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
@@ -11,9 +11,10 @@ import { Card, Button, Field, Input, Select, EmptyState, Badge, cx } from '../co
 import PageHeader from '../components/PageHeader'
 import Materials from '../components/MaterialsTabs'
 import Projects from '../components/ProjectsTabs'
+import Labour from '../components/LabourTabs'
 
-// Sites, materials, advances and payroll — what a company runs on and a
-// landlord does not.
+// Sites, materials, labour, advances and payroll — what a company runs on and
+// a landlord does not.
 //
 // All three were written and tested a while ago and had no screen at all, which
 // made them the largest gap in the app: 151 assertions of working logic that
@@ -25,8 +26,9 @@ const TABS = [
   // a job before it belongs to a ledger.
   { id: 'projects', label: 'Projects', icon: HardHat },
   { id: 'materials', label: 'Materials', icon: Boxes },
+  { id: 'labour', label: 'Labour', icon: Users },
   { id: 'advances', label: 'Advances', icon: HandCoins },
-  { id: 'payroll', label: 'Payroll', icon: Users },
+  { id: 'payroll', label: 'Payroll', icon: Wallet },
 ]
 
 const thisMonth = () => new Date().toISOString().slice(0, 7)
@@ -54,6 +56,11 @@ export default function Operations() {
       movements: store.movements.list(eid),
       quotes: store.quotes.list(eid),
       projects: store.projects.list(eid),
+      muster: store.muster.list(eid),
+      workOrders: store.workOrders.list(eid),
+      raBills: store.raBills.list(eid),
+      workItems: store.workItems.list(eid),
+      measurements: store.measurements.list(eid),
       advances: store.advances.list(eid),
       adjustments: store.adjustments.list(),
       employees: store.employees.list(eid),
@@ -66,11 +73,11 @@ export default function Operations() {
   if (!ent?.enabled) {
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Sites, materials, advances and payroll." />
+        <PageHeader title="Operations" subtitle="Sites, materials, labour and payroll." />
         <EmptyState
           icon={Boxes}
           title="Add a company first"
-          subtitle="Sites, materials, advances and payroll belong to a company. Create one under Companies and this fills in."
+          subtitle="Sites, materials, labour and payroll belong to a company. Create one under Companies and this fills in."
         />
       </div>
     )
@@ -79,13 +86,13 @@ export default function Operations() {
     const personal = ent.personal
     return (
       <div className="animate-fade-in space-y-6">
-        <PageHeader title="Operations" subtitle="Sites, materials, advances and payroll." />
+        <PageHeader title="Operations" subtitle="Sites, materials, labour and payroll." />
         <EmptyState
           icon={Boxes}
           title={personal ? 'You are in your personal books' : 'Pick one company'}
           subtitle={
             personal
-              ? 'Sites, materials, advances and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
+              ? 'Sites, materials, labour and payroll belong to a company. Switch to one at the top of the side bar and this fills in.'
               : 'These are kept per company, so the consolidated view has nothing to show. Switch to a single company above.'
           }
         />
@@ -98,7 +105,7 @@ export default function Operations() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader title="Operations" subtitle={`Sites, materials, advances and payroll for ${ent.entity?.name || 'this company'}.`} />
+      <PageHeader title="Operations" subtitle={`Sites, materials, labour and payroll for ${ent.entity?.name || 'this company'}.`} />
 
       <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-surface-raised p-1">
         {TABS.map((t) => (
@@ -118,6 +125,7 @@ export default function Operations() {
 
       {tab === 'projects' && <Projects {...shared} />}
       {tab === 'materials' && <Materials {...shared} />}
+      {tab === 'labour' && <Labour {...shared} />}
       {tab === 'advances' && <Advances {...shared} />}
       {tab === 'payroll' && <Payroll {...shared} />}
     </div>

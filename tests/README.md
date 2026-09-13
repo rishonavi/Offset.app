@@ -28,6 +28,7 @@ for Vite's resolver.
 | `filled.test.mjs` | 22 | which values on a form the app put there |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
+| `labour.test.mjs` | 109 | the muster roll, cumulative running-account bills, and what is actually built |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `money.test.mjs` | 44 | what counts as an amount, and what a row is cleaned to on its way in |
 | `materials.test.mjs` | 145 | construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
@@ -36,13 +37,13 @@ for Vite's resolver.
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 44 | empty install, sample data |
 | `ops.test.mjs` | 211 | inventory, payables, advances, payroll, and each over a period |
-| `projects.test.mjs` | 64 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
+| `projects.test.mjs` | 71 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `store.test.mjs` | 79 | corporate storage layer, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **1,598** | |
+| | **1,714** | |
 
 ## Browser — `tests/browser/`
 
@@ -72,6 +73,7 @@ node tests/browser/rtlui.mjs
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 24 | the sign-in screen, its three providers, and what it says when one refuses |
+| `labourui.mjs` | 63 | the muster roll, RA bills stated to date, retention, and built against spent |
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
 | `materialsui.mjs` | 69 | the trades on screen, rejection kept out of the job's cost, prices and quotes |
 | `metalbillui.mjs` | 15 | filling a holding from a purchase bill |
@@ -88,7 +90,7 @@ node tests/browser/rtlui.mjs
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,101** | |
+| | **1,141** | |
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
@@ -131,7 +133,7 @@ learn to ignore.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 89 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; that a personal install is untouched |
+| `corporate.sql` | 106 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; that a personal install is untouched |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

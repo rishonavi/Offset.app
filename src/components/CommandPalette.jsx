@@ -72,6 +72,9 @@ const CORPORATE_COMMANDS = [
       + 'bricks blocks tiles paint doors windows plumbing bathroom kitchen fittings lifts electrical '
       + 'quotation quotations quote quotes vendor supplier rate rates price prices gst landed '
       + 'rejected rejection wastage issued consumed usage site sites project projects '
+      + 'labour labor muster mason helper carpenter mestri gang headcount wages overtime daywork '
+      + 'subcontractor contractor work order ra bill running account certified retention tds '
+      + 'progress boq schedule quantity measurement measured built earned '
       + 'advances imprest payroll salary salaries payslip employees staff pf esi',
   },
 ]

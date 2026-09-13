@@ -358,6 +358,69 @@ select t.allows('and a bill with no site is still a bill',
             'bbbbbbbb-0000-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
             current_date, 4000, 'Utilities','33333333-3333-3333-3333-333333333333')$$);
 
+\echo ''
+\echo '── LABOUR, CONTRACTS AND WHAT IS BUILT ──'
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('a day of the muster is recorded',
+  $$insert into public.labour_muster (entity_id, project_id, date, trade, headcount, rate, overtime_hours, overtime_rate)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',
+            current_date, 'mason', 14, 800, 0, 0)$$);
+-- Nobody is named on a real muster either, so nothing here requires it.
+select t.check('and it needs no employee to point at',
+  (select count(*) from information_schema.columns
+    where table_schema = 'public' and table_name = 'labour_muster' and column_name like '%employee%') = 0);
+select t.refuses('a negative headcount is not a muster',
+  $$insert into public.labour_muster (entity_id, date, trade, headcount, rate)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', current_date, 'helper', -3, 500)$$);
+
+select t.allows('a work order is raised',
+  $$insert into public.work_orders (id, entity_id, project_id, contractor, scope, order_value, retention_percent, tds_percent)
+    values ('11111111-aaaa-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001','Sharma Plastering','Internal plaster', 2000000, 5, 1)$$);
+select t.refuses('a retention above the whole bill is a typo',
+  $$insert into public.work_orders (entity_id, contractor, retention_percent)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody', 500)$$);
+
+-- Cumulative by construction: each bill states the work done to date.
+select t.allows('the first running account bill',
+  $$insert into public.ra_bills (entity_id, work_order_id, number, date, claimed_to_date, certified_to_date)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','11111111-aaaa-0000-0000-000000000001',
+            1, current_date, 500000, 500000)$$);
+select t.allows('and the second, stating everything done so far',
+  $$insert into public.ra_bills (entity_id, work_order_id, number, date, claimed_to_date, certified_to_date)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','11111111-aaaa-0000-0000-000000000001',
+            2, current_date, 1300000, 1200000)$$);
+-- Two bills dated the same day is ordinary; two numbered the same is not, and
+-- the number is what orders the ladder that works out what is payable.
+select t.refuses('two bills cannot share a number on one order',
+  $$insert into public.ra_bills (entity_id, work_order_id, number, date, claimed_to_date, certified_to_date)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','11111111-aaaa-0000-0000-000000000001',
+            2, current_date, 1400000, 1400000)$$);
+select t.check('the ladder reads the later figure, not their sum',
+  (select max(certified_to_date) from public.ra_bills
+    where work_order_id = '11111111-aaaa-0000-0000-000000000001') = 1200000);
+
+select t.allows('a line of the schedule of work',
+  $$insert into public.work_items (id, entity_id, project_id, code, description, stage, unit, planned_qty, rate)
+    values ('22222222-aaaa-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001','S-1','RCC framed structure','structure','cum', 600, 6500)$$);
+select t.allows('and a measurement against it',
+  $$insert into public.work_measurements (entity_id, work_item_id, project_id, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','22222222-aaaa-0000-0000-000000000001',
+            'dddddddd-0000-0000-0000-000000000001', current_date, 300)$$);
+-- A re-measurement that found less is a correction. Forcing it positive would
+-- mean the only way to fix an error is to delete the record of it.
+select t.allows('a correction may be negative',
+  $$insert into public.work_measurements (entity_id, work_item_id, date, qty)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','22222222-aaaa-0000-0000-000000000001', current_date, -10)$$);
+
+set request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';  -- mallory, another company
+select t.check('another company sees no muster', (select count(*) from public.labour_muster) = 0);
+select t.check('no work orders', (select count(*) from public.work_orders) = 0);
+select t.check('no running account bills', (select count(*) from public.ra_bills) = 0);
+select t.check('no schedule of work', (select count(*) from public.work_items) = 0);
+select t.check('and no measurements', (select count(*) from public.work_measurements) = 0);
+
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';  -- dave, auditor
 select t.check('an auditor sees the sites', (select count(*) from public.projects) = 1);
 select t.check('and the quotations', (select count(*) from public.material_quotes) = 1);

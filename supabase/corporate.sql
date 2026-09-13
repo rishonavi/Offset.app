@@ -226,6 +226,116 @@ create table if not exists public.material_quote_lines (
 create index if not exists material_quote_lines_quote_idx on public.material_quote_lines (quote_id);
 create index if not exists material_quote_lines_item_idx on public.material_quote_lines (item_id);
 
+-- The muster roll. Deliberately not employees: site labour is "fourteen masons
+-- on Tuesday", hired through a mestri and different people next week. A table
+-- with a name column would be a register nobody fills in whose totals still
+-- look real.
+create table if not exists public.labour_muster (
+  id             uuid primary key default gen_random_uuid(),
+  entity_id      uuid not null references public.entities(id) on delete cascade,
+  project_id     uuid references public.projects(id) on delete set null,
+  date           date not null,
+  trade          text not null,
+  headcount      integer not null default 0 check (headcount >= 0),
+  rate           numeric(14,2) not null default 0 check (rate >= 0),
+  -- Kept apart from the day rate because it is the figure that quietly doubles
+  -- while everyone watches the material rates.
+  overtime_hours numeric(10,2) not null default 0 check (overtime_hours >= 0),
+  overtime_rate  numeric(14,2) not null default 0 check (overtime_rate >= 0),
+  contractor     text,
+  note           text,
+  created_by     uuid references auth.users(id) on delete set null,
+  created_at     timestamptz not null default now()
+);
+create index if not exists labour_muster_entity_idx  on public.labour_muster (entity_id, date);
+create index if not exists labour_muster_project_idx on public.labour_muster (project_id, date);
+
+create table if not exists public.work_orders (
+  id                uuid primary key default gen_random_uuid(),
+  entity_id         uuid not null references public.entities(id) on delete cascade,
+  project_id        uuid references public.projects(id) on delete set null,
+  contractor        text not null,
+  scope             text,
+  order_value       numeric(16,2) not null default 0 check (order_value >= 0),
+  pricing           text not null default 'lumpSum' check (pricing in ('lumpSum', 'rate', 'dayWork')),
+  retention_percent numeric(5,2) not null default 5 check (retention_percent between 0 and 100),
+  tds_percent       numeric(5,2) not null default 1 check (tds_percent between 0 and 100),
+  started_on        date,
+  due_on            date,
+  status            text not null default 'running' check (status in ('draft', 'running', 'held', 'closed')),
+  -- Retention given back. Held separately so what is still owed is a figure
+  -- rather than a memory.
+  retention_released numeric(16,2) not null default 0 check (retention_released >= 0),
+  ref               text,
+  notes             text,
+  created_by        uuid references auth.users(id) on delete set null,
+  created_at        timestamptz not null default now()
+);
+create index if not exists work_orders_entity_idx on public.work_orders (entity_id, status);
+
+-- Running account bills are CUMULATIVE. Each one states the work done to date,
+-- and what is payable now is that figure less everything certified before it.
+-- Storing this month's amount instead is how a job gets paid for several times
+-- over, with arithmetic that still adds up.
+create table if not exists public.ra_bills (
+  id                 uuid primary key default gen_random_uuid(),
+  entity_id          uuid not null references public.entities(id) on delete cascade,
+  work_order_id      uuid not null references public.work_orders(id) on delete cascade,
+  project_id         uuid references public.projects(id) on delete set null,
+  number             integer not null check (number >= 1),
+  date               date not null,
+  -- The contractor claims; the engineer measures and certifies. Paying the
+  -- claim is the mistake this trade is built on, so both are kept.
+  claimed_to_date    numeric(16,2) not null default 0 check (claimed_to_date >= 0),
+  certified_to_date  numeric(16,2) not null default 0 check (certified_to_date >= 0),
+  advance_recovered  numeric(16,2) not null default 0 check (advance_recovered >= 0),
+  material_recovered numeric(16,2) not null default 0 check (material_recovered >= 0),
+  penalty            numeric(16,2) not null default 0 check (penalty >= 0),
+  other_deduction    numeric(16,2) not null default 0 check (other_deduction >= 0),
+  status             text not null default 'certified' check (status in ('draft', 'certified', 'paid')),
+  note               text,
+  created_by         uuid references auth.users(id) on delete set null,
+  created_at         timestamptz not null default now(),
+  -- Two bills dated the same day is ordinary; two numbered the same is not,
+  -- and the number is what orders the ladder.
+  unique (work_order_id, number)
+);
+create index if not exists ra_bills_order_idx on public.ra_bills (work_order_id, number);
+
+-- The schedule of quantities, and what has actually been built against it. The
+-- only physical measurements in the schema: everything else counts money.
+create table if not exists public.work_items (
+  id          uuid primary key default gen_random_uuid(),
+  entity_id   uuid not null references public.entities(id) on delete cascade,
+  project_id  uuid references public.projects(id) on delete set null,
+  code        text,
+  description text not null,
+  stage       text not null default 'structure',
+  unit        text,
+  planned_qty numeric(16,4) not null default 0 check (planned_qty >= 0),
+  -- What weights progress. Half the lines done means nothing if the other half
+  -- is the expensive half, and on a construction schedule it usually is.
+  rate        numeric(16,4) not null default 0 check (rate >= 0),
+  note        text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists work_items_project_idx on public.work_items (project_id, stage);
+
+create table if not exists public.work_measurements (
+  id           uuid primary key default gen_random_uuid(),
+  entity_id    uuid not null references public.entities(id) on delete cascade,
+  work_item_id uuid not null references public.work_items(id) on delete cascade,
+  project_id   uuid references public.projects(id) on delete set null,
+  date         date not null,
+  -- May be negative: a re-measurement that found less is a correction, and
+  -- forcing it positive means the only way to fix an error is to delete it.
+  qty          numeric(16,4) not null,
+  note         text,
+  recorded_by  uuid references auth.users(id) on delete set null,
+  created_at   timestamptz not null default now()
+);
+create index if not exists work_measurements_item_idx on public.work_measurements (work_item_id, date);
+
 -- An advance is an asset until it is used up. Booking it as a cost
 -- double-counts it when the invoice lands.
 create table if not exists public.advances (
@@ -471,6 +581,11 @@ alter table public.advance_adjustments enable row level security;
 alter table public.employees           enable row level security;
 alter table public.material_quotes     enable row level security;
 alter table public.material_quote_lines enable row level security;
+alter table public.labour_muster       enable row level security;
+alter table public.work_orders         enable row level security;
+alter table public.ra_bills            enable row level security;
+alter table public.work_items          enable row level security;
+alter table public.work_measurements   enable row level security;
 
 -- Entities: members see it, owners change it. Creation is separate because at
 -- the moment of insert there is no membership yet to be a member of.
@@ -550,7 +665,7 @@ create policy "members append to the log" on public.audit_events
 do $$
 declare t text;
 begin
-  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines']
+  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements']
   loop
     execute format('drop policy if exists "members read %1$s" on public.%1$I', t);
     execute format(

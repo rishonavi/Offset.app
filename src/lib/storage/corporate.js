@@ -29,6 +29,11 @@ const KEYS = {
   employees: 'pl_corp_employees',
   projects: 'pl_corp_projects',
   quotes: 'pl_corp_quotes',
+  muster: 'pl_corp_muster',
+  workOrders: 'pl_corp_work_orders',
+  raBills: 'pl_corp_ra_bills',
+  workItems: 'pl_corp_work_items',
+  measurements: 'pl_corp_measurements',
 }
 
 const read = (key) => {
@@ -246,6 +251,11 @@ export const adjustments = collection(KEYS.adjustments)
 export const employees = collection(KEYS.employees)
 export const projects = collection(KEYS.projects)
 export const quotes = collection(KEYS.quotes)
+export const muster = collection(KEYS.muster)
+export const workOrders = collection(KEYS.workOrders)
+export const raBills = collection(KEYS.raBills)
+export const workItems = collection(KEYS.workItems)
+export const measurements = collection(KEYS.measurements)
 
 // ── Whole-account helpers ──────────────────────────────────────────
 export function exportCorporate() {

@@ -72,7 +72,10 @@ const belongs = (row, projectId) => row?.project_id === projectId
 // `spent` is every expense booked to the site, whether or not it has been paid:
 // an unpaid bill is money committed, and a cost report that only counts what
 // has left the bank tells you the job is cheaper than it is.
-export function projectSummary(project, expenses = [], income = [], { materialCost = 0 } = {}) {
+export function projectSummary(
+  project, expenses = [], income = [],
+  { materialCost = 0, labourCost = 0, subcontractCost = 0 } = {},
+) {
   const mine = expenses.filter((e) => belongs(e, project.id) && !e.deleted_at)
   const earned = income.filter((e) => belongs(e, project.id) && !e.deleted_at)
 
@@ -89,7 +92,12 @@ export function projectSummary(project, expenses = [], income = [], { materialCo
   // not knowing where it went.
   const directCost = round2(mine.reduce((t, e) => t + amountOf(e), 0))
   const materials = round2(Math.max(0, Number(materialCost) || 0))
-  const spent = round2(directCost + materials)
+  // Day labour off the muster roll, and subcontractors at what was certified —
+  // not at what was paid, because retention and TDS change when the money
+  // leaves and not whether the work was done.
+  const labour = round2(Math.max(0, Number(labourCost) || 0))
+  const subcontract = round2(Math.max(0, Number(subcontractCost) || 0))
+  const spent = round2(directCost + materials + labour + subcontract)
   const paid = round2(mine.filter((e) => e.status === 'paid').reduce((t, e) => t + amountOf(e), 0))
   const billed = round2(earned.reduce((t, e) => t + amountOf(e), 0))
   const received = round2(earned.filter((e) => e.status === 'received').reduce((t, e) => t + amountOf(e), 0))
@@ -102,6 +110,8 @@ export function projectSummary(project, expenses = [], income = [], { materialCo
     spent,
     directCost,
     materialCost: materials,
+    labourCost: labour,
+    subcontractCost: subcontract,
     // Committed but not yet out of the bank. The number a site manager is
     // asked for and the one nobody can ever find. Measured against the bills
     // alone: material off the shelf was paid for when it was bought, and
@@ -133,11 +143,18 @@ export function projectSummary(project, expenses = [], income = [], { materialCo
 
 // Every job at once, worst first. A portfolio report is read to find the one
 // that is going wrong, so the one going wrong is at the top.
-export function projectReport(projects = [], expenses = [], income = [], { openOnly = false, materialCosts = {} } = {}) {
+export function projectReport(
+  projects = [], expenses = [], income = [],
+  { openOnly = false, materialCosts = {}, labourCosts = {}, subcontractCosts = {} } = {},
+) {
   const lines = projects
     .filter((p) => !p.deleted_at)
     .filter((p) => !openOnly || isOpen(p.status))
-    .map((p) => projectSummary(p, expenses, income, { materialCost: materialCosts[p.id] || 0 }))
+    .map((p) => projectSummary(p, expenses, income, {
+      materialCost: materialCosts[p.id] || 0,
+      labourCost: labourCosts[p.id] || 0,
+      subcontractCost: subcontractCosts[p.id] || 0,
+    }))
 
   const sum = (pick) => round2(lines.reduce((t, l) => t + (pick(l) || 0), 0))
   const overrunning = lines.filter((l) => l.overEstimate)
@@ -159,6 +176,8 @@ export function projectReport(projects = [], expenses = [], income = [], { openO
     estimate: sum((l) => l.estimate),
     directCost: sum((l) => l.directCost),
     materialCost: sum((l) => l.materialCost),
+    labourCost: sum((l) => l.labourCost),
+    subcontractCost: sum((l) => l.subcontractCost),
     received: sum((l) => l.received),
     overrunning: overrunning.length,
     late: lines.filter((l) => daysLate(l.project) !== null).length,

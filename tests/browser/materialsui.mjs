@@ -47,7 +47,7 @@ await p.waitForTimeout(700)
 
 // The page opens on Projects — a cost belongs to a job before it belongs to a
 // ledger — so this suite has to ask for Materials.
-const OUTER = ['Projects', 'Materials', 'Advances', 'Payroll']
+const OUTER = ['Projects', 'Materials', 'Labour', 'Advances', 'Payroll']
 const outerTab = async (name) => {
   await p.locator('#main-content button[aria-pressed]').nth(OUTER.indexOf(name)).click()
   await p.waitForTimeout(450)

@@ -20,7 +20,7 @@ let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
 const main = () => p.locator('#main-content').innerText()
-const OUTER = ['Projects', 'Materials', 'Advances', 'Payroll']
+const OUTER = ['Projects', 'Materials', 'Labour', 'Advances', 'Payroll']
 const outerTab = async (name) => {
   await p.locator('#main-content button[aria-pressed]').nth(OUTER.indexOf(name)).click()
   await p.waitForTimeout(450)

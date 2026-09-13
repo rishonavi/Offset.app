@@ -132,6 +132,35 @@ eq('the portfolio counts the stores too', storeReport.spent, 900000)
 eq('and keeps the split', [storeReport.directCost, storeReport.materialCost], [300000, 600000])
 eq('a site with no material costed is unaffected', projectReport([store], bills, []).spent, 300000)
 
+console.log('\n── FOUR KINDS OF COST, ONE JOB ──')
+// A job is not its bills. It is its bills, the material off the shelf, the
+// muster roll, and what the subcontractors were certified for — and any one of
+// those left out makes the job look cheaper than it is.
+const four = makeProject({ entityId: 'e1', name: 'All four', contractValue: 5000000, estimate: 4000000 })
+const fourBills = [{ project_id: four.id, amount: 500000, status: 'paid' }]
+const all4 = projectSummary(four, fourBills, [], { materialCost: 1200000, labourCost: 900000, subcontractCost: 1600000 })
+eq('each kind is kept separate',
+  [all4.directCost, all4.materialCost, all4.labourCost, all4.subcontractCost],
+  [500000, 1200000, 900000, 1600000])
+eq('and they add to what the job cost', all4.spent, 4200000)
+ok('which is over the estimate the bills alone were nowhere near',
+  all4.overEstimate && !projectSummary(four, fourBills, []).overEstimate)
+// Retention and TDS change when money leaves, not whether the work was done,
+// so the subcontractor figure here is what was certified.
+eq('nothing is owed on labour or material already spent', all4.unpaid, 0)
+eq('a negative cost cannot flatter a job',
+  projectSummary(four, fourBills, [], { labourCost: -1, subcontractCost: -1 }).spent, 500000)
+
+const fourReport = projectReport([four], fourBills, [], {
+  materialCosts: { [four.id]: 1200000 },
+  labourCosts: { [four.id]: 900000 },
+  subcontractCosts: { [four.id]: 1600000 },
+})
+eq('the portfolio totals each kind',
+  [fourReport.directCost, fourReport.materialCost, fourReport.labourCost, fourReport.subcontractCost],
+  [500000, 1200000, 900000, 1600000])
+eq('and the whole', fourReport.spent, 4200000)
+
 console.log('\n── WHAT WAS NEVER BOOKED TO A SITE ──')
 // The number that quietly grows. A site's true cost is wrong by whatever sits
 // in here, and nobody looks for a total nobody prints.
