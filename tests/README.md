@@ -96,7 +96,7 @@ node tests/browser/rtlui.mjs
 | `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
 | `projectsui.mjs` | 53 | sites against contract and estimate, where the money went, what the client owes |
 | `owedui.mjs` | 22 | what is owed in both directions, and how old it is |
-| `opsui.mjs` | 94 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
+| `opsui.mjs` | 97 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `salesui.mjs` | 40 | flats and shops, the demand moving with the building, cancellations |
@@ -105,6 +105,10 @@ node tests/browser/rtlui.mjs
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
 | | **1,371** | |
+
+That total is what one sweep of the demo build reports. The column above it sums
+to 1,395: `loginui.mjs`'s 24 are the difference, because that suite needs the
+other build and does not run in the same pass.
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:
