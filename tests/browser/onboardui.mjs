@@ -104,11 +104,13 @@ ok('the checklist is still offered', /Getting started/i.test(t), t.slice(0, 200)
 ok('nothing is ticked', /0 of 4 done/.test(t), t.match(/\d of \d done/)?.[0] || 'absent')
 ok('the first thing to do is a site', /Add your first site/i.test(t), t.slice(0, 400).replace(/\n/g, ' | '))
 ok('and not an asset', !/Add your first asset/i.test(t), t.slice(0, 400).replace(/\n/g, ' | '))
-// The sample is two flats, a car and a year of rent. Loading a landlord's
-// portfolio into a construction company's ledger is the invented asset again,
-// with a button on it.
-ok('the landlord sample portfolio is not offered here',
-  await p.locator('button', { hasText: 'Load sample data' }).count() === 0)
+// A sample is offered, but not the landlord's one: two flats, a car and a year
+// of rent loaded into a construction ledger is the invented asset again with a
+// button on it.
+ok('a sample is offered', await p.locator('button', { hasText: 'Load sample data' }).count() === 1)
+ok('and it is not two properties and a car',
+  !/two properties, a car/i.test(t), t.slice(0, 900).replace(/\n/g, ' | '))
+ok('it is sites and a stock book', /three sites/i.test(t), t.slice(0, 900).replace(/\n/g, ' | '))
 
 console.log('\n── AND TICKED BY THE SAME BOOKS ──')
 await p.evaluate((ent) => {
@@ -126,7 +128,84 @@ ok('and the next thing asked for is a cost', /Log a cost against it/i.test(t), t
 // "spent so far" into "running over".
 ok('the last step is costing the job', /Cost one of your jobs/i.test(t), t.slice(0, 700).replace(/\n/g, ' | '))
 
+console.log('\n── THE COMPANY SAMPLE ──')
+// Two flats, a car and a year of rent is a landlord's demo. A builder gets
+// three sites, a stock book and a tower half sold, because those are the
+// things the app is actually about.
+const corpLs = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
+// Back to empty books. The site added two sections ago is a real row, and a
+// company with real rows in it is correctly refused the demo — which is worth
+// asserting before clearing it.
+ok('a company with a site of its own is not offered demo rows',
+  await p.locator('button', { hasText: 'Load sample data' }).count() === 0)
+await p.evaluate(() => {
+  localStorage.setItem('pl_corp_projects', '[]')
+  for (const k of ['pl_expenses', 'pl_income', 'pl_properties']) localStorage.setItem(k, '[]')
+})
+await p.goto(B, { waitUntil: 'networkidle' }); await p.waitForTimeout(900)
+const load = p.locator('button', { hasText: 'Load sample data' })
+ok('a company is offered a sample of its own', await load.count() === 1)
+t = await p.locator('#main-content').innerText()
+ok('and it is described as a company, not a portfolio of flats',
+  /three sites/i.test(t) && !/two properties, a car/i.test(t), t.slice(0, 900).replace(/\n/g, ' | '))
+await load.click()
+await p.waitForTimeout(4000)
+ok('sites appear', (await corpLs('pl_corp_projects')).filter((r) => !r.deleted_at).length === 3,
+  String((await corpLs('pl_corp_projects')).length))
+ok('a stock book appears', (await corpLs('pl_corp_items')).length >= 8)
+ok('with movements between the yard and the sites',
+  (await corpLs('pl_corp_movements')).some((m) => m.kind === 'transfer'))
+ok('a muster roll appears', (await corpLs('pl_corp_muster')).length > 0)
+ok('running-account bills appear', (await corpLs('pl_corp_ra_bills')).length > 0)
+ok('plant log sheets appear', (await corpLs('pl_corp_plant_logs')).length > 0)
+ok('flats and shops appear', (await corpLs('pl_corp_units')).length >= 8)
+ok('every row it wrote is tagged as sample',
+  ['pl_corp_projects', 'pl_corp_items', 'pl_corp_movements', 'pl_corp_units']
+    .every(async (k) => (await corpLs(k)).every((r) => r.is_sample === true)))
+const corpExp = await ls('pl_expenses')
+ok('and the ledger has entries booked to the jobs',
+  corpExp.some((e) => e.project_id), JSON.stringify(corpExp.slice(0, 1)))
+// The row the whole preceding change was about: an overhead, booked to
+// nothing, in a demo that used to have no way to express one.
+ok('including one booked to nothing at all',
+  corpExp.some((e) => !e.project_id && !e.property_id), JSON.stringify(corpExp.map((e) => e.project_id)))
+ok('the checklist is finished and gone',
+  !(await p.locator('#main-content').innerText()).includes('Getting started'))
+
+console.log('\n── THE SITES ARE ON THE SCREEN THAT SHOWS SITES ──')
+await p.goto(`${B}/operations`, { waitUntil: 'networkidle' }); await p.waitForTimeout(1200)
+t = await p.locator('#main-content').innerText()
+ok('the tower is there', /Marine Drive Tower/.test(t), t.slice(0, 400).replace(/\n/g, ' | '))
+ok('so are the villas', /Palm Grove Villas/.test(t))
+ok('and the finished bungalow', /Hill View Bungalow/.test(t))
+// The distinction the projects screen exists to make.
+ok('one of them is flagged as over its costing', /over estimate/i.test(t), t.slice(0, 1400).replace(/\n/g, ' | '))
+
+console.log('\n── AND IT ALL COMES BACK OUT ──')
+await p.goto(`${B}/settings`, { waitUntil: 'networkidle' }); await p.waitForTimeout(1000)
+const rmCo = p.locator('button', { hasText: 'Remove sample data' })
+ok('Settings offers to remove it', await rmCo.count() === 1)
+await rmCo.click()
+await p.waitForTimeout(4000)
+ok('no sites are left',
+  (await corpLs('pl_corp_projects')).filter((r) => !r.deleted_at).length === 0,
+  JSON.stringify((await corpLs('pl_corp_projects')).map((r) => Boolean(r.deleted_at))))
+ok('no stock is left', (await corpLs('pl_corp_items')).filter((r) => !r.deleted_at).length === 0)
+ok('no flats are left', (await corpLs('pl_corp_units')).filter((r) => !r.deleted_at).length === 0)
+// Entries go to the bin rather than out of existence — that is what the bin
+// is — so the check is that none are live, not that the key is empty.
+ok('and no entries are left standing',
+  (await ls('pl_expenses')).filter((e) => !e.deleted_at).length === 0,
+  JSON.stringify((await ls('pl_expenses')).filter((e) => !e.deleted_at).map((e) => e.amount)))
+ok('nor any income', (await ls('pl_income')).filter((e) => !e.deleted_at).length === 0)
+// Tombstones, not holes: a row that is simply gone comes back from the next
+// device that still has it.
+ok('what it removed is tombstoned rather than vanished',
+  (await corpLs('pl_corp_projects')).length === 3 &&
+  (await corpLs('pl_corp_projects')).every((r) => r.deleted_at))
+
 console.log('\n── WAVED AWAY IN ONE SET OF BOOKS ONLY ──')
+await p.goto(B, { waitUntil: 'networkidle' }); await p.waitForTimeout(900)
 await p.locator('button[aria-label="Hide getting started"]').click()
 await p.waitForTimeout(400)
 await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900)

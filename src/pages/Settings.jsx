@@ -11,6 +11,8 @@ import { useReport } from '../context/ReportContext'
 import { useEntity } from '../context/EntityContext'
 import BooksSwitcher from '../components/BooksSwitcher'
 import { hasSampleData, removeSampleData } from '../lib/sampleData'
+import { hasSampleSite, removeSampleSite } from '../lib/sampleSite'
+import { collections } from '../lib/storage/corporate'
 import { listReports, deleteReport, formatReportText, mailtoLink, kindLabel, SUPPORT_EMAIL } from '../lib/reports'
 import { startCheckout, openBillingPortal } from '../lib/billing'
 import { listTeam, inviteMember, removeMembership } from '../lib/team'
@@ -31,6 +33,10 @@ export default function Settings() {
   }
   const { info, isPro, billingEnabled, scanCount, scanLimit } = usePlan()
   const { properties, expenses, income, loading, deleteProperty, deleteExpense, deleteIncome, refresh } = useData()
+  // Up here with the other hooks rather than beside the code that uses it:
+  // there is an early return further down, and a hook below one is a hook that
+  // sometimes does not run. It was below it, and had been for a while.
+  const ent = useEntity()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
   const [team, setTeam] = useState({ sharedByMe: [], sharedWithMe: [] })
@@ -145,11 +151,25 @@ export default function Settings() {
     }
   }
 
+  // Which set of books this button is standing in. A company's sample is three
+  // sites and their ledgers; your own is two flats and a car. The same button
+  // removes whichever one is in front of you, and neither touches the other.
+  const companyBooks = Boolean(ent?.corporate && ent.activeId && !ent.consolidated)
+
   const clearSample = async () => {
-    if (!window.confirm('Remove the sample portfolio? Only the demo rows go — anything you have added yourself stays.')) return
+    if (!window.confirm('Remove the sample data? Only the demo rows go — anything you have added yourself stays.')) return
     setBusy(true)
     try {
-      const n = await removeSampleData({ properties, expenses, income, deleteProperty, deleteExpense, deleteIncome })
+      let n = 0
+      if (companyBooks) {
+        n = await removeSampleSite({
+          collections, entityId: ent.activeId, actor: ent.actor,
+          expenses, income, deleteExpense, deleteIncome,
+        })
+        ent.reload?.()
+      } else {
+        n = await removeSampleData({ properties, expenses, income, deleteProperty, deleteExpense, deleteIncome })
+      }
       await refresh()
       toast(`Removed ${n} sample ${n === 1 ? 'row' : 'rows'}.`)
     } catch (e) {
@@ -159,8 +179,10 @@ export default function Settings() {
     }
   }
 
-  const sampleLoaded = hasSampleData({ properties, expenses, income })
-  const { enabled: hasCompany } = useEntity()
+  const sampleLoaded = companyBooks
+    ? hasSampleSite(collections, ent.activeId) || hasSampleData({ properties, expenses, income })
+    : hasSampleData({ properties, expenses, income })
+  const hasCompany = ent?.enabled
 
   return (
     <div className="animate-fade-in space-y-6">

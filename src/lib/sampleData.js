@@ -20,7 +20,9 @@ const monthsBack = (n) => startOfMonth(subMonths(new Date(), n))
 
 // Marked on every row it creates. `is_sample` rather than a magic string in a
 // notes field, so it can never be mistaken for something the user wrote.
-const tag = (row) => ({ ...row, is_sample: true, notes: row.notes || SAMPLE_TAG })
+// Exported because the construction sample writes through it too: one
+// definition of "this row is a demo row", so one sweep takes all of them out.
+export const tag = (row) => ({ ...row, is_sample: true, notes: row.notes || SAMPLE_TAG })
 
 export const isSampleRow = (row) => Boolean(row?.is_sample) || row?.notes === SAMPLE_TAG
 

@@ -7,6 +7,8 @@ import { useSites } from './SiteField'
 import { useToast } from '../context/ToastContext'
 import { steps as onboardingSteps, progress, dismiss, shouldShow } from '../lib/onboarding'
 import { installSampleData, hasRealData } from '../lib/sampleData'
+import { installSampleSite, hasRealSite, hasSampleSite } from '../lib/sampleSite'
+import { collections } from '../lib/storage/corporate'
 import { Card, Button } from './ui'
 
 // The short list of things still worth doing, on the dashboard, until they are
@@ -38,10 +40,20 @@ export default function GettingStarted() {
 
   const list = onboardingSteps(books)
   const { done, total } = progress(books)
-  // The sample portfolio is two flats, a car and a year of rent. Offering it
-  // inside a builder's books would put a landlord's assets in a company ledger,
-  // which is the invented-asset problem again with a button on it.
-  const empty = !books.corporate && !hasRealData({ properties, expenses, income })
+  // Two portfolios, because the landlord's one is two flats, a car and a year
+  // of rent and putting that in a construction ledger is the invented-asset
+  // problem with a button on it. A company gets three sites, a stock book and
+  // a tower half sold instead.
+  //
+  // "Empty" has to mean empty of everything, not just of the rows this screen
+  // can see: a company with a stock book and no expenses yet is not a company
+  // that wants demo data merged into it.
+  const nothingPersonal = !hasRealData({ properties, expenses, income })
+  const empty = books.corporate
+    ? Boolean(books.entityId) && nothingPersonal
+      && !hasRealSite(collections, books.entityId)
+      && !hasSampleSite(collections, books.entityId)
+    : nothingPersonal
 
   const hide = () => {
     dismiss(books.entityId)
@@ -51,9 +63,21 @@ export default function GettingStarted() {
   const loadSample = async () => {
     setLoading(true)
     try {
-      const added = await installSampleData({ addProperty, addExpense, addIncome, properties, expenses, income })
-      await refresh()
-      toast(`Loaded a sample portfolio — ${added.assets} assets and a year of entries. Remove it from Settings.`)
+      if (books.corporate) {
+        const added = await installSampleSite({
+          collections, entityId: books.entityId, actor: ent?.actor,
+          addExpense, addIncome, expenses, income,
+        })
+        // The corporate store is read synchronously off localStorage, so the
+        // screens behind this card will not notice until something tells them.
+        ent?.reload?.()
+        await refresh()
+        toast(`Loaded a sample company — ${added.sites} sites, ${added.materials} materials and ${added.units} flats and shops. Remove it from Settings.`)
+      } else {
+        const added = await installSampleData({ addProperty, addExpense, addIncome, properties, expenses, income })
+        await refresh()
+        toast(`Loaded a sample portfolio — ${added.assets} assets and a year of entries. Remove it from Settings.`)
+      }
     } catch (err) {
       toast(err?.message || String(err))
     } finally {
@@ -123,8 +147,9 @@ export default function GettingStarted() {
       {empty && canWrite && (
         <div className="mt-4 border-t border-border-light pt-4">
           <p className="text-xs text-ink-5">
-            Or have a look around first with a sample portfolio — two properties, a car and a year of entries. You
-            can remove it in one click from Settings.
+            {books.corporate
+              ? 'Or have a look around first with a sample company — three sites, a stock book with a yard and site stores, a muster roll, running-account bills, plant log sheets and a tower half sold. You can remove it in one click from Settings.'
+              : 'Or have a look around first with a sample portfolio — two properties, a car and a year of entries. You can remove it in one click from Settings.'}
           </p>
           <Button variant="ghost" className="mt-2" onClick={loadSample} loading={loading}>
             <Sparkles size={15} /> Load sample data

@@ -302,8 +302,44 @@ stopped requiring one.
   key, so nobody who has already dismissed it sees it again.
 - The sample portfolio — two flats, a car and a year of rent — is not offered
   inside a company. Loading a landlord's assets into a construction ledger is
-  the invented asset again with a button on it. A construction sample worth
-  offering is a real piece of work and is not built.
+  the invented asset again with a button on it. A company gets its own instead
+  — see below.
+
+**Done and verified** — a builder's demo books, 76 logic assertions and 27 more
+on screen:
+
+An empty app is a fair thing to show someone who has decided to use it and a
+terrible thing to show someone deciding whether to. `sampleSite.js` is three
+sites, eight materials moving between a yard and two site stores, three weeks
+of muster, two running accounts, a measured schedule, plant log sheets, eight
+flats and shops with a construction-linked payment plan, and a ledger booked to
+the jobs.
+
+It is chosen to show the distinctions the app exists for, because an empty
+screen shows none of them: material rejected back to the vendor leaving the
+job's cost, a running account stated to date rather than bill by bill, progress
+weighted by value so a cheap stage finishing is not "half done", a machine idle
+because the slab was not ready told apart from one that broke, a flat's agreed
+price against what has actually been banked, and a finished job that went over
+its costing and still made money.
+
+The tests are the part worth reading. "It loads" is not an assertion; these
+read the sample back through the same report functions the screens use, so a
+demo whose stock goes negative or whose bills run backwards fails rather than
+teaching the app's own warnings as the normal state of the world. Six
+deliberate breaks — a site issuing more than it was sent, a bill stating less
+than the one before it, every flat sold and paid up, no overheads at all, every
+machine logged and never idle, the finished job under its costing — and all six
+were caught.
+
+Loading and removing it go through the same store the app writes through, so
+the demo rows are stamped, versioned and audited like real ones, and removal
+tombstones them rather than leaving holes. It refuses to run where there is
+anything real in the books, in either direction.
+
+One thing it turned up on the way: `Settings.jsx` called `useEntity()` below an
+early return. A hook below one is a hook that sometimes does not run, and it
+had been sitting there.
 
 **Next**, in order:
 
