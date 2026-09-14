@@ -14,6 +14,7 @@ export default {
   'nav.bin': 'रद्दी',
   'nav.companies': 'कंपनियाँ',
   'nav.operations': 'संचालन',
+  'nav.day': 'दैनिक हाज़िरी',
   'company.switch': 'कंपनी बदलें',
   'company.all': 'सभी कंपनियाँ',
   'company.personal': 'व्यक्तिगत',

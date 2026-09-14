@@ -13,6 +13,7 @@ export default {
   'nav.bin': 'আবর্জনা',
   'nav.companies': 'কোম্পানি',
   'nav.operations': 'পরিচালনা',
+  'nav.day': 'দৈনিক হাজিরা',
   'company.switch': 'কোম্পানি বদলান',
   'company.all': 'সব কোম্পানি',
   'company.personal': 'ব্যক্তিগত',

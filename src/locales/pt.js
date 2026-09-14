@@ -14,6 +14,7 @@ export default {
   'nav.bin': 'Lixeira',
   'nav.companies': 'Empresas',
   'nav.operations': 'Operações',
+  'nav.day': 'Diário de obra',
   'company.switch': 'Trocar de empresa',
   'company.all': 'Todas as empresas',
   'company.personal': 'Pessoal',

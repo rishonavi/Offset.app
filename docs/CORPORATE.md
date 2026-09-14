@@ -396,6 +396,37 @@ What a live Supabase would still prove, and this cannot: `auth.uid()` under a
 real token, the row-level policies as PostgREST applies them, and what happens
 to a half-finished sync on a bad connection.
 
+**Done and verified** — the day sheet, 51 logic assertions and 31 on a phone:
+
+The muster roll and the plant log are the two ledgers somebody fills in every
+working day, at the site, on a phone, with one hand free. Each line used to be
+its own form submission: pick the site, pick the trade, type a headcount, type
+a rate, save, and again. Five trades and three machines is eight trips through
+a form for something a gate register answers in one look — so it was not being
+kept, and every report built on it was empty.
+
+`/day` is the whole day on one screen: every trade the site actually uses, with
+the rate it was last paid here already filled in, every machine parked on it,
+and one save. Headcounts are a pair of thumb-sized buttons rather than a number
+pad. It is the one page in the app written for a phone first rather than for a
+desktop layout that a phone also survives.
+
+The rule that matters is idempotence, and it is the reason `lib/daysheet.js`
+exists as a module rather than as state inside the page. A supervisor with one
+bar of signal taps Save twice; a sheet that appended would treble a day's wages
+and nobody would notice until the month closed. Every line carries the id of
+the row it came from, so a second save updates. A line taken back to nothing
+removes its row rather than leaving a zero — "0 carpenters" is not something
+anybody writes on a muster, and a log sheet of zeroes would hide a day that had
+no sheet at all, which the plant report reports on.
+
+Two things the tests caught that reading would not have. The save bar pinned
+itself to the bottom of the *page* rather than the screen: `animate-fade-in`
+ends on a transform, and an element with a transform is the containing block
+for anything `fixed` inside it, so the button sat 1,198px down. And the
+deliberate break for the idempotence rule showed the wage bill going from
+₹13,750 to ₹41,250 on two extra taps, which is what that assertion is worth.
+
 **Next**, in order:
 
 1. Departments on entry forms; budgets and reports per cost centre
@@ -407,9 +438,10 @@ to a half-finished sync on a bad connection.
    this is an async refactor of `EntityContext` and `Companies.jsx` rather than
    a swap of one backend for another. `lib/storage/corporateSync.js` and
    `lib/sync.js` are the half of it that exists: reconciliation is tested
-   against a stub and the schema against a real PostgreSQL, but the two have
-   never met a live Supabase, so column names could still disagree on first
-   contact
+   against a stub and the schema against a real PostgreSQL. The column names
+   they disagreed about have been found and fixed; what is left needs a server:
+   `auth.uid()` under a live token, the policies as PostgREST applies them, and
+   a half-finished sync on a bad connection
 5. SSO (Google Workspace / SAML) *(unverifiable here)*
 
 Billing for the corporate tier is deliberately not built yet.

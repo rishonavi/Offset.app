@@ -18,6 +18,7 @@ export default {
   'nav.bin': 'Bin',
   'nav.companies': 'Companies',
   'nav.operations': 'Operations',
+  'nav.day': 'Day sheet',
   'company.switch': 'Switch company',
   'company.all': 'All companies',
   'company.personal': 'Personal',

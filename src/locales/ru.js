@@ -17,6 +17,7 @@ export default {
   'nav.bin': 'Корзина',
   'nav.companies': 'Компании',
   'nav.operations': 'Операции',
+  'nav.day': 'Сводка за день',
   'company.switch': 'Сменить компанию',
   'company.all': 'Все компании',
   'company.personal': 'Личное',

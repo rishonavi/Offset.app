@@ -16,6 +16,7 @@ export default {
   'nav.bin': '回收站',
   'nav.companies': '公司',
   'nav.operations': '运营',
+  'nav.day': '当日记录',
   'company.switch': '切换公司',
   'company.all': '所有公司',
   'company.personal': '个人',

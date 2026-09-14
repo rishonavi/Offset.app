@@ -27,6 +27,7 @@ import {
   Briefcase,
   Bug,
   FileSpreadsheet,
+  CalendarDays,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme, useAppearance } from '../context/ThemeContext'
@@ -85,6 +86,10 @@ const NAV = [
 const CORPORATE_NAV = [
   { to: '/companies', key: 'nav.companies', icon: Building2 },
   { to: '/operations', key: 'nav.operations', icon: Briefcase },
+  // First of the three in practice, because it is the one somebody opens every
+  // working day — and the only page here written for a phone at a gate rather
+  // than a desk that a phone also has to cope with.
+  { to: '/day', key: 'nav.day', icon: CalendarDays },
 ]
 const ADMIN_NAV = { to: '/admin', key: 'nav.admin', icon: ShieldCheck }
 

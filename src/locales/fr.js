@@ -16,6 +16,7 @@ export default {
   'nav.bin': 'Corbeille',
   'nav.companies': 'Sociétés',
   'nav.operations': 'Opérations',
+  'nav.day': 'Feuille du jour',
   'company.switch': 'Changer de société',
   'company.all': 'Toutes les sociétés',
   'company.personal': 'Personnel',

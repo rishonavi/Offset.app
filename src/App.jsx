@@ -32,6 +32,7 @@ const Reports = lazy(() => import('./pages/Reports'))
 const Exports = lazy(() => import('./pages/Exports'))
 const Companies = lazy(() => import('./pages/Companies'))
 const Operations = lazy(() => import('./pages/Operations'))
+const DaySheet = lazy(() => import('./pages/DaySheet'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Personal = lazy(() => import('./pages/Personal'))
@@ -135,6 +136,7 @@ export default function App() {
         <Route path="exports" element={<Exports />} />
         <Route path="companies" element={<Companies />} />
         <Route path="operations" element={<Operations />} />
+        <Route path="day" element={<DaySheet />} />
         <Route path="settings" element={<Settings />} />
         <Route path="personal" element={<Personal />} />
         <Route path="bin" element={<Trash />} />

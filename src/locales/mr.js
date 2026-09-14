@@ -13,6 +13,7 @@ export default {
   'nav.bin': 'कचरापेटी',
   'nav.companies': 'कंपन्या',
   'nav.operations': 'कामकाज',
+  'nav.day': 'दैनिक हजेरी',
   'company.switch': 'कंपनी बदला',
   'company.all': 'सर्व कंपन्या',
   'company.personal': 'वैयक्तिक',

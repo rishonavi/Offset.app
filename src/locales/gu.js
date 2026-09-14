@@ -13,6 +13,7 @@ export default {
   'nav.bin': 'કચરાપેટી',
   'nav.companies': 'કંપનીઓ',
   'nav.operations': 'સંચાલન',
+  'nav.day': 'દૈનિક હાજરી',
   'company.switch': 'કંપની બદલો',
   'company.all': 'બધી કંપનીઓ',
   'company.personal': 'વ્યક્તિગત',

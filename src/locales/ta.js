@@ -13,6 +13,7 @@ export default {
   'nav.bin': 'குப்பைத் தொட்டி',
   'nav.companies': 'நிறுவனங்கள்',
   'nav.operations': 'செயல்பாடுகள்',
+  'nav.day': 'தினசரி பதிவு',
   'company.switch': 'நிறுவனத்தை மாற்று',
   'company.all': 'அனைத்து நிறுவனங்களும்',
   'company.personal': 'தனிப்பட்ட',

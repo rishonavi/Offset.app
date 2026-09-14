@@ -13,6 +13,7 @@ export default {
   'nav.bin': 'ردی کی ٹوکری',
   'nav.companies': 'کمپنیاں',
   'nav.operations': 'آپریشنز',
+  'nav.day': 'روزانہ حاضری',
   'company.switch': 'کمپنی تبدیل کریں',
   'company.all': 'تمام کمپنیاں',
   'company.personal': 'ذاتی',

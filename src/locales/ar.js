@@ -18,6 +18,7 @@ export default {
   'nav.bin': 'سلة المحذوفات',
   'nav.companies': 'الشركات',
   'nav.operations': 'العمليات',
+  'nav.day': 'كشف اليوم',
   'company.switch': 'تبديل الشركة',
   'company.all': 'كل الشركات',
   'company.personal': 'شخصي',
