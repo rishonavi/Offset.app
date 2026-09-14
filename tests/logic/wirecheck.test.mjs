@@ -12,10 +12,7 @@
 // Supabase would prove — auth, row-level security under a real token, the
 // network — but it is the specific failure worth naming, so it is worth
 // catching here rather than in somebody's first sync.
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
-
+import { columnsFromSql, requiredColumns, readSql } from '../schema.mjs'
 import { TABLES, SYNCED } from '../../src/lib/storage/corporateSync.js'
 import { makeEntity, makeMember, makeDepartment, makeAuditEvent } from '../../src/lib/corporate.js'
 import { makeProject } from '../../src/lib/projects.js'
@@ -34,60 +31,10 @@ import { buildSample } from '../../src/lib/sampleSite.js'
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
 
-const repo = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const sql = ['schema.sql', 'corporate.sql']
-  .map((f) => readFileSync(join(repo, 'supabase', f), 'utf8'))
-  .join('\n')
-
-// ── Reading the schema ──────────────────────────────────────────────
-// Deliberately simple, and deliberately not a SQL parser: it reads the two
-// files this repository ships, whose shape is known. A line inside a CREATE
-// TABLE that starts with a word is a column; one that starts with a constraint
-// keyword is not. ALTER TABLE ... ADD COLUMN adds to whatever is already there.
-const CONSTRAINT = /^(primary|unique|check|foreign|constraint|exclude)\b/i
-
-function columnsFromSql(text) {
-  const tables = new Map()
-  const add = (table, column) => {
-    if (!tables.has(table)) tables.set(table, new Set())
-    tables.get(table).add(column)
-  }
-
-  const creates = text.matchAll(/create table (?:if not exists )?public\.(\w+)\s*\(([\s\S]*?)\n\);/gi)
-  for (const [, table, body] of creates) {
-    let depth = 0
-    for (const raw of body.split('\n')) {
-      const line = raw.replace(/--.*$/, '').trim()
-      if (!line) continue
-      // A column whose type carries its own parentheses — numeric(14,2), or a
-      // check constraint spanning lines — must not be read as a new column.
-      const before = depth
-      depth += (line.match(/\(/g) || []).length - (line.match(/\)/g) || []).length
-      if (before > 0) continue
-      if (CONSTRAINT.test(line)) continue
-      const name = line.match(/^(\w+)/)?.[1]
-      if (name) add(table, name)
-    }
-  }
-
-  const alters = text.matchAll(/alter table (?:if exists )?public\.(\w+)\s+add column (?:if not exists )?(\w+)/gi)
-  for (const [, table, column] of alters) add(table, column)
-
-  // `updated_at` and `deleted_at` are added to twenty-odd tables at once by a
-  // DO block looping over an array of names. Reading only the literal ALTERs
-  // would report every one of those columns as missing, which is the sort of
-  // false alarm that gets a check switched off.
-  const loops = text.matchAll(/do \$\$[\s\S]*?foreach \w+ in array array\[([\s\S]*?)\]([\s\S]*?)end \$\$;/gi)
-  for (const [, list, body] of loops) {
-    const names = [...list.matchAll(/'(\w+)'/g)].map((m) => m[1])
-    for (const [, column] of body.matchAll(/add column (?:if not exists )?(\w+)/gi)) {
-      for (const t of names) add(t, column)
-    }
-  }
-
-  return tables
-}
-
+// The parser lives in tests/schema.mjs: the browser suite asks the same
+// question of the same files from the other end, and two copies of it would
+// eventually disagree about what a column is.
+const sql = readSql()
 const schema = columnsFromSql(sql)
 
 console.log('\n── THE SCHEMA READS AS A SCHEMA ──')
@@ -193,19 +140,7 @@ console.log('\n── NOTHING REQUIRED IS LEFT OUT ──')
 // The other direction, and the one a stub can never catch: a column the server
 // insists on that the client never fills. Only checked where the schema says
 // NOT NULL with no default, since everything else the database can supply.
-function requiredOf(table) {
-  const body = sql.match(new RegExp(`create table (?:if not exists )?public\\.${table}\\s*\\(([\\s\\S]*?)\\n\\);`, 'i'))?.[1]
-  if (!body) return []
-  const out = []
-  for (const raw of body.split('\n')) {
-    const line = raw.replace(/--.*$/, '').trim().replace(/,$/, '')
-    if (!line || CONSTRAINT.test(line)) continue
-    const name = line.match(/^(\w+)/)?.[1]
-    if (!name) continue
-    if (/\bnot null\b/i.test(line) && !/\bdefault\b/i.test(line)) out.push(name)
-  }
-  return out
-}
+const requiredOf = (table) => requiredColumns(sql, table)
 for (const kind of SYNCED) {
   const need = requiredOf(TABLES[kind])
   const sent = new Set(Object.keys(MADE[kind]))

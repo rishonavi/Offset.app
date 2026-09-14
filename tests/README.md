@@ -75,6 +75,7 @@ node tests/browser/rtlui.mjs
 | `booksui.mjs` | 27 | one login, two sets of books, and nothing leaking between them |
 | `bulkui.mjs` | 17 | settling several at once, and re-importing a file |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
+| `columnsui.mjs` | 29 | every key the running app writes to a personal row, against the columns that exist |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `clickui.mjs` | 18 | pressing every button on every page, each tab included, and watching |
 | `corpui.mjs` | 85 | the way in, companies nav, the books switch in both places, consolidated view |
@@ -106,11 +107,17 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,409** | |
+| | **1,438** | |
 
 That total is what one sweep of the demo build reports. The column above it sums
-to 1,433: `loginui.mjs`'s 24 are the difference, because that suite needs the
+to 1,462: `loginui.mjs`'s 24 are the difference, because that suite needs the
 other build and does not run in the same pass.
+
+`schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
+files and works out what columns each table has. `wirecheck.test.mjs` compares
+that against what the makers produce; `columnsui.mjs` compares it against the
+rows the running app actually leaves in storage. Two copies of that parser
+would eventually disagree about what a column is.
 
 Playwright is not a dependency of the app; `_playwright.mjs` resolves it from
 the environment. Override either default if your machine differs:

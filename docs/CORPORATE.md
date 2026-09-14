@@ -378,6 +378,20 @@ expression, because a parser that is subtly wrong makes every static assertion
 pass. Six deliberate breaks across both halves; all six caught — including one
 that was caught twice, by the maker check and by the sample rows independently.
 
+The personal ledger has no makers to read: an expense is an object literal
+typed inside a form's submit handler, and a dozen other places write one — a
+quick-add, a bank statement, a spreadsheet, a Tally file, a restored backup, a
+mark-paid that spreads the whole row back out. Parsing those out of the source
+would be guessing at what the code does. So `columnsui.mjs` drives the real
+paths in a browser and reads what they wrote, against the same parsed schema.
+
+That one is worth a note on how it was got wrong first. It began as a single
+pass over the finished state, and a deliberate break walked straight through
+it: restoring a backup rebuilds each row from an explicit list of fields, so it
+dropped the sample tag the step before had written, and the check cheerfully
+found nothing. It accumulates every key seen at any point now, and names the
+step that wrote each one.
+
 What a live Supabase would still prove, and this cannot: `auth.uid()` under a
 real token, the row-level policies as PostgREST applies them, and what happens
 to a half-finished sync on a bad connection.
