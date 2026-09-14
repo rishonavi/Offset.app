@@ -51,6 +51,15 @@ exception when others then
   raise notice 'PASS  %', name;
 end $$;
 
+-- Does the database have this column? Defined up here with the other helpers
+-- because the checks below run as `offset_app`, which may not create functions.
+-- `security definer` so the lookup is not filtered by that role's privileges:
+-- the question is whether the column exists, not whether carol may read it.
+create or replace function t.has_column(tbl text, col text) returns boolean
+language sql stable security definer as $$
+  select exists (select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = tbl and column_name = col) $$;
+
 create or replace function t.allows(name text, statement text) returns void
 language plpgsql as $$
 begin
@@ -636,6 +645,50 @@ select t.check('nor the lines inside them', (select count(*) from public.materia
 select t.refuses('and cannot file one against a company they are not in',
   $$insert into public.material_quotes (entity_id, vendor, date)
     values ('aaaaaaaa-0000-0000-0000-000000000001','Mallory Supplies', current_date)$$);
+
+\echo ''
+\echo '── THE COLUMNS THE CLIENT ACTUALLY SENDS ──'
+-- The static check in tests/logic/wirecheck.test.mjs reads these two files and
+-- compares them against what the makers produce. This is the same question put
+-- to a database rather than to a regular expression, because a parser that is
+-- subtly wrong makes every one of those assertions pass.
+select t.check('an advance is filed by party_type, which is what the client calls it',
+  t.has_column('advances', 'party_type'));
+select t.check('and the column it used to be called is gone',
+  not t.has_column('advances', 'party_kind'));
+select t.check('an advance has a purpose', t.has_column('advances', 'purpose'));
+select t.check('a cost centre', t.has_column('advances', 'department_id'));
+select t.check('and a date it is expected back', t.has_column('advances', 'expected_by'));
+select t.check('an adjustment can carry a note', t.has_column('advance_adjustments', 'note'));
+select t.check('an employee has an email', t.has_column('employees', 'email'));
+select t.check('a PAN', t.has_column('employees', 'pan'));
+select t.check('a UAN', t.has_column('employees', 'uan'));
+select t.check('a joining date', t.has_column('employees', 'joined_on'));
+select t.check('and their pay as one object rather than a column per head',
+  t.has_column('employees', 'pay'));
+select t.check('a stock movement records who booked it',
+  t.has_column('inventory_movements', 'created_by'));
+-- The demo portfolio goes through the ordinary insert. Without these the
+-- insert is refused and the button does nothing, which is what it did.
+select t.check('a sample row can be tagged on an asset', t.has_column('properties', 'is_sample'));
+select t.check('on an expense', t.has_column('expenses', 'is_sample'));
+select t.check('on income', t.has_column('income', 'is_sample'));
+select t.check('and the fallback tag has somewhere to go', t.has_column('expenses', 'notes'));
+
+-- Written, not just declared: a column of the wrong type accepts nothing.
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('an advance writes every field the client fills',
+  $$insert into public.advances (id, entity_id, party_type, party, amount, date, purpose, expected_by, created_by)
+    values ('eeeeeeee-0000-0000-0000-00000000009a','aaaaaaaa-0000-0000-0000-000000000001',
+            'vendor','Shakti Steel', 250000, current_date, 'Steel against the next delivery',
+            '2026-12-31','33333333-3333-3333-3333-333333333333')$$);
+select t.allows('and an employee writes their pay as an object',
+  $$insert into public.employees (id, entity_id, name, email, pan, uan, joined_on, pay)
+    values ('eeeeeeee-0000-0000-0000-00000000009b','aaaaaaaa-0000-0000-0000-000000000001',
+            'R. Yadav','r@example.com','ABCDE1234F','100200300400','2024-04-01',
+            '{"basic": 40000, "hra": 16000}'::jsonb)$$);
+select t.check('and the pay reads back as an object',
+  (select pay->>'basic' from public.employees where id = 'eeeeeeee-0000-0000-0000-00000000009b') = '40000');
 
 \echo ''
 \echo '── A PERSONAL INSTALL IS UNTOUCHED ──'

@@ -526,6 +526,46 @@ create table if not exists public.employees (
   created_at    timestamptz not null default now()
 );
 
+-- ── Advances, employees and movements, as the client actually writes them ────
+-- These three tables were written before the ledgers that fill them, and had
+-- drifted: the client sends `party_type` where the column said `party_kind`,
+-- and several fields it has always produced had no column at all. Rows are
+-- pushed key by key, so each of these was a row the server would refuse — on
+-- first contact, for everybody, at once.
+--
+-- Additive and re-runnable, and the rename is guarded, so a database that ran
+-- the earlier version of this file converges on the same shape as a fresh one.
+do $$ begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'advances' and column_name = 'party_kind')
+     and not exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'advances' and column_name = 'party_type')
+  then execute 'alter table public.advances rename column party_kind to party_type';
+  end if;
+end $$;
+alter table public.advances add column if not exists party_type    text not null default 'vendor';
+alter table public.advances add column if not exists purpose       text;
+alter table public.advances add column if not exists department_id uuid references public.departments(id) on delete set null;
+-- What makes an advance chaseable rather than forgotten.
+alter table public.advances add column if not exists expected_by   text;
+alter table public.advances add column if not exists created_by    uuid references auth.users(id) on delete set null;
+
+alter table public.advance_adjustments add column if not exists note text;
+
+alter table public.employees add column if not exists email     text;
+alter table public.employees add column if not exists pan       text;
+alter table public.employees add column if not exists uan       text;
+alter table public.employees add column if not exists joined_on text;
+-- One object rather than a column per head of pay. Basic, HRA, conveyance,
+-- medical, special and other are a payslip's shape, not a schema's, and a
+-- company that adds a seventh head should not need a migration to do it. The
+-- original columns stay where they are and are simply no longer written.
+alter table public.employees add column if not exists pay       jsonb not null default '{}'::jsonb;
+
+-- Who booked the movement. Every other ledger records it and this one did not,
+-- which on a stores register is the field that settles an argument.
+alter table public.inventory_movements add column if not exists created_by uuid references auth.users(id) on delete set null;
+
 -- ── Entries gain an entity, a cost centre and an approval ────────
 -- Nullable throughout: a personal install has no entity and these stay null,
 -- which is what keeps this file additive.

@@ -129,6 +129,20 @@ create table if not exists public.documents (
   created_at  timestamptz not null default now()
 );
 create index if not exists documents_user_idx     on public.documents(user_id);
+
+-- ── The demo portfolio's tag ─────────────────────────────────────
+-- `sampleData.js` marks every row it writes so that removing the sample takes
+-- out exactly what it put in and nothing the user has typed since. The rows go
+-- through the ordinary insert, so without these columns the insert is refused
+-- and "Load sample data" is a button that does nothing — which is what it was
+-- in cloud mode until a check went looking.
+alter table public.properties add column if not exists is_sample boolean not null default false;
+alter table public.expenses   add column if not exists is_sample boolean not null default false;
+alter table public.income     add column if not exists is_sample boolean not null default false;
+-- The belt-and-braces half of the same tag: a magic string in a free-text
+-- field, for a backend that drops a column it does not know.
+alter table public.expenses add column if not exists notes text;
+alter table public.income   add column if not exists notes text;
 create index if not exists documents_property_idx  on public.documents(property_id);
 
 alter table public.documents enable row level security;

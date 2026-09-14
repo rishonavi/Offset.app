@@ -10,7 +10,7 @@ import {
   APPROVABLE_IDS,
   approvalQueue,
   isRefused,
-  isPending,} from '../../src/lib/corporate.js'
+  isPending, auditAt,} from '../../src/lib/corporate.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
@@ -20,10 +20,13 @@ console.log('\n── ENTITIES ──')
 const acme = makeEntity({ name: 'Acme Industries Pvt Ltd', gstin: '27aaapa1234a1z5', currency: 'INR' })
 ok('an entity gets an id', Boolean(acme.id))
 eq('the GSTIN is normalised', acme.gstin, '27AAAPA1234A1Z5')
-eq('the financial year defaults to April', acme.fyStartMonth, 4)
+// Snake case, like every other field on the row: the column is
+// `fy_start_month`, and rows are pushed to the server key by key.
+eq('the financial year defaults to April', acme.fy_start_month, 4)
+ok('and it is not still spelled the way the column is not', acme.fyStartMonth === undefined)
 eq('a nameless entity still has a name', makeEntity({}).name, 'Untitled company')
-eq('an out-of-range FY month is clamped', makeEntity({ fyStartMonth: 99 }).fyStartMonth, 12)
-eq('a zero FY month is clamped up', makeEntity({ fyStartMonth: 0 }).fyStartMonth, 4)
+eq('an out-of-range FY month is clamped', makeEntity({ fyStartMonth: 99 }).fy_start_month, 12)
+eq('a zero FY month is clamped up', makeEntity({ fyStartMonth: 0 }).fy_start_month, 4)
 ok('two entities never share an id', makeEntity({}).id !== makeEntity({}).id)
 ok('the consolidated view is not an entity', isConsolidated(CONSOLIDATED) && !isConsolidated(acme.id))
 
@@ -189,7 +192,13 @@ const ev = makeAuditEvent({ entityId: 'a', actorId: 'u1', actorEmail: 'a@b.co', 
 ok('an event has an id', Boolean(ev.id))
 ok('it records who', ev.actor_email === 'a@b.co' && ev.actor_id === 'u1')
 ok('it records what', ev.action === 'entry.approve')
-ok('it records when', !Number.isNaN(Date.parse(ev.at)))
+ok('it records when', !Number.isNaN(Date.parse(ev.created_at)))
+// The column is `created_at`; an audit trail the server refuses is no trail.
+ok('under the name the column has', ev.at === undefined)
+ok('and it can still be read off a row written the old way',
+  auditAt({ at: '2026-01-01T00:00:00.000Z' }) === '2026-01-01T00:00:00.000Z')
+ok('newer rows win when a row somehow has both',
+  auditAt({ created_at: 'new', at: 'old' }) === 'new')
 ok('it records which entity', ev.entity_id === 'a')
 ok('it summarises in plain words', /approved/.test(ev.summary), ev.summary)
 ok('every audit action has wording', Object.values(AUDIT_ACTIONS).every((v) => v && v.length > 3))

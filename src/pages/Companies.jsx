@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext'
 import { useData } from '../context/DataContext'
 import {
   ROLES, ROLE_IDS, roleLabel, departmentLabel, CONSOLIDATED,
-  APPROVABLE, APPROVABLE_IDS, approvalQueue,
+  APPROVABLE, APPROVABLE_IDS, approvalQueue, auditAt,
 } from '../lib/corporate'
 import * as store from '../lib/storage/corporate'
 import { formatCurrency, formatDate } from '../lib/format'
@@ -157,7 +157,7 @@ export default function Companies() {
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-ink-2">{e.name}</span>
                       <span className="block text-xs text-ink-6">
-                        {[e.gstin, e.currency, `FY from month ${e.fyStartMonth}`].filter(Boolean).join(' · ')}
+                        {[e.gstin, e.currency, `FY from month ${e.fy_start_month ?? e.fyStartMonth}`].filter(Boolean).join(' · ')}
                       </span>
                     </span>
                   </label>
@@ -410,7 +410,7 @@ export default function Companies() {
                         <span className="min-w-0 text-ink-4">
                           <span className="font-medium text-ink-2">{a.actor_email || 'Someone'}</span> {a.summary}
                         </span>
-                        <span className="shrink-0 text-ink-6">{formatDate(a.at)}</span>
+                        <span className="shrink-0 text-ink-6">{formatDate(auditAt(a))}</span>
                       </div>
                     ))}
                   </div>

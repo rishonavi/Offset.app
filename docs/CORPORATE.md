@@ -341,6 +341,47 @@ One thing it turned up on the way: `Settings.jsx` called `useEntity()` below an
 early return. A hook below one is a hook that sometimes does not run, and it
 had been sitting there.
 
+**Done and verified** — the columns the client actually sends, 73 logic
+assertions and 19 more against PostgreSQL:
+
+The sync layer had been tested from both ends and never in the middle. The
+reconciliation rules run against a stub that accepts whatever it is handed; the
+schema runs against a real PostgreSQL that nothing pushes to. Between them sat
+the question neither asked, and it was described here as unverifiable without a
+live Supabase. Half of that was true: auth, row-level security under a real
+token and the network do need a server. The specific failure — a field the
+makers produce and the schema has no column for — does not. Rows are upserted
+key by key, so that is a static mismatch between two files in this repository.
+
+`wirecheck.test.mjs` reads both `.sql` files, works out what each table has, and
+compares it against what every maker produces. It found seven, each of which
+would have failed on first contact, for everybody, at once:
+
+| | |
+|---|---|
+| `entities` | client sent `fyStartMonth`; the column is `fy_start_month` — the one camelCase field in an otherwise snake_case row |
+| `audit_events` | client sent `at`; the column is `created_at` |
+| `inventory_movements` | client sent `created_by`; no such column |
+| `advances` | client sends `party_type`, `purpose`, `department_id`, `expected_by`; the table said `party_kind` and had none of the rest |
+| `advance_adjustments` | client sends `note`; no such column |
+| `employees` | client sends `email`, `pan`, `uan`, `joined_on` and `pay` as one object; the table had a column per head of pay |
+| `properties`, `expenses`, `income` | no `is_sample` — so **"Load sample data" was refused in cloud mode**, and had been |
+
+The two spelling mistakes were fixed on the client, which is where they were
+wrong: every other field on those rows is snake_case. The rest were added to the
+schema, since the client shape is what the app and its tests are built on. The
+`party_kind` rename is guarded, so a database that ran the earlier file
+converges on the same shape as a fresh one.
+
+The same questions are then put to PostgreSQL rather than to a regular
+expression, because a parser that is subtly wrong makes every static assertion
+pass. Six deliberate breaks across both halves; all six caught — including one
+that was caught twice, by the maker check and by the sample rows independently.
+
+What a live Supabase would still prove, and this cannot: `auth.uid()` under a
+real token, the row-level policies as PostgREST applies them, and what happens
+to a half-finished sync on a bad connection.
+
 **Next**, in order:
 
 1. Departments on entry forms; budgets and reports per cost centre

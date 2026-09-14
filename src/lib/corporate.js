@@ -33,7 +33,12 @@ export function makeEntity({ id, name, registration = '', gstin = '', currency =
     gstin: gstin.trim().toUpperCase(),
     currency,
     // India's financial year starts in April; a subsidiary abroad may not.
-    fyStartMonth: Math.min(12, Math.max(1, Number(fyStartMonth) || 4)),
+    //
+    // Snake case because the column is `fy_start_month` and rows are pushed
+    // key by key: this was the one camelCase field in an otherwise snake_case
+    // row, and the server would have refused every entity carrying it. Rows
+    // already written locally keep the old spelling, so readers take either.
+    fy_start_month: Math.min(12, Math.max(1, Number(fyStartMonth) || 4)),
     created_at: new Date().toISOString(),
   }
 }
@@ -429,9 +434,14 @@ export function makeAuditEvent({ entityId, actorId, actorEmail, action, targetId
     target_id: targetId,
     summary: summary || AUDIT_ACTIONS[action] || action,
     detail,
-    at: new Date().toISOString(),
+    // `created_at`, not `at`: the column is `created_at`, and an audit trail
+    // the server refuses is an audit trail that does not exist.
+    created_at: new Date().toISOString(),
   }
 }
+
+// When an event happened, whichever spelling the row was written with.
+export const auditAt = (event) => event?.created_at || event?.at || ''
 
 export function describeAuditEvent(event) {
   const who = event.actor_email || 'Someone'
