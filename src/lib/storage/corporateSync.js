@@ -41,6 +41,7 @@ export const TABLES = {
   adjustments: 'advance_adjustments',
   employees: 'employees',
   payrollRuns: 'payroll_runs',
+  stockCounts: 'stock_counts',
 }
 export const SYNCED = Object.keys(TABLES)
 
@@ -145,7 +146,7 @@ export async function syncCollection(client, kind, localRows, { entityIds = null
 // parent the server has not got yet.
 export const ORDER = [
   'entities', 'members', 'departments', 'projects',
-  'items', 'movements', 'quotes',
+  'items', 'movements', 'quotes', 'stockCounts',
   'employees', 'payrollRuns', 'muster', 'workOrders', 'raBills',
   'workItems', 'measurements', 'plant', 'plantLogs',
   'units', 'planStages', 'receipts',

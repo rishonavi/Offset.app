@@ -25,6 +25,7 @@ const KEYS = {
   active: 'pl_corp_active',
   items: 'pl_corp_items',
   movements: 'pl_corp_movements',
+  stockCounts: 'pl_corp_stock_counts',
   advances: 'pl_corp_advances',
   adjustments: 'pl_corp_adjustments',
   employees: 'pl_corp_employees',
@@ -347,6 +348,10 @@ const collection = (key, noun) => ({
 // later — and until now not one of them was recorded.
 export const items = collection(KEYS.items, 'material')
 export const movements = collection(KEYS.movements, 'movement')
+// A physical verification. Named in the trail because a count is the one row
+// in the stores ledger that somebody stood in a godown to produce, and the
+// adjustment it justifies is worth being able to trace back to it.
+export const stockCounts = collection(KEYS.stockCounts, 'stock count')
 export const advances = collection(KEYS.advances, 'advance')
 export const adjustments = collection(KEYS.adjustments, 'adjustment')
 export const employees = collection(KEYS.employees, 'employee')
@@ -374,7 +379,7 @@ export const collections = {
   members: { list: (e, o) => listMembers(e).filter((r) => o?.withDeleted || !r.deleted_at), replaceAll: (rows) => write(KEYS.members, rows) },
   departments: { list: (e, o) => listDepartments(e).filter((r) => o?.withDeleted || !r.deleted_at), replaceAll: (rows) => write(KEYS.departments, rows) },
   audit: { list: () => read(KEYS.audit), replaceAll: (rows) => write(KEYS.audit, rows) },
-  items, movements, quotes, projects, muster, workOrders, raBills,
+  items, movements, stockCounts, quotes, projects, muster, workOrders, raBills,
   workItems, measurements, plant, plantLogs, units, planStages, receipts,
   advances, adjustments, employees, payrollRuns,
 }

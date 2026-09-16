@@ -69,6 +69,7 @@ export default function Operations() {
     return {
       items: store.items.list(eid),
       movements: store.movements.list(eid),
+      stockCounts: store.stockCounts.list(eid),
       quotes: store.quotes.list(eid),
       projects: store.projects.list(eid),
       muster: store.muster.list(eid),

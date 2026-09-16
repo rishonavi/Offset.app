@@ -40,6 +40,8 @@
 //   was certified. Retention and TDS change when the money leaves, not whether
 //   it was spent, and a job costed on net payments is understated by both.
 
+import { itemProgress } from './progress'
+
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
 const newId = () =>
@@ -127,8 +129,8 @@ export function makeWorkOrder({
     // through produces a negative payment nobody can explain.
     retention_percent: Math.min(100, Math.max(0, round2(retentionPercent))),
     tds_percent: Math.min(100, Math.max(0, round2(tdsPercent))),
-    started_on: startedOn || '',
-    due_on: dueOn || '',
+    started_on: startedOn || null,
+    due_on: dueOn || null,
     status: ORDER_STATUS[status] ? status : 'running',
     ref: String(ref).trim().slice(0, 60),
     notes: String(notes).trim().slice(0, 500),
@@ -143,7 +145,7 @@ export function makeWorkOrder({
     // not when the last bill was raised. Retention has no release date until
     // somebody writes this down, and a schedule that guessed one would be
     // telling a contractor his money is due on a day nobody agreed to.
-    completed_on: completedOn || '',
+    completed_on: completedOn || null,
     // The defect liability period, in months from completion. Twelve is the
     // ordinary term; a short fit-out might be six and a structure might be
     // twenty-four.
@@ -382,6 +384,93 @@ export function retentionBook(orders = [], bills = [], { entityId = null, side =
     overReleased: sum((l) => l.overReleased),
     dueCount: lines.filter((l) => l.due > 0).length,
     undatedCount: lines.filter((l) => l.undated > 0).length,
+  }
+}
+
+// What was certified, against what was measured.
+//
+// The comparison this app could not make. A running account bill is what the
+// contractor claims and a schedule of work is what the engineer measured, and
+// they have always been two screens with nothing between them — so a bill could
+// certify thirty lakh of plaster against twenty-two lakh of measured plaster
+// and every total in the app would still add up.
+//
+// It only says anything where somebody has said which scheduled items the
+// order covers. Where nobody has, it says so rather than reporting a gap of a
+// hundred per cent against a measured value of nothing, which is what a figure
+// of zero would look like and is the wrong thing to shout about.
+export function certifiedAgainstMeasured(order, bills = [], workItems = [], measurements = [], { tolerance = 5 } = {}) {
+  const covered = workItems.filter((i) => !i.deleted_at && i.work_order_id === order?.id)
+  const ladder = billLadder(order, bills)
+  if (!covered.length) {
+    return {
+      order,
+      linked: false,
+      items: 0,
+      certified: ladder.certifiedToDate,
+      measured: null,
+      gap: null,
+      gapPercent: null,
+      ahead: false,
+      why: 'No scheduled item names this order, so there is nothing to measure it against.',
+    }
+  }
+  const lines = covered.map((i) => itemProgress(i, measurements))
+  const measured = round2(lines.reduce((t, l) => t + l.earned, 0))
+  const certified = ladder.certifiedToDate
+  const gap = round2(certified - measured)
+  const gapPercent = measured > 0 ? Math.round((gap / measured) * 1000) / 10 : null
+  return {
+    order,
+    linked: true,
+    items: covered.length,
+    lines,
+    certified,
+    // The value of the work in the ground: quantity measured times the rate it
+    // was priced at, which is the only honest figure available.
+    measured,
+    gap,
+    gapPercent,
+    // Certified ahead of what has been measured. Ordinary in small amounts —
+    // the measurement book always lags the bill by a few days — and the thing
+    // to look at when it is not small.
+    ahead: gapPercent !== null && gapPercent > tolerance,
+    // The opposite, and worth its own flag: work in the ground that nobody has
+    // billed for. On a client contract that is money the company has not asked
+    // for yet.
+    behind: gapPercent !== null && gapPercent < -tolerance,
+    why: '',
+  }
+}
+
+// Every order's certification against its measurement, worst first.
+export function measurementCheck(orders = [], bills = [], workItems = [], measurements = [], {
+  entityId = null, side = 'sub', tolerance = 5,
+} = {}) {
+  const lines = orders
+    .filter((o) => !o.deleted_at && o.approval_status !== 'rejected')
+    .filter((o) => !entityId || o.entity_id === entityId)
+    .filter((o) => sideOf(o) === side)
+    .map((o) => certifiedAgainstMeasured(o, bills, workItems, measurements, { tolerance }))
+
+  const linked = lines.filter((l) => l.linked)
+  return {
+    lines: linked.sort((a, b) => b.gap - a.gap),
+    unlinked: lines.filter((l) => !l.linked),
+    count: linked.length,
+    // Orders nobody has tied to a scheduled item. Reported as a number rather
+    // than hidden, because the check is only as good as the linking and a
+    // reader deserves to know how much of the book it covered.
+    unlinkedCount: lines.length - linked.length,
+    certified: round2(linked.reduce((t, l) => t + l.certified, 0)),
+    measured: round2(linked.reduce((t, l) => t + l.measured, 0)),
+    // Only the ones certified ahead: netting a contractor who has under-billed
+    // against one who has over-billed reports a company with two problems as
+    // one with none.
+    ahead: linked.filter((l) => l.ahead).length,
+    aheadBy: round2(linked.filter((l) => l.ahead).reduce((t, l) => t + l.gap, 0)),
+    behind: linked.filter((l) => l.behind).length,
+    behindBy: round2(linked.filter((l) => l.behind).reduce((t, l) => t - l.gap, 0)),
   }
 }
 

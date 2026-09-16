@@ -47,6 +47,7 @@ import { outstandingTotal, isOverdue } from '../lib/payments'
 import { dueRecurring, nextOccurrencePayload, RECURRENCE_LABEL } from '../lib/recurring'
 import { leasesNeedingAttention } from '../lib/lease'
 import Attention from '../components/Attention'
+import Commitments from '../components/Commitments'
 import { expiringDocuments } from '../lib/documents'
 import { spendingAnomalies } from '../lib/anomalies'
 import { Card, Button, EmptyState, Skeleton, ChartKey } from '../components/ui'
@@ -340,6 +341,8 @@ export default function Dashboard() {
           sub-tab — so a company that opens the app is told what is wrong before
           it is told how it is doing. */}
       <Attention />
+      {/* What the ledger above cannot see: agreed, and not yet a cost. */}
+      <Commitments />
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

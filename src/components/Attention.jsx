@@ -35,6 +35,7 @@ export default function Attention({ limit = 6 }) {
     return attention({
       entityId: eid,
       items: at('items'), movements: at('movements'), quotes: at('quotes'),
+      stockCounts: at('stockCounts'),
       projects: at('projects'), muster: at('muster'),
       workOrders: at('workOrders'), raBills: at('raBills'),
       workItems: at('workItems'), measurements: at('measurements'),

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   Boxes, IndianRupee, FileText, HardHat, Plus, AlertTriangle, Printer,
-  TrendingDown, Undo2, Trash2,
+  TrendingDown, TrendingUp, Undo2, Trash2, ClipboardCheck,
 } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
@@ -19,6 +19,8 @@ import {
 
 import { stockStatement, materialIndent } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
+import { materialVariance } from '../lib/rates'
+import { countSheet, makeStockCount, sheetResult, adjustmentsFrom, shrinkage } from '../lib/stockcount'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
 
@@ -29,8 +31,12 @@ import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
 // are sub-tabs rather than four more entries in the side bar because they are
 // one job — running the stores — and because splitting them would mean four
 // screens each showing a quarter of the same table.
+// Five, since a stores ledger that has never been checked against a shelf is
+// a ledger of claims. Counting is the only one of these that involves leaving
+// the office.
 const VIEWS = [
   { id: 'stock', label: 'Inventory', icon: Boxes },
+  { id: 'count', label: 'Verify', icon: ClipboardCheck },
   { id: 'prices', label: 'Prices', icon: IndianRupee },
   { id: 'quotes', label: 'Quotations', icon: FileText },
   { id: 'usage', label: 'Usage', icon: HardHat },
@@ -63,6 +69,7 @@ export default function Materials(shared) {
       </div>
 
       {view === 'stock' && <Inventory {...shared} />}
+      {view === 'count' && <Verify {...shared} />}
       {view === 'prices' && <Prices {...shared} />}
       {view === 'quotes' && <Quotations {...shared} />}
       {view === 'usage' && <Usage {...shared} />}
@@ -441,12 +448,215 @@ function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
   )
 }
 
+// ── Verify ──────────────────────────────────────────────────────────────────
+// The only screen in this app that asks somebody to leave the office.
+//
+// Every balance in the stores ledger is what the paperwork believes. A count is
+// the one row that somebody stood in a godown to produce, so it is stored as
+// evidence in its own right — including the counts that found nothing, which
+// are what proves a store sound — and the adjustment it justifies is posted
+// through the same movement ledger as everything else.
+function Verify({ data, eid, actor, canWrite, bump, toast }) {
+  const [storeId, setStoreId] = useState('')
+  const [date, setDate] = useState(today())
+  const [entered, setEntered] = useState({})
+
+  const sheet = useMemo(
+    () => countSheet(data.items, data.movements, { storeId, asOf: date, entityId: eid }),
+    [data, storeId, date, eid],
+  )
+  const history = useMemo(
+    () => shrinkage(data.stockCounts || [], data.items, data.movements, { entityId: eid, stores: data.projects }),
+    [data, eid],
+  )
+  const storeName = (id) => (!id ? 'The yard' : data.projects.find((p) => p.id === id)?.name || 'A site store')
+
+  // Counted and corrected in one go. The count is written first and the
+  // adjustment second, because the adjustment is the consequence of the count
+  // and a correction with no evidence behind it is what this screen exists to
+  // replace.
+  const post = () => {
+    const rows = sheet
+      .filter((r) => entered[r.item.id] !== undefined && entered[r.item.id] !== '')
+      .map((r) => makeStockCount({
+        entityId: eid, itemId: r.item.id, storeId, date,
+        countedQty: num(entered[r.item.id]), bookQty: r.bookQty, avgCost: r.avgCost,
+        countedBy: actor?.id,
+      }))
+    if (!rows.length) return
+    for (const row of rows) store.stockCounts.add(row, actor)
+    const corrections = adjustmentsFrom(rows, { entityId: eid, actorId: actor?.id })
+    for (const m of corrections) store.movements.add(m, actor)
+    setEntered({})
+    bump()
+    toast(corrections.length
+      ? `${rows.length} counted, ${corrections.length} corrected`
+      : `${rows.length} counted, all square`)
+  }
+
+  const pending = sheet.filter((r) => entered[r.item.id] !== undefined && entered[r.item.id] !== '')
+  const preview = sheetResult(pending.map((r) => makeStockCount({
+    entityId: eid, itemId: r.item.id, storeId, date,
+    countedQty: num(entered[r.item.id]), bookQty: r.bookQty, avgCost: r.avgCost,
+  })), data.items, { entityId: eid })
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat label="Counts on file" value={String(history.count)} />
+        <Stat label="Found short" value={formatCurrency(history.shortValue)} tone={history.shortValue > 0 ? 'warn' : undefined} />
+        <Stat label="Found over" value={formatCurrency(history.overValue)} />
+        <Stat
+          label="Stores unverified"
+          value={String(history.unverifiedCount)}
+          tone={history.unverifiedCount > 0 ? 'warn' : undefined}
+        />
+      </div>
+
+      {history.unverifiedCount > 0 && (
+        <Card className="p-5">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="text-amber-600" />
+            <h3 className="text-sm font-semibold text-ink-3">
+              {history.neverCounted === history.unverifiedCount
+                ? `${history.unverifiedCount} ${history.unverifiedCount === 1 ? 'store has' : 'stores have'} never been counted`
+                : `${history.unverifiedCount} ${history.unverifiedCount === 1 ? 'store is' : 'stores are'} overdue a count`}
+            </h3>
+          </div>
+          <p className="mt-1 text-xs text-ink-5">
+            {history.unverified.map((u) => `${u.name}${u.lastCounted ? ` — last counted ${u.lastCounted}` : ''}`).join(' · ')}
+          </p>
+        </Card>
+      )}
+
+      {canWrite && (
+        <Card className="p-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-ink-3">Count sheet</h3>
+              <p className="mt-1 text-xs text-ink-5">
+                Write down what is on the shelf. Leave a row blank and it is not counted — a blank is not a zero, and
+                a zero is a material somebody looked for and did not find.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Field label="Store">
+                <Select aria-label="Store to count" value={storeId} onChange={(e) => { setStoreId(e.target.value); setEntered({}) }}>
+                  <option value="">The yard</option>
+                  {data.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </Select>
+              </Field>
+              <Field label="Counted on">
+                <Input aria-label="Count date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              </Field>
+            </div>
+          </div>
+
+          {sheet.length === 0 ? (
+            <p className="mt-3 text-sm text-ink-5">Add materials and this fills in.</p>
+          ) : (
+            <>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[34rem] text-sm">
+                  <thead className="text-xs uppercase tracking-wide text-ink-5">
+                    <tr>
+                      <th className="py-2 text-start">Material</th>
+                      <th className="text-end">Books say</th>
+                      <th className="text-end">Counted</th>
+                      <th className="text-end">Out by</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line-soft">
+                    {sheet.map((r) => {
+                      const typed = entered[r.item.id]
+                      const has = typed !== undefined && typed !== ''
+                      const diff = has ? Math.round((num(typed) - r.bookQty) * 1000) / 1000 : null
+                      return (
+                        <tr key={r.item.id}>
+                          <td className="py-2 text-ink-2">
+                            {r.item.name}
+                            <span className="block text-[0.7rem] text-ink-6">{storeName(storeId)} · {r.item.unit}</span>
+                          </td>
+                          <td className="text-end tabular text-ink-4">{r.bookQty}</td>
+                          <td className="text-end">
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              aria-label={`Counted ${r.item.name}`}
+                              value={typed ?? ''}
+                              onChange={(e) => setEntered({ ...entered, [r.item.id]: e.target.value })}
+                              className="w-24 rounded-lg border border-line-soft bg-surface-1 px-2 py-1 text-end tabular text-ink-2"
+                            />
+                          </td>
+                          <td className={cx('text-end tabular font-medium',
+                            diff === null ? 'text-ink-6' : diff < 0 ? 'text-red-600' : diff > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                            {diff === null ? '—' : diff === 0 ? 'square' : `${diff > 0 ? '+' : ''}${diff}`}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-3">
+                <p className="text-xs text-ink-5">
+                  {pending.length === 0
+                    ? 'Nothing counted yet.'
+                    : /* Short and over are never netted. A godown twelve bags
+                         down on cement and twelve up on sand has two problems,
+                         and a difference of nothing reports neither. */
+                      `${pending.length} counted · ${preview.short} short, ${preview.over} over, ${preview.square} square` +
+                      (preview.shortValue > 0 ? ` · ${formatCurrency(preview.shortValue)} short` : '')}
+                </p>
+                <Button type="button" onClick={post} disabled={pending.length === 0}>
+                  <ClipboardCheck size={16} /> Record count
+                </Button>
+              </div>
+            </>
+          )}
+        </Card>
+      )}
+
+      {history.count > 0 && (
+        <Card className="p-5">
+          <h3 className="text-sm font-semibold text-ink-3">What has been checked</h3>
+          <p className="mt-1 text-xs text-ink-5">
+            A sheet is a store and a day. The ones that found nothing are here too — they are what proves a store
+            sound, and a list of only the bad ones would read as though every count found something.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {history.sheets.slice(0, 8).map((sh) => (
+              <li key={`${sh.storeId || 'yard'}-${sh.date}`} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                <span className="text-ink-2">
+                  {storeName(sh.storeId)}
+                  <span className="block text-[0.7rem] text-ink-6">
+                    {sh.date} · {sh.count} counted · {sh.short} short, {sh.over} over, {sh.square} square
+                  </span>
+                </span>
+                <span className={cx('tabular font-semibold', sh.shortValue > 0 ? 'text-red-600' : 'text-emerald-600')}>
+                  {sh.shortValue > 0 ? `−${formatCurrency(sh.shortValue)}` : 'all square'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+    </div>
+  )
+}
+
 // ── Prices ──────────────────────────────────────────────────────────────────
 function Prices({ data }) {
   const list = useMemo(
     () => priceList(data.items, data.movements, data.quotes),
     [data],
   )
+  // The question after buying rather than before it: was that lorry in line
+  // with the others. Keyed by material so the table below can read it off.
+  const paid = useMemo(() => materialVariance(data.items, data.movements), [data])
+  const byItem = useMemo(() => Object.fromEntries(paid.rows.map((r) => [r.item.id, r])), [paid])
 
   return (
     <div className="space-y-4">
@@ -454,8 +664,39 @@ function Prices({ data }) {
         <Stat label="Materials priced" value={`${list.count - list.unpriced}/${list.count}`} />
         <Stat label="Quoted for" value={String(list.quoted)} />
         <Stat label="Cheaper available" value={String(list.cheaperAvailable)} tone={list.cheaperAvailable ? 'warn' : undefined} />
-        <Stat label="Never priced" value={String(list.unpriced)} />
+        <Stat label="Paid above the norm" value={formatCurrency(paid.overpaid)} tone={paid.overpaid > 0 ? 'warn' : undefined} />
       </div>
+
+      {paid.dear > 0 && (
+        <Card className="p-5">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={16} className="text-amber-600" />
+            <h3 className="text-sm font-semibold text-ink-3">
+              {paid.dear} {paid.dear === 1 ? 'delivery came' : 'deliveries came'} in above the going rate
+            </h3>
+          </div>
+          <p className="mt-1 text-xs text-ink-5">
+            Each measured against the middle of the five purchases before it <em>and</em> the one immediately before
+            it, so a rising market does not set this off — only a jump does.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {paid.rows.filter((r) => r.worst).slice(0, 4).map((r) => (
+              <li key={r.item.id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                <span className="text-ink-2">
+                  {r.item.name}
+                  <span className="block text-[0.7rem] text-ink-6">
+                    {formatCurrency(r.worst.rate)} on {r.worst.date} against {formatCurrency(r.worst.baseline)} normal
+                    {r.worst.vendor && ` · ${r.worst.vendor}`}
+                  </span>
+                </span>
+                <span className="tabular font-semibold text-amber-600">
+                  +{formatCurrency(r.worst.value)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-ink-3">What it costs</h3>
@@ -473,6 +714,7 @@ function Prices({ data }) {
                   <th className="py-2 text-start">Material</th>
                   <th className="text-end">Last paid</th>
                   <th className="text-end">Drift</th>
+                  <th className="text-end">Normal</th>
                   <th className="text-end">Best quote</th>
                   <th className="text-start ps-4">Vendor</th>
                 </tr>
@@ -490,6 +732,19 @@ function Prices({ data }) {
                     </td>
                     <td className={cx('text-end tabular', (r.driftPercent || 0) > 0 ? 'text-amber-600' : 'text-ink-4')}>
                       {r.driftPercent === null ? '—' : `${r.driftPercent > 0 ? '+' : ''}${r.driftPercent}%`}
+                    </td>
+                    {/* What the next lorry ought to cost, on this evidence.
+                        Blank where there are too few purchases to have a norm,
+                        because a norm of one number is not a norm. */}
+                    <td className="text-end tabular text-ink-4">
+                      {byItem[r.item.id]?.norm == null || byItem[r.item.id]?.judged === 0
+                        ? '—'
+                        : formatCurrency(byItem[r.item.id].norm)}
+                      {byItem[r.item.id]?.dear > 0 && (
+                        <span className="block text-[0.7rem] font-semibold text-amber-600">
+                          {byItem[r.item.id].dear} above it
+                        </span>
+                      )}
                     </td>
                     <td className="text-end tabular text-ink-3">
                       {r.bestRate === null ? '—' : formatCurrency(r.bestRate)}

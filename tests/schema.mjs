@@ -93,6 +93,51 @@ export function columnsFromSql(text) {
   return tables
 }
 
+// What type each column is, which is the question a name-only check cannot ask.
+//
+// A column that exists is not a column that accepts what is being sent. Every
+// maker in this app defaults an unfilled optional date to the empty string, and
+// PostgreSQL refuses `''` for a date, a timestamp, a number or a uuid — so a
+// work order with no due date is not a row with a blank field, it is a row the
+// server rejects whole. The names all matched; the types never had to.
+export function columnTypes(text) {
+  const tables = new Map()
+  const set = (table, column, type) => {
+    if (!tables.has(table)) tables.set(table, new Map())
+    tables.get(table).set(column, type)
+  }
+  const live = stripComments(text)
+  const typeOf = (rest) => (rest.trim().match(/^([a-z][a-z0-9 ]*(?:\(\d+(?:,\s*\d+)?\))?)/i)?.[1] || '').trim().toLowerCase()
+
+  for (const [, table, body] of live.matchAll(/create table (?:if not exists )?public\.(\w+)\s*\(([\s\S]*?)\n\);/gi)) {
+    let depth = 0
+    for (const raw of body.split('\n')) {
+      const line = raw.trim()
+      if (!line) continue
+      const before = depth
+      depth += (line.match(/\(/g) || []).length - (line.match(/\)/g) || []).length
+      if (before > 0) continue
+      if (CONSTRAINT.test(line)) continue
+      const m = line.match(/^(\w+)\s+(.*)$/)
+      if (m) set(table, m[1], typeOf(m[2]))
+    }
+  }
+  for (const [, table, column, rest] of live.matchAll(/alter table (?:if exists )?public\.(\w+)\s+add column (?:if not exists )?(\w+)\s+([^;]*)/gi)) {
+    set(table, column, typeOf(rest))
+  }
+  for (const [, list, body] of live.matchAll(/do \$\$[\s\S]*?foreach \w+ in array array\[([\s\S]*?)\]([\s\S]*?)end \$\$;/gi)) {
+    const names = [...list.matchAll(/'(\w+)'/g)].map((m) => m[1])
+    for (const [, column, rest] of body.matchAll(/add column (?:if not exists )?(\w+)\s+([a-z][^'%,]*)/gi)) {
+      for (const t of names) set(t, column, typeOf(rest))
+    }
+  }
+  return tables
+}
+
+// Types that refuse an empty string. Text and its relatives accept one, so an
+// unfilled optional text field is fine; everything here is not.
+export const REFUSES_BLANK = /^(date|timestamp|time|numeric|integer|bigint|smallint|serial|uuid|boolean|decimal|real|double|jsonb?)/
+
 // Columns declared NOT NULL with no default: the ones the client must fill,
 // because the database will not fill them for it.
 export function requiredColumns(text, table) {

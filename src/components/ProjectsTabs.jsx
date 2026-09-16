@@ -9,7 +9,7 @@ import {
 } from '../lib/projects'
 import { usageBySite } from '../lib/inventory'
 import { labourCostsBySite } from '../lib/labour'
-import { subcontractCostsBySite } from '../lib/subcontract'
+import { subcontractCostsBySite, measurementCheck } from '../lib/subcontract'
 import { plantCostsBySite } from '../lib/plant'
 import {
   makeWorkItem, makeMeasurement, siteProgress, progressAgainstSpend,
@@ -315,7 +315,7 @@ function SiteLine({ line, onEdit }) {
 // that has spent 60% of its budget is in trouble, and no ledger will say so.
 function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
   const [siteId, setSiteId] = useState(data.projects[0]?.id || '')
-  const blankItem = { code: '', description: '', stage: 'structure', unit: 'cum', plannedQty: '', rate: '' }
+  const blankItem = { code: '', description: '', stage: 'structure', unit: 'cum', plannedQty: '', rate: '', workOrderId: '' }
   const [item, setItem] = useState(blankItem)
   const [measure, setMeasure] = useState({ workItemId: '', qty: '', date: new Date().toISOString().slice(0, 10), note: '' })
 
@@ -325,6 +325,17 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
     [data, eid, siteId],
   )
   const progress = useMemo(() => siteProgress(items, data.measurements), [items, data])
+  // Subcontracts on this site, for the link a schedule item can carry.
+  const siteOrders = useMemo(
+    () => data.workOrders.filter((o) => o.entity_id === eid && o.project_id === siteId && !o.deleted_at && (o.side || 'sub') === 'sub'),
+    [data, eid, siteId],
+  )
+  // Certified against measured, per order. The comparison the app could not
+  // make until a schedule item could say which contract bills it.
+  const checked = useMemo(
+    () => measurementCheck(data.workOrders, data.raBills, items, data.measurements, { entityId: eid }),
+    [data, items, eid],
+  )
   const costs = useMemo(() => costsBy(data, eid), [data, eid])
   const summary = useMemo(
     () => (site ? projectSummary(site, data.expenses, data.income, {
@@ -351,6 +362,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
     store.workItems.add(makeWorkItem({
       entityId: eid, projectId: siteId, ...item,
       plannedQty: num(item.plannedQty), rate: num(item.rate),
+      workOrderId: item.workOrderId || null,
     }), actor)
     setItem({ ...blankItem, stage: item.stage, unit: item.unit })
     bump()
@@ -466,9 +478,68 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
               <Field label="Rate" className="sm:col-span-2">
                 <Input aria-label="Item rate" type="number" min="0" step="0.01" value={item.rate} onChange={(e) => setItem({ ...item, rate: e.target.value })} />
               </Field>
+              {/* The link that turns a certified figure back into the tape
+                  measure it came from. Only offered where there are orders on
+                  this site to link to, because a select with one option saying
+                  "none" is a field people learn to skip. */}
+              {siteOrders.length > 0 && (
+                <Field label="Billed under" className="sm:col-span-4"
+                  hint="Only where the contract is priced against this item. A labour-only rate against a full-rate item compares two different things.">
+                  <Select aria-label="Billed under" value={item.workOrderId} onChange={(e) => setItem({ ...item, workOrderId: e.target.value })}>
+                    <option value="">No subcontract</option>
+                    {siteOrders.map((o) => <option key={o.id} value={o.id}>{o.contractor}{o.ref ? ` — ${o.ref}` : ''}</option>)}
+                  </Select>
+                </Field>
+              )}
               <div className="sm:col-span-4"><Button type="submit"><Plus size={16} /> Add item</Button></div>
             </form>
           </Card>
+
+          {/* What was certified against what was measured. Two screens that had
+              nothing between them until a schedule item could name its
+              contract. */}
+          {(checked.count > 0 || checked.unlinkedCount > 0) && (
+            <Card className="p-5">
+              <h3 className="text-sm font-semibold text-ink-3">Certified against measured</h3>
+              <p className="mt-1 text-xs text-ink-5">
+                What a contractor claims, against what the engineer recorded. The measurement book always lags the
+                bill by a few days, so a small gap is ordinary — a large one is the only sign there is.
+              </p>
+              {checked.count === 0 ? (
+                <p className="mt-3 text-sm text-ink-5">
+                  No scheduled item names a subcontract yet, so there is nothing to compare. Set <em>Billed under</em>
+                  {' '}on the items a contract is priced against.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {checked.lines.map((l) => (
+                    <li key={l.order.id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                      <span className="text-ink-2">
+                        {l.order.contractor}
+                        <span className="block text-[0.7rem] text-ink-6">
+                          {formatCurrency(l.certified)} certified · {formatCurrency(l.measured)} measured
+                          {' '}across {l.items} {l.items === 1 ? 'item' : 'items'}
+                        </span>
+                      </span>
+                      <span className={cx('tabular font-semibold',
+                        l.ahead ? 'text-red-600' : l.behind ? 'text-amber-600' : 'text-ink-4')}>
+                        {l.gap > 0 ? '+' : ''}{formatCurrency(l.gap)}
+                        {l.gapPercent !== null && <span className="ms-1 text-[0.7rem] font-medium">({l.gapPercent > 0 ? '+' : ''}{l.gapPercent}%)</span>}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {checked.unlinkedCount > 0 && (
+                // The reader is told how much of the book this covered. A check
+                // is only as good as the linking behind it.
+                <p className="mt-2 text-[0.7rem] text-ink-6">
+                  {checked.unlinkedCount} {checked.unlinkedCount === 1 ? 'contract names' : 'contracts name'} no
+                  scheduled item, so {checked.unlinkedCount === 1 ? 'it is' : 'they are'} not compared.
+                </p>
+              )}
+            </Card>
+          )}
 
           <Card className="p-5">
             <h3 className="text-sm font-semibold text-ink-3">Record a measurement</h3>

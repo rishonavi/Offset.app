@@ -72,6 +72,7 @@ export function makeQuote(input = {}) {
     id, entityId = input.entity_id, vendor = '', contact = '', date,
     validUntil = input.valid_until ?? '', projectId = input.project_id ?? null,
     lines = [], status = 'draft', notes = '', ref = '', createdBy = input.created_by ?? null,
+    receivedAt = input.received_at ?? '',
   } = input
   return {
     id: id || newId(),
@@ -81,10 +82,16 @@ export function makeQuote(input = {}) {
     date: date || today(),
     // A quote with no validity never expires, which is how vendors write them
     // and is not this module's problem to invent.
-    valid_until: validUntil || '',
+    valid_until: validUntil || null,
     project_id: projectId || null,
     lines: lines.map((l) => makeQuoteLine(l)),
     status: QUOTE_STATUS[status] ? status : 'draft',
+    // When the delivery was taken against this quotation, and the reason it is
+    // on the maker rather than only on the update that sets it: a reader that
+    // re-makes a stored quote would otherwise hand back a row with the stamp
+    // missing, and the guard against receiving the same delivery twice would
+    // come undone the moment anything round-tripped it.
+    received_at: receivedAt || null,
     notes: String(notes).trim().slice(0, 500),
     ref: String(ref).trim().slice(0, 60),
     created_by: createdBy,

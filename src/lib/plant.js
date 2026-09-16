@@ -100,12 +100,12 @@ export function makePlant({
     // three hours bills eight, and the five hours of nothing are invisible
     // unless somebody works them out.
     minimum_hours: Math.max(0, round2(minimumHours)),
-    hired_from: hiredFrom || '',
-    hired_to: hiredTo || '',
+    hired_from: hiredFrom || null,
+    hired_to: hiredTo || null,
     fuel_included: Boolean(fuelIncluded),
     operator_included: Boolean(operatorIncluded),
     purchase_value: Math.max(0, round2(purchaseValue)),
-    purchased_on: purchasedOn || '',
+    purchased_on: purchasedOn || null,
     useful_life_years: Math.max(1, Number(usefulLifeYears) || 8),
     salvage_value: Math.max(0, round2(salvageValue)),
     status: ['active', 'idle', 'breakdown', 'returned'].includes(status) ? status : 'active',

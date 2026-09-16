@@ -471,6 +471,22 @@ select t.refuses('a third side is not a side',
 select t.refuses('a defect liability period of ten years and one month is a typo',
   $$insert into public.work_orders (entity_id, contractor, dlp_months)
     values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody', 121)$$);
+-- The tape measure a certified figure came from. Nullable, because plenty of
+-- work orders cover no scheduled item and every item written before the column
+-- existed covers none.
+select t.check('a work item can name the contract that bills it',
+  exists (select 1 from information_schema.columns
+           where table_schema = 'public' and table_name = 'work_items' and column_name = 'work_order_id'));
+select t.check('and it is nullable, because most items name none',
+  (select is_nullable from information_schema.columns
+    where table_schema = 'public' and table_name = 'work_items' and column_name = 'work_order_id') = 'YES');
+select t.check('and it is indexed, because the comparison filters on it',
+  exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'work_items_order_idx'));
+select t.refuses('an item cannot name a contract that does not exist',
+  $$insert into public.work_items (entity_id, project_id, description, work_order_id)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',
+            'Plaster','11111111-aaaa-0000-0000-0000000000ff')$$);
+
 select t.check('an order with no completion date has none, rather than today',
   (select completed_on from public.work_orders where id = '11111111-aaaa-0000-0000-000000000001') is null);
 

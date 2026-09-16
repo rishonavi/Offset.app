@@ -46,12 +46,18 @@ export const stageOf = (id) => WORK_STAGES[id] || { id: 'other', label: 'Other',
 // and at what rate.
 export function makeWorkItem({
   id, entityId, projectId = null, code = '', description = '', stage = 'structure',
-  unit = 'cum', plannedQty = 0, rate = 0, note = '',
+  unit = 'cum', plannedQty = 0, rate = 0, note = '', workOrderId = null,
 } = {}) {
   return {
     id: id || newId(),
     entity_id: entityId,
     project_id: projectId || null,
+    // Which subcontract is doing this item, where one is. It is what turns a
+    // certified figure back into the tape measure it came from: without it,
+    // what a contractor claims and what the engineer measured are two numbers
+    // in two screens that nothing has ever compared. At most one — an item
+    // split between two contractors is a second item.
+    work_order_id: workOrderId || null,
     code: String(code).trim().toUpperCase().slice(0, 24),
     description: (description || 'Untitled item').trim().slice(0, 200),
     stage: WORK_STAGES[stage] ? stage : 'structure',

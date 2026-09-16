@@ -28,12 +28,14 @@ import { priceList, quoteBook } from './quotes'
 import { projectReport, unattributed, daysLate } from './projects'
 import { siteProgress, progressAgainstSpend } from './progress'
 import { labourReport, labourCostsBySite } from './labour'
-import { subcontractReport, subcontractCostsBySite, retentionBook, clientContracts } from './subcontract'
+import { subcontractReport, subcontractCostsBySite, retentionBook, clientContracts, measurementCheck } from './subcontract'
 import { plantReport, plantCostsBySite } from './plant'
 import { salesReport } from './sales'
 import { outstandingAdvances } from './advances'
 import { approvalQueue } from './corporate'
 import { costCentreReport } from './costcentres'
+import { materialVariance, labourRateSpread } from './rates'
+import { shrinkage } from './stockcount'
 
 export const LEVELS = {
   error: { id: 'error', label: 'Wrong', rank: 0, tone: 'bad' },
@@ -84,6 +86,7 @@ export function attention(books = {}, { asOf = null } = {}) {
     muster = [], workOrders = [], raBills = [], workItems = [], measurements = [],
     plant = [], plantLogs = [], units = [], planStages = [], receipts = [],
     advances = [], adjustments = [], policy = null, role = 'member', userId = null,
+    stockCounts = [],
     entityId = null, departments = [], payrollRuns = [], employees = [],
   } = books
 
@@ -136,6 +139,16 @@ export function attention(books = {}, { asOf = null } = {}) {
   }
   // Certification problems are certification problems whichever side of the
   // contract they are on.
+  // What was certified against what was measured. Two screens that have never
+  // been compared, and a bill can certify more plaster than the engineer has
+  // recorded with every total in the app still adding up.
+  const measured = measurementCheck(workOrders, raBills, workItems, measurements, { entityId })
+  if (measured.ahead > 0) {
+    out.push(finding('bill.aheadOfWork', 'error',
+      `${plural(measured.ahead, 'contractor has', 'contractors have')} certified more than has been measured`,
+      'The measurement book always lags the bill by a few days, so a small gap is ordinary. This is not a small gap, and it is the only comparison that turns a payment back into work in the ground.',
+      { amount: measured.aheadBy, count: measured.ahead, where: OPS('labour') }))
+  }
   const advanceErrors = outstandingAdvances(advances, adjustments, { entityId }).errors
   if (advanceErrors > 0) {
     out.push(finding('advance.overadjusted', 'error',
@@ -182,11 +195,39 @@ export function attention(books = {}, { asOf = null } = {}) {
       'It is a liability with a release date, not a saving. Holding it past the date it was due sours a relationship the company needs again.',
       { amount: contracts.retentionHeld, where: OPS('labour') }))
   }
+  // What the shelf held against what the books believed. Material does not
+  // vanish in one event; it goes a few bags at a time and the books stay
+  // perfectly consistent the whole way.
+  const counted = shrinkage(stockCounts, items, movements, { entityId, asOf, stores: projects })
+  if (counted.shortValue > 0) {
+    out.push(finding('stock.short', 'money',
+      `A count found ${plural(counted.out || counted.count, 'store', 'stores')} short of what the books say`,
+      'Shortages and overages are not netted against each other: a godown twelve bags down on cement and twelve up on sand has two problems, and the difference of nothing reports neither.',
+      { amount: counted.shortValue, count: counted.out || counted.count, where: OPS('materials') }))
+  }
   if (heldByClient.due > 0) {
     out.push(finding('retention.owed', 'money',
       'Retention the client owes back has fallen due',
       'The work was finished and the defect liability ran out, so this stopped being security and became a receivable. It is the one debt nobody sends an invoice for, which is why it sits for years.',
       { amount: heldByClient.due, count: heldByClient.dueCount, where: OPS('labour') }))
+  }
+  // What the same material normally costs here, against what it cost that
+  // time. Nobody reads a column of forty receipts, so nobody has ever noticed
+  // the one lorry bought at a Saturday rate.
+  const paidRates = materialVariance(items, movements, { entityId })
+  if (paidRates.overpaid > 0) {
+    out.push(finding('rate.dear', 'money',
+      `${plural(paidRates.dear, 'delivery came', 'deliveries came')} in well above the going rate`,
+      'Measured against the median of the few purchases before each one, so a rising market does not set this off — only a jump does. Above the norm is not always a mistake, but it is always worth knowing which lorry it was.',
+      { amount: paidRates.overpaid, count: paidRates.dear, where: OPS('materials') }))
+  }
+  // The opposite, and money rather than an error: work in the ground that
+  // nobody has billed for.
+  if (measured.behind > 0) {
+    out.push(finding('work.unbilled', 'money',
+      `${plural(measured.behind, 'contract has', 'contracts have')} measured work nobody has billed`,
+      'The engineer has recorded more than the running account claims. On a client contract that is the company\u2019s own money it has not asked for.',
+      { amount: measured.behindBy, count: measured.behind, where: OPS('labour') }))
   }
   if (loose.spent > 0) {
     out.push(finding('cost.unattributed', 'money',
@@ -221,12 +262,34 @@ export function attention(books = {}, { asOf = null } = {}) {
   // its own finding because the money is invisible to every other one: an
   // order with no completion date can never become due, so retention on it
   // would sit held for ever without anything ever saying so.
+  // A store nobody has walked into. Not wrong, and not owed — the state where
+  // nothing in the books can be trusted more than the last time somebody
+  // looked, which on most of these is never.
+  if (counted.unverifiedCount > 0) {
+    out.push(finding('stock.unverified', 'risk',
+      counted.neverCounted === counted.unverifiedCount
+        ? `${plural(counted.unverifiedCount, 'store has', 'stores have')} never been counted`
+        : `${plural(counted.unverifiedCount, 'store has', 'stores have')} not been counted in ${counted.staleDays} days`,
+      'Every balance in the stores ledger is what the paperwork believes. Until somebody walks in with a clipboard it is the only evidence there is, and it has never once been checked against a shelf.',
+      { count: counted.unverifiedCount, where: OPS('materials') }))
+  }
   const undated = round2(heldBySub.undated + heldByClient.undated)
   if (undated > 0) {
     out.push(finding('retention.undated', 'risk',
       `Retention on ${plural(heldBySub.undatedCount + heldByClient.undatedCount, 'contract has', 'contracts have')} no release date`,
       'Nobody recorded when the work was finished, so nothing can work out when the money comes back. It will not appear as due on any date, because there is no date.',
       { amount: undated, count: heldBySub.undatedCount + heldByClient.undatedCount, where: OPS('labour') }))
+  }
+  // The same trade, the same fortnight, two different rates. Each site is
+  // perfectly consistent with itself, which is exactly why no report has ever
+  // shown this.
+  const spread = labourRateSpread(muster, { entityId, projects, asOf })
+  if (spread.count > 0) {
+    const worst = spread.lines[0]
+    out.push(finding('labour.spread', 'risk',
+      `${worst.label}s are paid ${worst.spreadPercent}% more on one site than another`,
+      `${worst.high.name} is paying ₹${worst.high.rate} a day and ${worst.low.name} ₹${worst.low.rate}, in the same fortnight. Either one site knows something about the labour market or somebody is charging what he can get.`,
+      { amount: spread.atStake, count: spread.count, where: OPS('labour') }))
   }
   if (jobs.overrunning > 0) {
     out.push(finding('job.overrun', 'risk',

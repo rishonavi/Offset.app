@@ -12,7 +12,10 @@
 // Supabase would prove — auth, row-level security under a real token, the
 // network — but it is the specific failure worth naming, so it is worth
 // catching here rather than in somebody's first sync.
-import { columnsFromSql, requiredColumns, readSql } from '../schema.mjs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import { columnsFromSql, columnTypes, requiredColumns, readSql, REFUSES_BLANK } from '../schema.mjs'
 import { TABLES, SYNCED } from '../../src/lib/storage/corporateSync.js'
 import { makeEntity, makeMember, makeDepartment, makeAuditEvent, makeApprovalPolicy } from '../../src/lib/corporate.js'
 import { makeProject } from '../../src/lib/projects.js'
@@ -25,6 +28,7 @@ import { makePlant, makePlantLog } from '../../src/lib/plant.js'
 import { makeUnit, makePlanStage, makeReceipt } from '../../src/lib/sales.js'
 import { makeAdvance, makeAdjustment } from '../../src/lib/advances.js'
 import { makeEmployee, makePayrollRun, runPayroll } from '../../src/lib/payroll.js'
+import { makeStockCount } from '../../src/lib/stockcount.js'
 import { tag } from '../../src/lib/sampleData.js'
 import { buildSample } from '../../src/lib/sampleSite.js'
 
@@ -91,6 +95,7 @@ const MADE = {
   advances: makeAdvance({ entityId: E, employeeId: 'e' }),
   adjustments: makeAdjustment({ entityId: E, advanceId: 'a' }),
   employees: makeEmployee({ entityId: E, name: 'X' }),
+  stockCounts: makeStockCount({ entityId: E, itemId: 'i' }),
   payrollRuns: makePayrollRun({
     entityId: E, period: '2026-03', employees: [makeEmployee({ entityId: E, id: 'x', name: 'X', basic: 1000 })],
     run: runPayroll([makeEmployee({ entityId: E, id: 'x', name: 'X', basic: 1000 })], { period: '2026-03' }),
@@ -131,6 +136,106 @@ for (const kind of SYNCED) {
   ].filter((k) => !(NOT_SENT[kind] || []).includes(k))
   const missing = sent.filter((c) => !cols.has(c))
   ok(`${kind} → ${table}`, missing.length === 0, `no such column: ${missing.join(', ')}`)
+}
+
+console.log('\n── AND A COLUMN THAT EXISTS STILL HAS TO ACCEPT WHAT IS SENT ──')
+// The half of this question a name-only check cannot ask, and the one that was
+// wrong in eleven places at once.
+//
+// Every maker in this app defaulted an unfilled optional date to the empty
+// string, and PostgreSQL refuses `''` for a date, a timestamp, a number or a
+// uuid — `invalid input syntax for type date: ""`. So a work order with no due
+// date was not a row with a blank field. It was a row the server rejected
+// whole, and every column name in it matched perfectly.
+//
+// Nothing here would have said so: the sync tests run against a stub that
+// accepts what it is handed, and the schema tests run against a database
+// nothing pushes to. This is the seam, so it is checked at the seam.
+const types = columnTypes(sql)
+ok('the types were read as well as the names', types.size > 20, `${types.size} tables`)
+ok('a date column reads as a date', /^date/.test(types.get('work_orders')?.get('due_on') || ''),
+  types.get('work_orders')?.get('due_on'))
+ok('and a text column does not', !REFUSES_BLANK.test(types.get('work_orders')?.get('contractor') || ''),
+  types.get('work_orders')?.get('contractor'))
+ok('an empty string is refused by a date', REFUSES_BLANK.test('date'))
+ok('and by a number, a uuid and a timestamp',
+  ['numeric(14,2)', 'uuid', 'timestamptz'].every((t) => REFUSES_BLANK.test(t)))
+ok('but not by text', !REFUSES_BLANK.test('text') && !REFUSES_BLANK.test('text not null'))
+
+for (const kind of SYNCED) {
+  const t = types.get(TABLES[kind]) || new Map()
+  const blanks = Object.entries(MADE[kind])
+    .filter(([k, v]) => v === '' && REFUSES_BLANK.test(t.get(k) || ''))
+    .map(([k]) => `${k} (${t.get(k)})`)
+  ok(`nothing ${kind} leaves blank is a column that refuses blanks`, blanks.length === 0,
+    `sends '' to ${blanks.join(', ')}`)
+}
+
+console.log('\n── AND EVERY COLUMN AN UPDATE SENDS ──')
+// The other half of what the client writes, and the half this suite could not
+// see. Everything above asks what the makers produce, and a maker is not the
+// only thing that writes: `store.quotes.update(id, { received_at })` sends one
+// column that no maker ever mentions.
+//
+// That one was real. Receiving a delivery against an accepted quotation stamps
+// the quote so the same lorry cannot be added to stock twice, and
+// `material_quotes` had no `received_at`. On a local install it worked. Against
+// Supabase the upsert dropped the column, the quote never read as delivered,
+// and the button that doubles the stock stayed live — the guard failing exactly
+// where the stock is shared.
+//
+// So the source is read for literal update payloads. Only flat object literals,
+// because a spread is a variable and this is a regular expression rather than a
+// compiler; what it cannot see it says nothing about rather than guessing.
+const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src')
+const sources = []
+;(function walk(dir) {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name)
+    if (statSync(full).isDirectory()) walk(full)
+    else if (/\.(js|jsx)$/.test(name)) sources.push([full, readFileSync(full, 'utf8')])
+  }
+})(SRC)
+ok('the source was found and read', sources.length > 40, `${sources.length} files`)
+
+const writes = []
+for (const [file, text] of sources) {
+  for (const m of text.matchAll(/store\.(\w+)\.update\([^,()]*,\s*\{([^{}]*)\}/g)) {
+    const [, collection, body] = m
+    if (!TABLES[collection]) continue
+    // Split on top-level commas only: `{ a: f(x, y), b }` is two properties,
+    // and a regular expression that splits on every comma reads it as three.
+    const parts = []
+    let depth = 0, current = ''
+    for (const ch of body) {
+      if ('([`'.includes(ch)) depth += 1
+      else if (')]`'.includes(ch)) depth -= 1
+      if (ch === ',' && depth <= 0) { parts.push(current); current = '' } else current += ch
+    }
+    parts.push(current)
+    for (const part of parts) {
+      const t = part.trim()
+      // A spread carries keys this cannot read. The literal properties beside
+      // it still can be, so the payload is checked for what it shows rather
+      // than skipped whole.
+      if (!t || t.startsWith('...')) continue
+      // `{ status }` is a column too. Shorthand was the half the first version
+      // of this scan missed, and it is the shorter half to write.
+      const name = t.match(/^(\w+)\s*(?::|$)/)?.[1]
+      if (name) writes.push({ file: file.slice(SRC.length + 1), collection, column: name })
+    }
+  }
+}
+// A scan that found nothing would pass every assertion below it, so the count
+// is asserted before the contents are.
+ok('literal update payloads were found', writes.length >= 6, `${writes.length} found`)
+ok('including the one that was wrong',
+  writes.some((w) => w.collection === 'quotes' && w.column === 'received_at'),
+  writes.map((w) => `${w.collection}.${w.column}`).join(', '))
+for (const w of [...new Map(writes.map((w) => [`${w.collection}.${w.column}`, w])).values()]) {
+  ok(`${w.file} writes ${TABLES[w.collection]}.${w.column}`,
+    (schema.get(TABLES[w.collection]) || new Set()).has(w.column),
+    'no such column')
 }
 
 console.log('\n── THE APPROVAL POLICY, WHICH IS NOT A COLLECTION ──')
@@ -184,7 +289,9 @@ for (const [kind, rows] of Object.entries(built)) {
   if (!TABLES[kind] || !rows.length) continue
   const cols = schema.get(TABLES[kind])
   const missing = [...new Set(rows.flatMap((r) => Object.keys(r)))]
-    .filter((c) => !c.startsWith('_') && !cols.has(c))
+    // A quotation's lines are their own table and are lifted out before the
+    // parent is sent, the same way the maker check above accounts for them.
+    .filter((c) => !c.startsWith('_') && !cols.has(c) && !(NOT_SENT[kind] || []).includes(c))
   ok(`the sample's ${kind} fit ${TABLES[kind]}`, missing.length === 0,
     `no such column: ${missing.join(', ')}`)
 }

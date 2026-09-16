@@ -818,6 +818,56 @@ alter table public.ra_bills    add column if not exists approved_by uuid referen
 alter table public.ra_bills    add column if not exists approved_at timestamptz;
 
 
+-- ── What is actually on the shelf ────────────────────────────────
+-- Every movement is a claim: a receipt says a lorry arrived, an issue says a
+-- bag went to the slab, and the balance that falls out of them is what the
+-- paperwork believes. A count is the only row in this schema that somebody
+-- stood in a godown to produce.
+--
+-- `book_qty` and `avg_cost` are frozen into the row rather than derived. A
+-- verification compared against today's balance would change its own answer
+-- every time a later lorry arrived, and a verification that moves is not one.
+--
+-- A sheet is a store and a date. There is no sheet id, the same way there is no
+-- muster id — "the yard, on the 12th" is how a stores clerk names it.
+create table if not exists public.stock_counts (
+  id          uuid primary key default gen_random_uuid(),
+  entity_id   uuid not null references public.entities(id) on delete cascade,
+  item_id     uuid not null references public.inventory_items(id) on delete cascade,
+  -- Null is the yard, exactly as it is on a movement.
+  store_id    uuid references public.projects(id) on delete set null,
+  date        date not null,
+  counted_qty numeric(16,3) not null default 0 check (counted_qty >= 0),
+  book_qty    numeric(16,3) not null default 0,
+  avg_cost    numeric(16,2) not null default 0 check (avg_cost >= 0),
+  note        text,
+  counted_by  uuid references auth.users(id) on delete set null,
+  created_at  timestamptz not null default now(),
+  -- Declared here rather than left to the loops below, because the partial
+  -- index underneath needs `deleted_at` to exist by the time it is created.
+  -- The loops add both with IF NOT EXISTS and still attach the trigger.
+  updated_at  timestamptz not null default now(),
+  deleted_at  timestamptz
+);
+create index if not exists stock_counts_entity_idx on public.stock_counts (entity_id, date desc);
+-- One material cannot be counted twice on the same sheet. Two clerks counting
+-- the same shelf is a real thing that happens, and two rows would silently
+-- double the correction.
+create unique index if not exists stock_counts_one_per_sheet
+  on public.stock_counts (entity_id, item_id, coalesce(store_id, '00000000-0000-0000-0000-000000000000'::uuid), date)
+  where deleted_at is null;
+
+-- ── The tape measure a certified figure came from ────────────────
+-- A schedule of work is what the engineer measures; a running account bill is
+-- what the contractor claims. They have always been two tables with nothing
+-- between them, so nothing could compare what was certified against what was
+-- measured — the one comparison that turns a payment back into work in the
+-- ground. Nullable, because plenty of work orders cover no scheduled item at
+-- all, and every item written before this column existed covers none.
+alter table public.work_items add column if not exists work_order_id uuid
+  references public.work_orders(id) on delete set null;
+create index if not exists work_items_order_idx on public.work_items (work_order_id);
+
 -- ── When the retention comes back, and whose it is ───────────────
 -- `retention_released` was always here; what was missing was a date to hold it
 -- against. Retention returns in two pieces — half at completion, half when the
@@ -829,6 +879,16 @@ alter table public.ra_bills    add column if not exists approved_at timestamptz;
 -- subcontractors and has retention held from it by its client, and both are
 -- this same cumulative bill. It defaults to 'sub' because every row written
 -- before this column existed was one.
+-- ── The delivery stamp that had nowhere to be written ────────────
+-- "Receive at the quoted rate" turns an accepted quotation into stock
+-- movements and then stamps the quote so it cannot be received twice. The
+-- stamp had no column. On a local install it worked; against Supabase the
+-- upsert dropped it, the quote never showed as delivered, and pressing the
+-- button again would have added the whole delivery to stock a second time —
+-- the exact thing the stamp exists to stop, failing silently in the one mode
+-- where the stock is shared.
+alter table public.material_quotes add column if not exists received_at timestamptz;
+
 alter table public.work_orders add column if not exists side text not null default 'sub'
   check (side in ('sub', 'client'));
 alter table public.work_orders add column if not exists completed_on date;
@@ -858,7 +918,7 @@ begin
     'projects','inventory_items','inventory_movements','material_quotes','material_quote_lines',
     'labour_muster','work_orders','ra_bills','work_items','work_measurements',
     'plant','plant_logs','sale_units','sale_plan_stages','sale_receipts',
-    'advances','advance_adjustments','employees','payroll_runs']
+    'advances','advance_adjustments','employees','payroll_runs','stock_counts']
   loop
     execute format('alter table public.%I add column if not exists updated_at timestamptz not null default now()', t);
     -- An index on it, because every pull asks the same question: what has
@@ -881,7 +941,7 @@ begin
     'projects','inventory_items','inventory_movements','material_quotes','material_quote_lines',
     'labour_muster','work_orders','ra_bills','work_items','work_measurements',
     'plant','plant_logs','sale_units','sale_plan_stages','sale_receipts',
-    'advances','advance_adjustments','employees','payroll_runs']
+    'advances','advance_adjustments','employees','payroll_runs','stock_counts']
   loop
     execute format('alter table public.%I add column if not exists deleted_at timestamptz', t);
   end loop;
@@ -921,6 +981,7 @@ alter table public.plant_logs          enable row level security;
 alter table public.sale_units          enable row level security;
 alter table public.sale_plan_stages    enable row level security;
 alter table public.sale_receipts       enable row level security;
+alter table public.stock_counts        enable row level security;
 
 -- Entities: members see it, owners change it. Creation is separate because at
 -- the moment of insert there is no membership yet to be a member of.
@@ -1000,7 +1061,7 @@ create policy "members append to the log" on public.audit_events
 do $$
 declare t text;
 begin
-  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','payroll_runs','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements','plant','plant_logs','sale_units','sale_plan_stages','sale_receipts']
+  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','payroll_runs','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements','plant','plant_logs','sale_units','sale_plan_stages','sale_receipts','stock_counts']
   loop
     execute format('drop policy if exists "members read %1$s" on public.%1$I', t);
     execute format(

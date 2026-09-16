@@ -28,6 +28,7 @@ import { makeProject } from './projects'
 import { makeItem, makeMovement } from './inventory'
 import { makeMuster } from './labour'
 import { makeWorkOrder, makeRaBill } from './subcontract'
+import { makeQuote, makeQuoteLine } from './quotes'
 import { makeWorkItem, makeMeasurement } from './progress'
 import { makePlant, makePlantLog } from './plant'
 import { makeUnit, makePlanStage, makeReceipt } from './sales'
@@ -130,6 +131,11 @@ const MOVES = [
   ['sample-item-steel',  'rejected',   800, 65,   58, null, null, 'Shakti Steel & Alloys', 'Surface rust on two bundles — returned'],
   ['sample-item-steel',  'transfer',  6000, 0,    55, null, MD],
   ['sample-item-steel',  'issue',     7000, 0,    40, MD,   null, '', '', 0, MD],
+  // The emergency lorry. Ordered on a Saturday when the 9th slab could not
+  // wait, at a rate nobody would have agreed to on a Monday — and the only
+  // place it shows is in a column of receipts nobody reads down.
+  ['sample-item-steel',  'receipt',   4000, 74,   30, null, null, 'Mahalaxmi Iron & Steel', 'Slab could not wait — spot purchase', 2000],
+  ['sample-item-steel',  'receipt',   8000, 66,   12, null, null, 'Shakti Steel & Alloys', '', 3000],
   // Cement
   ['sample-item-cement', 'receipt',   4000, 385, 110, null, null, 'UltraTech — Vashi dealer', '', 6000],
   ['sample-item-cement', 'transfer',  2500, 0,   108, null, MD],
@@ -140,6 +146,10 @@ const MOVES = [
   ['sample-item-cement', 'issue',     1900, 0,    30, MD,   null, '', '', 0, MD],
   ['sample-item-cement', 'wastage',     40, 0,    29, MD,   null, '', 'Bags set hard — godown leaked in the rain', 0, MD],
   ['sample-item-cement', 'issue',      700, 0,    20, PG,   null, '', '', 0, PG],
+  // Dearer than the last, and not by enough to be a spike. A rising market
+  // moves the norm with it, and a check that shouted about this would teach
+  // people to stop reading it.
+  ['sample-item-cement', 'receipt',   2500, 412,  18, null, null, 'UltraTech — Vashi dealer', '', 4400],
   // Sand
   ['sample-item-sand',   'receipt',    120, 4200, 100, null, null, 'Konkan Aggregates', '', 14000],
   ['sample-item-sand',   'transfer',    70, 0,     98, null, MD],
@@ -193,6 +203,11 @@ const CREW = [
   [MD, 'mason', 14, 850], [MD, 'helper', 22, 550], [MD, 'carpenter', 9, 900],
   [MD, 'barBender', 6, 880], [MD, 'supervisor', 2, 1400],
   [PG, 'mason', 6, 820], [PG, 'helper', 9, 540], [PG, 'tiler', 4, 800],
+  // The same trade, the same fortnight, a hundred and fifty rupees apart. The
+  // tower's finishing contractor is short of tilers and is paying to get them;
+  // the villas are not. Both sites are perfectly consistent with themselves,
+  // which is why nothing in the app could see it.
+  [MD, 'tiler', 5, 950],
 ]
 
 function musterRoll(entityId) {
@@ -236,6 +251,18 @@ function contracts(entityId) {
       orderValue: 4200000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
       startedOn: day(120), dueOn: ahead(30), status: 'running', ref: 'WO/PG/03',
     }),
+    // Priced against the same schedule the engineer measures, which is what
+    // makes the comparison mean anything: this contractor is paid per square
+    // metre of the same plaster item the measurement book records. He has
+    // certified a little ahead of the tape, which is ordinary — and worth
+    // seeing, because nothing in this app could see it before.
+    makeWorkOrder({
+      entityId, id: 'sample-wo-mdplaster', projectId: MD,
+      contractor: 'Sai Plastering Works',
+      scope: 'Internal cement plaster 12mm, two coats — against MD/04',
+      orderValue: 3000000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
+      startedOn: day(95), dueOn: ahead(60), status: 'running', ref: 'WO/MD/04',
+    }),
     // Finished, paid, and still holding the contractor's money. The completion
     // half of his retention fell due two and a half months ago and nothing in
     // the app could say so until a release had a date attached to it.
@@ -265,6 +292,7 @@ function contracts(entityId) {
     makeRaBill({ entityId, id: 'sample-ra-3', workOrderId: 'sample-wo-rcc', projectId: MD, number: 3, date: day(38), claimedToDate: 15000000, certifiedToDate: 14600000, status: 'certified', penalty: 50000, note: 'Up to 8th slab. Penalty for the delayed 7th.' }),
     makeRaBill({ entityId, id: 'sample-ra-4', workOrderId: 'sample-wo-plaster', projectId: PG, number: 1, date: day(70), claimedToDate: 1500000, certifiedToDate: 1450000, status: 'paid' }),
     makeRaBill({ entityId, id: 'sample-ra-5', workOrderId: 'sample-wo-plaster', projectId: PG, number: 2, date: day(16), claimedToDate: 3100000, certifiedToDate: 2950000, status: 'certified', note: 'External plaster still to start on the north face.' }),
+    makeRaBill({ entityId, id: 'sample-ra-11', workOrderId: 'sample-wo-mdplaster', projectId: MD, number: 1, date: day(12), claimedToDate: 1050000, certifiedToDate: 980000, status: 'certified', note: 'Floors 1 to 4, internal faces.' }),
     makeRaBill({ entityId, id: 'sample-ra-6', workOrderId: 'sample-wo-stone', projectId: HV, number: 1, date: day(150), claimedToDate: 600000, certifiedToDate: 600000, status: 'paid' }),
     makeRaBill({ entityId, id: 'sample-ra-7', workOrderId: 'sample-wo-stone', projectId: HV, number: 2, date: day(80), claimedToDate: 940000, certifiedToDate: 920000, status: 'paid', note: 'Final. Two risers remeasured.' }),
     makeRaBill({ entityId, id: 'sample-ra-8', workOrderId: 'sample-wo-hv-client', projectId: HV, number: 1, date: day(400), claimedToDate: 3000000, certifiedToDate: 3000000, status: 'paid' }),
@@ -274,6 +302,34 @@ function contracts(entityId) {
   return { orders, bills }
 }
 
+// ── Quotations, including one the company is committed to ───────────
+// Three quotes for the same steel is what a purchase file is for, and the
+// accepted one that has not arrived is the money this demo could not show
+// before: agreed, not delivered, not in the books, and entirely spent.
+function quotations(entityId) {
+  const line = (itemId, name, qty, rate, unit, gst) =>
+    makeQuoteLine({ itemId, name, qty, rate, unit, gstPercent: gst })
+  return [
+    makeQuote({
+      entityId, id: 'sample-q-steel-a', vendor: 'Shakti Steel Traders', contact: '98200 41122',
+      projectId: MD, date: day(22), validUntil: ahead(8), status: 'accepted', ref: 'Q/ST/118',
+      notes: 'Rate held to the 8th. Delivery in two lorries.',
+      lines: [line('sample-item-steel', 'TMT bars 12mm', 24000, 61.4, 'kg', 18)],
+    }),
+    makeQuote({
+      entityId, id: 'sample-q-steel-b', vendor: 'Mahalaxmi Iron & Steel', contact: '98330 77410',
+      projectId: MD, date: day(23), validUntil: ahead(5), status: 'declined', ref: 'Q/MI/64',
+      notes: 'Dearer, and thirty days credit against fifteen.',
+      lines: [line('sample-item-steel', 'TMT bars 12mm', 24000, 63.8, 'kg', 18)],
+    }),
+    makeQuote({
+      entityId, id: 'sample-q-cement', vendor: 'Vardhaman Cement Agency', contact: '98195 30077',
+      projectId: PG, date: day(6), validUntil: ahead(14), status: 'sent', ref: 'Q/VC/09',
+      lines: [line('sample-item-cement', 'OPC 53 grade cement', 1800, 392, 'bag', 28)],
+    }),
+  ]
+}
+
 // ── What has actually been built ────────────────────────────────────
 // Weighted by value, not by how many lines are ticked: finishing the
 // excavation is not the same share of a tower as finishing the RCC.
@@ -281,7 +337,7 @@ const SCHEDULE = [
   ['sample-wi-1', 'MD/01', 'Excavation in ordinary soil, including disposal',      'earthwork', 'cum', 4200,  180,  [[4200, 280]]],
   ['sample-wi-2', 'MD/02', 'RCC M30 in columns, beams and slabs',                  'structure', 'cum', 3100,  7400, [[900, 220], [700, 150], [500, 60]]],
   ['sample-wi-3', 'MD/03', 'AAC block masonry 150mm in cement mortar',             'masonry',   'sqm', 9800,  720,  [[2600, 120], [2800, 55], [-200, 50]]],
-  ['sample-wi-4', 'MD/04', 'Internal cement plaster 12mm, two coats',              'plaster',   'sqm', 14500, 210,  [[2400, 70], [1700, 22]]],
+  ['sample-wi-4', 'MD/04', 'Internal cement plaster 12mm, two coats',              'plaster',   'sqm', 14500, 210,  [[2400, 70], [1700, 22]], 'sample-wo-mdplaster'],
   ['sample-wi-5', 'MD/05', 'Vitrified tile flooring 600×600 including skirting',   'finishes',  'sqm', 6200,  860,  [[900, 18]]],
   ['sample-wi-6', 'MD/06', 'Flush door with frame, hardware and polish',           'joinery',   'nos', 240,   9800, [[30, 14]]],
 ]
@@ -289,8 +345,8 @@ const SCHEDULE = [
 function schedule(entityId) {
   const workItems = []
   const measurements = []
-  for (const [id, code, description, stage, unit, plannedQty, rate, takes] of SCHEDULE) {
-    workItems.push(makeWorkItem({ entityId, id, projectId: MD, code, description, stage, unit, plannedQty, rate }))
+  for (const [id, code, description, stage, unit, plannedQty, rate, takes, workOrderId = null] of SCHEDULE) {
+    workItems.push(makeWorkItem({ entityId, id, projectId: MD, code, description, stage, unit, plannedQty, rate, workOrderId }))
     for (const [qty, back] of takes) {
       measurements.push(makeMeasurement({
         entityId, workItemId: id, projectId: MD, date: day(back), qty,
@@ -463,6 +519,7 @@ export function buildSample(entityId) {
     projects: sites(entityId),
     items,
     movements,
+    quotes: quotations(entityId),
     muster: musterRoll(entityId),
     workOrders: orders,
     raBills: bills,
@@ -482,7 +539,7 @@ export function buildSample(entityId) {
 // receipt at a unit. Parents first, so nothing is ever written pointing at
 // something that is not there yet.
 const ORDER = [
-  'projects', 'items', 'movements', 'muster', 'workOrders', 'raBills',
+  'projects', 'items', 'quotes', 'movements', 'muster', 'workOrders', 'raBills',
   'workItems', 'measurements', 'plant', 'plantLogs', 'units', 'planStages', 'receipts',
 ]
 

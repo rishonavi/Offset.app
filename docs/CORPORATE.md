@@ -124,6 +124,121 @@ work certified to a client is revenue, and `subcontractCostsBySite` forces the
 subcontract side rather than defaulting to it — a client contract that leaked
 into a job's cost would book the company's own income as money it spent.
 
+### What is actually on the shelf
+
+Every movement in this app is a claim. A receipt says a lorry arrived, an issue
+says a bag went to the slab, and the balance that falls out of them is what the
+paperwork believes — consistent to the paisa and never once checked against a
+godown. On an Indian site that gap is the largest silent leak there is: material
+goes a few bags at a time, through issues nobody wrote down, and the books stay
+perfectly consistent the whole way.
+
+`stock_counts` is the one table in this schema whose rows somebody stood in a
+store to produce. Three decisions:
+
+- **The count is evidence; the adjustment is the consequence.** Storing only the
+  correction loses which corrections were verified and which were somebody
+  fixing a typo — and loses the counts that found nothing, which are what proves
+  a store sound.
+- **A sheet is a store and a date**, with no id of its own, the same way a muster
+  roll is a site and a day.
+- **`book_qty` and `avg_cost` are frozen into the row.** A count compared against
+  today's balance changes its own answer every time a later lorry arrives, and a
+  verification that moves is not one.
+
+On screen: a blank row is not a zero (a zero is a material somebody looked for
+and did not find), short and over are never netted, and a store holding nothing
+is never called overdue — nagging a company that has never bought a bag of
+cement to count an empty godown is how a warning list gets ignored.
+
+### What was certified, against what was measured
+
+The comparison this app could not make. A running account bill is what the
+contractor *claims*; a schedule of work is what the engineer *measured*. They
+were two tables with nothing between them, so a bill could certify ₹9,80,000 of
+plaster against ₹8,61,000 of measured plaster and every total in the app would
+still add up.
+
+A schedule item now carries `work_order_id` — the contract that bills it, at
+most one, because an item split between two contractors is a second item. With
+that, `certifiedAgainstMeasured` compares the running account against quantity
+measured × the rate it was priced at, which is the only honest figure available.
+
+Two caveats are part of the feature rather than footnotes to it:
+
+- **It only speaks where somebody linked something.** A contract naming no
+  scheduled item reports `measured: null` and *says so* — not a gap of a
+  hundred per cent against a measured value of nothing. The screen prints how
+  many contracts it could not speak for, because a check is only as good as the
+  linking behind it.
+- **The link has to be honest to be useful.** A labour-only subcontract priced
+  against a full-rate BOQ item compares two different things. The field is
+  offered with that said on it, and left blank by default.
+
+Ahead and behind are kept apart and never netted: a contractor who has
+over-billed and one who has under-billed are two problems, and adding them
+reports none.
+
+### What a thing normally costs here
+
+`priceList` answers the question before buying: what did this last cost, and
+what is quoted now. `rates.js` answers the one after — *was that lorry in line
+with the others* — which nobody asks, because asking it by hand means reading
+down a column of forty receipts holding an average in your head.
+
+The norm is the **median** of the few purchases before it, never the mean: one
+emergency lorry at double rate drags a mean up far enough to make the next
+three purchases look like bargains, and the mean is exactly the statistic a bad
+purchase must not be allowed to move.
+
+A purchase has to be out of line with **two** things before it is flagged — the
+median of the window *and* the purchase immediately before it. That second half
+was added because the first half alone was wrong: a median over five purchases
+lags a steady climb, so six per cent a month compounds to fifteen per cent above
+the middle of the window by the sixth month, and the check called an ordinary
+market a scandal four times running. A climb is always in line with the lorry
+before it. A spike is in line with neither. The lorry *after* a spike is not
+flagged, which is right — by then the rate is not news.
+
+Cheap is reported as well as dear. A per-kilo rate keyed against a tonne looks
+like the buy of the year, and a check that only looks upward finds one half of
+that mistake.
+
+The same idea applies to labour, where it bites hardest and where no report has
+ever looked: `labourRateSpread` finds **the same trade, the same fortnight, two
+different rates across sites**. Each site is perfectly consistent with itself,
+which is exactly why nothing else can see it.
+
+### What is already promised
+
+The ledger answers "what has this cost". The question before it is what the
+company has already agreed to spend that has not reached the books yet — a work
+order signed for ₹1.8 crore with ₹60 lakh certified, an accepted quotation
+nobody has taken delivery of. Neither is an expense, so neither appears in any
+total, and both are spent.
+
+`commitments.js` keeps three horizons apart, and the mistake is folding them
+into one figure:
+
+- **Committed** — agreed, not yet incurred. It *will* become cost. It is not
+  cash due today, and putting it in a cash figure makes a solvent company look
+  bankrupt.
+- **Owed now** — incurred, not settled. Bills unpaid, bills certified and not
+  paid, retention past its release date.
+- **Due in** — contracted to arrive. Invoices awaited, instalments fallen due,
+  retention the client owes back.
+
+Only a *running* order commits anything: an order closed at half its value is a
+saving, not a debt. An order priced per unit with no value on it commits a real
+amount nobody wrote down, so it is counted as a contract rather than folded in
+as a zero, and the total says it is a floor.
+
+One thing this turned up that nothing else would have: an instalment falls due
+when a stage of **its own building** is finished. `salesReport` is handed the
+completed stages rather than working them out, so asking it about every unit at
+once with one merged list demands money on the villas because the tower reached
+its eighth slab. It is computed a site at a time.
+
 ### Payroll
 
 Indian statutory shape, all rates configurable:

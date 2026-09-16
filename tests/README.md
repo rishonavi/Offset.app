@@ -26,6 +26,7 @@ for Vite's resolver.
 | `corp.test.mjs` | 149 | entities, control, ledgers, audit events, and what needs a second pair of eyes |
 | `daysheet.test.mjs` | 51 | a day on a site entered once, and what saving it twice must not do |
 | `dedupe.test.mjs` | 25 | not importing the same row twice |
+| `commitments.test.mjs` | 50 | what has been agreed and not yet spent, against what is owed now — and why an instalment falls due on its own building |
 | `costcentres.test.mjs` | 55 | what each part of the company spent against what it was given, and why the parts must not exceed the whole |
 | `defaults.test.mjs` | 30 | filling a form in from history, and when not to |
 | `filled.test.mjs` | 22 | which values on a form the app put there |
@@ -34,6 +35,7 @@ for Vite's resolver.
 | `labour.test.mjs` | 115 | the muster roll, cumulative running-account bills, and what is actually built |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `money.test.mjs` | 44 | what counts as an amount, and what a row is cleaned to on its way in |
+| `lineage.test.mjs` | 48 | what a contractor certified against what the engineer measured, and why an unlinked contract is not a gap |
 | `materials.test.mjs` | 187 | construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
 | `metalbill.test.mjs` | 43 | reading a jeweller's bill into a metal holding |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
@@ -45,18 +47,20 @@ for Vite's resolver.
 | `place.test.mjs` | 29 | what a cost is booked to when the company owns nothing, and what may be left blank |
 | `plant.test.mjs` | 72 | what a machine costs per hour it works, not per hour it is hired |
 | `projects.test.mjs` | 71 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
+| `rates.test.mjs` | 70 | what a material normally costs here against what it cost that time, and why a rising market is not a spike |
 | `sales.test.mjs` | 69 | flats and shops, and instalments that fall due when the building says so |
-| `samplesite.test.mjs` | 84 | the construction demo, read back through the screens' own reports: stock that balances, bills that run forward, a job over its costing and still paying |
+| `samplesite.test.mjs` | 88 | the construction demo, read back through the screens' own reports: stock that balances, bills that run forward, a job over its costing and still paying |
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
 | `sitedocs.test.mjs` | 67 | the papers that get signed, and rupees in words |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `sync.test.mjs` | 68 | which version survives when two devices disagree, and who is told |
 | `syncwire.test.mjs` | 41 | what a pull asks for, what a push sends, and one table failing |
-| `wirecheck.test.mjs` | 78 | every column the client sends against the columns the schema has — the failure that would otherwise wait for a live Supabase |
+| `wirecheck.test.mjs` | 119 | every column the client sends against the columns the schema has, including the ones only an update writes, and whether the type will accept what is sent — the failures that would otherwise wait for a live Supabase |
+| `stockcount.test.mjs` | 64 | what is actually on the shelf, a book figure frozen into the row, and why short and over are never netted |
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **2,686** | |
+| | **2,963** | |
 
 ## Browser — `tests/browser/`
 
@@ -80,6 +84,7 @@ node tests/browser/rtlui.mjs
 | `bulkui.mjs` | 17 | settling several at once, and re-importing a file |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `columnsui.mjs` | 36 | every key the running app writes to a personal row, against the columns that exist |
+| `countui.mjs` | 34 | walking into the store with a clipboard: a blank that is not a zero, and a square count that is still a count |
 | `contrastui.mjs` | 20 | whether the interface can be read, hit, and stilled |
 | `clickui.mjs` | 18 | pressing every button on every page, each tab included, and watching |
 | `corpui.mjs` | 85 | the way in, companies nav, the books switch in both places, consolidated view |
@@ -108,6 +113,9 @@ node tests/browser/rtlui.mjs
 | `projectsui.mjs` | 53 | sites against contract and estimate, where the money went, what the client owes |
 | `owedui.mjs` | 22 | what is owed in both directions, and how old it is |
 | `opsui.mjs` | 98 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
+| `promisedui.mjs` | 21 | what is agreed and not yet spent, kept apart from what is owed now |
+| `lineageui.mjs` | 20 | the measurement book against the running account, and the contracts it cannot speak for |
+| `ratesui.mjs` | 18 | the lorry that jumped, beside the material that merely got dearer |
 | `reportui.mjs` | 37 | the problem-report flow |
 | `retentionui.mjs` | 29 | money held back, when it comes back, and which side of the contract is holding it |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
@@ -116,7 +124,7 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,585** | |
+| | **1,678** | |
 
 That total is what one sweep of the demo build reports. The column above it sums
 to 1,580: `loginui.mjs`'s 24 are the difference, because that suite needs the
@@ -175,7 +183,7 @@ nothing else.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 193 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched; that a company may book a cost to no asset, which the books it grew out of require; and that every column the client sends is really there, asked of the database rather than of a regular expression; and that one month cannot be run twice; which way an order's money goes and when its retention is released |
+| `corporate.sql` | 197 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched; that a company may book a cost to no asset, which the books it grew out of require; and that every column the client sends is really there, asked of the database rather than of a regular expression; and that one month cannot be run twice; which way an order's money goes, when its retention is released, and the tape measure a certified figure came from |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

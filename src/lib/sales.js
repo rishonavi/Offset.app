@@ -142,7 +142,7 @@ export function makePlanStage({
     work_stage: String(workStage).trim().slice(0, 40),
     // How far that stage must have got. 100 means finished; 50 means half.
     trigger_at: Math.min(100, Math.max(0, round2(triggerAt))),
-    due_on: dueOn || '',
+    due_on: dueOn || null,
     sequence: Math.round(Number(sequence) || 0),
   }
 }

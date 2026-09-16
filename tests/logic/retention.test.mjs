@@ -190,14 +190,14 @@ eq('and refused ones',
 console.log('\n── AND THE SAMPLE SHOWS ALL OF IT ──')
 // A feature nobody can see in the demo is a feature nobody finds. The sample
 // carries a finished subcontract whose first tranche fell due, a client
-// contract holding the company's own money, and two running orders that are
+// contract holding the company's own money, and running orders that are
 // correctly undated because the work is not finished.
 const sample = buildSample('e1')
 const sSub = retentionBook(sample.workOrders, sample.raBills, { entityId: 'e1', side: 'sub' })
 const sCli = retentionBook(sample.workOrders, sample.raBills, { entityId: 'e1', side: 'client' })
-eq('three subcontracts hold retention', sSub.count, 3)
+eq('four subcontracts hold retention', sSub.count, 4)
 eq('one of them has a tranche due', sSub.dueCount, 1)
-eq('and the running two have no release date', sSub.undatedCount, 2)
+eq('and the running three have no release date', sSub.undatedCount, 3)
 eq('the client holds retention from the company', sCli.held, 425000)
 eq('half of which has fallen due', sCli.due, 212500)
 eq('and half has not', sCli.waiting, 212500)
