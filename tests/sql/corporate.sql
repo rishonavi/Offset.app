@@ -647,6 +647,52 @@ select t.refuses('and cannot file one against a company they are not in',
     values ('aaaaaaaa-0000-0000-0000-000000000001','Mallory Supplies', current_date)$$);
 
 \echo ''
+\echo '── A MONTH THAT WAS RUN ──'
+-- Everything else in payroll is computed from the employees as they stand now,
+-- which is right for this month and wrong for every month before it. An
+-- approved run is frozen instead — and the one thing a record of what was paid
+-- must not hold is two answers for the same month.
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, finance
+select t.allows('a month is run and kept',
+  $$insert into public.payroll_runs (id, entity_id, period, status, slips, headcount, gross, net, run_by)
+    values ('bbbbbbbb-1111-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001',
+            '2026-03','draft',
+            '[{"employee_id":"x","name":"R. Yadav","gross":56000,"net":50000}]'::jsonb,
+            1, 56000, 50000, '33333333-3333-3333-3333-333333333333')$$);
+select t.check('the payslips come back as payslips',
+  (select slips->0->>'name' from public.payroll_runs
+    where id = 'bbbbbbbb-1111-0000-0000-000000000001') = 'R. Yadav');
+-- The frozen name is the point: an employee row can be deleted and the slip
+-- still says who it was for.
+select t.check('and the slip does not depend on an employee row',
+  (select slips->0->>'employee_id' from public.payroll_runs
+    where id = 'bbbbbbbb-1111-0000-0000-000000000001') = 'x');
+select t.refuses('the same month cannot be run twice',
+  $$insert into public.payroll_runs (entity_id, period, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','2026-03','draft')$$);
+-- The control: it is one run per month per company, not one run per month.
+select t.allows('but another company runs its own March',
+  $$insert into public.payroll_runs (entity_id, period, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000002','2026-03','draft')$$);
+select t.allows('and the next month is a different month',
+  $$insert into public.payroll_runs (entity_id, period, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','2026-04','draft')$$);
+select t.refuses('a state nobody has heard of is refused',
+  $$insert into public.payroll_runs (entity_id, period, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','2026-05','nonsense')$$);
+select t.refuses('and so is something that is not a month',
+  $$insert into public.payroll_runs (entity_id, period, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','March','draft')$$);
+-- Discarded rather than deleted, like every other ledger — and once it is
+-- discarded the month is free to be run again.
+select t.allows('a run can be discarded',
+  $$update public.payroll_runs set deleted_at = now()
+    where id = 'bbbbbbbb-1111-0000-0000-000000000001'$$);
+select t.allows('and then the month can be run afresh',
+  $$insert into public.payroll_runs (entity_id, period, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','2026-03','draft')$$);
+
+\echo ''
 \echo '── THE COLUMNS THE CLIENT ACTUALLY SENDS ──'
 -- The static check in tests/logic/wirecheck.test.mjs reads these two files and
 -- compares them against what the makers produce. This is the same question put
@@ -668,6 +714,9 @@ select t.check('and their pay as one object rather than a column per head',
   t.has_column('employees', 'pay'));
 select t.check('a stock movement records who booked it',
   t.has_column('inventory_movements', 'created_by'));
+select t.check('a payroll run carries the rates it was run under',
+  t.has_column('payroll_runs', 'config'));
+select t.check('and who approved it', t.has_column('payroll_runs', 'approved_by'));
 -- The demo portfolio goes through the ordinary insert. Without these the
 -- insert is refused and the button does nothing, which is what it did.
 select t.check('a sample row can be tagged on an asset', t.has_column('properties', 'is_sample'));

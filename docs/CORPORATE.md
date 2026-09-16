@@ -427,12 +427,51 @@ for anything `fixed` inside it, so the button sat 1,198px down. And the
 deliberate break for the idempotence rule showed the wage bill going from
 ₹13,750 to ₹41,250 on two extra taps, which is what that assertion is worth.
 
+**Done and verified** — a month that was run, 56 logic assertions, 30 on screen
+and 12 against PostgreSQL:
+
+Every payroll figure in this app was computed from the employees as they stand
+now. That is right for this month and wrong for every month before it. Give
+somebody a raise in June and March silently becomes more expensive, because
+March was never a record — it was arithmetic on today's numbers wearing a date,
+and an auditor asking what was paid got a different answer depending on when
+they asked. The module said so about itself in a comment, which is the kind of
+honesty that stops being enough once somebody relies on the number.
+
+A run is now kept. `makePayrollRun` freezes the payslips, the totals re-derived
+from those slips rather than copied, and the statutory rates it was run under —
+PF ceilings and ESI thresholds move between financial years, and a run re-read
+under this year's rates is not the run that happened.
+
+The part that matters most is the smallest: each frozen slip carries the
+employee's **name and code**, not just their id. A slip holding only an id stops
+meaning anything the day somebody leaves and is taken off the roster, which is
+exactly when a record of what they were paid becomes worth having.
+
+Three states, and they only go one way. A draft can be run again — an LOP was
+wrong, an advance was recovered twice. Approved and paid are history: the money
+has been committed, and a figure that changes after that is a record of nothing.
+The rules live in `canSetStatus` and `canRerun` rather than in a disabled
+button, because a control enforced by a button is enforced by whoever does not
+use the button.
+
+One run to a month is the database's job, not the client's: a partial unique
+index on `(entity_id, period)` where the row is not discarded. A second answer
+for March is not a second run, it is a disagreement.
+
+`payrollOverPeriods` now reports how much of a range is record and how much is
+arithmetic, because a year that is half-recorded is not a year of history and a
+report that mixed the two silently would be worse than one that refused.
+
+The deliberate break for the central rule is worth quoting: with the screen
+recomputing instead of reading the record, the recorded month went from
+₹91,000 to ₹1,19,000 on a raise, and down to ₹35,000 when somebody left.
+
 **Next**, in order:
 
 1. Departments on entry forms; budgets and reports per cost centre
 2. ~~The approvals queue~~ — built; four documents share one queue
-3. A record of payroll runs, so a past month is history rather than a
-   projection from today's salaries
+3. ~~A record of payroll runs~~ — built; a month is frozen once approved
 4. The client storage layer talking to those tables — `storage/corporate.js` is
    still browser-only under both backends, and is synchronous throughout, so
    this is an async refactor of `EntityContext` and `Companies.jsx` rather than

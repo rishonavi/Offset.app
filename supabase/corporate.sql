@@ -526,6 +526,40 @@ create table if not exists public.employees (
   created_at    timestamptz not null default now()
 );
 
+-- ── A month that was run, rather than worked out again ──────────────────────
+-- Every figure elsewhere in payroll is computed from the employees as they
+-- stand now. That is right for this month and wrong for every month before it:
+-- give somebody a raise in June and March silently becomes more expensive,
+-- because March was never a record. So an approved run is frozen here, with the
+-- payslips carried as one object — including enough of each employee that the
+-- row can be deleted and the slip still says who it was for.
+create table if not exists public.payroll_runs (
+  id            uuid primary key default gen_random_uuid(),
+  entity_id     uuid not null references public.entities(id) on delete cascade,
+  -- YYYY-MM. One run to a month: a second answer for March is not a second run,
+  -- it is a disagreement.
+  period        text not null check (period ~ '^[0-9]{4}-[0-9]{2}$'),
+  status        text not null default 'draft' check (status in ('draft', 'approved', 'paid')),
+  slips         jsonb not null default '[]'::jsonb,
+  headcount     integer not null default 0,
+  gross         numeric(14,2) not null default 0,
+  deductions    numeric(14,2) not null default 0,
+  net           numeric(14,2) not null default 0,
+  employer_cost numeric(14,2) not null default 0,
+  statutory     jsonb not null default '{}'::jsonb,
+  problems      integer not null default 0,
+  -- The rates it was run under. PF ceilings and ESI thresholds change between
+  -- financial years, and a run re-read under this year's rates is not the run
+  -- that happened.
+  config        jsonb not null default '{}'::jsonb,
+  note          text,
+  run_by        uuid references auth.users(id) on delete set null,
+  run_at        timestamptz,
+  approved_by   uuid references auth.users(id) on delete set null,
+  approved_at   timestamptz,
+  paid_at       timestamptz,
+  created_at    timestamptz not null default now()
+);
 -- ── Advances, employees and movements, as the client actually writes them ────
 -- These three tables were written before the ledgers that fill them, and had
 -- drifted: the client sends `party_type` where the column said `party_kind`,
@@ -798,7 +832,7 @@ begin
     'projects','inventory_items','inventory_movements','material_quotes','material_quote_lines',
     'labour_muster','work_orders','ra_bills','work_items','work_measurements',
     'plant','plant_logs','sale_units','sale_plan_stages','sale_receipts',
-    'advances','advance_adjustments','employees']
+    'advances','advance_adjustments','employees','payroll_runs']
   loop
     execute format('alter table public.%I add column if not exists updated_at timestamptz not null default now()', t);
     -- An index on it, because every pull asks the same question: what has
@@ -821,11 +855,18 @@ begin
     'projects','inventory_items','inventory_movements','material_quotes','material_quote_lines',
     'labour_muster','work_orders','ra_bills','work_items','work_measurements',
     'plant','plant_logs','sale_units','sale_plan_stages','sale_receipts',
-    'advances','advance_adjustments','employees']
+    'advances','advance_adjustments','employees','payroll_runs']
   loop
     execute format('alter table public.%I add column if not exists deleted_at timestamptz', t);
   end loop;
 end $$;
+
+-- One run to a month. A second answer for March is not a second run, it is a
+-- disagreement — and the one thing a record of what was paid must not hold.
+-- Written here rather than beside the table because it reads `deleted_at`,
+-- which the loop above is what adds.
+create unique index if not exists payroll_runs_period_idx
+  on public.payroll_runs (entity_id, period) where deleted_at is null;
 
 -- ════════════════════════════════════════════════════════════════
 --  Row-level security
@@ -933,7 +974,7 @@ create policy "members append to the log" on public.audit_events
 do $$
 declare t text;
 begin
-  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements','plant','plant_logs','sale_units','sale_plan_stages','sale_receipts']
+  foreach t in array array['projects','inventory_items','inventory_movements','advances','advance_adjustments','employees','payroll_runs','material_quotes','material_quote_lines','labour_muster','work_orders','ra_bills','work_items','work_measurements','plant','plant_logs','sale_units','sale_plan_stages','sale_receipts']
   loop
     execute format('drop policy if exists "members read %1$s" on public.%1$I', t);
     execute format(

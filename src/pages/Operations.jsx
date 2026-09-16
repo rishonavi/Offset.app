@@ -6,8 +6,11 @@ import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import * as store from '../lib/storage/corporate'
 import { makeAdvance, makeAdjustment, outstandingAdvances, advancesByParty, balanceOf, canAdjust, ADVANCE_PARTIES } from '../lib/advances'
-import { makeEmployee, runPayroll } from '../lib/payroll'
-import { formatCurrency } from '../lib/format'
+import {
+  makeEmployee, runPayroll, makePayrollRun, recordedRun, canRerun, canSetStatus,
+  isLocked, RUN_STATUS, RUN_STATUS_LABEL,
+} from '../lib/payroll'
+import { formatCurrency, formatDate } from '../lib/format'
 import { approvalQueue } from '../lib/corporate'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -81,6 +84,7 @@ export default function Operations() {
       advances: store.advances.list(eid),
       adjustments: store.adjustments.list(),
       employees: store.employees.list(eid),
+      payrollRuns: store.payrollRuns.list(eid),
       expenses,
       income,
     }
@@ -341,7 +345,16 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
     return out
   }, [data.employees, owing])
 
+  // The month as it was run, where somebody has run it. Only a month with no
+  // record is worked out from today's salaries — which is the right answer for
+  // this month and the wrong one for every month before it.
+  const kept = useMemo(
+    () => recordedRun(data.payrollRuns || [], { entityId: eid, period }),
+    [data.payrollRuns, eid, period],
+  )
+
   const run = useMemo(() => {
+    if (kept) return { ...kept, employerCost: kept.employer_cost }
     const perEmployee = {}
     if (recover) {
       for (const [id, hit] of matched) perEmployee[id] = { advanceRecovery: hit.total }
@@ -349,7 +362,38 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
     return runPayroll(data.employees, { period, perEmployee })
     // A recovery bigger than the pay is clamped by payslipFor and flagged, not
     // hidden — so the run still balances and the problem is visible.
-  }, [data.employees, period, recover, matched])
+  }, [kept, data.employees, period, recover, matched])
+
+  // Running it writes what is on screen. A month already approved is history
+  // and the store refuses, so the button is not the control — `canRerun` is.
+  const keepRun = () => {
+    const allowed = canRerun(kept)
+    if (!allowed.ok) return toast(allowed.why)
+    const perEmployee = {}
+    if (recover) for (const [id, hit] of matched) perEmployee[id] = { advanceRecovery: hit.total }
+    const fresh = runPayroll(data.employees, { period, perEmployee })
+    const row = makePayrollRun({
+      id: kept?.id, entityId: eid, period, run: fresh, employees: data.employees, actor,
+    })
+    if (kept) store.payrollRuns.update(kept.id, row, actor)
+    else store.payrollRuns.add(row, actor, eid)
+    bump()
+    toast(`${period} recorded — ${row.headcount} ${row.headcount === 1 ? 'payslip' : 'payslips'}`)
+  }
+
+  const setStatus = (next) => {
+    const allowed = canSetStatus(kept, next)
+    if (!allowed.ok) return toast(allowed.why)
+    store.payrollRuns.update(kept.id, {
+      status: next,
+      ...(next === RUN_STATUS.approved
+        ? { approved_by: actor?.id || null, approved_at: new Date().toISOString() }
+        : {}),
+      ...(next === RUN_STATUS.paid ? { paid_at: new Date().toISOString() } : {}),
+    }, actor)
+    bump()
+    toast(next === RUN_STATUS.approved ? `${period} approved` : `${period} marked paid`)
+  }
 
   const recovering = useMemo(
     () => Math.round(run.slips.reduce((t, s) => t + s.deductions.advanceRecovery, 0) * 100) / 100,
@@ -412,12 +456,43 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
 
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-ink-3">Payslips</h2>
+          <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink-3">
+            Payslips
+            {kept
+              ? <Badge color={kept.status === RUN_STATUS.paid ? '#059669' : kept.status === RUN_STATUS.approved ? '#2563eb' : '#64748b'}>
+                  {RUN_STATUS_LABEL[kept.status]}
+                </Badge>
+              : <Badge color="#d97706">not run</Badge>}
+          </h2>
           <label className="flex items-center gap-2 text-xs text-ink-5">
             Month
             <Input type="month" className="field-input-compact w-auto" value={period} onChange={(e) => setPeriod(e.target.value)} />
           </label>
         </div>
+        {/* The distinction the whole thing turns on. A month nobody has run is
+            arithmetic on today's salaries wearing a date: give somebody a raise
+            and last March gets more expensive. */}
+        <p className="mt-2 text-xs text-ink-5">
+          {kept
+            ? `Recorded on ${formatDate(kept.run_at)}. These are the payslips as they were run — a raise since then does not change them.`
+            : 'Not run yet, so this is worked out from today\u2019s salaries. Record it and the month stops moving.'}
+        </p>
+        {canWrite && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant={kept ? 'ghost' : 'primary'} onClick={keepRun} disabled={isLocked(kept)}>
+              {kept ? 'Run again' : 'Record this month'}
+            </Button>
+            {kept && kept.status === RUN_STATUS.draft && (
+              <Button variant="ghost" onClick={() => setStatus(RUN_STATUS.approved)}>Approve</Button>
+            )}
+            {kept && kept.status === RUN_STATUS.approved && (
+              <Button variant="ghost" onClick={() => setStatus(RUN_STATUS.paid)}>Mark paid</Button>
+            )}
+            {isLocked(kept) && (
+              <span className="self-center text-xs text-ink-6">{canRerun(kept).why}</span>
+            )}
+          </div>
+        )}
         <p className="mt-1 text-xs text-ink-5">
           PF, ESI and professional tax are computed from the statutory rules. TDS is not — it depends on declared
           investments and projected annual income, and a wrong guess is worse than an empty field.
@@ -457,7 +532,10 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
                   return (
                     <tr key={s.employee_id}>
                       <td className="py-2 text-ink-2">
-                        {emp?.name || 'Unnamed'} <span className="text-ink-6">{emp?.code}</span>
+                        {/* The name off the slip where the run was recorded:
+                            somebody who has since left is still on last March's
+                            payroll, and their row may be gone. */}
+                        {s.name || emp?.name || 'Unnamed'} <span className="text-ink-6">{s.code || emp?.code}</span>
                         {s.overDeducted && <span className="ms-2"><Badge color="#dc2626">over-deducted</Badge></span>}
                       </td>
                       <td className="text-end tabular">{formatCurrency(s.gross)}</td>

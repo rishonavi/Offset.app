@@ -422,6 +422,12 @@ export const AUDIT_ACTIONS = {
   'employee.create': 'added an employee',
   'employee.update': 'edited an employee',
   'employee.delete': 'removed an employee',
+  // Approving a month commits the money and marking it paid closes it. Both
+  // are worth being able to look up a year later, which is the whole reason a
+  // run is kept rather than worked out again.
+  'payroll run.create': 'ran a month\u2019s payroll',
+  'payroll run.update': 'changed a payroll run',
+  'payroll run.delete': 'discarded a payroll run',
 }
 
 export function makeAuditEvent({ entityId, actorId, actorEmail, action, targetId = null, summary = '', detail = null }) {

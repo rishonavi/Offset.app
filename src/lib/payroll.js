@@ -168,7 +168,16 @@ export function payslipFor(employee, { period, config = DEFAULT_PAYROLL_CONFIG, 
 }
 
 // ── A payroll run ──────────────────────────────────────────────────
+// Three states, and the difference between them is whether the month is still
+// a question. A draft can be run again — somebody's LOP was wrong, an advance
+// was recovered twice. Approved and paid are history: the money has been
+// committed, and a figure that changes after that is not a record of anything.
 export const RUN_STATUS = { draft: 'draft', approved: 'approved', paid: 'paid' }
+export const RUN_STATUS_IDS = Object.keys(RUN_STATUS)
+export const RUN_STATUS_LABEL = { draft: 'Draft', approved: 'Approved', paid: 'Paid' }
+
+// Once it is approved the month stops being recomputed and starts being read.
+export const isLocked = (run) => run?.status === RUN_STATUS.approved || run?.status === RUN_STATUS.paid
 
 // Who was drawing a salary in a given month. Someone hired in March cost
 // nothing in January, and a report over a year that says otherwise is simply
@@ -224,11 +233,16 @@ export function periodsBetween(fromISO, toISO) {
 // asks for. Offset keeps no history of past runs — it holds today's employees
 // and today's salaries — so every month here is computed from the payroll as it
 // stands now. That is a projection backwards, and the screen says so.
-export function payrollOverPeriods(employees, periods, { config = DEFAULT_PAYROLL_CONFIG } = {}) {
-  const months = periods.map((period) => runPayroll(employees, { period, config }))
+export function payrollOverPeriods(employees, periods, { config = DEFAULT_PAYROLL_CONFIG, runs = [], entityId = null } = {}) {
+  const months = periods.map((period) => payrollForPeriod(employees, period, { runs, entityId, config }))
   const sum = (pick) => round2(months.reduce((t, r) => t + pick(r), 0))
   return {
     months,
+    // How much of the answer is a record and how much is arithmetic on today's
+    // salaries. A year that is half-recorded is not a year of history, and the
+    // screen has to be able to say so.
+    recorded: months.filter((r) => r.recorded).length,
+    projected: months.filter((r) => !r.recorded).length,
     headcount: months.length ? Math.max(...months.map((r) => r.headcount)) : 0,
     gross: sum((r) => r.gross),
     net: sum((r) => r.net),
@@ -240,6 +254,125 @@ export function payrollOverPeriods(employees, periods, { config = DEFAULT_PAYROL
       tds: sum((r) => r.statutory.tds),
     },
   }
+}
+
+// ── A run that is kept, rather than worked out again ───────────────
+//
+// Everything above computes a month from the payroll as it stands now. That is
+// right for this month and wrong for every month before it: give somebody a
+// raise in June and March silently becomes more expensive, because March was
+// never a record — it was an arithmetic done on today's numbers and presented
+// as history. An auditor asking what was paid in March gets a different answer
+// depending on when they ask.
+//
+// So a run, once approved, is frozen: the slips exactly as they were, with
+// enough of the employee copied onto each one that the row can be deleted and
+// the payslip still says who it was for. That last part is the whole of it. A
+// slip carrying only an `employee_id` is a slip that stops meaning anything the
+// day somebody leaves and is removed from the roster.
+
+const stamp = (employee) => ({
+  name: employee?.name || 'Unknown',
+  code: employee?.code || '',
+  department_id: employee?.department_id ?? null,
+})
+
+export function makePayrollRun({
+  id, entityId, period, run, employees = [], actor = null,
+  config = DEFAULT_PAYROLL_CONFIG, note = '', status = RUN_STATUS.draft,
+} = {}) {
+  const byId = new Map(employees.map((e) => [e.id, e]))
+  const slips = (run?.slips || []).map((slip) => ({ ...slip, ...stamp(byId.get(slip.employee_id)) }))
+  return {
+    id: id || newId(),
+    entity_id: entityId,
+    period: String(period || '').slice(0, 7),
+    status: RUN_STATUS[status] ? status : RUN_STATUS.draft,
+    // The figures, copied rather than referenced. They are re-derived from the
+    // frozen slips on the way in so a run whose totals disagree with its own
+    // payslips cannot be written in the first place.
+    slips,
+    headcount: slips.length,
+    gross: round2(slips.reduce((t, s) => t + s.gross, 0)),
+    deductions: round2(slips.reduce((t, s) => t + s.totalDeductions, 0)),
+    net: round2(slips.reduce((t, s) => t + s.net, 0)),
+    employer_cost: round2(slips.reduce((t, s) => t + s.employerCost, 0)),
+    statutory: {
+      pf: round2(slips.reduce((t, s) => t + s.deductions.pf + s.employer.pf, 0)),
+      esi: round2(slips.reduce((t, s) => t + s.deductions.esi + s.employer.esi, 0)),
+      professionalTax: round2(slips.reduce((t, s) => t + s.deductions.professionalTax, 0)),
+      tds: round2(slips.reduce((t, s) => t + s.deductions.tds, 0)),
+    },
+    problems: slips.filter((s) => s.overDeducted).length,
+    // The rates it was run under. PF ceilings and ESI thresholds change between
+    // financial years, and a run re-read under this year's rates would not be
+    // the run that happened.
+    config,
+    note: String(note).trim().slice(0, 200),
+    run_by: actor?.id || null,
+    run_at: new Date().toISOString(),
+    approved_by: null,
+    approved_at: null,
+    paid_at: null,
+    created_at: new Date().toISOString(),
+  }
+}
+
+// The run kept for a month, if there is one. Drafts count: a draft is still the
+// month somebody has been working on, and showing a projection beside it would
+// be two answers to one question.
+export function recordedRun(runs = [], { entityId = null, period } = {}) {
+  return runs.find(
+    (r) => !r.deleted_at && r.period === String(period || '').slice(0, 7) && (!entityId || r.entity_id === entityId),
+  ) || null
+}
+
+// What moving a run to a new state is allowed to do. Stated here rather than in
+// the screen, because a rule enforced by a disabled button is not a rule.
+export function canSetStatus(run, next) {
+  if (!run) return { ok: false, why: 'There is no run to change.' }
+  if (!RUN_STATUS[next]) return { ok: false, why: 'That is not a state a run can be in.' }
+  if (run.status === next) return { ok: false, why: `This run is already ${RUN_STATUS_LABEL[next].toLowerCase()}.` }
+  if (run.status === RUN_STATUS.paid) return { ok: false, why: 'This month has been paid. A paid run is a record, not a draft.' }
+  if (next === RUN_STATUS.draft) return { ok: false, why: 'An approved run cannot be reopened. Run the next month instead, or correct it there.' }
+  if (next === RUN_STATUS.paid && run.status !== RUN_STATUS.approved) {
+    return { ok: false, why: 'A run has to be approved before it can be marked paid.' }
+  }
+  return { ok: true, why: '' }
+}
+
+// Whether this month can be computed again and written over what is there.
+export function canRerun(run) {
+  if (!run) return { ok: true, why: '' }
+  if (isLocked(run)) {
+    return { ok: false, why: `${run.period} is ${RUN_STATUS_LABEL[run.status].toLowerCase()} and no longer changes.` }
+  }
+  return { ok: true, why: '' }
+}
+
+// One month, answered from the record where there is one and from today's
+// payroll where there is not — and saying which, because the two are not the
+// same kind of number and a report that mixes them silently is worse than one
+// that refuses.
+export function payrollForPeriod(employees, period, { runs = [], entityId = null, config = DEFAULT_PAYROLL_CONFIG } = {}) {
+  const kept = recordedRun(runs, { entityId, period })
+  if (kept) {
+    return {
+      period,
+      recorded: true,
+      status: kept.status,
+      runId: kept.id,
+      slips: kept.slips,
+      headcount: kept.headcount,
+      gross: kept.gross,
+      deductions: kept.deductions,
+      net: kept.net,
+      employerCost: kept.employer_cost,
+      statutory: kept.statutory,
+      problems: kept.problems,
+    }
+  }
+  return { ...runPayroll(employees, { period, config }), recorded: false, status: null, runId: null }
 }
 
 // Payroll by department, so a cost centre report includes its people.

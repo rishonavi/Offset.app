@@ -40,6 +40,7 @@ export const TABLES = {
   advances: 'advances',
   adjustments: 'advance_adjustments',
   employees: 'employees',
+  payrollRuns: 'payroll_runs',
 }
 export const SYNCED = Object.keys(TABLES)
 

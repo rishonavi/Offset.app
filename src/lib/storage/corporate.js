@@ -28,6 +28,7 @@ const KEYS = {
   advances: 'pl_corp_advances',
   adjustments: 'pl_corp_adjustments',
   employees: 'pl_corp_employees',
+  payrollRuns: 'pl_corp_payroll_runs',
   projects: 'pl_corp_projects',
   quotes: 'pl_corp_quotes',
   muster: 'pl_corp_muster',
@@ -349,6 +350,10 @@ export const movements = collection(KEYS.movements, 'movement')
 export const advances = collection(KEYS.advances, 'advance')
 export const adjustments = collection(KEYS.adjustments, 'adjustment')
 export const employees = collection(KEYS.employees, 'employee')
+// A month that has been run. Named in the trail because approving one commits
+// the money and marking it paid closes it — two writes worth being able to look
+// up later.
+export const payrollRuns = collection(KEYS.payrollRuns, 'payroll run')
 export const projects = collection(KEYS.projects, 'site')
 export const quotes = collection(KEYS.quotes, 'quotation')
 export const muster = collection(KEYS.muster, 'muster')
@@ -371,7 +376,7 @@ export const collections = {
   audit: { list: () => read(KEYS.audit), replaceAll: (rows) => write(KEYS.audit, rows) },
   items, movements, quotes, projects, muster, workOrders, raBills,
   workItems, measurements, plant, plantLogs, units, planStages, receipts,
-  advances, adjustments, employees,
+  advances, adjustments, employees, payrollRuns,
 }
 
 // ── Whole-account helpers ──────────────────────────────────────────

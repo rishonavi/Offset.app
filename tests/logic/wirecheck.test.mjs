@@ -24,7 +24,7 @@ import { makeWorkItem, makeMeasurement } from '../../src/lib/progress.js'
 import { makePlant, makePlantLog } from '../../src/lib/plant.js'
 import { makeUnit, makePlanStage, makeReceipt } from '../../src/lib/sales.js'
 import { makeAdvance, makeAdjustment } from '../../src/lib/advances.js'
-import { makeEmployee } from '../../src/lib/payroll.js'
+import { makeEmployee, makePayrollRun, runPayroll } from '../../src/lib/payroll.js'
 import { tag } from '../../src/lib/sampleData.js'
 import { buildSample } from '../../src/lib/sampleSite.js'
 
@@ -91,6 +91,10 @@ const MADE = {
   advances: makeAdvance({ entityId: E, employeeId: 'e' }),
   adjustments: makeAdjustment({ entityId: E, advanceId: 'a' }),
   employees: makeEmployee({ entityId: E, name: 'X' }),
+  payrollRuns: makePayrollRun({
+    entityId: E, period: '2026-03', employees: [makeEmployee({ entityId: E, id: 'x', name: 'X', basic: 1000 })],
+    run: runPayroll([makeEmployee({ entityId: E, id: 'x', name: 'X', basic: 1000 })], { period: '2026-03' }),
+  }),
 }
 
 // Added by the store rather than by the maker, and sent all the same.

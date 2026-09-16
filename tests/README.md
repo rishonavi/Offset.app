@@ -39,6 +39,7 @@ for Vite's resolver.
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 62 | empty install, sample data, and the different list a builder is given |
 | `ops.test.mjs` | 214 | inventory, payables, advances, payroll, and each over a period |
+| `payrollruns.test.mjs` | 56 | a month that was run against a month worked out again, and what a raise in June must not do to March |
 | `place.test.mjs` | 29 | what a cost is booked to when the company owns nothing, and what may be left blank |
 | `plant.test.mjs` | 62 | what a machine costs per hour it works, not per hour it is hired |
 | `projects.test.mjs` | 71 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
@@ -50,10 +51,10 @@ for Vite's resolver.
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `sync.test.mjs` | 68 | which version survives when two devices disagree, and who is told |
 | `syncwire.test.mjs` | 41 | what a pull asks for, what a push sends, and one table failing |
-| `wirecheck.test.mjs` | 73 | every column the client sends against the columns the schema has — the failure that would otherwise wait for a live Supabase |
+| `wirecheck.test.mjs` | 75 | every column the client sends against the columns the schema has — the failure that would otherwise wait for a live Supabase |
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **2,442** | |
+| | **2,500** | |
 
 ## Browser — `tests/browser/`
 
@@ -96,6 +97,7 @@ node tests/browser/rtlui.mjs
 | `navui.mjs` | 22 | the side bar: grouping, what is waiting, a short screen, and its own padding |
 | `namecheck.mjs` | 6 | asset names resolve on every row |
 | `onboardui.mjs` | 60 | the empty install, a company's — which starts with a site — and both sample portfolios in and out |
+| `payrunui.mjs` | 30 | recording a month, locking it, and the wage bill that must not move afterwards |
 | `placeui.mjs` | 36 | a builder's costs, which belong to things the builder does not own |
 | `plantui.mjs` | 40 | the yard, log sheets, idle against broken, and days billed with nothing written down |
 | `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
@@ -109,10 +111,10 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,469** | |
+| | **1,499** | |
 
 That total is what one sweep of the demo build reports. The column above it sums
-to 1,493: `loginui.mjs`'s 24 are the difference, because that suite needs the
+to 1,523: `loginui.mjs`'s 24 are the difference, because that suite needs the
 other build and does not run in the same pass.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
@@ -168,7 +170,7 @@ nothing else.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 172 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched; that a company may book a cost to no asset, which the books it grew out of require; and that every column the client sends is really there, asked of the database rather than of a regular expression |
+| `corporate.sql` | 184 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched; that a company may book a cost to no asset, which the books it grew out of require; and that every column the client sends is really there, asked of the database rather than of a regular expression; and that one month cannot be run twice |
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`
