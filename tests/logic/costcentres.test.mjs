@@ -140,6 +140,29 @@ eq('a parent sorts immediately above the teams inside it',
   opts.map((o) => o.name), ['Construction', 'Site A', 'Site B', 'Head office'])
 eq('another company’s is not offered', departmentOptions(mixed, { entityId: E }).length, 4)
 
+console.log('\n── A DEPARTMENT TREE THAT EATS ITSELF ──')
+// A cycle cannot be made through the form — a department picks its parent from
+// the ones that already exist — but it can arrive from another device, a
+// restored backup or a hand-edited store. Before the guard, walking one
+// recursed until the stack gave out, and since this walk now feeds the
+// cost-centre figures on both the dashboard and the report, a single bad row
+// took down two pages.
+const loop = [
+  makeDepartment({ entityId: E, id: 'c-a', name: 'A', parentId: 'c-b', budgetMonthly: 100 }),
+  makeDepartment({ entityId: E, id: 'c-b', name: 'B', parentId: 'c-a', budgetMonthly: 100 }),
+]
+const looped = costCentreReport(loop, [exp('c-a', 500)], [], { entityId: E })
+eq('it returns rather than recursing', looped.lines.length, 2)
+// Each of the pair sees the other, because in a cycle each really is beneath
+// the other — but each is counted once.
+eq('and each is counted once', looped.lines.map((l) => l.spent), [500, 500])
+eq('the total still counts the cost once', looped.spent, 500)
+ok('a department that is its own parent survives too',
+  costCentreReport([makeDepartment({ entityId: E, id: 'self', name: 'S', parentId: 'self' })], [], [], { entityId: E })
+    .lines.length === 1)
+eq('a picker over a cycle still returns every department',
+  departmentOptions(loop, { entityId: E }).length, 2)
+
 console.log('\n── NOTHING AT ALL ──')
 const none = costCentreReport([], [], [])
 eq('no departments, no lines', none.lines.length, 0)

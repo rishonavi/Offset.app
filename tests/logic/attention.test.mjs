@@ -12,6 +12,8 @@ import { makeWorkOrder, makeRaBill } from '../../src/lib/subcontract.js'
 import { makePlant, makePlantLog } from '../../src/lib/plant.js'
 import { makeUnit, makePlanStage } from '../../src/lib/sales.js'
 import { makeAdvance, makeAdjustment } from '../../src/lib/advances.js'
+import { makeDepartment } from '../../src/lib/corporate.js'
+import { makeEmployee } from '../../src/lib/payroll.js'
 import { makeWorkItem, makeMeasurement } from '../../src/lib/progress.js'
 import { makeQuote, makeQuoteLine } from '../../src/lib/quotes.js'
 
@@ -214,6 +216,62 @@ eq('being only what is wrong, owed or at risk',
 ok('and the worst thing is the first thing', everything.worst === everything.findings[0])
 eq('the levels are counted', Object.values(everything.byLevel).reduce((a, b) => a + b, 0), everything.count)
 ok('a company with findings is not called clear', !everything.clear)
+
+console.log('\n── A BUDGET THAT SOMETHING FINALLY CHECKS ──')
+// A budget nothing looks at is a number somebody typed once. These two findings
+// are the whole reason the cost-centre and payroll-run work is not still half
+// wired: a feature that never reaches the surface that says what is wrong is a
+// feature nobody will notice going wrong.
+const E2 = 'ent-att'
+const month = new Date().toISOString().slice(0, 7)
+const depts = [
+  makeDepartment({ entityId: E2, id: 'dd-a', name: 'Site A', budgetMonthly: 100000 }),
+  makeDepartment({ entityId: E2, id: 'dd-b', name: 'Head office', budgetMonthly: 500000 }),
+]
+const overspend = [
+  { id: 'e1', entity_id: E2, department_id: 'dd-a', amount: 160000, date: `${month}-05` },
+  { id: 'e2', entity_id: E2, department_id: 'dd-b', amount: 50000, date: `${month}-06` },
+]
+const budgets = attention({ entityId: E2, departments: depts, expenses: overspend })
+const overBudget = get(budgets, 'budget.over')
+ok('an overspent cost centre is a finding', Boolean(overBudget))
+eq('counted', overBudget.count, 1)
+eq('and the amount is the overspend, not the spend', overBudget.amount, 60000)
+eq('it is money already gone, not a risk of going', overBudget.level, 'money')
+ok('and it points somewhere you can act', Boolean(overBudget.where?.to))
+// The control: within budget is not a finding.
+ok('a cost centre inside its budget says nothing',
+  !get(attention({ entityId: E2, departments: depts, expenses: [overspend[1]] }), 'budget.over'))
+ok('nor does one with no budget set',
+  !get(attention({
+    entityId: E2,
+    departments: [makeDepartment({ entityId: E2, id: 'dd-c', name: 'Legal' })],
+    expenses: [{ id: 'e3', entity_id: E2, department_id: 'dd-c', amount: 999999, date: `${month}-05` }],
+  }), 'budget.over'))
+
+console.log('\n── AND A MONTH NOBODY RAN ──')
+const staff = [makeEmployee({ entityId: E2, id: 'emp', name: 'R. Yadav', basic: 40000, joinedOn: '2020-01-01' })]
+const unrun = attention({ entityId: E2, employees: staff, payrollRuns: [] })
+const miss = get(unrun, 'payroll.unrecorded')
+ok('a company with staff and no runs is told', Boolean(miss))
+eq('three closed months at most, not a naggings-per-month', miss.count, 3)
+eq('it is something to watch, not money owed', miss.level, 'risk')
+// The control: run them and it goes quiet.
+const prior = (n) => {
+  const d = new Date(); d.setMonth(d.getMonth() - n)
+  return d.toISOString().slice(0, 7)
+}
+const ran = [1, 2, 3].map((n) => ({ id: `r${n}`, entity_id: E2, period: prior(n), status: 'approved' }))
+ok('once they are run it says nothing', !get(attention({ entityId: E2, employees: staff, payrollRuns: ran }), 'payroll.unrecorded'))
+eq('run two of the three and one is left', get(attention({ entityId: E2, employees: staff, payrollRuns: ran.slice(0, 2) }), 'payroll.unrecorded').count, 1)
+ok('a discarded run does not count as having run it',
+  Boolean(get(attention({ entityId: E2, employees: staff, payrollRuns: ran.map((r) => ({ ...r, deleted_at: 'x' })) }), 'payroll.unrecorded')))
+// Nobody on the payroll, nothing to run.
+ok('a company with no staff is not nagged', !get(attention({ entityId: E2, employees: [], payrollRuns: [] }), 'payroll.unrecorded'))
+// A company that hired last month is not behind on the months before it.
+const fresh = [makeEmployee({ entityId: E2, id: 'new', name: 'New', basic: 10000, joinedOn: prior(1) })]
+ok('nor is one that only just took somebody on',
+  (get(attention({ entityId: E2, employees: fresh, payrollRuns: [] }), 'payroll.unrecorded')?.count || 0) <= 1)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

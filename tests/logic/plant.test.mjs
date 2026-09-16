@@ -5,7 +5,7 @@
 // does not cost ₹1,500 an hour, and no hire bill in the world says so.
 import {
   makePlant, makePlantLog, plantPeriod, plantReport, plantCostsBySite,
-  dailyOwnershipCost, hireVsOwn,
+  dailyOwnershipCost, hireVsOwn, round2,
   PLANT_KINDS, PLANT_KIND_IDS, HIRE_BASIS, HIRE_BASIS_IDS, OWNERSHIP_IDS, kindOf,
 } from '../../src/lib/plant.js'
 
@@ -50,6 +50,43 @@ eq('it worked thirty hours', jp.workingHours, 30)
 eq('stood idle eighteen', jp.idleHours, 18)
 eq('and was broken for eight', jp.breakdownHours, 8)
 eq('fuel is its own figure', jp.fuelCost, 18000)
+ok('and is charged, because this hire does not include it', jp.fuelCharged)
+
+console.log('\n── FUEL THE HIRE ALREADY PAYS FOR ──')
+// Most tower-crane and transit-mixer contracts are quoted with diesel and an
+// operator in the rate. A site that logs what went into the tank anyway — which
+// is right, because consumption is how you notice a leak or a siphon — was
+// having it charged twice: once inside the rate, and once again as fuel.
+const wetHire = makePlant({
+  entityId: 'e1', id: 'wet', name: 'Transit mixer', kind: 'transitMixer',
+  ownership: 'hired', hireRate: 3000, hireBasis: 'trip', fuelIncluded: true,
+})
+const wetLogs = [
+  makePlantLog({ plantId: 'wet', entityId: 'e1', projectId: 'site-a', date: '2026-03-01', workingHours: 8, trips: 4, fuelCost: 5000, fuelLitres: 60 }),
+]
+const wet = plantPeriod(wetHire, wetLogs)
+eq('the hire is what was agreed', wet.hireCost, 12000)
+eq('the diesel is still reported', wet.fuelCost, 5000)
+eq('and the litres with it, because consumption is worth watching', wet.fuelLitres, 60)
+ok('but it is not charged on top', !wet.fuelCharged)
+eq('so the machine cost the hire and nothing more', wet.total, 12000)
+// The control: the identical machine and logs, with fuel on the company.
+const dryHire = makePlant({
+  entityId: 'e1', id: 'dry', name: 'Transit mixer', kind: 'transitMixer',
+  ownership: 'hired', hireRate: 3000, hireBasis: 'trip', fuelIncluded: false,
+})
+const dry = plantPeriod(dryHire, wetLogs.map((l) => ({ ...l, plant_id: 'dry' })))
+ok('where the hire excludes it, it is charged', dry.fuelCharged)
+eq('and the machine cost the hire plus the diesel', dry.total, 17000)
+eq('which is the whole of the difference', round2(dry.total - wet.total), 5000)
+// An owned machine buys its own diesel whatever the flag happens to say: there
+// is no hire rate for it to be inside of.
+const ownedWithFlag = makePlant({
+  entityId: 'e1', id: 'own2', name: 'Mixer', kind: 'mixer', ownership: 'owned',
+  purchaseValue: 480000, purchasedOn: '2024-01-01', usefulLifeYears: 8, fuelIncluded: true,
+})
+ok('an owned machine is charged its fuel regardless',
+  plantPeriod(ownedWithFlag, [makePlantLog({ plantId: 'own2', entityId: 'e1', date: '2026-03-01', workingHours: 8, fuelCost: 900 })]).fuelCharged)
 eq('so the machine cost this much', jp.total, 138000)
 // The nominal rate says ₹1,500 an hour on an eight-hour day. It is not.
 eq('utilisation is what it was doing while it was there', jp.utilisation, 53.6)

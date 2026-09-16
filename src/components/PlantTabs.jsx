@@ -54,6 +54,7 @@ export default function Plant(shared) {
 const blankPlant = {
   name: '', kind: 'excavator', ownership: 'hired', registration: '', vendor: '',
   hireRate: '', hireBasis: 'daily', minimumHours: '', hiredFrom: '', hiredTo: '',
+  fuelIncluded: false, operatorIncluded: false,
   purchaseValue: '', salvageValue: '', usefulLifeYears: '8', projectId: '',
 }
 
@@ -72,6 +73,7 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
     store.plant.add(makePlant({
       entityId: eid, projectId: form.projectId || null, ...form,
       hireRate: num(form.hireRate), minimumHours: num(form.minimumHours),
+      fuelIncluded: form.fuelIncluded, operatorIncluded: form.operatorIncluded,
       purchaseValue: num(form.purchaseValue), salvageValue: num(form.salvageValue),
       usefulLifeYears: num(form.usefulLifeYears) || 8, createdBy: actor?.id,
     }), actor)
@@ -182,6 +184,34 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
                 <Field label="To" hint="Blank means still on hire.">
                   <Input aria-label="Hired to" type="date" value={form.hiredTo} onChange={(e) => setForm({ ...form, hiredTo: e.target.value })} />
                 </Field>
+                {/* What the rate covers. Most crane and mixer contracts are
+                    quoted wet — diesel and a driver in the price — and a site
+                    that logs the tank anyway was having the diesel charged
+                    twice, once inside the rate and once again as fuel. */}
+                <Field className="sm:col-span-2" label="What the rate includes">
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    <label className="flex items-center gap-2 text-sm text-ink-3">
+                      <input
+                        type="checkbox"
+                        aria-label="Fuel included in the hire"
+                        className="h-4 w-4 accent-brand"
+                        checked={form.fuelIncluded}
+                        onChange={(e) => setForm({ ...form, fuelIncluded: e.target.checked })}
+                      />
+                      Fuel
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-ink-3">
+                      <input
+                        type="checkbox"
+                        aria-label="Operator included in the hire"
+                        className="h-4 w-4 accent-brand"
+                        checked={form.operatorIncluded}
+                        onChange={(e) => setForm({ ...form, operatorIncluded: e.target.checked })}
+                      />
+                      Operator
+                    </label>
+                  </div>
+                </Field>
               </>
             ) : (
               <>
@@ -222,6 +252,12 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
                     <Badge color={l.plant.ownership === 'owned' ? '#7c3aed' : '#2563eb'}>
                       {OWNERSHIP[l.plant.ownership].label}
                     </Badge>
+                    {/* What the rate covers, so a site manager knows not to
+                        book an operator on the muster for a machine that came
+                        with one — and can see why the diesel below is reported
+                        without being charged. */}
+                    {l.plant.ownership === 'hired' && l.plant.fuel_included && <Badge color="#0f766e">fuel in the rate</Badge>}
+                    {l.plant.ownership === 'hired' && l.plant.operator_included && <Badge color="#0f766e">operator in the rate</Badge>}
                     {l.logs === 0 && <Badge color="#dc2626">never logged</Badge>}
                     {l.utilisation !== null && l.utilisation < 50 && <Badge color="#d97706">under half used</Badge>}
                   </p>

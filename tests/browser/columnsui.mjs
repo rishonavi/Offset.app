@@ -182,6 +182,62 @@ ok('the restore rebuilt the books', (await ls('pl_expenses')).length >= 20,
   String((await ls('pl_expenses')).length))
 await collect('a restored backup')
 
+console.log('\n── A DOCUMENT, AND A COMMENT ON A BILL ──')
+// These two tables had no rows in this suite and so passed for the wrong
+// reason: an empty table satisfies "every key is a column" trivially. Both are
+// driven now.
+await p.evaluate(() => {
+  for (const k of ['pl_properties', 'pl_expenses', 'pl_income', 'pl_documents', 'pl_comments']) {
+    localStorage.setItem(k, '[]')
+  }
+})
+await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
+await p.locator('#main-content input').first().fill('Sea View Villa')
+await save().click()
+await p.waitForTimeout(1000)
+const asset = (await ls('pl_properties'))[0]
+ok('an asset to hang a document off', Boolean(asset?.id), JSON.stringify(asset))
+await p.goto(`${B}/properties/${asset.id}`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
+// Title, type and an expiry date — the optional field that drives the
+// dashboard reminder, and the one most likely to be forgotten in a shape.
+const docForm = p.locator('#main-content form').filter({ hasText: 'Add document' }).first()
+await docForm.locator('input[type=text], input:not([type])').first().fill('Home insurance 2026')
+const expiryBox = docForm.locator('input[type=date]').first()
+if (await expiryBox.count()) await expiryBox.fill('2027-03-31')
+await docForm.locator('button[type="submit"]').first().click()
+await p.waitForTimeout(1200)
+ok('the document saved', (await ls('pl_documents')).length === 1,
+  JSON.stringify(await ls('pl_documents')))
+await collect('the document form')
+
+// A comment needs a bill to sit on, and a bill is an entry with a receipt.
+await p.evaluate((pid) => {
+  localStorage.setItem('pl_expenses', JSON.stringify([{
+    id: 'bill-1', property_id: pid, project_id: null, department_id: null,
+    date: new Date().toISOString().slice(0, 10), amount: 4200, category: 'Utilities',
+    vendor: 'Adani', payment_method: 'UPI', status: 'unpaid', description: '',
+    receipt_url: 'data:image/png;base64,iVBORw0KGgo=',
+  }]))
+}, asset.id)
+await p.goto(`${B}/bills`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1000)
+// The thread is behind the message-count button on the bill — titled rather
+// than labelled, and carrying only an icon — so it has to be opened before
+// there is anywhere to type.
+await p.locator('#main-content button[title="Add a comment"]').first().click()
+await p.waitForTimeout(400)
+const noteBox = p.locator('textarea[placeholder*="comment" i]').first()
+ok('the comment box opened on the bill', await noteBox.count() > 0,
+  (await p.locator('#main-content').innerText()).slice(0, 300).replace(/\n/g, ' | '))
+if (await noteBox.count()) {
+  await noteBox.fill('Checked against the meter reading.')
+  await p.locator('#main-content button', { hasText: /^\s*Post\s*$/i }).first().click()
+  await p.waitForTimeout(1200)
+}
+ok('the comment saved', (await ls('pl_comments')).length === 1, JSON.stringify(await ls('pl_comments')))
+await collect('a comment on a bill')
+
 // ── The question ────────────────────────────────────────────────────
 console.log('\n── EVERY KEY ON EVERY ROW IS A COLUMN ──')
 for (const table of Object.values(TABLES)) {
@@ -196,11 +252,12 @@ for (const table of Object.values(TABLES)) {
 ok('and there were rows to check', rowsSeen >= 60, `${rowsSeen} rows`)
 ok('over several distinct shapes of expense',
   (seen.get('expenses')?.size || 0) >= 12, `${seen.get('expenses')?.size} keys`)
-// The two nobody drove above. Said out loud rather than counted as covered:
-// a table with no rows passes this check for the wrong reason.
-for (const table of ['documents', 'comments']) {
-  ok(`${table} is not exercised here, and is not claimed as checked`,
-    (seen.get(table)?.size || 0) === 0, `${seen.get(table)?.size} keys — update the suite`)
+// Every table this suite names is now actually driven. A table with no rows
+// passes the column check for the wrong reason, so each one has to have been
+// written to before its pass means anything.
+for (const table of Object.values(TABLES)) {
+  ok(`${table} was really written to`, (seen.get(table)?.size || 0) > 0,
+    `${seen.get(table)?.size || 0} keys — nothing drove it, so its pass is empty`)
 }
 
 console.log('\n── THE SAME, IN A COMPANY’S BOOKS ──')

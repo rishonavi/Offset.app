@@ -218,7 +218,15 @@ export function plantPeriod(plant, logs = [], { from = null, to = null } = {}) {
   // job nothing for it is how owned plant looks free and hire looks expensive.
   const depreciation = plant.ownership === 'owned' ? round2(dailyOwnershipCost(plant) * daysOnHire) : 0
 
-  const total = round2(hire + fuel + depreciation)
+  // Diesel is only a cost on top of the hire when the hire does not include it.
+  // Most tower-crane and transit-mixer contracts are quoted with fuel and an
+  // operator in the rate; a site that logs what went into the tank anyway —
+  // which is the right thing to do, because consumption is how you notice a
+  // leak or a siphon — was having it charged twice, once inside the rate and
+  // once again here. The litres and the cost are still reported either way;
+  // they simply stop being added to the machine's total.
+  const fuelIsExtra = !(plant.ownership === 'hired' && plant.fuel_included)
+  const total = round2(hire + (fuelIsExtra ? fuel : 0) + depreciation)
   const availableHours = round2(working + idle + breakdown)
   const unlogged = Math.max(0, daysOnHire - rows.length)
 
@@ -232,6 +240,9 @@ export function plantPeriod(plant, logs = [], { from = null, to = null } = {}) {
     trips,
     fuelCost: round2(fuel),
     fuelLitres: round2(litres),
+    // Whether the figure above is part of what this machine cost, or is simply
+    // what it drank on somebody else's bill.
+    fuelCharged: fuelIsExtra,
     hireCost: round2(hire),
     depreciation,
     total,

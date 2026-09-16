@@ -33,6 +33,7 @@ import { plantReport, plantCostsBySite } from './plant'
 import { salesReport } from './sales'
 import { outstandingAdvances } from './advances'
 import { approvalQueue } from './corporate'
+import { costCentreReport } from './costcentres'
 
 export const LEVELS = {
   error: { id: 'error', label: 'Wrong', rank: 0, tone: 'bad' },
@@ -53,13 +54,37 @@ const finding = (id, level, title, detail, { amount = 0, count = 1, where = null
 
 const OPS = (tab) => ({ to: `/operations?tab=${tab}`, label: 'Open' })
 
+const thisMonth = (asOf) => (asOf ? new Date(asOf) : new Date()).toISOString().slice(0, 7)
+
+// The months that have closed and could have been run: the three before this
+// one, from no earlier than the oldest joining date on the payroll. Three,
+// because a company six months behind does not need six separate naggings —
+// it needs to know it is behind.
+function closedMonths(asOf, employees) {
+  const now = thisMonth(asOf)
+  const earliest = employees
+    .map((e) => String(e.joined_on || '').slice(0, 7))
+    .filter(Boolean)
+    .sort()[0] || ''
+  const out = []
+  let [y, m] = now.split('-').map(Number)
+  for (let i = 0; i < 3; i += 1) {
+    m -= 1
+    if (m < 1) { m = 12; y -= 1 }
+    const period = `${y}-${String(m).padStart(2, '0')}`
+    if (earliest && period < earliest) break
+    out.push(period)
+  }
+  return out
+}
+
 export function attention(books = {}, { asOf = null } = {}) {
   const {
     items = [], movements = [], quotes = [], projects = [], expenses = [], income = [],
     muster = [], workOrders = [], raBills = [], workItems = [], measurements = [],
     plant = [], plantLogs = [], units = [], planStages = [], receipts = [],
     advances = [], adjustments = [], policy = null, role = 'member', userId = null,
-    entityId = null,
+    entityId = null, departments = [], payrollRuns = [], employees = [],
   } = books
 
   const out = []
@@ -148,6 +173,16 @@ export function attention(books = {}, { asOf = null } = {}) {
       { amount: loose.spent, count: loose.count, where: OPS('projects') }))
   }
 
+  // A budget that nothing checks is a number somebody typed once. This is the
+  // check — and it is money already spent, not a risk of spending it.
+  const centres = costCentreReport(departments, expenses, income, { entityId, months: [thisMonth(asOf)] })
+  if (centres.overspent > 0) {
+    out.push(finding('budget.over', 'money',
+      `${plural(centres.overspent, 'cost centre is', 'cost centres are')} past this month\u2019s budget`,
+      'A division counts what the teams inside it spent, which is what its budget was meant to cover.',
+      { amount: centres.overBy, count: centres.overspent, where: { to: '/reports', label: 'Open' } }))
+  }
+
   // ── Watch ────────────────────────────────────────────────────────
   if (jobs.overrunning > 0) {
     out.push(finding('job.overrun', 'risk',
@@ -195,6 +230,21 @@ export function attention(books = {}, { asOf = null } = {}) {
       'An hour of work off a machine at 40% utilisation costs two and a half times its nominal rate, and the hire bill never says so.',
       { amount: yard.idleCost, count: yard.idleMachines, where: OPS('plant') }))
   }
+  // A month nobody ran is a month whose wage bill is arithmetic on today's
+  // salaries. It reads fine until somebody gets a raise, and then last March
+  // quietly gets more expensive.
+  if (employees.some((e) => e.active !== false)) {
+    const missed = closedMonths(asOf, employees).filter(
+      (m) => !payrollRuns.some((r) => !r.deleted_at && r.period === m && (!entityId || r.entity_id === entityId)),
+    )
+    if (missed.length) {
+      out.push(finding('payroll.unrecorded', 'risk',
+        `${plural(missed.length, 'month has', 'months have')} gone by without payroll being run`,
+        'Until a month is run it is worked out from today\u2019s salaries, so a raise changes what last month appears to have cost.',
+        { count: missed.length, where: OPS('payroll') }))
+    }
+  }
+
   const labour = labourReport(muster, { entityId })
   if (labour.overtimePercent >= 15) {
     out.push(finding('labour.overtime', 'risk',

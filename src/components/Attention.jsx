@@ -41,12 +41,15 @@ export default function Attention({ limit = 6 }) {
       plant: at('plant'), plantLogs: at('plantLogs'),
       units: at('units'), planStages: store.planStages.list(), receipts: at('receipts'),
       advances: at('advances'), adjustments: store.adjustments.list(),
+      // A budget that nothing checks, and a month nobody ran, are both things
+      // this surface exists to say out loud.
+      departments: ent.departments || [], employees: at('employees'), payrollRuns: at('payrollRuns'),
       expenses: expenses.filter((e) => e.entity_id === eid),
       income: income.filter((e) => e.entity_id === eid),
       policy: ent.policy, role: ent.role, userId: ent.actor?.id,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scoped, eid, ent?.version, expenses, income, ent?.policy?.enabled])
+  }, [scoped, eid, ent?.version, ent?.departments, expenses, income, ent?.policy?.enabled])
 
   if (!report) return null
 

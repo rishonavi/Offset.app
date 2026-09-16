@@ -155,7 +155,17 @@ export function departmentSubtree(departments, id) {
     children.get(d.parent_id).push(d)
   }
   const out = []
+  // The same guard `departmentPath` has, and for a reason that is not
+  // hypothetical: without it a cycle — A inside B inside A — recurses until the
+  // stack gives out. The form cannot make one, because a department picks its
+  // parent from the ones that already exist, but a cycle can still arrive from
+  // another device, a restored backup or a hand-edited store. One bad row must
+  // not take down the dashboard and the report, which is what it did once this
+  // walk started feeding the cost-centre figures on both.
+  const seen = new Set()
   const walk = (nodeId) => {
+    if (seen.has(nodeId)) return
+    seen.add(nodeId)
     out.push(nodeId)
     for (const c of children.get(nodeId) || []) walk(c.id)
   }
