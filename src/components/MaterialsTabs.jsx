@@ -664,11 +664,17 @@ function Prices({ data }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* Five, not four. "Never priced" is the count of materials nobody has
+          ever bought — the leftovers, and the ones no rate check can say
+          anything about. Replacing it with the new figure rather than adding
+          to it lost exactly the row this app keeps insisting must stay
+          visible. */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <Stat label="Materials priced" value={`${list.count - list.unpriced}/${list.count}`} />
         <Stat label="Quoted for" value={String(list.quoted)} />
         <Stat label="Cheaper available" value={String(list.cheaperAvailable)} tone={list.cheaperAvailable ? 'warn' : undefined} />
         <Stat label="Paid above the norm" value={formatCurrency(paid.overpaid)} tone={paid.overpaid > 0 ? 'warn' : undefined} />
+        <Stat label="Never priced" value={String(list.unpriced)} />
       </div>
 
       {paid.dear > 0 && (
