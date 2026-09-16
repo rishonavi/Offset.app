@@ -36,6 +36,7 @@ import { approvalQueue } from './corporate'
 import { costCentreReport } from './costcentres'
 import { materialVariance, labourRateSpread } from './rates'
 import { shrinkage } from './stockcount'
+import { tdsLedger } from './tds'
 
 export const LEVELS = {
   error: { id: 'error', label: 'Wrong', rank: 0, tone: 'bad' },
@@ -88,6 +89,7 @@ export function attention(books = {}, { asOf = null } = {}) {
     advances = [], adjustments = [], policy = null, role = 'member', userId = null,
     stockCounts = [],
     entityId = null, departments = [], payrollRuns = [], employees = [],
+    fyStartMonth = 4,
   } = books
 
   const out = []
@@ -148,6 +150,17 @@ export function attention(books = {}, { asOf = null } = {}) {
       `${plural(measured.ahead, 'contractor has', 'contractors have')} certified more than has been measured`,
       'The measurement book always lags the bill by a few days, so a small gap is ordinary. This is not a small gap, and it is the only comparison that turns a payment back into work in the ground.',
       { amount: measured.aheadBy, count: measured.ahead, where: OPS('labour') }))
+  }
+  // What the law requires deducting, against what the orders actually said to.
+  // The law asks about one deductee across one year; every screen in this app
+  // asks about one order, so a contractor paid three times under the limit has
+  // crossed the aggregate and every order still looks right.
+  const tax = tdsLedger(workOrders, raBills, { entityId, fyStartMonth, asOf })
+  if (tax.shortfall > 0) {
+    out.push(finding('tds.short', 'error',
+      `${plural(tax.short, 'contractor has', 'contractors have')} had too little deducted this year`,
+      'Under 194C the year is counted per contractor, not per order — and the payment that crosses ₹1,00,000 makes everything paid that year liable, not the excess. Three orders each under the limit is the ordinary way to get this wrong.',
+      { amount: tax.shortfall, count: tax.short, where: OPS('labour') }))
   }
   const advanceErrors = outstandingAdvances(advances, adjustments, { entityId }).errors
   if (advanceErrors > 0) {
@@ -272,6 +285,20 @@ export function attention(books = {}, { asOf = null } = {}) {
         : `${plural(counted.unverifiedCount, 'store has', 'stores have')} not been counted in ${counted.staleDays} days`,
       'Every balance in the stores ledger is what the paperwork believes. Until somebody walks in with a clipboard it is the only evidence there is, and it has never once been checked against a shelf.',
       { count: counted.unverifiedCount, where: OPS('materials') }))
+  }
+  // Money withheld from a contractor that the law did not ask for. His problem
+  // to reclaim and the company's to have caused.
+  if (tax.excess > 0) {
+    out.push(finding('tds.over', 'risk',
+      `${plural(tax.over, 'contractor has', 'contractors have')} had tax deducted they did not owe`,
+      'Below both the single-payment and the yearly limit there is nothing to deduct. Getting it back is their problem and a year of their paperwork.',
+      { amount: tax.excess, count: tax.over, where: OPS('labour') }))
+  }
+  if (tax.conflicts > 0) {
+    out.push(finding('tds.pan', 'error',
+      `${plural(tax.conflicts, 'contractor is', 'contractors are')} on file under two different PANs`,
+      'One name, two tax identities — so the year has been added up for a party that does not exist, and both returns are wrong.',
+      { count: tax.conflicts, where: OPS('labour') }))
   }
   const undated = round2(heldBySub.undated + heldByClient.undated)
   if (undated > 0) {

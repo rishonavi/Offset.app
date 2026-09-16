@@ -214,3 +214,46 @@ export function ChartKey({ items, total, format = (n) => n, className }) {
     </dl>
   )
 }
+
+// A write the store refuses.
+//
+// The period lock, the approval rules and the money cleaner all refuse by
+// throwing, which is right — the store is the control, not the button. What was
+// missing was somebody to catch it: an uncaught throw from a click handler
+// reaches the window as a page error, the row is correctly not written, and the
+// person sitting there is told nothing at all.
+//
+// Returns true when the write went through, so a caller can decide whether to
+// clear its form.
+export function attempt(fn, toast) {
+  try {
+    fn()
+    return true
+  } catch (e) {
+    toast?.(e?.message || String(e))
+    return false
+  }
+}
+
+// How a figure was arrived at, said on the figure.
+//
+// A total made of facts and a total made of forecasts look identical, and
+// somebody acts on the second believing it is the first. The level comes from
+// the report that produced the number rather than from the screen, because it
+// is a property of the arithmetic.
+export function Certainty({ made, className }) {
+  if (!made) return null
+  const tone = made.id === 'recorded' ? 'text-emerald-600'
+    : made.id === 'agreed' ? 'text-ink-4'
+    : made.id === 'estimated' ? 'text-amber-600'
+    : 'text-ink-5'
+  return (
+    <span
+      title={made.hint}
+      className={cx('inline-flex items-center gap-1 text-[0.62rem] font-semibold uppercase tracking-[1px]', tone, className)}
+    >
+      {made.label}
+      {made.mixed && <span className="font-normal normal-case tracking-normal text-ink-6">· mixed</span>}
+    </span>
+  )
+}

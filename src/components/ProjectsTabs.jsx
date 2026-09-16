@@ -18,7 +18,7 @@ import {
 import { measurementSheet } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx } from './ui'
+import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx , attempt } from './ui'
 
 // The jobs, and whether anyone can tell they are losing money.
 //
@@ -372,10 +372,10 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
   const addMeasurement = (e) => {
     e.preventDefault()
     if (!measure.workItemId || !num(measure.qty)) return
-    store.measurements.add(makeMeasurement({
+    if (!attempt(() => store.measurements.add(makeMeasurement({
       workItemId: measure.workItemId, entityId: eid, projectId: siteId,
       date: measure.date, qty: num(measure.qty), note: measure.note, recordedBy: actor?.id,
-    }), actor)
+    }), actor), toast)) return
     setMeasure({ ...measure, workItemId: '', qty: '', note: '' })
     bump()
     toast('Measurement recorded')

@@ -15,6 +15,8 @@ import {
   canRemoveMember, canChangeRole, canApprove, whyCannotApprove, APPROVAL_STATUS,
 } from '../corporate'
 import { touch } from '../sync'
+import { checkPeriod } from '../periods'
+import { findRepeat } from '../idempotent'
 
 const KEYS = {
   entities: 'pl_corp_entities',
@@ -283,6 +285,23 @@ const changed = (before, after) => {
 // `noun` names the thing in the audit trail: 'site' gives site.create,
 // site.update and site.delete. A collection without one writes no history,
 // which is a decision and not a default — every ledger below passes one.
+// A month that has been closed cannot be written into.
+//
+// Enforced here rather than on the form for the reason stated a few lines down
+// about approvals: a control enforced only by a disabled field is not a
+// control. An import, a second screen and a restored backup all arrive here.
+//
+// Rows with no date are untouched — a work order or a material is not an entry
+// in a period, and refusing those would close the company rather than its
+// books.
+const entityFor = (entityId) => (entityId ? listEntities().find((e) => e.id === entityId) || null : null)
+
+const guardPeriod = (row, entityId = null) => {
+  const check = checkPeriod(entityFor(row?.entity_id || entityId), row?.date)
+  if (!check.ok) throw new Error(check.why)
+  return row
+}
+
 const collection = (key, noun) => ({
   // Deleted rows are filtered here rather than removed from storage, so every
   // caller sees what it saw before. `withDeleted` is for the one caller that
@@ -293,6 +312,12 @@ const collection = (key, noun) => ({
       .filter((r) => withDeleted || !r.deleted_at)
       .filter((r) => !entityId || r.entity_id === entityId),
   add: (row, actor, entityId = null) => {
+    guardPeriod(row, entityId)
+    // A second tap on a slow connection is not a second entry. Marked rather
+    // than swallowed, so the screen can say nothing was added twice — silently
+    // dropping a real entry would be worse than the double it prevents.
+    const repeat = findRepeat(row, read(key))
+    if (repeat) return { ...repeat, _repeat: true }
     const stamped = touch(row)
     write(key, [...read(key), stamped])
     if (noun) audit(actor, row.entity_id || entityId, `${noun}.create`, row.id, summarise(row))
@@ -300,6 +325,13 @@ const collection = (key, noun) => ({
   },
   update: (id, patch, actor) => {
     const before = read(key).find((r) => r.id === id)
+    // Both ends. Moving a row out of a closed month changes that month, and
+    // moving one into it changes it too — a check on only the new date would
+    // let somebody redate March into April and quietly restate both.
+    if (before) {
+      guardPeriod(before)
+      if (patch && 'date' in patch) guardPeriod({ ...before, date: patch.date })
+    }
     const list = read(key).map((r) => (r.id === id ? touch({ ...r, ...patch, id: r.id }) : r))
     write(key, list)
     const after = list.find((r) => r.id === id)
@@ -312,6 +344,7 @@ const collection = (key, noun) => ({
   remove: (id, actor) => {
     const row = read(key).find((r) => r.id === id)
     if (!row) return
+    guardPeriod(row)
     write(key, read(key).map((r) => (r.id === id ? touch({ ...r, deleted_at: new Date().toISOString() }) : r)))
     if (noun) audit(actor, row.entity_id, `${noun}.delete`, id, summarise(row))
   },

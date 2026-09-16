@@ -28,6 +28,7 @@ import { quoteTotals, quoteState } from './quotes'
 import { salesReport } from './sales'
 import { siteProgress } from './progress'
 import { ageing } from './payables'
+import { madeOf } from './certainty'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -145,6 +146,30 @@ export function commitments(books = {}, { entityId = null, asOf = null, projectI
     // True when a commitment exists that nobody has put a figure to, so a
     // reader knows the total is a floor rather than the answer.
     incomplete: sub.unvalued > 0 || client.unvalued > 0,
+
+    // How each of the three was arrived at. Declared here rather than decided
+    // by whichever screen happens to print it, because the answer is a property
+    // of the arithmetic and not of the layout — and because a total is only as
+    // certain as its least certain part.
+    certainty: {
+      committed: madeOf({
+        'work orders outstanding': 'agreed',
+        'deliveries accepted': 'agreed',
+      }),
+      dueOut: madeOf({
+        'bills unpaid': 'recorded',
+        'bills certified and not paid': 'recorded',
+        'retention past its release date': 'recorded',
+      }),
+      dueIn: madeOf({
+        'invoices awaited': 'recorded',
+        'instalments that have fallen due': 'recorded',
+        'retention the client owes back': 'recorded',
+      }),
+      // Agreed money and recorded money added together is agreed money, which
+      // is the whole reason the three are never shown as one figure.
+      committedAndDue: madeOf({ committed: 'agreed', 'owed now': 'recorded' }),
+    },
   }
 }
 

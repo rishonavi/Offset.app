@@ -487,6 +487,17 @@ select t.refuses('an item cannot name a contract that does not exist',
     values ('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',
             'Plaster','11111111-aaaa-0000-0000-0000000000ff')$$);
 
+-- Who is being deducted from. The rate follows from these two, and a blank PAN
+-- is a decision — twenty per cent — rather than a gap.
+select t.check('an order raised without a deductee type takes the higher rate',
+  (select deductee_type from public.work_orders where id = '11111111-aaaa-0000-0000-000000000001') = 'other');
+select t.allows('and an individual can be named',
+  $$update public.work_orders set deductee_type = 'individual', pan = 'AAAPZ1234C'
+     where id = '11111111-aaaa-0000-0000-000000000001'$$);
+select t.refuses('a third kind of deductee is not one',
+  $$insert into public.work_orders (entity_id, contractor, deductee_type)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody','trust')$$);
+
 select t.check('an order with no completion date has none, rather than today',
   (select completed_on from public.work_orders where id = '11111111-aaaa-0000-0000-000000000001') is null);
 

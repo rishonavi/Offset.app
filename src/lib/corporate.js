@@ -25,7 +25,7 @@ export const PERSONAL = '__personal__'
 export const isConsolidated = (id) => id === CONSOLIDATED
 export const isPersonal = (id) => id === PERSONAL
 
-export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4 } = {}) {
+export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '' } = {}) {
   return {
     id: id || newId(),
     name: (name || 'Untitled company').trim().slice(0, 120),
@@ -39,6 +39,13 @@ export function makeEntity({ id, name, registration = '', gstin = '', currency =
     // row, and the server would have refused every entity carrying it. Rows
     // already written locally keep the old spelling, so readers take either.
     fy_start_month: Math.min(12, Math.max(1, Number(fyStartMonth) || 4)),
+    // The month the books are closed through, as YYYY-MM, or null. A single
+    // line rather than a table of month flags: you do not close March and leave
+    // February open, and letting somebody do that produces a year whose parts
+    // nobody can add up.
+    books_locked_through: /^\d{4}-(0[1-9]|1[0-2])$/.test(String(booksLockedThrough || ''))
+      ? String(booksLockedThrough)
+      : null,
     created_at: new Date().toISOString(),
   }
 }
@@ -475,9 +482,17 @@ export function makeAuditEvent({ entityId, actorId, actorEmail, action, targetId
 // When an event happened, whichever spelling the row was written with.
 export const auditAt = (event) => event?.created_at || event?.at || ''
 
+// One stored event as a sentence.
+//
+// The trail on screen renders the actor and the summary itself, and a stored
+// event's `summary` already falls back to the action's phrase — so this is for
+// anywhere that needs the whole line as a string. Its last clause used to be a
+// ternary returning the empty string either way, which is what a half-finished
+// thought looks like six months later.
 export function describeAuditEvent(event) {
-  const who = event.actor_email || 'Someone'
-  return `${who} ${AUDIT_ACTIONS[event.action] || event.action}${event.summary && !AUDIT_ACTIONS[event.action] ? '' : ''}`
+  const who = event?.actor_email || 'Someone'
+  const phrase = event?.summary || AUDIT_ACTIONS[event?.action] || event?.action || 'changed something'
+  return `${who} ${phrase}`
 }
 
 // ── Membership ─────────────────────────────────────────────────────

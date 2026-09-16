@@ -219,7 +219,11 @@ function musterRoll(entityId) {
       // Numbers move about. A flat line for three weeks is not a muster roll,
       // it is a placeholder.
       const n = Math.max(1, headcount - (back % 4) + (back % 3))
-      const overtime = back % 7 === 0 && trade === 'mason'
+      // Every seventh day back, except the list of working days has no
+      // multiple of seven in it — so this was false on every row ever built and
+      // the overtime column of the demo was flat zero. Found by writing a
+      // roll-up assertion about overtime and noticing it could not fail.
+      const overtime = back % 6 === 0 && trade === 'mason'
       rows.push(makeMuster({
         entityId, projectId, date: day(back), trade, headcount: n, rate,
         overtimeHours: overtime ? 3 : 0,
@@ -240,6 +244,10 @@ function contracts(entityId) {
     makeWorkOrder({
       entityId, id: 'sample-wo-rcc', projectId: MD,
       contractor: 'Ganesh Construction Co.',
+      // A partnership firm, so two per cent is what 194C asks for — and the
+      // order says one. Deducting the individual rate from a firm is the
+      // commonest way this goes wrong, and no screen has ever compared the two.
+      pan: 'AAGFG1234K', deducteeType: 'other',
       scope: 'RCC shuttering, reinforcement and casting — podium to 8th slab',
       orderValue: 18500000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
       startedOn: day(260), dueOn: ahead(90), status: 'running', ref: 'WO/MD/01',
@@ -247,6 +255,7 @@ function contracts(entityId) {
     makeWorkOrder({
       entityId, id: 'sample-wo-plaster', projectId: PG,
       contractor: 'Shree Plaster Works',
+      pan: 'AHZPS4321M', deducteeType: 'individual',
       scope: 'Internal and external cement plaster, all floors',
       orderValue: 4200000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
       startedOn: day(120), dueOn: ahead(30), status: 'running', ref: 'WO/PG/03',
@@ -259,6 +268,7 @@ function contracts(entityId) {
     makeWorkOrder({
       entityId, id: 'sample-wo-mdplaster', projectId: MD,
       contractor: 'Sai Plastering Works',
+      pan: 'BKLPS7788Q', deducteeType: 'individual',
       scope: 'Internal cement plaster 12mm, two coats — against MD/04',
       orderValue: 3000000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
       startedOn: day(95), dueOn: ahead(60), status: 'running', ref: 'WO/MD/04',
@@ -269,6 +279,7 @@ function contracts(entityId) {
     makeWorkOrder({
       entityId, id: 'sample-wo-stone', projectId: HV,
       contractor: 'Kadappa Stone & Joinery',
+      pan: 'CDXPK2211R', deducteeType: 'individual',
       scope: 'Stone flooring, staircase cladding and all joinery',
       orderValue: 950000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
       startedOn: day(240), dueOn: day(90), status: 'closed', ref: 'WO/HV/02',

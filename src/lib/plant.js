@@ -24,6 +24,8 @@
 // every day it is on site whether or not anybody wrote a log sheet. Days on
 // hire with nothing recorded against them are money leaving for nothing, and
 // they are invisible in every system that starts from the hire bill.
+import { madeOf } from './certainty'
+
 
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
@@ -315,6 +317,16 @@ export function plantReport(plants = [], logs = [], { entityId = null, projectId
     unloggedCost: sum((l) => l.unloggedCost),
     idleMachines: lines.filter((l) => l.utilisation !== null && l.utilisation < 50).length,
     neverLogged: lines.filter((l) => l.logs === 0).length,
+
+    // What a machine cost is not all one kind of number. Hire and fuel were
+    // paid; depreciation is a straight line somebody chose. A total that mixes
+    // them is only as certain as the straight line, and saying so is the
+    // difference between a cost and a cost with an opinion in it.
+    certainty: madeOf({
+      hire: 'recorded',
+      fuel: 'recorded',
+      depreciation: 'projected',
+    }),
   }
 }
 

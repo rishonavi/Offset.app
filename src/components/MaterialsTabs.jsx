@@ -22,7 +22,7 @@ import { documentToPDF } from '../lib/siteDocsPdf'
 import { materialVariance } from '../lib/rates'
 import { countSheet, makeStockCount, sheetResult, adjustmentsFrom, shrinkage } from '../lib/stockcount'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
+import { Card, Button, Field, Input, Select, Badge, EmptyState, cx, attempt } from './ui'
 
 // Materials, for a company that builds things.
 //
@@ -122,7 +122,7 @@ function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
   const addMovement = (e) => {
     e.preventDefault()
     if (!move.itemId || !num(move.qty)) return
-    store.movements.add(makeMovement({
+    if (!attempt(() => store.movements.add(makeMovement({
       entityId: eid, itemId: move.itemId, kind: move.kind,
       qty: num(move.qty), unitCost: num(move.unitCost), otherCost: num(move.otherCost),
       vendor: move.vendor, storeId: move.storeId || null, toStoreId: move.toStoreId || null,
@@ -132,7 +132,7 @@ function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
       projectId: move.projectId || (move.kind !== 'transfer' ? move.storeId || null : null),
       reason: move.reason, note: move.note,
       date: today(), createdBy: actor?.id,
-    }), actor)
+    }), actor), toast)) return
     setMove({
       itemId: '', kind: move.kind, qty: '', unitCost: '', otherCost: '', vendor: '',
       // The store stays: a stores clerk enters a run of movements at one place.
@@ -484,9 +484,13 @@ function Verify({ data, eid, actor, canWrite, bump, toast }) {
         countedBy: actor?.id,
       }))
     if (!rows.length) return
-    for (const row of rows) store.stockCounts.add(row, actor)
     const corrections = adjustmentsFrom(rows, { entityId: eid, actorId: actor?.id })
-    for (const m of corrections) store.movements.add(m, actor)
+    // Both or neither. A count written with its correction refused would leave
+    // the sheet saying the shelf is short and the stock saying it is not.
+    if (!attempt(() => {
+      for (const row of rows) store.stockCounts.add(row, actor)
+      for (const m of corrections) store.movements.add(m, actor)
+    }, toast)) return
     setEntered({})
     bump()
     toast(corrections.length
@@ -821,10 +825,12 @@ function Quotations({ data, eid, actor, canWrite, bump, toast }) {
   // shelf that it happened.
   const receive = (quote) => {
     if (quote.received_at) return
-    for (const r of receiptsFromQuote(quote, { entityId: eid })) {
-      store.movements.add(makeMovement({ ...r, createdBy: actor?.id }), actor)
-    }
-    store.quotes.update(quote.id, { received_at: new Date().toISOString() }, actor)
+    if (!attempt(() => {
+      for (const r of receiptsFromQuote(quote, { entityId: eid })) {
+        store.movements.add(makeMovement({ ...r, createdBy: actor?.id }), actor)
+      }
+      store.quotes.update(quote.id, { received_at: new Date().toISOString() }, actor)
+    }, toast)) return
     bump()
     toast('Delivery recorded at the quoted rate')
   }

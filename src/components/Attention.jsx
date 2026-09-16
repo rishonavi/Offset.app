@@ -48,6 +48,7 @@ export default function Attention({ limit = 6 }) {
       expenses: expenses.filter((e) => e.entity_id === eid),
       income: income.filter((e) => e.entity_id === eid),
       policy: ent.policy, role: ent.role, userId: ent.actor?.id,
+      fyStartMonth: ent.entity?.fy_start_month || 4,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scoped, eid, ent?.version, ent?.departments, expenses, income, ent?.policy?.enabled])

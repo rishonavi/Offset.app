@@ -818,6 +818,28 @@ alter table public.ra_bills    add column if not exists approved_by uuid referen
 alter table public.ra_bills    add column if not exists approved_at timestamptz;
 
 
+-- ── A month that has been closed ─────────────────────────────────
+-- Every report is a photograph of a moving thing: somebody prints March, sends
+-- it to the bank, and a bill dated the 28th arrives a fortnight later. March is
+-- now a different number from the one in the bank's file and nothing in the app
+-- has any idea it was ever finished.
+--
+-- One line rather than a table of month flags. You do not close March and leave
+-- February open, and a schema that allowed it would produce a year whose parts
+-- nobody can add up. Reopening is a step backwards and takes the months after
+-- it with them, which is the honest consequence rather than a limitation.
+alter table public.entities add column if not exists books_locked_through text
+  check (books_locked_through is null or books_locked_through ~ '^[0-9]{4}-(0[1-9]|1[0-2])$');
+
+-- ── Who is being deducted from ───────────────────────────────────
+-- `tds_percent` says what the company deducts. These two say what it is
+-- required to: one per cent for an individual or HUF and two for anybody else
+-- under 194C, and twenty where there is no PAN — which is a penalty rate, not a
+-- bracket, and the reason a blank here is a decision rather than a gap.
+alter table public.work_orders add column if not exists pan text;
+alter table public.work_orders add column if not exists deductee_type text not null default 'other'
+  check (deductee_type in ('individual', 'other'));
+
 -- ── What is actually on the shelf ────────────────────────────────
 -- Every movement is a claim: a receipt says a lorry arrived, an issue says a
 -- bag went to the slab, and the balance that falls out of them is what the

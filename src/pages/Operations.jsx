@@ -12,7 +12,7 @@ import {
 } from '../lib/payroll'
 import { formatCurrency, formatDate } from '../lib/format'
 import { approvalQueue } from '../lib/corporate'
-import { Card, Button, Field, Input, Select, EmptyState, Badge, cx } from '../components/ui'
+import { Card, Button, Field, Input, Select, EmptyState, Badge, cx, attempt } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import Materials from '../components/MaterialsTabs'
 import Projects from '../components/ProjectsTabs'
@@ -139,7 +139,9 @@ export default function Operations() {
   const canWrite = ent.canWrite && ent.can('entry.create')
   // What goes at the top of anything that leaves the building.
   const company = { name: ent.entity?.name || 'Company', gstin: ent.entity?.gstin || '', address: ent.entity?.address || '' }
-  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast, gate: ent.gate, role: ent.role, company }
+  // The company's own year, not April by assumption: a tax year that starts in
+  // the wrong month adds a contractor's payments into the wrong return.
+  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast, gate: ent.gate, role: ent.role, company, fyStart: ent.entity?.fy_start_month || 4 }
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -198,7 +200,7 @@ function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
     e.preventDefault()
     if (!form.party.trim() || !Number(form.amount)) return
     const row = makeAdvance({ entityId: eid, ...form, amount: Number(form.amount), date: today(), createdBy: actor?.id })
-    store.advances.add({ ...row, ...gate(row, 'advance') }, actor)
+    if (!attempt(() => store.advances.add({ ...row, ...gate(row, 'advance') }, actor), toast)) return
     setForm({ party: '', partyType: 'vendor', amount: '', purpose: '', expectedBy: '' })
     bump()
     toast('Advance recorded')
@@ -215,7 +217,7 @@ function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
       toast(check.why, { type: 'error' })
       return
     }
-    store.adjustments.add(makeAdjustment({ entityId: eid, advanceId: advance.id, amount, note: settle.note, date: today() }), actor)
+    if (!attempt(() => store.adjustments.add(makeAdjustment({ entityId: eid, advanceId: advance.id, amount, note: settle.note, date: today() }), actor), toast)) return
     setSettle({ advanceId: '', amount: '', note: '' })
     bump()
     toast('Adjusted')

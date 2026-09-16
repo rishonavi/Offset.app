@@ -239,6 +239,68 @@ completed stages rather than working them out, so asking it about every unit at
 once with one merged list demands money on the villas because the tower reached
 its eighth slab. It is computed a site at a time.
 
+### Closing a month
+
+Every report is a photograph of a moving thing. Somebody prints March, sends it
+to the bank, and a fortnight later a bill dated the 28th of March is entered —
+not dishonestly, just late — and March is now a different number from the one in
+the bank's file. Nothing in the app had any idea March was ever finished.
+
+`books_locked_through` is **one line on the entity**, not a table of month
+flags. You do not close March and leave February open, and a schema that allowed
+it produces a year whose parts nobody can add up. Reopening is a step backwards
+and takes the months after it with it — the honest consequence, said in the
+confirmation, rather than a limitation.
+
+**The rule lives where the writes are.** A control enforced by a disabled field
+is not a control: an import, a second screen and a restored backup all reach the
+store directly. So the corporate store refuses in `add`, `update` and `remove`,
+and the money ledger — which has its own backend and never goes through that
+store — refuses in `DataContext`. Both ends of a move are checked: redating a
+row out of a closed month restates that month just as surely as redating one in.
+
+Rows with no date pass through. A work order or a material is not an entry in a
+period, and refusing those would close the company rather than its books.
+
+One bug fell out of this and it was not about dates. The store refused correctly
+and **the person standing there was told nothing** — an uncaught throw from a
+click handler goes to the window, not to the screen. `attempt()` in `ui.jsx` now
+wraps every write that can be refused, so a refusal is a sentence.
+
+### Tax deducted at source, on what goes out
+
+A work order carries a `tds_percent` and the bill ladder applies it. What
+nothing checked is that figure against what the law requires — and **the law
+does not ask about one order, it asks about one deductee across one financial
+year**.
+
+That is the whole point of `tds.js`, and the mistake it exists to catch: a
+contractor paid ₹28,000 on one order, ₹34,000 on another and ₹41,000 on a third
+has crossed the ₹1,00,000 aggregate under 194C. Every order is individually fine
+on its own screen. Nobody finds this without adding a name up across a year.
+
+Three things it gets right that are easy to get wrong:
+
+- **Crossing the annual limit is retrospective.** The payment that crosses it
+  makes *everything paid that year* liable, not the excess. A module deducting
+  on the excess is short by the first ninety-nine thousand.
+- **194Q is the opposite.** Goods above ₹50 lakh deduct on the excess only.
+  Getting these the same way round is how a return comes out wrong by crores.
+- **No PAN is twenty per cent** — a penalty, not a bracket. The deductee type
+  (individual/HUF at 1%, anybody else at 2%) moves the rate and never the limit.
+
+A payment already liable under the single-payment rule is not charged again when
+the year crosses. That bug printed a liable total larger than the amount paid —
+a number that cannot exist — before any test was written for it.
+
+Shortfall and excess are never netted: one contractor under-deducted and another
+over-deducted are two returns to correct. Salary TDS is still absent, for the
+same reason `payroll.js` refuses it.
+
+The sample makes the ordinary mistake on purpose — the individual rate deducted
+from a partnership firm, ₹96,000 short on ₹96 lakh of certified work, with three
+correctly-rated individuals beside it.
+
 ### Payroll
 
 Indian statutory shape, all rates configurable:
@@ -253,6 +315,130 @@ Loss of pay pro-rates every component. Take-home never goes negative; a
 deduction larger than the pay is flagged as the data error it is. Employer cost
 (gross + employer PF + employer ESI) is reported alongside, because what someone
 costs is not what they are paid.
+
+### The parts have to add up to the whole
+
+Almost every screen shows a total and a breakdown of it, and two things go wrong
+with that arrangement without either showing up as an error. The parts stop
+adding to the whole — a filter added to the breakdown and not to the total, a
+rounding applied twice — and every figure still looks like a figure. Or the
+leftovers get absorbed: costs booked to no site, stock at the yard rather than a
+store, a team in no department. The tidy thing is to leave them out of the
+breakdown; the honest thing is to show them, because they are exactly the rows
+nobody is looking after.
+
+`rollups.test.mjs` asks both questions of every hierarchy at once — stock,
+subcontracts, sales plans, the muster, plant, the schedule of work, payroll,
+cost centres, TDS, commitments, count sheets — against the sample rather than a
+fixture, with real quantities, real rates and real rounding, and **exact to the
+paisa**. A tolerance would hide the drift it exists to find. A suite of
+per-module tests can each be right about its own numbers while the family drifts
+apart.
+
+It also states the thing that must *not* add up: a division counts the teams
+inside it, so the cost-centre column deliberately comes to more than the total,
+and that is asserted so nobody "fixes" it.
+
+Two things fell out of writing it. `byTrade[].cost` already includes overtime,
+so adding the overtime column to it double-counts — and the first version of the
+file did exactly that and passed, because **the sample had never produced a
+single hour of overtime**: the condition picked every seventh day back and the
+list of working days contains no multiple of seven. The demo's overtime column
+had been flat zero since it was written, and `overtimePercent` with it.
+
+### Recorded, agreed, projected, estimated
+
+Payroll already drew this line and it took a bug to learn why: a month that has
+been *run* is a fact — the slips are frozen and a raise in June cannot change
+what March paid — while a month worked out on today's salaries is a model that
+moves under you. The two look identical on screen, and somebody acts on the
+second believing it is the first.
+
+The same line runs through most of this app and was drawn nowhere else. A work
+order's unspent value is agreed, not spent. Depreciation is a rule, not a
+payment. An instalment that has not fallen due is a forecast about a building.
+
+`certainty.js` names the four levels and enforces one rule: **a total is only as
+certain as its least certain part.** Adding a fact to a forecast and presenting
+the sum as a fact is easy, because the arithmetic is right. A part whose
+provenance nobody wrote down counts as projected, not recorded — defaulting to
+the confident end is how a vocabulary like this becomes decoration.
+
+The level is declared on the **report** rather than decided by the screen that
+prints it, because it is a property of the arithmetic: `commitments` says its
+committed figure is agreed and its owed figure recorded, `plantReport` says a
+machine's cost has a straight line in it, `tdsLedger` says what the year will
+require is a forecast, `salesReport` says its plan waits on a building.
+
+### The input credit a vendor never filed for
+
+You pay 18% on steel and 28% on cement and get it back — but only if the vendor
+files. When he does not the money is gone, and there is nothing in the books to
+say so: the purchase is recorded, the tax is recorded, and the credit that never
+arrived leaves no row anywhere.
+
+`gst2b.js` reads the portal's download in the browser — never stored, because it
+is somebody's tax filing — and matches it against recorded purchases. Two limits
+are stated on the screen rather than buried: it matches on **the supplier's name
+and the tax amount**, since an expense here carries no GSTIN or invoice number,
+which finds a vendor who filed nothing (the case worth money) and will not
+settle an argument about one invoice; and unmatched in either direction is a
+question, not a verdict — a 2B line with no purchase is either a bill nobody
+entered or somebody else's invoice raised against your GSTIN.
+
+Both bugs found writing it were in the reading, not the arithmetic, and both
+made the reconciliation report everything as broken: "GSTIN of supplier" matches
+the vendor pattern as well as the GSTIN one, and `&` is not a word character so
+stripping the word "and" never reached it — "Shakti Steel & Alloys" and "Shakti
+Steel and Alloys" were two vendors.
+
+### The same thing recorded twice
+
+A site engineer taps Record, the phone is on 2G in a basement lift shaft, and
+nothing visible happens for four seconds. He taps again. The books now say the
+gang was twice the size it was — two rows that are individually perfect and a
+total nobody will question.
+
+Half of idempotence was already handled: rows carry a client-generated id and
+the push upserts on it, so a *sync* retried after a dropped connection is one
+row. `idempotent.js` is the half the id cannot help with, because a second tap
+makes a second id. An identical row written **seconds** ago is the same row.
+
+Two things follow, and both matter:
+
+- **Seconds, not days.** Two genuinely separate gangs of six masons at ₹850 on
+  one site on one day happens, and a rule that refused it would have people
+  entering fiction to get round the app. Fifteen seconds apart it is a tap; an
+  hour apart it is two gangs.
+- **It is reported, not swallowed.** The repeat comes back marked `_repeat` so a
+  screen can say nothing was added twice. Silently dropping a real second entry
+  is worse than the double it prevents, because nobody can see it.
+
+A deleted row is never handed back — somebody who removed a line and entered it
+again meant to — and a row with no usable timestamp is never assumed recent,
+because guessing would drop a legitimate entry. The guard sits on the
+collection, not on a form, so anything that writes goes through it.
+
+### Wiring that goes nowhere
+
+The highest-yield bug class here has not been wrong arithmetic. It has been
+things connected at one end: a column the client writes that the database does
+not have, a field a form fills that no report reads, a function exported and
+never called. Every one looks right in the file it lives in. Three audits of
+this kind produced five real bugs in two commits — including the delivery stamp
+whose missing column made a guard against double-counting stock fail silently in
+cloud mode.
+
+Those audits were done by hand, on a good day. `deadwiring.test.mjs` is them on
+every commit, and it is a **ratchet, not a wall**: static scanning of JavaScript
+cannot be exact, so every finding that exists today is written down with the
+reason it is allowed, and the suite fails on two things — a finding that is not
+on the list, and a listed finding that has gone away. The second matters as much
+as the first, or the list rots into a page of excuses for code that was cleaned
+up years ago.
+
+It found its own first bug on the first run: counting its own allowlist as
+usage, so the scan reported nothing and passed.
 
 ## Status
 

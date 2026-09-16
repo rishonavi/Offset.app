@@ -3,6 +3,7 @@ import { db, isCloud } from '../lib/storage'
 import { useAuth } from './AuthContext'
 import { useWorkspace } from './WorkspaceContext'
 import { useEntity } from './EntityContext'
+import { checkPeriod } from '../lib/periods'
 import { cleanMoney } from '../lib/money'
 import * as corporate from '../lib/storage/corporate'
 import { placeOf } from '../lib/place'
@@ -17,7 +18,7 @@ const byDateDesc = (a, b) => (b.date || '').localeCompare(a.date || '')
 export function DataProvider({ children }) {
   const { user } = useAuth()
   const { activeOwner, isOwnWorkspace, canWriteActive } = useWorkspace()
-  const { inEntity, stamp, gate, corporate: inCompany, consolidated, activeId, entities, version } = useEntity()
+  const { inEntity, stamp, gate, corporate: inCompany, consolidated, activeId, entity, entities, version } = useEntity()
   const [properties, setProperties] = useState([])
   const [expenses, setExpenses] = useState([])
   const [income, setIncome] = useState([])
@@ -31,6 +32,24 @@ export function DataProvider({ children }) {
   const canWrite = !isCloud || canWriteActive
   const guard = () => {
     if (!canWrite) throw new Error('This shared workspace is read-only.')
+  }
+
+  // A month the company has closed cannot be written into.
+  //
+  // Checked here as well as in the corporate store because the money ledger
+  // does not go through that store — it has its own backend — and it is the one
+  // people print and send to a bank. Personal books have no company and no
+  // lock, so they pass straight through.
+  const closed = (row, existing = null) => {
+    const date = row && 'date' in row ? row.date : existing?.date
+    const check = checkPeriod(entity, date)
+    if (!check.ok) throw new Error(check.why)
+    // Moving a row out of a closed month restates that month just as surely as
+    // moving one in, so the row as it stands is checked too.
+    if (existing) {
+      const was = checkPeriod(entity, existing.date)
+      if (!was.ok) throw new Error(was.why)
+    }
   }
 
   // Stamp new rows/files with the active workspace owner when acting as an
@@ -167,6 +186,7 @@ export function DataProvider({ children }) {
   // ── Expenses ──
   const addExpense = async (data) => {
     guard()
+    closed(data)
     // Gated on the way in, so a bill over the company's limit is pending from
     // the moment it exists rather than from whenever somebody remembers.
     const row = await db.addExpense(cleanMoney({ ...data, ...stamp(), ...gate(data, 'expense') }, 'expense'))
@@ -175,12 +195,14 @@ export function DataProvider({ children }) {
   }
   const updateExpense = async (id, data) => {
     guard()
+    closed(data, expenses.find((e) => e.id === id))
     const row = await db.updateExpense(id, cleanMoney(data, 'expense'))
     setExpenses((prev) => prev.map((e) => (e.id === id ? row : e)).sort(byDateDesc))
     return row
   }
   const deleteExpense = async (id) => {
     guard()
+    closed(null, expenses.find((e) => e.id === id))
     await db.deleteExpense(id)
     setExpenses((prev) => prev.filter((e) => e.id !== id))
   }
@@ -193,18 +215,21 @@ export function DataProvider({ children }) {
   // ── Income ──
   const addIncome = async (data) => {
     guard()
+    closed(data)
     const row = await db.addIncome(cleanMoney({ ...data, ...stamp() }, 'income'))
     setIncome((prev) => [row, ...prev].sort(byDateDesc))
     return row
   }
   const updateIncome = async (id, data) => {
     guard()
+    closed(data, income.find((e) => e.id === id))
     const row = await db.updateIncome(id, cleanMoney(data, 'income'))
     setIncome((prev) => prev.map((e) => (e.id === id ? row : e)).sort(byDateDesc))
     return row
   }
   const deleteIncome = async (id) => {
     guard()
+    closed(null, income.find((e) => e.id === id))
     await db.deleteIncome(id)
     setIncome((prev) => prev.filter((e) => e.id !== id))
   }

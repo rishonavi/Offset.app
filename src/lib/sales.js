@@ -27,6 +27,8 @@
 // a fact about the building, not a date — so what is due for work done is
 // derived from measured progress rather than typed in by hand.
 
+import { madeOf } from './certainty'
+
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
 const newId = () =>
@@ -314,6 +316,16 @@ export function salesReport(units = [], stages = [], receipts = [], { entityId =
     unitsOverdue: sold.filter((l) => l.overdue > 0).length,
     unitsWithGap: lines.filter((l) => Math.abs(l.planGap) > 1).length,
     untriggered: lines.reduce((t, l) => t + l.untriggered, 0),
+
+    // What came in is a fact and what has fallen due is a demand somebody can
+    // point at. What is *not yet due* waits on a building, so it is a forecast
+    // about construction dressed as a schedule of money.
+    certainty: madeOf({
+      received: 'recorded',
+      'fallen due': 'recorded',
+      agreed: 'agreed',
+      'not yet due': 'projected',
+    }),
   }
 }
 

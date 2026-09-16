@@ -165,16 +165,32 @@ ok('certifying above the claim is flagged', /certified above the claim/i.test(te
 ok('and running past the order value is too', /past the order value/i.test(text))
 ok('with a count of what needs a second look', /to check|needs a second look|need a second look/i.test(text))
 
-console.log('\n── RETENTION IS RELEASED, NOT FORGOTTEN ──')
+console.log('\n── RETENTION IS RELEASED IN TWO PIECES, NOT FORGOTTEN ──')
+// It used to come back in one lump whenever somebody pressed a button. It does
+// not work that way: half at completion and half when the defect liability
+// period runs out, so there are two buttons and releasing the first is not
+// releasing the second. `retentionui.mjs` covers the dates and the states; this
+// is the half that belongs beside the bills.
 const heldBefore = await main()
 ok('retention is shown as held', /Retention held/i.test(heldBefore))
-await p.locator('button[aria-label="Release retention for Sharma Plastering"]').click()
-await p.waitForTimeout(600)
-ok('releasing it is recorded on the order',
-  Number((await ls('pl_corp_work_orders'))[0]?.retention_released) > 0,
+ok('and a release schedule is shown with it', /retention release/i.test(heldBefore), heldBefore.slice(0, 600))
+const accrued = Number((await ls('pl_corp_work_orders'))[0]?.retention_released)
+await p.locator('button[aria-label="Release on completion retention for Sharma Plastering"]').click()
+await p.waitForTimeout(700)
+const afterFirst = Number((await ls('pl_corp_work_orders'))[0]?.retention_released)
+ok('releasing the first half is recorded on the order', afterFirst > accrued, String(afterFirst))
+ok('and that button is gone',
+  (await p.locator('button[aria-label="Release on completion retention for Sharma Plastering"]').count()) === 0)
+// The point of the change: the rest is still held.
+ok('but the defects half is still there',
+  (await p.locator('button[aria-label="Release after defect liability retention for Sharma Plastering"]').count()) === 1)
+await p.locator('button[aria-label="Release after defect liability retention for Sharma Plastering"]').click()
+await p.waitForTimeout(700)
+ok('and releasing that one clears the rest',
+  Number((await ls('pl_corp_work_orders'))[0]?.retention_released) > afterFirst,
   String((await ls('pl_corp_work_orders'))[0]?.retention_released))
-ok('and there is nothing left to release',
-  (await p.locator('button[aria-label="Release retention for Sharma Plastering"]').count()) === 0)
+ok('with nothing left to release',
+  (await p.locator('button[aria-label^="Release "]').count()) === 0)
 
 console.log('\n── WHAT IS ACTUALLY BUILT ──')
 await outerTab('Projects')

@@ -6,7 +6,7 @@ import {
   PLANT_KINDS, PLANT_KIND_IDS, HIRE_BASIS, HIRE_BASIS_IDS, OWNERSHIP, OWNERSHIP_IDS,
 } from '../lib/plant'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
+import { Card, Button, Field, Input, Select, Badge, EmptyState, cx , attempt } from './ui'
 
 // Plant and equipment.
 //
@@ -352,13 +352,13 @@ function Logs({ data, eid, actor, canWrite, bump, toast }) {
   const add = (e) => {
     e.preventDefault()
     if (!form.plantId) return
-    store.plantLogs.add(makePlantLog({
+    if (!attempt(() => store.plantLogs.add(makePlantLog({
       plantId: form.plantId, entityId: eid, projectId: form.projectId || null, date: form.date,
       workingHours: num(form.workingHours), idleHours: num(form.idleHours),
       breakdownHours: num(form.breakdownHours), trips: num(form.trips),
       fuelLitres: num(form.fuelLitres), fuelCost: num(form.fuelCost),
       operator: form.operator, note: form.note, createdBy: actor?.id,
-    }), actor)
+    }), actor), toast)) return
     // The machine, date and site stay: a log book is filled in a run.
     setForm({ ...blank, plantId: form.plantId, date: form.date, projectId: form.projectId, operator: form.operator })
     bump()

@@ -76,7 +76,10 @@ export const PRICING_IDS = Object.keys(PRICING)
 // not identical is what the certified figure means, so it is recorded once
 // here rather than guessed at by every reader.
 export const SIDE = {
-  sub: { id: 'sub', label: 'We engaged them', noun: 'Subcontract', party: 'Contractor', cost: true },
+  // "Work order" rather than "subcontract": it is what the paperwork on a site
+  // is actually called, and renaming it for the sake of a symmetrical pair of
+  // labels broke a screen that had used the right word all along.
+  sub: { id: 'sub', label: 'We engaged them', noun: 'Work order', party: 'Contractor', cost: true },
   client: { id: 'client', label: 'They engaged us', noun: 'Client contract', party: 'Client', cost: false },
 }
 export const SIDE_IDS = Object.keys(SIDE)
@@ -116,6 +119,7 @@ export function makeWorkOrder({
   startedOn = '', dueOn = '', status = 'running', ref = '', notes = '',
   retentionReleased = 0, createdBy = null,
   side = 'sub', completedOn = '', dlpMonths = 12, releaseSplitPercent = 50,
+  pan = '', deducteeType = 'other',
 } = {}) {
   return {
     id: id || newId(),
@@ -153,6 +157,11 @@ export function makeWorkOrder({
     // How much of the retention comes back at completion rather than at the
     // end of the defect liability period. Half and half is the convention.
     release_split_percent: Math.min(100, Math.max(0, round2(releaseSplitPercent))),
+    // The two things that decide what the law requires deducting, as against
+    // what `tds_percent` above happens to say. No PAN is not a blank field —
+    // it is deduction at twenty per cent.
+    pan: String(pan).trim().toUpperCase().slice(0, 10),
+    deductee_type: deducteeType === 'individual' ? 'individual' : 'other',
     created_by: createdBy,
     created_at: new Date().toISOString(),
   }

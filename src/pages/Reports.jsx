@@ -17,6 +17,7 @@ import AskCard from '../components/AskCard'
 import FilterBar from '../components/FilterBar'
 import OperationsSummary, { useOperationsSummary } from '../components/OperationsSummary'
 import WorkingCapital, { useWorkingCapital } from '../components/WorkingCapital'
+import Reconcile2B from '../components/Reconcile2B'
 
 const PREVIEW_LIMIT = 100
 
@@ -390,6 +391,9 @@ export default function Reports() {
           </div>
         )}
       </Card>
+
+      {/* The credit a vendor never filed for, which leaves no row anywhere. */}
+      <Reconcile2B />
 
       <WorkingCapital capital={capital} dated={filters.to ? formatDate(filters.to) : ''} />
 

@@ -95,6 +95,28 @@ ok('the certified bill is owed now', /3,76,000/.test(t), t)
 ok('and the two are not the same number', !/9,76,000/.test(t), t)
 ok('the three headings are all there',
   /agreed, not yet spent/i.test(t) && /owed now/i.test(t) && /due in/i.test(t), t)
+// And each says how it was arrived at, because a contract and a payment look
+// identical once they are both rupees in a column.
+ok('the committed column says it is agreed, not spent', /AGREED/.test(t), t)
+ok('and the owed column says it was recorded', /RECORDED/.test(t), t)
+// Sliced per column rather than counted across the card: the heading itself is
+// "AGREED, NOT YET SPENT", so counting the word over the whole block proves
+// nothing about which column carries which badge.
+const column = (from, to) => {
+  const i = t.search(from)
+  if (i < 0) return ''
+  const rest = t.slice(i)
+  const end = rest.search(to)
+  return end > 0 ? rest.slice(0, end) : rest
+}
+const committedCol = column(/AGREED, NOT YET SPENT/, /OWED NOW/)
+const owedCol = column(/OWED NOW/, /DUE IN/)
+ok('the committed column is not called recorded', !/RECORDED/.test(committedCol), committedCol)
+ok('and the owed column is not called agreed', !/\bAGREED\b/.test(owedCol), owedCol)
+// The sentence under the gap, which is the reason the three are never one
+// figure: agreed money plus recorded money is agreed money.
+ok('and the gap says what its certainty rests on',
+  /will happen unless somebody changes it/i.test(t), t.slice(-400))
 
 console.log('\n── AN ACCEPTED QUOTATION IS A COMMITMENT ──')
 const quote = {

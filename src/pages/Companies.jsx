@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, ScrollText } from 'lucide-react'
+import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, ScrollText, Lock, LockOpen } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import { useData } from '../context/DataContext'
@@ -8,6 +8,7 @@ import {
   APPROVABLE, APPROVABLE_IDS, approvalQueue, auditAt,
 } from '../lib/corporate'
 import * as store from '../lib/storage/corporate'
+import { monthsToClose, reopenTo, lockedThrough, describeLock } from '../lib/periods'
 import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button, Field, Input, Select, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -292,6 +293,62 @@ export default function Companies() {
                     <Input aria-label="Monthly budget" type="number" min="0" placeholder="Monthly budget" value={dept.budgetMonthly} onChange={(e) => setDept({ ...dept, budgetMonthly: e.target.value })} />
                     <div className="sm:col-span-2"><Button type="submit"><Plus size={15} /> Add department</Button></div>
                   </form>
+                )}
+              </Card>
+
+              {/* Closing the books */}
+              <Card className="p-5">
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3">
+                  <Lock size={16} className="text-gold" /> Closing the books
+                </h2>
+                <p className="mt-1 text-xs text-ink-5">
+                  Every report is a photograph of a moving thing. Somebody prints March, sends it to the bank, and a
+                  bill dated the 28th arrives a fortnight later — and March is now a different number from the one in
+                  the bank’s file. Closing a month refuses anything dated into it, wherever the write comes from.
+                </p>
+                <p className="mt-2 text-xs font-medium text-ink-3">{describeLock(ent.entity)}</p>
+
+                {ent.can('entity.manage') ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {/* Offered one at a time and in order. You do not close March
+                        and leave February open, so there is no list to pick from
+                        out of sequence. */}
+                    {monthsToClose(ent.entity).slice(0, 1).map((m) => (
+                      <Button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          if (!window.confirm(`Close ${m}? Nothing dated on or before the end of that month can be added, changed or deleted until you reopen it.`)) return
+                          act(() => store.updateEntity(ent.activeId, { books_locked_through: m }, ent.actor), `Closed through ${m}.`)
+                        }}
+                      >
+                        <Lock size={15} /> Close {m}
+                      </Button>
+                    ))}
+                    {lockedThrough(ent.entity) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          const back = reopenTo(ent.entity)
+                          // Said plainly, because it is not obvious: reopening a
+                          // month takes the months after it with it. A month
+                          // cannot be final while the one before it is being
+                          // edited.
+                          if (!window.confirm(`Reopen ${lockedThrough(ent.entity)}? The books will be closed through ${back || 'nothing at all'}, so every month after it reopens too.`)) return
+                          act(() => store.updateEntity(ent.activeId, { books_locked_through: back }, ent.actor),
+                            back ? `Reopened. Closed through ${back}.` : 'Reopened. Nothing is closed now.')
+                        }}
+                      >
+                        <LockOpen size={15} /> Reopen {lockedThrough(ent.entity)}
+                      </Button>
+                    )}
+                    {!monthsToClose(ent.entity).length && !lockedThrough(ent.entity) && (
+                      <p className="text-xs text-ink-6">Nothing to close yet — the month has to finish first.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-ink-6">Only an owner can close or reopen the books.</p>
                 )}
               </Card>
 

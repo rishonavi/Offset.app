@@ -5,8 +5,9 @@ import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
 import * as store from '../lib/storage/corporate'
 import { commitments, describeGap } from '../lib/commitments'
+import { describeCertainty } from '../lib/certainty'
 import { formatCurrency } from '../lib/format'
-import { Card, cx } from './ui'
+import { Card, cx, Certainty } from './ui'
 
 // What is already promised, on the page people actually open.
 //
@@ -70,6 +71,9 @@ export default function Commitments() {
         <div className="sm:border-e sm:border-line-soft sm:pe-6">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">Agreed, not yet spent</p>
           <p className="mt-0.5 text-lg font-semibold tabular text-ink-2">{formatCurrency(c.committed)}</p>
+          {/* A contract is not a payment and not a forecast. Saying which it is
+              keeps somebody from reading this column as money in the bank. */}
+          <Certainty made={c.certainty.committed} />
           <Row label="Work orders outstanding" value={formatCurrency(c.subcontract.remaining)} />
           <Row label="Deliveries accepted" value={formatCurrency(c.materials.ordered)}
             hint={c.materials.count ? `${c.materials.count} ${c.materials.count === 1 ? 'quotation' : 'quotations'}` : null} />
@@ -89,6 +93,7 @@ export default function Commitments() {
             <ArrowUpRight size={11} /> Owed now
           </p>
           <p className="mt-0.5 text-lg font-semibold tabular text-ink-2">{formatCurrency(c.dueOut)}</p>
+          <Certainty made={c.certainty.dueOut} />
           <Row label="Bills unpaid" value={formatCurrency(c.payable.total)} />
           <Row label="Certified, not paid" value={formatCurrency(c.subcontract.unpaid)} />
           <Row label="Retention due for release" value={formatCurrency(c.subcontract.retentionDue)}
@@ -100,6 +105,7 @@ export default function Commitments() {
             <ArrowDownLeft size={11} /> Due in
           </p>
           <p className="mt-0.5 text-lg font-semibold tabular text-ink-2">{formatCurrency(c.dueIn)}</p>
+          <Certainty made={c.certainty.dueIn} />
           <Row label="Invoices awaited" value={formatCurrency(c.receivable.total)} />
           <Row label="Instalments fallen due" value={formatCurrency(c.sales.dueNow)} />
           <Row label="Retention the client owes" value={formatCurrency(c.client.retentionDue)} />
@@ -109,6 +115,9 @@ export default function Commitments() {
       <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 border-t border-line-soft pt-3">
         <span className="text-xs text-ink-5">
           If everything due came in and everything owed went out
+          {/* The three are never added into one figure, and this says why:
+              agreed money plus recorded money is agreed money. */}
+          <span className="block text-[0.68rem] text-ink-6">{describeCertainty(c.certainty.committedAndDue)}</span>
         </span>
         <span className={cx('tabular text-base font-semibold', c.gap < 0 ? 'text-red-600' : 'text-emerald-600')}>
           {c.gap < 0 ? '−' : '+'}{formatCurrency(Math.abs(c.gap))}

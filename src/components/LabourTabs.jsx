@@ -6,10 +6,11 @@ import {
   makeWorkOrder, makeRaBill, billLadder, subcontractReport, retentionSchedule,
   ORDER_STATUS, ORDER_STATUS_IDS, PRICING, PRICING_IDS, SIDE, SIDE_IDS, round2,
 } from '../lib/subcontract'
+import { tdsLedger, DEDUCTEE, DEDUCTEE_IDS } from '../lib/tds'
 import { paymentCertificate, musterSheet } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
+import { Card, Button, Field, Input, Select, Badge, EmptyState, cx, attempt } from './ui'
 
 // Labour, in the two shapes a site actually has it.
 //
@@ -75,12 +76,14 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
   const add = (e) => {
     e.preventDefault()
     if (!num(form.headcount) || !num(form.rate)) return
-    store.muster.add(makeMuster({
+    // The store refuses a day inside a closed month, and a refusal is a sentence
+    // for whoever is standing there rather than an error nobody sees.
+    if (!attempt(() => store.muster.add(makeMuster({
       entityId: eid, projectId: form.projectId || null, date: form.date, trade: form.trade,
       headcount: num(form.headcount), rate: num(form.rate),
       overtimeHours: num(form.overtimeHours), overtimeRate: num(form.overtimeRate),
       contractor: form.contractor, note: form.note, createdBy: actor?.id,
-    }), actor)
+    }), actor), toast)) return
     // The date, trade and rate stay: a muster is entered a dozen lines at a
     // time and re-typing yesterday's date for each is how it stops being kept.
     setForm({ ...blank, date: form.date, trade: form.trade, rate: form.rate, projectId: form.projectId })
@@ -278,7 +281,7 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
 }
 
 // ── Contractors ─────────────────────────────────────────────────────────────
-function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company }) {
+function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, fyStart = 4 }) {
   // The document with legal weight: what was measured, what was certified
   // before, and therefore what is payable now.
   const certify = async (order, bill) => {
@@ -290,7 +293,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
   const blankOrder = {
     contractor: '', scope: '', orderValue: '', pricing: 'lumpSum',
     retentionPercent: '5', tdsPercent: '1', projectId: '', dueOn: '', status: 'running',
-    dlpMonths: '12', releaseSplitPercent: '50',
+    dlpMonths: '12', releaseSplitPercent: '50', pan: '', deducteeType: 'other',
   }
   const [order, setOrder] = useState(blankOrder)
   // The same screen read from either end. A builder holds retention from the
@@ -311,6 +314,13 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
     [report],
   )
   const party = SIDE[side].party
+  // What the law requires deducting, against what the orders said to. Counted
+  // per contractor across the year rather than per order, which is the only way
+  // the aggregate limit can be seen at all.
+  const tax = useMemo(
+    () => tdsLedger(data.workOrders, data.raBills, { entityId: eid, fyStartMonth: fyStart }),
+    [data, eid, fyStart],
+  )
   const siteName = (id) => data.projects.find((p) => p.id === id)?.name || 'No site'
 
   const addOrder = (e) => {
@@ -322,6 +332,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
       retentionPercent: num(order.retentionPercent), tdsPercent: num(order.tdsPercent),
       dueOn: order.dueOn, status: order.status, createdBy: actor?.id,
       side, dlpMonths: num(order.dlpMonths), releaseSplitPercent: num(order.releaseSplitPercent),
+      pan: order.pan, deducteeType: order.deducteeType,
     })
     store.workOrders.add({ ...row, ...gate(row, 'workorder') }, actor)
     setOrder(blankOrder)
@@ -343,7 +354,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
       penalty: num(bill.penalty),
       createdBy: actor?.id,
     })
-    store.raBills.add({ ...row, ...gate(row, 'rabill') }, actor)
+    if (!attempt(() => store.raBills.add({ ...row, ...gate(row, 'rabill') }, actor), toast)) return
     setBill({ claimedToDate: '', certifiedToDate: '', advanceRecovered: '', materialRecovered: '', penalty: '', date: today() })
     setBilling(null)
     bump()
@@ -420,6 +431,56 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
         </Card>
       )}
 
+      {side === 'sub' && tax.count > 0 && (
+        <Card className="p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-ink-3">Tax deducted at source — {tax.fy.label}</h3>
+            <span className="text-[0.7rem] text-ink-6">194C · {tax.from} to {tax.to}</span>
+          </div>
+          <p className="mt-1 text-xs text-ink-5">
+            Counted per contractor across the year, not per order. The payment that takes a contractor past
+            ₹1,00,000 makes <em>everything</em> paid to him that year liable — not the excess — so three orders each
+            under the limit is the ordinary way to get this wrong.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Cell label="Paid this year" value={formatCurrency(tax.paid)} />
+            <Cell label="Required" value={formatCurrency(tax.required)} />
+            <Cell label="Deducted" value={formatCurrency(tax.deducted)} />
+            {/* Never netted: one contractor short and another over are two
+                returns to correct, and the difference of nothing is neither. */}
+            <Cell label="Short by" value={formatCurrency(tax.shortfall)} tone={tax.shortfall > 0 ? 'warn' : undefined} />
+          </div>
+          {(tax.short > 0 || tax.over > 0 || tax.conflicts > 0 || tax.noPan > 0) && (
+            <ul className="mt-3 space-y-1.5">
+              {tax.lines.filter((l) => l.short || l.over || l.panConflict || !l.pan).slice(0, 6).map((l) => (
+                <li key={l.party} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+                  <span className="text-ink-3">
+                    {l.party}
+                    <span className="block text-[0.68rem] text-ink-6">
+                      {formatCurrency(l.paid)} across {l.orders} {l.orders === 1 ? 'order' : 'orders'} · {l.rate}%
+                      {l.crossedOn && ` · crossed the year on ${l.crossedOn}`}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {l.panConflict && <Badge color="#dc2626">two PANs</Badge>}
+                    {!l.pan && <Badge color="#d97706">no PAN — 20%</Badge>}
+                    {l.short && <span className="tabular font-semibold text-red-600">short {formatCurrency(l.shortfall)}</span>}
+                    {l.over && <span className="tabular font-semibold text-amber-600">over {formatCurrency(l.excess)}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-3 flex flex-wrap gap-4 border-t border-line-soft pt-3 text-[0.7rem] text-ink-5">
+            {tax.quarters.map((q) => (
+              <span key={q.quarter}>
+                Q{q.quarter} <span className="tabular font-semibold text-ink-3">{formatCurrency(q.tds)}</span>
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {canWrite && (
         <Card className="p-5">
           <h3 className="text-sm font-semibold text-ink-3">New {SIDE[side].noun.toLowerCase()}</h3>
@@ -451,6 +512,14 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
             </Field>
             {/* Agreed when the contract is written, which is why they are here
                 and the completion date is not. */}
+            <Field label="PAN" hint="Blank means twenty per cent, which is a penalty and not a bracket.">
+              <Input aria-label="Contractor PAN" value={order.pan} onChange={(e) => setOrder({ ...order, pan: e.target.value.toUpperCase() })} placeholder="AAAPZ1234C" maxLength={10} />
+            </Field>
+            <Field label="Deductee" hint="One per cent for an individual or HUF, two for anybody else.">
+              <Select aria-label="Deductee type" value={order.deducteeType} onChange={(e) => setOrder({ ...order, deducteeType: e.target.value })}>
+                {DEDUCTEE_IDS.map((id) => <option key={id} value={id}>{DEDUCTEE[id].label}</option>)}
+              </Select>
+            </Field>
             <Field label="Defect liability (months)" hint="Counted from the day the work is finished.">
               <Input aria-label="Defect liability months" type="number" min="0" max="120" step="1" value={order.dlpMonths} onChange={(e) => setOrder({ ...order, dlpMonths: e.target.value })} />
             </Field>

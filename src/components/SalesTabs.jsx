@@ -10,7 +10,7 @@ import { siteProgress, WORK_STAGES, WORK_STAGE_IDS } from '../lib/progress'
 import { demandLetter } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Badge, EmptyState, cx } from './ui'
+import { Card, Button, Field, Input, Select, Badge, EmptyState, cx , attempt } from './ui'
 
 // What the company is building to sell, and what the buyers owe for it.
 //
@@ -308,11 +308,11 @@ function Collections({ data, eid, actor, canWrite, bump, toast, company }) {
   const addReceipt = (e) => {
     e.preventDefault()
     if (!money.unitId || !num(money.amount)) return
-    store.receipts.add(makeReceipt({
+    if (!attempt(() => store.receipts.add(makeReceipt({
       unitId: money.unitId, entityId: eid, projectId: site || null,
       date: money.date, amount: num(money.amount), mode: money.mode,
       reference: money.reference, createdBy: actor?.id,
-    }), actor)
+    }), actor), toast)) return
     setMoney({ ...money, amount: '', reference: '' })
     bump()
     toast('Receipt recorded')
