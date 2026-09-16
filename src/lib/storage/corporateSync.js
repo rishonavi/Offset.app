@@ -146,7 +146,7 @@ export async function syncCollection(client, kind, localRows, { entityIds = null
 export const ORDER = [
   'entities', 'members', 'departments', 'projects',
   'items', 'movements', 'quotes',
-  'employees', 'muster', 'workOrders', 'raBills',
+  'employees', 'payrollRuns', 'muster', 'workOrders', 'raBills',
   'workItems', 'measurements', 'plant', 'plantLogs',
   'units', 'planStages', 'receipts',
   'advances', 'adjustments', 'audit',
