@@ -818,6 +818,25 @@ alter table public.ra_bills    add column if not exists approved_by uuid referen
 alter table public.ra_bills    add column if not exists approved_at timestamptz;
 
 
+-- ── When the retention comes back, and whose it is ───────────────
+-- `retention_released` was always here; what was missing was a date to hold it
+-- against. Retention returns in two pieces — half at completion, half when the
+-- defect liability period expires — so an order needs to say when the work was
+-- finished and how long the liability runs, or the balance held is a number
+-- with no day attached to it.
+--
+-- `side` is the other half: a construction company holds retention from its
+-- subcontractors and has retention held from it by its client, and both are
+-- this same cumulative bill. It defaults to 'sub' because every row written
+-- before this column existed was one.
+alter table public.work_orders add column if not exists side text not null default 'sub'
+  check (side in ('sub', 'client'));
+alter table public.work_orders add column if not exists completed_on date;
+alter table public.work_orders add column if not exists dlp_months integer not null default 12
+  check (dlp_months between 0 and 120);
+alter table public.work_orders add column if not exists release_split_percent numeric(5,2) not null default 50
+  check (release_split_percent between 0 and 100);
+
 -- ── A version to sync against ────────────────────────────────────
 -- Every synced table carries `updated_at`, and a trigger maintains it rather
 -- than the client. A timestamp the client sets is a timestamp the client can

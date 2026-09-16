@@ -91,6 +91,39 @@ arrive, and what remains is a balance to chase. An adjustment can never take
 out more than is left; over-adjustment (only reachable through bad data) is
 surfaced, not clamped away.
 
+### Subcontracts, and retention that has a date on it
+
+Running account bills are cumulative — each states the work done **to date**,
+and what is payable is the difference from the last one. That is the single
+thing the module has to get right, and it is why a bill carries one entered
+quantity rather than an amount.
+
+Retention is the part that used to be a number with nothing attached to it.
+Five per cent held against defects is a liability, not a saving, and it comes
+back in two pieces: half when the work is finished and half when the defect
+liability period runs out a year later. So an order records when the work was
+completed, how many months the liability runs, and how the release splits.
+What has already been given back is still one running total, so the allocation
+is decided rather than read — **a release fills the completion tranche before
+the defects tranche**, because any other rule reports a company that has paid
+the first half as though it still owed it.
+
+Three states are worth telling apart, and the app does:
+
+- **due** — the date has passed and the money has not moved.
+- **waiting** — dated, not yet.
+- **undated** — nobody recorded when the work finished, so nothing can ever
+  make it due. This is the one that hides money for years, and it is a finding
+  of its own rather than a quiet zero.
+
+**A builder is on both sides of this.** He holds retention from the
+subcontractors he engages and his client holds retention from him, and both are
+the same cumulative bill with the same arithmetic. So an order carries a
+`side`, the screen has a toggle, and one rule is enforced rather than trusted:
+work certified to a client is revenue, and `subcontractCostsBySite` forces the
+subcontract side rather than defaulting to it — a client contract that leaked
+into a job's cost would book the company's own income as money it spent.
+
 ### Payroll
 
 Indian statutory shape, all rates configurable:
@@ -305,13 +338,14 @@ stopped requiring one.
   the invented asset again with a button on it. A company gets its own instead
   — see below.
 
-**Done and verified** — a builder's demo books, 76 logic assertions and 27 more
+**Done and verified** — a builder's demo books, 84 logic assertions and 27 more
 on screen:
 
 An empty app is a fair thing to show someone who has decided to use it and a
 terrible thing to show someone deciding whether to. `sampleSite.js` is three
 sites, eight materials moving between a yard and two site stores, three weeks
-of muster, two running accounts, a measured schedule, plant log sheets, eight
+of muster, four running accounts — two of them the company's own billing to a
+client — a measured schedule, plant log sheets, eight
 flats and shops with a construction-linked payment plan, and a ledger booked to
 the jobs.
 

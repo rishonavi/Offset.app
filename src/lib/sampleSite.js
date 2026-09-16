@@ -112,6 +112,7 @@ const MATERIALS = [
 
 const MD = 'sample-site-md'
 const PG = 'sample-site-pg'
+const HV = 'sample-site-hv'
 
 // Receipts land in the yard. Transfers move stock to a site's own store at the
 // yard's average cost. Issues charge the job. Rejections leave again at what
@@ -235,6 +236,28 @@ function contracts(entityId) {
       orderValue: 4200000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
       startedOn: day(120), dueOn: ahead(30), status: 'running', ref: 'WO/PG/03',
     }),
+    // Finished, paid, and still holding the contractor's money. The completion
+    // half of his retention fell due two and a half months ago and nothing in
+    // the app could say so until a release had a date attached to it.
+    makeWorkOrder({
+      entityId, id: 'sample-wo-stone', projectId: HV,
+      contractor: 'Kadappa Stone & Joinery',
+      scope: 'Stone flooring, staircase cladding and all joinery',
+      orderValue: 950000, pricing: 'rate', retentionPercent: 5, tdsPercent: 1,
+      startedOn: day(240), dueOn: day(90), status: 'closed', ref: 'WO/HV/02',
+      completedOn: day(75), dlpMonths: 12, releaseSplitPercent: 50,
+    }),
+    // The other side of the same trade. The company built this bungalow, so
+    // here it is the one whose money is being held — and the completion half
+    // of it became a debt the day the liability clock started.
+    makeWorkOrder({
+      entityId, id: 'sample-wo-hv-client', projectId: HV, side: 'client',
+      contractor: 'Dr. A. Kulkarni',
+      scope: 'Construction of residence at Lonavala, turnkey',
+      orderValue: 8500000, pricing: 'lumpSum', retentionPercent: 5, tdsPercent: 1,
+      startedOn: day(520), dueOn: day(60), status: 'closed', ref: 'HV/AGR/01',
+      completedOn: day(60), dlpMonths: 12, releaseSplitPercent: 50,
+    }),
   ]
   const bills = [
     makeRaBill({ entityId, id: 'sample-ra-1', workOrderId: 'sample-wo-rcc', projectId: MD, number: 1, date: day(180), claimedToDate: 5200000, certifiedToDate: 5000000, status: 'paid', note: 'Podium and first two slabs.' }),
@@ -242,6 +265,11 @@ function contracts(entityId) {
     makeRaBill({ entityId, id: 'sample-ra-3', workOrderId: 'sample-wo-rcc', projectId: MD, number: 3, date: day(38), claimedToDate: 15000000, certifiedToDate: 14600000, status: 'certified', penalty: 50000, note: 'Up to 8th slab. Penalty for the delayed 7th.' }),
     makeRaBill({ entityId, id: 'sample-ra-4', workOrderId: 'sample-wo-plaster', projectId: PG, number: 1, date: day(70), claimedToDate: 1500000, certifiedToDate: 1450000, status: 'paid' }),
     makeRaBill({ entityId, id: 'sample-ra-5', workOrderId: 'sample-wo-plaster', projectId: PG, number: 2, date: day(16), claimedToDate: 3100000, certifiedToDate: 2950000, status: 'certified', note: 'External plaster still to start on the north face.' }),
+    makeRaBill({ entityId, id: 'sample-ra-6', workOrderId: 'sample-wo-stone', projectId: HV, number: 1, date: day(150), claimedToDate: 600000, certifiedToDate: 600000, status: 'paid' }),
+    makeRaBill({ entityId, id: 'sample-ra-7', workOrderId: 'sample-wo-stone', projectId: HV, number: 2, date: day(80), claimedToDate: 940000, certifiedToDate: 920000, status: 'paid', note: 'Final. Two risers remeasured.' }),
+    makeRaBill({ entityId, id: 'sample-ra-8', workOrderId: 'sample-wo-hv-client', projectId: HV, number: 1, date: day(400), claimedToDate: 3000000, certifiedToDate: 3000000, status: 'paid' }),
+    makeRaBill({ entityId, id: 'sample-ra-9', workOrderId: 'sample-wo-hv-client', projectId: HV, number: 2, date: day(200), claimedToDate: 6000000, certifiedToDate: 6000000, status: 'paid' }),
+    makeRaBill({ entityId, id: 'sample-ra-10', workOrderId: 'sample-wo-hv-client', projectId: HV, number: 3, date: day(65), claimedToDate: 8500000, certifiedToDate: 8500000, status: 'paid', note: 'Final bill on handover.' }),
   ]
   return { orders, bills }
 }

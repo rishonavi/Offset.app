@@ -455,6 +455,25 @@ select t.refuses('a retention above the whole bill is a typo',
   $$insert into public.work_orders (entity_id, contractor, retention_percent)
     values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody', 500)$$);
 
+-- Which way the money goes, and when the retention comes back. The default
+-- matters as much as the column: every order written before there were two
+-- sides is a subcontract, and a null here would make the cost of a job depend
+-- on whether anybody had edited it since.
+select t.check('an order raised without a side is a subcontract',
+  (select side from public.work_orders where id = '11111111-aaaa-0000-0000-000000000001') = 'sub');
+select t.allows('and the other side can be raised',
+  $$insert into public.work_orders (id, entity_id, contractor, side, completed_on, dlp_months)
+    values ('11111111-aaaa-0000-0000-00000000000c','aaaaaaaa-0000-0000-0000-000000000001',
+            'Metro Development Authority','client', current_date - 400, 12)$$);
+select t.refuses('a third side is not a side',
+  $$insert into public.work_orders (entity_id, contractor, side)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody','principal')$$);
+select t.refuses('a defect liability period of ten years and one month is a typo',
+  $$insert into public.work_orders (entity_id, contractor, dlp_months)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','Nobody', 121)$$);
+select t.check('an order with no completion date has none, rather than today',
+  (select completed_on from public.work_orders where id = '11111111-aaaa-0000-0000-000000000001') is null);
+
 -- Cumulative by construction: each bill states the work done to date.
 select t.allows('the first running account bill',
   $$insert into public.ra_bills (entity_id, work_order_id, number, date, claimed_to_date, certified_to_date)

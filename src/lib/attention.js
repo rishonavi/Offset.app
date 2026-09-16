@@ -28,7 +28,7 @@ import { priceList, quoteBook } from './quotes'
 import { projectReport, unattributed, daysLate } from './projects'
 import { siteProgress, progressAgainstSpend } from './progress'
 import { labourReport, labourCostsBySite } from './labour'
-import { subcontractReport, subcontractCostsBySite } from './subcontract'
+import { subcontractReport, subcontractCostsBySite, retentionBook, clientContracts } from './subcontract'
 import { plantReport, plantCostsBySite } from './plant'
 import { salesReport } from './sales'
 import { outstandingAdvances } from './advances'
@@ -99,6 +99,12 @@ export function attention(books = {}, { asOf = null } = {}) {
   }
   const jobs = projectReport(projects, expenses, income, costs)
   const contracts = subcontractReport(workOrders, raBills, { entityId })
+  // The same orders read from the other end. A company that only ever looked
+  // at what it holds from its subcontractors never sees what its own client is
+  // holding from it, which is the larger of the two numbers on most jobs.
+  const clients = clientContracts(workOrders, raBills, { entityId })
+  const heldBySub = retentionBook(workOrders, raBills, { entityId, side: 'sub', asOf })
+  const heldByClient = retentionBook(workOrders, raBills, { entityId, side: 'client', asOf })
   const yard = plantReport(plant, plantLogs, { entityId })
   const book = salesReport(units, planStages, receipts, { entityId })
   const loose = unattributed(expenses, income)
@@ -114,12 +120,22 @@ export function attention(books = {}, { asOf = null } = {}) {
       'Stock cannot go below nothing, so the books and a shelf somewhere disagree. Until it is squared, every cost that draws on that store is wrong.',
       { count: shortStores.length, where: OPS('materials') }))
   }
-  if (contracts.problems > 0) {
+  const billProblems = contracts.problems + clients.problems
+  if (billProblems > 0) {
     out.push(finding('rabill.problems', 'error',
-      `${plural(contracts.problems, 'running account bill needs', 'running account bills need')} a second look`,
+      `${plural(billProblems, 'running account bill needs', 'running account bills need')} a second look`,
       'Certified above what was claimed, certifying less than the bill before it, or past the order value. All three are legitimate sometimes and none should pass unseen.',
-      { count: contracts.problems, where: OPS('labour') }))
+      { count: billProblems, where: OPS('labour') }))
   }
+  const overReleased = round2(heldBySub.overReleased + heldByClient.overReleased)
+  if (overReleased > 0) {
+    out.push(finding('retention.over', 'error',
+      'More retention has been given back than was ever held',
+      'The releases recorded against an order exceed what its bills ever withheld, so either a release was entered twice or it was entered against the wrong contractor. Until it is squared the balance held is wrong by the difference.',
+      { amount: overReleased, where: OPS('labour') }))
+  }
+  // Certification problems are certification problems whichever side of the
+  // contract they are on.
   const advanceErrors = outstandingAdvances(advances, adjustments, { entityId }).errors
   if (advanceErrors > 0) {
     out.push(finding('advance.overadjusted', 'error',
@@ -166,6 +182,12 @@ export function attention(books = {}, { asOf = null } = {}) {
       'It is a liability with a release date, not a saving. Holding it past the date it was due sours a relationship the company needs again.',
       { amount: contracts.retentionHeld, where: OPS('labour') }))
   }
+  if (heldByClient.due > 0) {
+    out.push(finding('retention.owed', 'money',
+      'Retention the client owes back has fallen due',
+      'The work was finished and the defect liability ran out, so this stopped being security and became a receivable. It is the one debt nobody sends an invoice for, which is why it sits for years.',
+      { amount: heldByClient.due, count: heldByClient.dueCount, where: OPS('labour') }))
+  }
   if (loose.spent > 0) {
     out.push(finding('cost.unattributed', 'money',
       'Bills are booked to no site at all',
@@ -184,6 +206,28 @@ export function attention(books = {}, { asOf = null } = {}) {
   }
 
   // ── Watch ────────────────────────────────────────────────────────
+  // Retention that fell due and was not paid. Not a loss and not an error —
+  // the money is the contractor's and the company still has it, which is a
+  // cheap way to lose the only mason who turns up on time.
+  if (heldBySub.due > 0) {
+    out.push(finding('retention.due', 'risk',
+      `Retention on ${plural(heldBySub.dueCount, 'contract is', 'contracts are')} due for release`,
+      heldBySub.lines.some((l) => l.overdueDays > 90)
+        ? 'One of these passed its release date over three months ago. A contractor who has to ask twice prices the asking into his next quotation.'
+        : 'The completion or the defect liability date has passed, so this is no longer security against anything.',
+      { amount: heldBySub.due, count: heldBySub.dueCount, where: OPS('labour') }))
+  }
+  // The state that needs a date typed in rather than a cheque written. Worth
+  // its own finding because the money is invisible to every other one: an
+  // order with no completion date can never become due, so retention on it
+  // would sit held for ever without anything ever saying so.
+  const undated = round2(heldBySub.undated + heldByClient.undated)
+  if (undated > 0) {
+    out.push(finding('retention.undated', 'risk',
+      `Retention on ${plural(heldBySub.undatedCount + heldByClient.undatedCount, 'contract has', 'contracts have')} no release date`,
+      'Nobody recorded when the work was finished, so nothing can work out when the money comes back. It will not appear as due on any date, because there is no date.',
+      { amount: undated, count: heldBySub.undatedCount + heldByClient.undatedCount, where: OPS('labour') }))
+  }
   if (jobs.overrunning > 0) {
     out.push(finding('job.overrun', 'risk',
       `${plural(jobs.overrunning, 'job is', 'jobs are')} over what they were costed at`,

@@ -3,8 +3,8 @@ import { Users, FileSignature, Plus, AlertTriangle, Clock, Printer } from 'lucid
 import * as store from '../lib/storage/corporate'
 import { makeMuster, musterCost, labourReport, TRADES, TRADE_IDS } from '../lib/labour'
 import {
-  makeWorkOrder, makeRaBill, billLadder, subcontractReport,
-  ORDER_STATUS, ORDER_STATUS_IDS, PRICING, PRICING_IDS,
+  makeWorkOrder, makeRaBill, billLadder, subcontractReport, retentionSchedule,
+  ORDER_STATUS, ORDER_STATUS_IDS, PRICING, PRICING_IDS, SIDE, SIDE_IDS, round2,
 } from '../lib/subcontract'
 import { paymentCertificate, musterSheet } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
@@ -290,15 +290,27 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
   const blankOrder = {
     contractor: '', scope: '', orderValue: '', pricing: 'lumpSum',
     retentionPercent: '5', tdsPercent: '1', projectId: '', dueOn: '', status: 'running',
+    dlpMonths: '12', releaseSplitPercent: '50',
   }
   const [order, setOrder] = useState(blankOrder)
+  // The same screen read from either end. A builder holds retention from the
+  // contractors he engages and has it held from him by the client who engaged
+  // him, and until now the app could only see the first of the two.
+  const [side, setSide] = useState('sub')
   const [billing, setBilling] = useState(null)
   const [bill, setBill] = useState({ claimedToDate: '', certifiedToDate: '', advanceRecovered: '', materialRecovered: '', penalty: '', date: today() })
 
   const report = useMemo(
-    () => subcontractReport(data.workOrders, data.raBills, { entityId: eid }),
-    [data, eid],
+    () => subcontractReport(data.workOrders, data.raBills, { entityId: eid, side }),
+    [data, eid, side],
   )
+  // Worked out per order rather than for the list, because a release date
+  // belongs to a contract and not to a company.
+  const schedules = useMemo(
+    () => Object.fromEntries(report.lines.map((l) => [l.order.id, retentionSchedule(l.order, l, {})])),
+    [report],
+  )
+  const party = SIDE[side].party
   const siteName = (id) => data.projects.find((p) => p.id === id)?.name || 'No site'
 
   const addOrder = (e) => {
@@ -309,6 +321,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
       scope: order.scope, orderValue: num(order.orderValue), pricing: order.pricing,
       retentionPercent: num(order.retentionPercent), tdsPercent: num(order.tdsPercent),
       dueOn: order.dueOn, status: order.status, createdBy: actor?.id,
+      side, dlpMonths: num(order.dlpMonths), releaseSplitPercent: num(order.releaseSplitPercent),
     })
     store.workOrders.add({ ...row, ...gate(row, 'workorder') }, actor)
     setOrder(blankOrder)
@@ -337,21 +350,54 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
     toast('Running account bill recorded')
   }
 
-  const releaseRetention = (line) => {
-    store.workOrders.update(line.order.id, { retention_released: line.retentionAccrued }, actor)
+  // Releasing the second tranche releases the first as well, because the figure
+  // stored is cumulative and there is no way to owe the completion half after
+  // paying the defects half. The guard against going backwards is the same
+  // point: a release is not undone by clicking the earlier button again.
+  const releaseThrough = (sched, index) => {
+    const upto = sched.tranches.slice(0, index + 1).reduce((t, x) => t + x.amount, 0)
+    const value = Math.max(sched.released, round2(upto))
+    store.workOrders.update(sched.order.id, { retention_released: value }, actor)
     bump()
-    toast('Retention released')
+    toast(`${sched.tranches[index].label} retention released`)
+  }
+
+  // Retention has no release date until somebody says when the work finished.
+  // Entered here rather than on the form, because on the day an order is
+  // written nobody knows.
+  const setCompleted = (orderId, date) => {
+    store.workOrders.update(orderId, { completed_on: date || '' }, actor)
+    bump()
   }
 
   const active = report.lines.find((l) => l.order.id === billing)
 
   return (
     <div className="space-y-4">
+      {/* Same ladder, opposite sign. Certified work is a cost on one side and
+          revenue on the other, so the two are never added together. */}
+      <div className="flex flex-wrap gap-1 rounded-xl bg-surface-2 p-1" role="tablist" aria-label="Which side of the contract">
+        {SIDE_IDS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={side === id}
+            onClick={() => { setSide(id); setBilling(null) }}
+            className={cx('rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+              side === id ? 'bg-surface-1 text-ink-2 shadow-sm' : 'text-ink-5 hover:text-ink-3')}
+          >
+            {SIDE[id].noun}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="Work orders" value={String(report.count)} />
-        <Stat label="Certified" value={formatCurrency(report.certified)} />
-        {/* A liability with a release date, not a saving. */}
-        <Stat label="Retention held" value={formatCurrency(report.retentionHeld)} />
+        <Stat label={side === 'sub' ? 'Work orders' : 'Client contracts'} value={String(report.count)} />
+        <Stat label={side === 'sub' ? 'Certified' : 'Billed to client'} value={formatCurrency(report.certified)} />
+        {/* A liability with a release date on one side, a receivable on the
+            other. Never a saving on either. */}
+        <Stat label={side === 'sub' ? 'Retention held' : 'Retention withheld'} value={formatCurrency(report.retentionHeld)} />
         <Stat
           label="Claimed, not certified"
           value={formatCurrency(report.unCertified)}
@@ -376,14 +422,15 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
 
       {canWrite && (
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-ink-3">New work order</h3>
+          <h3 className="text-sm font-semibold text-ink-3">New {SIDE[side].noun.toLowerCase()}</h3>
           <p className="mt-1 text-xs text-ink-5">
             The agreed scope and rates. Running account bills are entered against it, and each one states the work
             done <em>to date</em> — not this month’s amount.
+            {side === 'client' && ' On this side the certified figure is what the company earned, and the retention is money the client is holding back from it.'}
           </p>
           <form onSubmit={addOrder} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-4">
-            <Field label="Contractor" required className="sm:col-span-2">
-              <Input aria-label="Contractor" value={order.contractor} onChange={(e) => setOrder({ ...order, contractor: e.target.value })} placeholder="Sharma Plastering" />
+            <Field label={party} required className="sm:col-span-2">
+              <Input aria-label="Contractor" value={order.contractor} onChange={(e) => setOrder({ ...order, contractor: e.target.value })} placeholder={side === 'sub' ? 'Sharma Plastering' : 'Metro Development Authority'} />
             </Field>
             <Field label="Order value">
               <Input aria-label="Order value" type="number" min="0" step="0.01" value={order.orderValue} onChange={(e) => setOrder({ ...order, orderValue: e.target.value })} />
@@ -402,6 +449,14 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
             <Field label="TDS %">
               <Input aria-label="TDS percent" type="number" min="0" max="100" step="0.01" value={order.tdsPercent} onChange={(e) => setOrder({ ...order, tdsPercent: e.target.value })} />
             </Field>
+            {/* Agreed when the contract is written, which is why they are here
+                and the completion date is not. */}
+            <Field label="Defect liability (months)" hint="Counted from the day the work is finished.">
+              <Input aria-label="Defect liability months" type="number" min="0" max="120" step="1" value={order.dlpMonths} onChange={(e) => setOrder({ ...order, dlpMonths: e.target.value })} />
+            </Field>
+            <Field label="Released at completion %" hint="The rest comes back when the liability period ends.">
+              <Input aria-label="Released at completion percent" type="number" min="0" max="100" step="0.01" value={order.releaseSplitPercent} onChange={(e) => setOrder({ ...order, releaseSplitPercent: e.target.value })} />
+            </Field>
             {data.projects.length > 0 && (
               <Field label="Site" className="sm:col-span-2">
                 <Select aria-label="Work order site" value={order.projectId} onChange={(e) => setOrder({ ...order, projectId: e.target.value })}>
@@ -416,7 +471,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
               </Select>
             </Field>
             <div className="sm:col-span-4">
-              <Button type="submit" disabled={!order.contractor.trim()}><Plus size={16} /> Create work order</Button>
+              <Button type="submit" disabled={!order.contractor.trim()}><Plus size={16} /> Create {SIDE[side].noun.toLowerCase()}</Button>
             </div>
           </form>
         </Card>
@@ -494,11 +549,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
                   <Button variant="ghost" onClick={() => { setBilling(l.order.id); setBill({ ...bill, claimedToDate: '', certifiedToDate: '' }) }}>
                     <Plus size={14} /> RA bill
                   </Button>
-                  {l.retentionHeld > 0 && (
-                    <Button variant="ghost" aria-label={`Release retention for ${l.order.contractor}`} onClick={() => releaseRetention(l)}>
-                      Release retention
-                    </Button>
-                  )}
+
                 </div>
               )}
             </div>
@@ -506,10 +557,66 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company })
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
               <Cell label="Order" value={l.orderValue ? formatCurrency(l.orderValue) : '—'} />
               <Cell label="Certified" value={formatCurrency(l.certifiedToDate)} />
-              <Cell label="Paid out" value={formatCurrency(l.netPayable)} />
+              <Cell label={side === 'sub' ? 'Paid out' : 'Received'} value={formatCurrency(l.netPayable)} />
               <Cell label="Retention held" value={formatCurrency(l.retentionHeld)} tone={l.retentionHeld > 0 ? 'warn' : undefined} />
               <Cell label="Of the order" value={l.percentComplete === null ? '—' : `${l.percentComplete}%`} />
             </div>
+
+            {/* When it comes back. A balance held with no date against it is the
+                state this block exists to make visible rather than restful. */}
+            {schedules[l.order.id]?.accrued > 0 && (
+              <div className="mt-3 rounded-xl border border-line-soft p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-[1px] text-ink-5">Retention release</h4>
+                  <label className="flex items-center gap-2 text-[0.7rem] text-ink-5">
+                    Work finished
+                    <input
+                      type="date"
+                      aria-label={`Completion date for ${l.order.contractor}`}
+                      value={l.order.completed_on || ''}
+                      disabled={!canWrite}
+                      onChange={(e) => setCompleted(l.order.id, e.target.value)}
+                      className="rounded-lg border border-line-soft bg-surface-1 px-2 py-1 text-[0.7rem] text-ink-2"
+                    />
+                  </label>
+                </div>
+                {schedules[l.order.id].overReleased > 0 && (
+                  <p className="mt-2 text-[0.7rem] font-semibold text-red-600">
+                    {formatCurrency(schedules[l.order.id].overReleased)} more has been released than was ever held.
+                  </p>
+                )}
+                <ul className="mt-2 space-y-1.5">
+                  {schedules[l.order.id].tranches.map((t, i) => (
+                    <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="text-ink-4">
+                        {t.label}
+                        {t.dueOn
+                          ? <span className="text-ink-6"> · due {t.dueOn}</span>
+                          : <span className="text-amber-600"> · no date until the work is marked finished</span>}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="tabular font-semibold text-ink-2">{formatCurrency(t.outstanding || t.amount)}</span>
+                        {t.state === 'released' && <Badge color="#16a34a">released</Badge>}
+                        {t.state === 'due' && <Badge color="#d97706">{t.overdueDays > 0 ? `${t.overdueDays} days over` : 'due'}</Badge>}
+                        {t.state === 'waiting' && <Badge color="#64748b">not yet</Badge>}
+                        {t.state === 'undated' && <Badge color="#d97706">undated</Badge>}
+                        {canWrite && side === 'sub' && t.outstanding > 0 && (
+                          <Button variant="ghost" aria-label={`Release ${t.label.toLowerCase()} retention for ${l.order.contractor}`} onClick={() => releaseThrough(schedules[l.order.id], i)}>
+                            Release
+                          </Button>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {side === 'client' && schedules[l.order.id].due > 0 && (
+                  <p className="mt-2 text-[0.7rem] text-amber-600">
+                    {formatCurrency(schedules[l.order.id].due)} of this stopped being security and became a debt. Nobody
+                    sends an invoice for retention, which is why it sits.
+                  </p>
+                )}
+              </div>
+            )}
 
             {l.count > 0 && (
               <div className="mt-3 overflow-x-auto">

@@ -17,6 +17,39 @@ import { dirname, join } from 'node:path'
 
 const CONSTRAINT = /^(primary|unique|check|foreign|constraint|exclude)\b/i
 
+// A commented-out column is not a column.
+//
+// The CREATE TABLE pass strips `--` line by line; the ALTER and DO-block passes
+// used to run over the raw file, so an `alter table ... add column` sitting
+// behind a comment marker was still read as a column that exists. That is the
+// worst kind of hole in a checker — it does not report anything missing, it
+// reports something present that is not, and the suite that depends on it goes
+// green either way. Found by commenting a column out and watching nothing fail.
+//
+// Single-quoted strings are honoured so a default like '--' would survive;
+// dollar-quoted function bodies are left alone, because the loop pass has to
+// read inside them and no comment in this file hides an ALTER there.
+export function stripComments(text) {
+  let out = ''
+  let quoted = false
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i]
+    if (quoted) {
+      out += c
+      if (c === "'") quoted = false
+      continue
+    }
+    if (c === "'") { quoted = true; out += c; continue }
+    if (c === '-' && text[i + 1] === '-') {
+      while (i < text.length && text[i] !== '\n') i += 1
+      out += '\n'
+      continue
+    }
+    out += c
+  }
+  return out
+}
+
 export function columnsFromSql(text) {
   const tables = new Map()
   const add = (table, column) => {
@@ -41,14 +74,15 @@ export function columnsFromSql(text) {
     }
   }
 
-  const alters = text.matchAll(/alter table (?:if exists )?public\.(\w+)\s+add column (?:if not exists )?(\w+)/gi)
+  const live = stripComments(text)
+  const alters = live.matchAll(/alter table (?:if exists )?public\.(\w+)\s+add column (?:if not exists )?(\w+)/gi)
   for (const [, table, column] of alters) add(table, column)
 
   // `updated_at` and `deleted_at` are added to twenty-odd tables at once by a
   // DO block looping over an array of names. Reading only the literal ALTERs
   // would report every one of those columns as missing, which is the sort of
   // false alarm that gets a check switched off.
-  const loops = text.matchAll(/do \$\$[\s\S]*?foreach \w+ in array array\[([\s\S]*?)\]([\s\S]*?)end \$\$;/gi)
+  const loops = live.matchAll(/do \$\$[\s\S]*?foreach \w+ in array array\[([\s\S]*?)\]([\s\S]*?)end \$\$;/gi)
   for (const [, list, body] of loops) {
     const names = [...list.matchAll(/'(\w+)'/g)].map((m) => m[1])
     for (const [, column] of body.matchAll(/add column (?:if not exists )?(\w+)/gi)) {
