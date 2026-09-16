@@ -35,6 +35,7 @@ for Vite's resolver.
 | `gst2b.test.mjs` | 52 | the input credit a vendor never filed for, and two ways of reading a name that made it invisible |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `idempotent.test.mjs` | 31 | a second tap on a slow connection, and the line between that and two real gangs |
+| `intake.test.mjs` | 62 | somebody else's spreadsheet into the books, and why a loose column match has to be shown before it is acted on |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
 | `labour.test.mjs` | 115 | the muster roll, cumulative running-account bills, and what is actually built |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
@@ -67,7 +68,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **3,392** | |
+| | **3,454** | |
 
 ## Browser — `tests/browser/`
 
@@ -104,6 +105,7 @@ node tests/browser/rtlui.mjs
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `gst2bui.mjs` | 16 | the credit a vendor never filed for, and a 2B that was never loaded |
+| `importui.mjs` | 31 | the mapping shown before anything is written, the rows it will skip, and the file it declines to read |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 24 | the sign-in screen, its three providers, and what it says when one refuses |
 | `labourui.mjs` | 67 | the muster roll, RA bills stated to date, retention, and built against spent |
@@ -133,7 +135,7 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,747** | |
+| | **1,778** | |
 
 That total is what one sweep of the demo build reports. The column above it sums
 to 1,580: `loginui.mjs`'s 24 are the difference, because that suite needs the

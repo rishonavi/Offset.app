@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Boxes, HandCoins, Users, HardHat, Truck, Building2, Wallet, Plus, Check } from 'lucide-react'
+import { Boxes, HandCoins, Users, HardHat, Truck, Building2, Wallet, Plus, Check, FileSpreadsheet } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
@@ -13,6 +13,7 @@ import {
 import { formatCurrency, formatDate } from '../lib/format'
 import { approvalQueue } from '../lib/corporate'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx, attempt } from '../components/ui'
+import SheetImport from '../components/SheetImport'
 import PageHeader from '../components/PageHeader'
 import Materials from '../components/MaterialsTabs'
 import Projects from '../components/ProjectsTabs'
@@ -39,6 +40,8 @@ const TABS = [
   { id: 'sales', label: 'Sales', icon: Building2 },
   { id: 'advances', label: 'Advances', icon: HandCoins },
   { id: 'payroll', label: 'Payroll', icon: Wallet },
+  // Everything here can be typed in and on a real site nothing is.
+  { id: 'import', label: 'Import', icon: FileSpreadsheet },
 ]
 
 const thisMonth = () => new Date().toISOString().slice(0, 7)
@@ -185,6 +188,7 @@ export default function Operations() {
       {tab === 'sales' && <Sales {...shared} />}
       {tab === 'advances' && <Advances {...shared} />}
       {tab === 'payroll' && <Payroll {...shared} />}
+      {tab === 'import' && <SheetImport {...shared} />}
     </div>
   )
 }

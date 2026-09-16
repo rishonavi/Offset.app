@@ -346,6 +346,42 @@ single hour of overtime**: the condition picked every seventh day back and the
 list of working days contains no multiple of seven. The demo's overtime column
 had been flat zero since it was written, and `overtimePercent` with it.
 
+### Somebody else's spreadsheet
+
+Everything here can be typed in, and on a real site nothing is. The sales list
+is a spreadsheet the broker sent; the salary register is whatever the last
+accountant left behind. Re-keying four hundred flats is not a data-entry
+problem, it is the reason an app never gets used.
+
+`intake.js` is one importer rather than four, because the hard parts are the
+same every time. Somebody else named the columns — "Carpet Area (sq.ft.)",
+"CARPET", "Carpet_Area" are one column — so matching has to be loose. **And a
+loose match is a guess, so it is shown before anything is written**: which of
+your columns became which field, which of them were ignored, and which rows will
+be skipped and why. An importer that guesses silently and writes four hundred
+rows is worse than one that refuses.
+
+Three rules follow:
+
+- **A missing required column refuses the whole file.** Four hundred unnamed
+  rows is not a partial success.
+- **A skipped row is named by its line number.** "12 skipped" with no reason is
+  how somebody finds out in March that the penthouse is missing. Blank rows are
+  kept while reading so that line number is the line number in the *file* — the
+  reader drops them by default, which would make every number after the first
+  blank row a lie.
+- **Ambiguity is reported, not resolved.** "Rate" and "Rate per sq ft" both look
+  like the rate; matching is scored so the answer does not depend on the order a
+  spreadsheet happens to be in, and a tie is said out loud.
+
+Three targets: flats and shops, a payroll register, and a vendor's price list —
+one row per material, grouped into quotations by vendor and reference, which is
+what a quotation is.
+
+A `.numbers` file is a zip package rather than a spreadsheet and nothing here
+reads one, so it is detected by name and the person is told to export, rather
+than shown "could not read file" about a file that is perfectly fine.
+
 ### Recorded, agreed, projected, estimated
 
 Payroll already drew this line and it took a bug to learn why: a month that has

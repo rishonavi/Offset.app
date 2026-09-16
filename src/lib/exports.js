@@ -107,11 +107,17 @@ export function exportPDF(rows, { title = 'Expense Report', subtitle = '' } = {}
 
 // ── Import (.xlsx / .csv) ──────────────────────────────────────────
 // Returns an array of raw row objects keyed by their header cells.
-export async function parseSpreadsheet(file) {
+// `keepBlanks` matters more than it looks. Without it the reader drops empty
+// rows before anything else sees them, so a row reported as "line 5" is at line
+// 5 of what survived rather than line 5 of the file — and the whole use of
+// printing a line number is that somebody can open the sheet and go to it.
+// Defaulted off, because the importers written before this counted on rows
+// being dropped for them.
+export async function parseSpreadsheet(file, { keepBlanks = false } = {}) {
   const buf = await file.arrayBuffer()
   const wb = XLSX.read(buf, { cellDates: true })
   const ws = wb.Sheets[wb.SheetNames[0]]
-  return XLSX.utils.sheet_to_json(ws, { defval: '' })
+  return XLSX.utils.sheet_to_json(ws, { defval: '', blankrows: keepBlanks })
 }
 
 // Normalise an arbitrary cell value into a yyyy-MM-dd string.
