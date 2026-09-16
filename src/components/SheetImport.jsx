@@ -5,6 +5,8 @@ import { parseSpreadsheet } from '../lib/exports'
 import {
   TARGETS, TARGET_IDS, mapRows, describeMatch, isNumbersPackage, NUMBERS_NOTE,
 } from '../lib/intake'
+import { extractText } from '../lib/ocr'
+import { readPaper, paperRows, describePaper, PAPERS } from '../lib/papers'
 import { Card, Button, Field, Select, Badge, cx, attempt } from './ui'
 
 // Somebody else's spreadsheet, into the books.
@@ -21,6 +23,11 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
   const [target, setTarget] = useState('units')
   const [projectId, setProjectId] = useState('')
   const [rows, setRows] = useState(null)
+  // A PDF is one document rather than four hundred rows, so it is held apart
+  // and previewed differently — and then confirmed through the same button, so
+  // there is one way to say yes rather than two.
+  const [paper, setPaper] = useState(null)
+  const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const [done, setDone] = useState(null)
 
@@ -28,14 +35,41 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
     () => (rows ? mapRows(rows, target, { entityId: eid, projectId: projectId || null }) : null),
     [rows, target, eid, projectId],
   )
+  const fromPaper = useMemo(
+    () => (paper ? paperRows(paper, { entityId: eid, projectId: projectId || null }) : []),
+    [paper, eid, projectId],
+  )
   const spec = TARGETS[target]
+  // Whichever came in, this is what will be written.
+  const ready = paper ? fromPaper : (plan?.ready || [])
 
   const load = async (file) => {
     setDone(null)
+    setRows(null)
+    setPaper(null)
     if (!file) return
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf'
+    if (isPdf || /^image\//.test(file.type)) {
+      setBusy(true)
+      setNote('Reading the document…')
+      try {
+        // `extractText` reads a generated PDF as text and falls back to OCR on a
+        // scanned one. Nothing here needs to know which it was.
+        const read = readPaper(await extractText(file))
+        setPaper(read)
+        // The kind decides where it goes, rather than whatever the picker
+        // happened to be left on.
+        if (read.target) setTarget(read.target)
+        setNote(`${file.name} — ${describePaper(read)}`)
+      } catch (e) {
+        setNote(e?.message || 'That document could not be read.')
+      }
+      setBusy(false)
+      return
     // A .numbers document is a package rather than a spreadsheet. Saying so
     // beats "could not read file" about a file that is perfectly fine.
-    if (isNumbersPackage(file.name)) { setRows(null); setNote(NUMBERS_NOTE); return }
+    }
+    if (isNumbersPackage(file.name)) { setNote(NUMBERS_NOTE); return }
     try {
       // Blank rows kept, so a skipped row's line number is the line number in
       // the file rather than in whatever survived the reader.
@@ -49,10 +83,10 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
   }
 
   const write = () => {
-    if (!plan?.ready.length) return
+    if (!ready.length) return
     let written = 0
     let repeats = 0
-    for (const row of plan.ready) {
+    for (const row of ready) {
       const saved = attempt(() => {
         const out = store[target].add(row, actor, eid)
         if (out?._repeat) repeats += 1; else written += 1
@@ -62,7 +96,8 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
       if (!saved) break
     }
     setRows(null)
-    setDone({ written, repeats, of: plan.ready.length })
+    setPaper(null)
+    setDone({ written, repeats, of: ready.length })
     bump()
     toast(`${written} ${written === 1 ? spec.noun : `${spec.noun}s`} added`)
   }
@@ -96,10 +131,10 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
           </Field>
         )}
         <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-line px-4 text-[0.78rem] font-semibold text-ink-3 hover:border-line-strong">
-          <FileSpreadsheet size={15} /> Choose a file
+          <FileSpreadsheet size={15} /> {busy ? 'Reading…' : 'Choose a file'}
           <input
             type="file"
-            accept=".xlsx,.xls,.csv,.numbers"
+            accept=".xlsx,.xls,.csv,.numbers,.pdf,image/*"
             aria-label="Spreadsheet to import"
             className="hidden"
             onChange={(e) => load(e.target.files?.[0])}
@@ -107,7 +142,10 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
         </label>
       </div>
 
-      <p className="mt-2 text-[0.7rem] text-ink-6">Columns like: {spec.example}</p>
+      <p className="mt-2 text-[0.7rem] text-ink-6">
+        A spreadsheet with columns like: {spec.example}. Or one document — a salary slip, a quotation, an allotment
+        letter — as a PDF or a photograph.
+      </p>
       {note && <p className="mt-2 text-xs text-ink-4">{note}</p>}
 
       {done && (
@@ -117,13 +155,68 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
         </p>
       )}
 
-      {plan && plan.refused && (
+      {paper && (
+        <div className="mt-3 rounded-xl border border-line-soft p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-ink-3">
+              {paper.kind ? PAPERS[paper.kind].label : 'Not recognised'}
+            </p>
+            {paper.guessed && paper.kind && (
+              <Badge color={paper.confident ? '#64748b' : '#d97706'}>
+                {paper.confident ? 'recognised' : 'unsure — check it'}
+              </Badge>
+            )}
+          </div>
+
+          {!paper.read ? (
+            <p className="mt-2 text-xs text-ink-5">{describePaper(paper)}</p>
+          ) : (
+            <>
+              <ul className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
+                {Object.entries(readFields(paper)).map(([label, value]) => (
+                  <li key={label} className="flex items-center justify-between gap-2 text-[0.7rem]">
+                    <span className="text-ink-5">{label}</span>
+                    <span className="truncate font-medium text-ink-2">{value}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Not found is not nought. A slip with no medical line says
+                  nothing about medical, and a zero would make the reader's
+                  silence into the document's statement. */}
+              {paper.missing?.length > 0 && (
+                <p className="mt-2 text-[0.7rem] text-ink-6">
+                  Nothing in it about: {paper.missing.join(', ')}. Those are left at nothing rather than guessed.
+                </p>
+              )}
+
+              {/* The document's own totals are checked, not trusted. */}
+              {paper.problems?.length > 0 && (
+                <p className="mt-2 text-[0.7rem] text-amber-600">
+                  {paper.problems.join('; ')}.
+                </p>
+              )}
+            </>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line-soft pt-3">
+            <span className="text-xs text-ink-5">
+              {ready.length ? `1 ${spec.noun} ready` : 'Nothing to add from this'}
+            </span>
+            <Button type="button" onClick={write} disabled={!ready.length}>
+              <Check size={15} /> Add {spec.noun}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!paper && plan && plan.refused && (
         <p className="mt-3 flex items-start gap-2 text-sm text-red-600">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" /> {plan.refused} Nothing has been written.
         </p>
       )}
 
-      {plan && !plan.refused && (
+      {!paper && plan && !plan.refused && (
         <div className="mt-3 rounded-xl border border-line-soft p-3">
           <p className="text-xs font-semibold text-ink-3">{describeMatch(plan.match, target)}</p>
 
@@ -183,4 +276,40 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
       )}
     </Card>
   )
+}
+
+// The handful of fields worth showing back, per kind. A dump of everything the
+// parser produced is not a check anybody performs.
+function readFields(paper) {
+  const money = (n) => (n || n === 0 ? `₹${Number(n).toLocaleString('en-IN')}` : '—')
+  if (paper.kind === 'salarySlip') {
+    return {
+      Name: paper.name || '—',
+      Code: paper.code || '—',
+      Month: paper.period || '—',
+      Basic: money(paper.components?.basic),
+      'House rent': money(paper.components?.hra),
+      Gross: money(paper.gross),
+      Deductions: money(paper.totalDeductions),
+      'Take-home': money(paper.net),
+    }
+  }
+  if (paper.kind === 'quotation') {
+    return {
+      Vendor: paper.vendor || '—',
+      Reference: paper.ref || '—',
+      Date: paper.date || '—',
+      Materials: String(paper.lines?.length || 0),
+      First: paper.lines?.[0] ? `${paper.lines[0].name} @ ${money(paper.lines[0].rate)}` : '—',
+    }
+  }
+  return {
+    Unit: paper.name || '—',
+    Tower: paper.tower || '—',
+    Floor: paper.floor || '—',
+    Configuration: paper.configuration || '—',
+    'Carpet area': paper.carpetArea || '—',
+    Price: money(paper.agreedPrice),
+    Buyer: paper.buyer || '—',
+  }
 }

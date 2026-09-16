@@ -155,6 +155,81 @@ const quotes = await ls('pl_corp_quotes')
 ok('two quotations are on file', quotes.length === 2, String(quotes.length))
 ok('the first carries both its materials', quotes[0]?.lines?.length === 2, String(quotes[0]?.lines?.length))
 
+console.log('\n── AND ONE DOCUMENT RATHER THAN FOUR HUNDRED ROWS ──')
+// A PDF is one document of a shape somebody chose. The reader takes the text
+// out of a generated PDF and falls back to OCR on a scan; this uses a text one,
+// built here so the test does not depend on a fixture file.
+await open()
+const slip = [
+  'NAVI BUILDERS PVT LTD',
+  'Payslip for the month of June 2026',
+  '',
+  'Employee Name: A. Deshmukh',
+  'Employee Code: E-07',
+  'PAN: AKLPD9911F',
+  '',
+  'Earnings                      Deductions',
+  'Basic              30,000.00  PF                1,800.00',
+  'HRA                12,000.00  Professional Tax    200.00',
+  'Conveyance          1,600.00',
+  'Gross Earnings     43,600.00  Total Deductions  2,000.00',
+  'Net Pay            41,600.00',
+].join('\n')
+// A minimal one-page PDF carrying the text, so pdfjs reads it as text rather
+// than reaching for OCR — which is the path a real generated payslip takes.
+const pdf = await p.evaluate((text) => {
+  const esc = (s) => s.replace(/([()\\])/g, '\\$1')
+  const lines = text.split('\n')
+  const content = `BT /F1 10 Tf 12 TL 40 780 Td\n${lines.map((l) => `(${esc(l)}) Tj T*`).join('\n')}\nET`
+  const objs = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ]
+  let out = '%PDF-1.4\n'
+  const offsets = []
+  objs.forEach((o, i) => { offsets.push(out.length); out += `${i + 1} 0 obj\n${o}\nendobj\n` })
+  const start = out.length
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n`
+  for (const off of offsets) out += `${String(off).padStart(10, '0')} 00000 n \n`
+  out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${start}\n%%EOF`
+  return Array.from(new TextEncoder().encode(out))
+}, slip)
+await p.locator('#main-content input[aria-label="Spreadsheet to import"]').setInputFiles({
+  name: 'Payslip June 2026.pdf', mimeType: 'application/pdf', buffer: Buffer.from(pdf),
+})
+await p.waitForTimeout(2500)
+t = await main()
+ok('the document is recognised for what it is', /Read as a salary slip/i.test(t), t.slice(0, 900))
+// The kind decides where it goes, rather than whatever the picker was left on.
+ok('and it moved the picker to the payroll', /salary slip/i.test(t))
+ok('the name was read', /A\. Deshmukh/.test(t), t.slice(0, 1200))
+// The two-column layout, which is the thing that reads a slip as a tenth of
+// itself when it goes wrong.
+ok('the basic came off the left column', /₹30,000/.test(t), t.slice(0, 1400))
+ok('and the deductions off the right', /₹2,000/.test(t), t.slice(0, 1400))
+ok('with the take-home', /₹41,600/.test(t), t.slice(0, 1400))
+// Not found is not nought.
+ok('what the slip says nothing about is named', /Nothing in it about/.test(t), t.slice(0, 1600))
+ok('one record, not four hundred rows', /1 employee ready/.test(t), t.slice(0, 1600))
+// Counted as a delta: the payroll already has the two people the spreadsheet
+// section put there, and a check for "exactly one" would be asserting that an
+// earlier part of this file did nothing.
+const before = (await ls('pl_corp_employees')).length
+ok('and nothing is written yet', before === 2, String(before))
+
+await p.getByRole('button', { name: /^Add employee$/i }).first().click()
+await p.waitForTimeout(1200)
+const all = await ls('pl_corp_employees')
+ok('one more person is on the payroll', all.length === before + 1, String(all.length))
+const fromSlip = all.find((e) => e.code === 'E-07')
+ok('found by the code off the slip', Boolean(fromSlip), all.map((e) => e.code).join(','))
+ok('with the pay structure off the slip', Number(fromSlip?.pay?.basic) === 30000, JSON.stringify(fromSlip?.pay))
+ok('and the house rent allowance from the column beside it', Number(fromSlip?.pay?.hra) === 12000)
+ok('and the provident fund is not on an employee record', fromSlip?.pay?.pf === undefined)
+
 ok('no page errors', errs.length === 0, errs.join(' | '))
 console.log(`\n${pass} passed, ${fail} failed`)
 await b.close()

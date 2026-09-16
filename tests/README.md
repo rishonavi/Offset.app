@@ -47,6 +47,7 @@ for Vite's resolver.
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 62 | empty install, sample data, and the different list a builder is given |
 | `ops.test.mjs` | 214 | inventory, payables, advances, payroll, and each over a period |
+| `papers.test.mjs` | 89 | a salary slip, a quotation and an allotment letter read as documents, including as a PDF reader actually hands them over |
 | `payrollruns.test.mjs` | 56 | a month that was run against a month worked out again, and what a raise in June must not do to March |
 | `retention.test.mjs` | 89 | when money held back comes back, which tranche a release pays first, and why a client contract can never be a cost |
 | `periods.test.mjs` | 60 | a month that has been closed, and the store rather than the button refusing to write into it |
@@ -68,7 +69,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **3,454** | |
+| | **3,543** | |
 
 ## Browser — `tests/browser/`
 
@@ -105,7 +106,7 @@ node tests/browser/rtlui.mjs
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `gst2bui.mjs` | 16 | the credit a vendor never filed for, and a 2B that was never loaded |
-| `importui.mjs` | 31 | the mapping shown before anything is written, the rows it will skip, and the file it declines to read |
+| `importui.mjs` | 45 | the mapping shown before anything is written, the rows it will skip, and the file it declines to read |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 24 | the sign-in screen, its three providers, and what it says when one refuses |
 | `labourui.mjs` | 67 | the muster roll, RA bills stated to date, retention, and built against spent |
@@ -135,7 +136,7 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,778** | |
+| | **1,792** | |
 
 That total is what one sweep of the demo build reports. The column above it sums
 to 1,580: `loginui.mjs`'s 24 are the difference, because that suite needs the

@@ -42,9 +42,13 @@ export const normaliseHeader = (h) => String(h ?? '')
 // ₹1,23,456.50 is a number. So is "1234". "N/A" is not, and neither is "".
 export function toNumber(value) {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null
-  const s = String(value ?? '').replace(/[₹$,\s]/g, '').replace(/[^0-9.\-]/g, '')
-  if (!s || s === '-' || s === '.') return null
-  const n = Number(s)
+  // The first number-like run, rather than every digit-ish character left after
+  // stripping. "Rs. 1,24,50,000" stripped character by character keeps the full
+  // stop from "Rs." and becomes 0.1245 — a hundred-thousand-fold error from a
+  // punctuation mark, and it reads like a real figure.
+  const m = /-?\d[\d,]*(?:\.\d+)?/.exec(String(value ?? '').replace(/[₹$]/g, ' '))
+  if (!m) return null
+  const n = Number(m[0].replace(/,/g, ''))
   return Number.isFinite(n) ? n : null
 }
 

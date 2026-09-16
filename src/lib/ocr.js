@@ -42,12 +42,56 @@ async function extractPdfText(file) {
     for (let i = 1; i <= pages; i++) {
       const page = await doc.getPage(i)
       const content = await page.getTextContent()
-      text += content.items.map((it) => it.str).join(' ') + '\n'
+      text += linesFromItems(content.items) + '\n'
     }
     return text
   } catch {
     return ''
   }
+}
+
+// A page's text items, back into lines.
+//
+// Joining every item on a page with a single space — which is what this did —
+// turns a document into one enormous line. Line breaks go, and so does the gap
+// between the earnings column and the deductions column on a payslip, which is
+// the only thing separating them. Every parser downstream works on lines, so
+// all of them were reading a blob and finding whatever they happened to find.
+//
+// The items carry their own position: `transform[5]` is the baseline and
+// `transform[4]` the left edge. Grouping by baseline gives the lines back, and
+// the distance between the end of one item and the start of the next gives the
+// gap — a wide one is a column boundary, written as two spaces because that is
+// what the readers treat as one.
+export function linesFromItems(items = []) {
+  const rows = new Map()
+  for (const it of items) {
+    if (!it?.str || !it.str.trim()) continue
+    // Rounded into buckets, because a baseline wanders by a fraction of a point
+    // within one line and an exact key would make every word its own row.
+    const y = Math.round((it.transform?.[5] ?? 0) / 2)
+    if (!rows.has(y)) rows.set(y, [])
+    rows.get(y).push({ x: it.transform?.[4] ?? 0, str: it.str, width: it.width || 0, height: it.height || 10 })
+  }
+  return [...rows.entries()]
+    // Down the page: PDF y grows upwards.
+    .sort((a, b) => b[0] - a[0])
+    .map(([, row]) => {
+      row.sort((a, b) => a.x - b.x)
+      let out = ''
+      let end = null
+      for (const it of row) {
+        if (end !== null) {
+          const gap = it.x - end
+          const wide = Math.max(4, (it.height || 10) * 0.6)
+          out += gap > wide ? '  ' : gap > 0.4 ? ' ' : ''
+        }
+        out += it.str
+        end = it.x + it.width
+      }
+      return out.trimEnd()
+    })
+    .join('\n')
 }
 
 async function renderPdfFirstPage(file) {

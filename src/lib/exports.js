@@ -132,6 +132,30 @@ export function normalizeDate(value) {
   }
   const iso = parseISO(s)
   if (isValid(iso)) return format(iso, 'yyyy-MM-dd')
+
+  // Day first, which is what this app's users write.
+  //
+  // Handing `12-06-2026` to `new Date` gets the 6th of December, because that
+  // is what a browser does with an unqualified numeric date. In an app that is
+  // India-first everywhere else, a bill dated 12-06-2026 is the twelfth of
+  // June, and every spreadsheet imported into it until now has had those two
+  // swapped on any day of the month up to the twelfth — silently, since the
+  // result is always a real date.
+  //
+  // Where one of the two is above twelve it cannot be the month, whichever
+  // order it was written in, so that case is read rather than assumed.
+  const dmy = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/.exec(s)
+  if (dmy) {
+    let [, day, month, year] = dmy
+    if (Number(month) > 12 && Number(day) <= 12) [day, month] = [month, day]
+    if (Number(month) >= 1 && Number(month) <= 12 && Number(day) >= 1 && Number(day) <= 31) {
+      const y = year.length === 2 ? `20${year}` : year
+      const candidate = parseISO(`${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)
+      if (isValid(candidate)) return format(candidate, 'yyyy-MM-dd')
+    }
+    return ''
+  }
+
   const fallback = new Date(s)
   return isValid(fallback) ? format(fallback, 'yyyy-MM-dd') : ''
 }

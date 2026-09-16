@@ -382,6 +382,48 @@ A `.numbers` file is a zip package rather than a spreadsheet and nothing here
 reads one, so it is detected by name and the person is told to export, rather
 than shown "could not read file" about a file that is perfectly fine.
 
+### A document, read
+
+A spreadsheet is four hundred rows of one shape. A PDF is one document of a
+shape somebody chose — a salary slip, a vendor's quotation, an allotment letter.
+`intake.js` matches columns because a sheet has columns; `papers.js` matches
+**labels**, because a document has a label in front of every figure and that is
+the only thing all of them have in common.
+
+The same three rules as the spreadsheet importer, and one more:
+
+- **What was not found is said, not filled.** A slip with no PF line gives a PF
+  of nothing-at-all, not nought. One of those is a fact about the slip and the
+  other is a fact about the reader.
+- **The document's own totals are checked, not trusted.** A slip saying Gross
+  43,600 when its own lines come to 42,000 has been read wrong or written wrong,
+  and either way somebody has to look. The arithmetic is done and the
+  disagreement reported.
+- **One document is one record**, so a letter about one flat does not produce
+  four rows.
+- **The kind is guessed and the guess is admitted.** Reading a quotation as a
+  salary slip produces a confident set of zeroes, so an unsure guess says so.
+
+Four things went wrong writing it, every one of them silent — a wrong figure
+that reads like a right one. "Rs. 1,24,50,000" stripped character by character
+keeps the full stop from "Rs." and becomes 0.1245. "TMT bars 12mm" has a 12 in
+it, counted as a quantity. `12-06-2026` handed to a browser is the sixth of
+December, in an app that is India-first everywhere else — and that one reached
+the spreadsheet importer too, which had been swapping the two numbers on every
+day of the month up to the twelfth since it was written.
+
+And the largest: **the PDF reader joined every text item on a page with a single
+space**, so a document arrived as one enormous line. Line breaks went, and with
+them the gap between the earnings column and the deductions column on a payslip
+— the only thing separating them. Every parser downstream works on lines, so all
+of them were reading a blob. Lines are rebuilt from the items' own baselines
+now.
+
+Even rebuilt, a real reader collapses the wide gaps, so `Basic        30,000.00
+      PF     1,800.00` comes back as `Basic  30,000.00 PF  1,800.00`. Splitting
+on wide gaps therefore reads a slip as a third of itself; the line reader scans
+for **label-then-number** instead, which does not care how wide the gaps were.
+
 ### Recorded, agreed, projected, estimated
 
 Payroll already drew this line and it took a bug to learn why: a month that has
