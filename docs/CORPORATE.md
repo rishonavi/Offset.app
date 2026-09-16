@@ -467,9 +467,50 @@ The deliberate break for the central rule is worth quoting: with the screen
 recomputing instead of reading the record, the recorded month went from
 ₹91,000 to ₹1,19,000 on a raise, and down to ₹35,000 when somebody left.
 
+**Done and verified** — cost centres, 50 logic assertions and 24 on screen:
+
+Two things were dead. `department_id` has been a column on expenses and income
+since the corporate layer was written, and no form ever filled it in.
+`budget_monthly` has been on a department just as long, and no screen ever
+compared it to anything — you could give a cost centre a budget and the app
+would never once tell you that you were over it. The same shape as the
+approvals switch that changed nothing.
+
+`DepartmentField` puts the question on both entry forms, under the same rule as
+`SiteField`: a single company's books only, absent entirely when the company has
+no departments. A site and a cost centre are different questions and a cost can
+need both — the tower is the job the money was spent on, Construction is the
+part of the company whose budget it came out of.
+
+`lib/costcentres.js` is the report, and two rules do most of the work. A
+parent's figure includes the teams inside it, because that is what a divisional
+budget covers. And the company total is the sum of what each department spent
+*itself*, never the sum of the rolled-up column — adding those counts every cost
+once for its own team and again for each division above it, and a report whose
+parts exceed the whole is one nobody trusts twice.
+
+A monthly budget is scaled to the months asked for, so a quarter's spend is
+judged against a quarter's budget rather than flagging every department in the
+company. A department with no budget set reports `null` rather than zero,
+because a department with no budget is not a department within budget. And what
+nobody booked gets a line of its own with its share of the spend — the figure
+that says whether the rest of the table is worth reading.
+
+The payroll card in the same component was still projecting every month even
+where a recorded run existed, which was a loose end from the commit before this
+one. It now reads the record where there is one and counts how much of the range
+is which.
+
+Worth recording: the browser assertion on that total passed against a table
+plainly showing ₹18,20,000, because it searched the whole page and the Reports
+page carries an expense total of its own further down. It reads the table's own
+block now, bounded so it cannot run on into the preview below it. An assertion
+that cannot fail is worse than no assertion, and this one took a deliberate
+break to expose.
+
 **Next**, in order:
 
-1. Departments on entry forms; budgets and reports per cost centre
+1. ~~Departments on entry forms; budgets and reports per cost centre~~ — built
 2. ~~The approvals queue~~ — built; four documents share one queue
 3. ~~A record of payroll runs~~ — built; a month is frozen once approved
 4. The client storage layer talking to those tables — `storage/corporate.js` is

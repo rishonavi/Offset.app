@@ -16,6 +16,7 @@ import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
 import { Field, FormSection, Input, Select, Textarea, Button, MoreDetails } from './ui'
 import SiteField from './SiteField'
+import DepartmentField from './DepartmentField'
 
 const DETAIL_FIELDS = ['tax', 'payment_method', 'status', 'due_date', 'recurrence', 'description']
 // What each of those looks like when it holds nothing worth showing. 'paid' and
@@ -66,6 +67,9 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
     // Which job this belongs to. Blank in personal books and in any company
     // with no sites, where the field is not shown at all.
     project_id: initial?.project_id || '',
+    // Which part of the company carries it. Blank in personal books and in any
+    // company with no departments, where the field is not shown at all.
+    department_id: initial?.department_id || '',
   }
   const [restored] = useState(() => {
     const draft = readDraft(key)
@@ -317,6 +321,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         description: form.description.trim(),
         receipt_url: receipt_url || null,
         project_id: form.project_id || null,
+        department_id: form.department_id || null,
       })
       // The entry exists now; the draft of it is only a way to lose track of
       // which is which.
@@ -402,6 +407,11 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         )}
 
         <SiteField value={form.project_id} onChange={(v) => setForm((f) => ({ ...f, project_id: v }))} />
+
+        <DepartmentField
+          value={form.department_id}
+          onChange={(v) => setForm((f) => ({ ...f, department_id: v }))}
+        />
 
         <FormSection title="The cost" />
 

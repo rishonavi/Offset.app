@@ -302,7 +302,13 @@ ok('and what is still owed', /30,000/.test(rep), rep.slice(-900))
 ok('an advance is not counted as a cost', /An advance is not a cost/.test(rep))
 ok('the settled one is not still listed', /No due date\t1\t₹30,000/.test(rep), rep.slice(-700))
 ok('with no range it answers for this month', /for this month/.test(rep))
-ok('and admits it is not a record of past runs', /no history of past payroll runs/.test(rep))
+// No run has been recorded in these books, so this month is arithmetic on
+// today's salaries and the card has to say so. The wording changed when runs
+// became recordable — the claim it is making did not. A month that *has* been
+// run reads the other way, which payrunui covers.
+ok('and admits an unrun month is not a record of what was paid',
+  /not a record of what was paid/.test(rep), rep.slice(-900))
+ok('pointing at what to do about it', /Run a month on the Payroll tab/.test(rep), rep.slice(-900))
 ok('one month needs no month-by-month table', !/MONTH\tSTAFF/.test(rep))
 
 // A range turns it into a month-by-month statement. Built from today so the

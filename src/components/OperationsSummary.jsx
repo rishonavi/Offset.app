@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
-import { Boxes, Users, HandCoins } from 'lucide-react'
+import { Boxes, Users, HandCoins, Building } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
+import { useData } from '../context/DataContext'
 import * as store from '../lib/storage/corporate'
 import { stockOverPeriod } from '../lib/inventory'
 import { periodsBetween, payrollOverPeriods } from '../lib/payroll'
+import { costCentreReport } from '../lib/costcentres'
 import { advancesOverPeriod } from '../lib/advances'
 import { formatCurrency } from '../lib/format'
 import { Card } from './ui'
@@ -17,10 +19,10 @@ import { Card } from './ui'
 // The three answer the period differently, and the difference is worth keeping.
 // Stock and advances are dated — every movement, every advance and every
 // adjustment carries a date, so opening and closing figures over a range are
-// real. Payroll is not: Offset holds today's employees and today's salaries and
-// no history of past runs, so a past month is computed from the payroll as it
-// stands now. The card says so rather than letting a projection pass for a
-// record.
+// real. Payroll is dated only where somebody ran the month: a recorded run is
+// read back as it was, and a month nobody ran is still computed from today's
+// salaries. The card counts both and says which it is showing, rather than
+// letting a projection pass for a record.
 //
 // An advance is the odd one of the three: it is not a cost at all. It is money
 // the company is still owed, and booking it as spending is the single most
@@ -31,6 +33,9 @@ const thisMonth = () => new Date().toISOString().slice(0, 7)
 
 export function useOperationsSummary(filters) {
   const ent = useEntity()
+  // The entries themselves, for the cost-centre half: a department's spend is
+  // ordinary expenses that happen to name it, not a ledger of its own.
+  const { expenses, income } = useData()
   const eid = ent?.activeId
   const scoped = Boolean(ent?.corporate && eid && !ent.consolidated)
   const { from, to } = filters
@@ -41,7 +46,8 @@ export function useOperationsSummary(filters) {
     const movements = store.movements.list(eid)
     const employees = store.employees.list(eid)
     const advances = store.advances.list(eid)
-    if (items.length === 0 && employees.length === 0 && advances.length === 0) return null
+    const departments = ent.departments || []
+    if (items.length === 0 && employees.length === 0 && advances.length === 0 && departments.length === 0) return null
 
     // With no range set, the honest answer is "as it stands": stock up to
     // today, payroll for the month we are in. A blank filter meaning "no
@@ -65,7 +71,11 @@ export function useOperationsSummary(filters) {
       periods,
       stock: stockOverPeriod(items, movements, { from: from || null, to: to || null }),
       itemCount: items.length,
-      payroll: payrollOverPeriods(employees, periods),
+      payroll: payrollOverPeriods(employees, periods, { runs: store.payrollRuns.list(eid), entityId: eid }),
+      // What each part of the company spent against what it was given to
+      // spend. Absent until somebody has set up departments, like everything
+      // else in this card.
+      costCentres: costCentreReport(ent.departments || [], expenses, income, { entityId: eid, months: periods }),
       advanceCount: advances.length,
       advances: advancesOverPeriod(advances, store.adjustments.list(), {
         entityId: eid,
@@ -73,16 +83,17 @@ export function useOperationsSummary(filters) {
         to: to || null,
       }),
     }
-  }, [scoped, eid, ent?.entity, ent?.version, from, to])
+  }, [scoped, eid, ent?.entity, ent?.version, ent?.departments, expenses, income, from, to])
 }
 
 export default function OperationsSummary({ summary }) {
   if (!summary) return null
-  const { stock, payroll, advances, periods, ranged, clamped, itemCount, advanceCount, entity } = summary
+  const { stock, payroll, advances, costCentres, periods, ranged, clamped, itemCount, advanceCount, entity } = summary
   const hasStock = itemCount > 0
   const hasPayroll = payroll.months.some((m) => m.headcount > 0)
   const hasAdvances = advanceCount > 0
-  if (!hasStock && !hasPayroll && !hasAdvances) return null
+  const hasCostCentres = (costCentres?.lines.length || 0) > 0
+  if (!hasStock && !hasPayroll && !hasAdvances && !hasCostCentres) return null
 
   return (
     <Card className="p-5">
@@ -173,13 +184,94 @@ export default function OperationsSummary({ summary }) {
             </div>
           )}
 
-          {/* The app is worth more when it admits what it does not know. */}
+          {/* The app is worth more when it admits what it does not know — and
+              it now knows more than it did: a month somebody ran is read back
+              as it was run, and only the rest is arithmetic on today's
+              salaries. Saying "all of this is a projection" would be the same
+              kind of wrong in the other direction. */}
           <p className="mt-2 text-xs text-ink-6">
-            Offset keeps no history of past payroll runs, so every month here is worked out from the people and
-            salaries on the payroll today{periods.length > 1 ? ', minus anyone who had not joined yet' : ''}. It is
-            what this payroll would have cost, not a record of what was paid.
+            {payroll.recorded > 0 && (
+              <>
+                {payroll.recorded} of {payroll.months.length} month{payroll.months.length === 1 ? '' : 's'} here{' '}
+                {payroll.recorded === 1 ? 'was' : 'were'} run and recorded, and {payroll.recorded === 1 ? 'reads' : 'read'} back exactly as{' '}
+                {payroll.recorded === 1 ? 'it was' : 'they were'} paid.{' '}
+              </>
+            )}
+            {payroll.projected > 0 && (
+              <>
+                {payroll.recorded > 0 ? 'The rest' : 'Every month here'} {payroll.recorded > 0 ? 'is' : 'is'} worked out from
+                the people and salaries on the payroll today
+                {periods.length > 1 ? ', minus anyone who had not joined yet' : ''} — what this payroll would cost, not a
+                record of what was paid. Run a month on the Payroll tab and it stops moving.
+              </>
+            )}
             {clamped && ' Months before the company was created, and months still to come, are left out.'}
           </p>
+        </div>
+      )}
+
+      {hasCostCentres && (
+        <div className="mt-5 border-t border-line-soft pt-4">
+          <div className="flex items-center gap-2">
+            <Building size={15} className="text-ink-5" />
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-4">Cost centres</h3>
+          </div>
+          <p className="mt-1 text-xs text-ink-5">
+            What each part of the company spent against what it was given to spend. A division's figure includes the
+            teams inside it{costCentres.periods > 1 ? `, and the budget is ${costCentres.periods} months of the monthly one` : ''}.
+          </p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[30rem] text-sm">
+              <thead className="text-xs uppercase tracking-wide text-ink-5">
+                <tr>
+                  <th className="py-2 text-start">Cost centre</th>
+                  <th className="px-3 py-2 text-end">Spent</th>
+                  <th className="px-3 py-2 text-end">Budget</th>
+                  <th className="py-2 pl-3 text-end">Left</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-soft">
+                {costCentres.tree.map((l) => (
+                  <tr key={l.id} className={l.over ? 'bg-amber-50/60' : ''}>
+                    <td className="py-2 text-ink-2">
+                      <span style={{ paddingInlineStart: `${l.depth * 0.9}rem` }}>{l.name}</span>
+                      {l.over && <span className="ms-2 text-xs font-medium text-amber-700">over by {formatCurrency(l.overBy)}</span>}
+                    </td>
+                    <td className="px-3 py-2 text-end tabular">{formatCurrency(l.spent)}</td>
+                    {/* A department with no budget is not a department within
+                        budget, and "0" would read as one. */}
+                    <td className="px-3 py-2 text-end tabular text-ink-4">{l.budget > 0 ? formatCurrency(l.budget) : '—'}</td>
+                    <td className="py-2 pl-3 text-end tabular text-ink-4">{l.left === null ? '—' : formatCurrency(l.left)}</td>
+                  </tr>
+                ))}
+                {/* The figure that says whether the rest of the table is worth
+                    reading. A cost centre report quietly missing half the spend
+                    is worse than no cost centre report. */}
+                {costCentres.unassigned > 0 && (
+                  <tr className="text-ink-5">
+                    <td className="py-2">
+                      Not booked to a cost centre
+                      <span className="ms-2 text-xs text-ink-6">{costCentres.unassignedPercent}% of the spend</span>
+                    </td>
+                    <td className="px-3 py-2 text-end tabular">{formatCurrency(costCentres.unassigned)}</td>
+                    <td className="px-3 py-2 text-end">—</td>
+                    <td className="py-2 pl-3 text-end">—</td>
+                  </tr>
+                )}
+              </tbody>
+              <tfoot className="border-t border-line text-sm font-semibold text-ink-2">
+                <tr>
+                  <td className="py-2">Total</td>
+                  {/* Every department's own spend plus what nobody booked —
+                      never the sum of the column above, which counts a cost
+                      once for its team and again for every division over it. */}
+                  <td className="px-3 py-2 text-end tabular">{formatCurrency(costCentres.spent)}</td>
+                  <td className="px-3 py-2 text-end tabular text-ink-4">{formatCurrency(costCentres.budget)}</td>
+                  <td className="py-2 pl-3 text-end" />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       )}
 

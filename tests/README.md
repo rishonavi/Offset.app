@@ -26,6 +26,7 @@ for Vite's resolver.
 | `corp.test.mjs` | 143 | entities, control, ledgers, audit events, and what needs a second pair of eyes |
 | `daysheet.test.mjs` | 51 | a day on a site entered once, and what saving it twice must not do |
 | `dedupe.test.mjs` | 25 | not importing the same row twice |
+| `costcentres.test.mjs` | 50 | what each part of the company spent against what it was given, and why the parts must not exceed the whole |
 | `defaults.test.mjs` | 30 | filling a form in from history, and when not to |
 | `filled.test.mjs` | 22 | which values on a form the app put there |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
@@ -54,7 +55,7 @@ for Vite's resolver.
 | `wirecheck.test.mjs` | 75 | every column the client sends against the columns the schema has — the failure that would otherwise wait for a live Supabase |
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **2,500** | |
+| | **2,550** | |
 
 ## Browser — `tests/browser/`
 
@@ -83,6 +84,7 @@ node tests/browser/rtlui.mjs
 | `corpui.mjs` | 85 | the way in, companies nav, the books switch in both places, consolidated view |
 | `dayui.mjs` | 31 | the day sheet on a phone: thumb-sized controls, a pinned save, and a day that cannot be entered twice |
 | `defaultsui.mjs` | 18 | the form folding what most entries never touch |
+| `deptui.mjs` | 24 | a cost centre on the entry form, and a budget the report finally checks |
 | `docsui.mjs` | 22 | six documents, offered where the thing lives, producing real files |
 | `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
@@ -103,7 +105,7 @@ node tests/browser/rtlui.mjs
 | `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
 | `projectsui.mjs` | 53 | sites against contract and estimate, where the money went, what the client owes |
 | `owedui.mjs` | 22 | what is owed in both directions, and how old it is |
-| `opsui.mjs` | 97 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
+| `opsui.mjs` | 98 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
 | `reportui.mjs` | 33 | the problem-report flow |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `salesui.mjs` | 40 | flats and shops, the demand moving with the building, cancellations |
@@ -111,10 +113,10 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,499** | |
+| | **1,524** | |
 
 That total is what one sweep of the demo build reports. The column above it sums
-to 1,523: `loginui.mjs`'s 24 are the difference, because that suite needs the
+to 1,548: `loginui.mjs`'s 24 are the difference, because that suite needs the
 other build and does not run in the same pass.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
