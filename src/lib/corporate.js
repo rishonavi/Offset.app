@@ -191,7 +191,17 @@ export const APPROVABLE = {
 }
 export const APPROVABLE_IDS = Object.keys(APPROVABLE)
 
-export function makeApprovalPolicy({ threshold = 0, alwaysCategories = [], enabled = false, thresholds = {} } = {}) {
+// The categories that always need signing off, under whichever spelling the
+// policy was written with. A policy already in a browser keeps the old one.
+export const categoriesOf = (policy) => policy?.always_categories || policy?.alwaysCategories || []
+
+export function makeApprovalPolicy(input = {}) {
+  const { threshold = 0, enabled = false, thresholds = {} } = input
+  // Either spelling on the way in. The reader re-makes the stored policy on
+  // every read, so a maker that only understood its input shape and not its own
+  // output silently emptied the category list each time somebody looked at it —
+  // which is exactly what it did for one commit, until the round trip caught it.
+  const alwaysCategories = categoriesOf(input)
   const base = Math.max(0, Number(threshold) || 0)
   // Per document, because the scales are not comparable. A ₹50,000 expense is
   // unusual enough to look at; a ₹50,000 running account bill is a Tuesday, and
@@ -215,7 +225,13 @@ export function makeApprovalPolicy({ threshold = 0, alwaysCategories = [], enabl
     enabled: Boolean(enabled),
     threshold: base,
     thresholds: per,
-    alwaysCategories: [...new Set(alwaysCategories.filter(Boolean))],
+    // Snake case because the column is `always_categories`, and a policy is
+    // pushed key by key like every other row. This and `thresholds` were the
+    // two fields the wire check could not see, because the policy is one object
+    // under its own key rather than a synced collection — so neither would have
+    // reached the server, and the per-document thresholds would simply have
+    // been lost.
+    always_categories: [...new Set(alwaysCategories.filter(Boolean))],
   }
 }
 
@@ -227,7 +243,7 @@ export function needsApproval(entry, policy, kind = 'expense') {
   const amount = Math.abs(Number(entry?.[doc.field]) || 0)
   // Categories are an expense idea; a running account bill has no category, and
   // a rule that quietly matched one would be a rule nobody could explain.
-  if (kind === 'expense' && policy.alwaysCategories.includes(entry?.category)) return true
+  if (kind === 'expense' && categoriesOf(policy).includes(entry?.category)) return true
   const limit = policy.thresholds?.[kind] ?? policy.threshold
   // A threshold of zero means everything needs sign-off, which is a legitimate
   // (if strict) policy — so compare inclusively only when it is above zero.

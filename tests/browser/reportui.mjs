@@ -79,6 +79,20 @@ ok('but no ledger contents are', !JSON.stringify(r).includes('Adani') && !JSON.s
 console.log('\n── AFTER FILING ──')
 text = await p.locator('body').innerText()
 ok('the reference is shown back to the user', text.includes(r.reference), r.reference)
+// Filed and delivered are different claims. This build has no Supabase and no
+// mail endpoint, so the honest answer is that it went nowhere — and saying
+// nothing at all, which is what the dialog did before delivery was wired to
+// both routes, leaves somebody believing a developer has their report.
+ok('and it does not claim to have sent it anywhere',
+  !/in the developer.s queue/i.test(text), text.slice(0, 400).replace(/\n/g, ' | '))
+ok('it says there is nowhere to send it from here',
+  /nowhere to send it/i.test(text), text.slice(0, 500).replace(/\n/g, ' | '))
+ok('and points at the routes that do work without a server',
+  /copy|email/i.test(text), text.slice(0, 500).replace(/\n/g, ' | '))
+// It tried, rather than returning early because there was no Supabase: a
+// deployment can have the mail endpoint and no database.
+ok('the report is still marked as filed, not sent',
+  (await ls('pl_reports'))[0]?.status !== 'sent', String((await ls('pl_reports'))[0]?.status))
 
 console.log('\n── IT APPEARS IN SETTINGS ──')
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })

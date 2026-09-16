@@ -101,7 +101,22 @@ ok('a credit note is judged on size, not sign', needsApproval({ amount: -25000 }
 ok('a missing amount is treated as zero', !needsApproval({}, over10k))
 eq('a new entry over the threshold starts pending', initialApprovalStatus({ amount: 20000 }, over10k), APPROVAL_STATUS.pending)
 eq('a small one needs nothing', initialApprovalStatus({ amount: 20 }, over10k), APPROVAL_STATUS.none)
-eq('duplicate flagged categories are de-duplicated', makeApprovalPolicy({ alwaysCategories: ['A', 'A', ''] }).alwaysCategories, ['A'])
+eq('duplicate flagged categories are de-duplicated', makeApprovalPolicy({ alwaysCategories: ['A', 'A', ''] }).always_categories, ['A'])
+// The reader re-makes the stored policy on every read, so the maker has to
+// understand its own output. It did not for one commit, and every read quietly
+// emptied the category list.
+const roundTrip = makeApprovalPolicy(makeApprovalPolicy({ enabled: true, threshold: 25000, alwaysCategories: ['Legal', 'Consulting'], thresholds: { rabill: 500000 } }))
+eq('re-making a policy keeps its categories', roundTrip.always_categories, ['Legal', 'Consulting'])
+eq('and its per-document thresholds', roundTrip.thresholds.rabill, 500000)
+eq('and the base threshold', roundTrip.threshold, 25000)
+ok('and it stays switched on', roundTrip.enabled)
+// Snake case, because the column is `always_categories` and a policy is pushed
+// key by key like any other row.
+ok('the old spelling is gone from what it produces', roundTrip.alwaysCategories === undefined)
+// A policy already written in a browser keeps the old spelling, and must still
+// be understood.
+eq('a policy stored the old way still reads',
+  makeApprovalPolicy({ alwaysCategories: ['Legal'] }).always_categories, ['Legal'])
 
 console.log('\n── WHO MAY APPROVE ──')
 const pending = { amount: 50000, created_by: 'u2', approval_status: 'pending' }

@@ -14,7 +14,7 @@
 // catching here rather than in somebody's first sync.
 import { columnsFromSql, requiredColumns, readSql } from '../schema.mjs'
 import { TABLES, SYNCED } from '../../src/lib/storage/corporateSync.js'
-import { makeEntity, makeMember, makeDepartment, makeAuditEvent } from '../../src/lib/corporate.js'
+import { makeEntity, makeMember, makeDepartment, makeAuditEvent, makeApprovalPolicy } from '../../src/lib/corporate.js'
 import { makeProject } from '../../src/lib/projects.js'
 import { makeItem, makeMovement } from '../../src/lib/inventory.js'
 import { makeQuote, makeQuoteLine } from '../../src/lib/quotes.js'
@@ -132,6 +132,21 @@ for (const kind of SYNCED) {
   const missing = sent.filter((c) => !cols.has(c))
   ok(`${kind} → ${table}`, missing.length === 0, `no such column: ${missing.join(', ')}`)
 }
+
+console.log('\n── THE APPROVAL POLICY, WHICH IS NOT A COLLECTION ──')
+// The blind spot that let two mismatches through. A policy is one object under
+// its own key rather than a row in a synced collection, so it is not in TABLES
+// and nothing above looks at it — and it had `alwaysCategories` where the
+// column says `always_categories`, and `thresholds` with no column at all, so a
+// company's per-document thresholds would have been dropped on the way to the
+// server and come back as the base figure for everything.
+const policyCols = schema.get('approval_policies') || new Set()
+const policySent = [...Object.keys(makeApprovalPolicy({ threshold: 1, alwaysCategories: ['X'] })), 'entity_id']
+const policyMissing = policySent.filter((c) => !policyCols.has(c))
+ok('every column a policy sends exists', policyMissing.length === 0,
+  `no such column: ${policyMissing.join(', ')}`)
+ok('including the per-document thresholds', policyCols.has('thresholds'))
+ok('and the categories, under the name the column has', policyCols.has('always_categories'))
 
 console.log('\n── A QUOTATION’S LINES, WHICH ARE THEIR OWN TABLE ──')
 const lineCols = schema.get('material_quote_lines') || new Set()

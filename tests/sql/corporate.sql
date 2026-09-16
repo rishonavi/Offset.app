@@ -716,6 +716,13 @@ select t.check('a stock movement records who booked it',
   t.has_column('inventory_movements', 'created_by'));
 select t.check('a payroll run carries the rates it was run under',
   t.has_column('payroll_runs', 'config'));
+-- Per document, because the scales are not comparable. The client has stored
+-- these since approvals were built and there was no column for them, so a
+-- company's per-document thresholds were dropped on the way to the server and
+-- came back as the base figure for everything.
+select t.check('an approval policy keeps its per-document thresholds',
+  t.has_column('approval_policies', 'thresholds'));
+select t.check('and its flagged categories', t.has_column('approval_policies', 'always_categories'));
 select t.check('and who approved it', t.has_column('payroll_runs', 'approved_by'));
 -- The demo portfolio goes through the ordinary insert. Without these the
 -- insert is refused and the button does nothing, which is what it did.
@@ -736,6 +743,15 @@ select t.allows('and an employee writes their pay as an object',
     values ('eeeeeeee-0000-0000-0000-00000000009b','aaaaaaaa-0000-0000-0000-000000000001',
             'R. Yadav','r@example.com','ABCDE1234F','100200300400','2024-04-01',
             '{"basic": 40000, "hra": 16000}'::jsonb)$$);
+select t.allows('a policy writes both of them',
+  $$insert into public.approval_policies (entity_id, enabled, threshold, always_categories, thresholds)
+    values ('aaaaaaaa-0000-0000-0000-000000000001', true, 50000, array['Legal'],
+            '{"rabill": 500000}'::jsonb)
+    on conflict (entity_id) do update set thresholds = excluded.thresholds$$);
+select t.check('and the running-account threshold reads back',
+  (select thresholds->>'rabill' from public.approval_policies
+    where entity_id = 'aaaaaaaa-0000-0000-0000-000000000001') = '500000');
+
 select t.check('and the pay reads back as an object',
   (select pay->>'basic' from public.employees where id = 'eeeeeeee-0000-0000-0000-00000000009b') = '40000');
 

@@ -71,6 +71,13 @@ create table if not exists public.approval_policies (
   updated_at        timestamptz not null default now()
 );
 
+-- Per document, because the scales are not comparable: a 50,000 expense is
+-- unusual enough to look at, a 50,000 running account bill is a Tuesday. The
+-- client has stored these since approvals were built and there was no column
+-- for them, so a company's per-document thresholds would have been dropped on
+-- the way to the server and come back as the base figure for everything.
+alter table public.approval_policies add column if not exists thresholds jsonb not null default '{}'::jsonb;
+
 -- ── Audit ────────────────────────────────────────────────────────
 -- Append-only by policy below: an audit trail that can be edited is not one.
 create table if not exists public.audit_events (

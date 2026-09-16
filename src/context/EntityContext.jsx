@@ -101,7 +101,7 @@ export function EntityProvider({ children }) {
 
       departments: entityDepartments,
       allDepartments: departments,
-      policy: corporate && !isConsolidated(active) ? store.approvalPolicy(active) : { enabled: false, threshold: 0, alwaysCategories: [] },
+      policy: corporate && !isConsolidated(active) ? store.approvalPolicy(active) : { enabled: false, threshold: 0, thresholds: {}, always_categories: [] },
 
       // Which rows belong to the books you are in. The one definition of it:
       // DataProvider filters the ledger with this, and the bin filters the

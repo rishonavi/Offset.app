@@ -17,7 +17,7 @@ import {
   validateReport,
   SUPPORT_EMAIL,
 } from '../lib/reports'
-import { submitReportToCloud } from '../lib/reportsCloud'
+import { deliverReport, wasDelivered } from '../lib/reportsCloud'
 
 // The report dialog. Deliberately short: a person who has just hit a bug is
 // already annoyed, and a nine-field form is how you turn a bug report into
@@ -100,12 +100,23 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
 
     // Delivery is best-effort. It failing does not lose the report, and the
     // copy/email routes below work with no server at all.
-    if (!isCloud) return
+    //
+    // Both destinations, not just the inbox. `deliverReport` was written to try
+    // the admin inbox and the operator's email and say which of them took it;
+    // only the inbox half was ever called, so on every deployment the operator
+    // was never told a report had arrived — which is the entire purpose of that
+    // half. And this returned early unless Supabase was configured, so a
+    // deployment with the mail endpoint and no Supabase delivered to nobody and
+    // said nothing about it.
     setSending(true)
     try {
-      await submitReportToCloud(report)
-      markReportSent(report.id, 'sent')
-      setDelivery({ ok: true })
+      const out = await deliverReport(report)
+      // `wasDelivered` rather than repeating the test here: two copies of "did
+      // it reach anyone" is one of them going stale the first time a third
+      // destination appears.
+      const reached = wasDelivered(out)
+      if (reached) markReportSent(report.id, 'sent')
+      setDelivery(reached ? { ok: true, ...out } : { ok: false, why: out.why || '', ...out })
     } catch (err) {
       setDelivery({ ok: false, why: err?.message || 'Could not send it from here.' })
     } finally {
@@ -154,12 +165,21 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
         {delivery?.ok && (
           <p className="mt-4 flex items-start gap-2 text-sm text-ink-4">
             <Send size={15} className="mt-0.5 shrink-0 text-emerald-600" />
-            Sent — it’s in the developer’s queue. Nothing else to do.
+            {/* Which destination took it, because "sent" covering two routes
+                and meaning one of them is the same overclaim this block exists
+                to avoid. */}
+            {delivery.inbox === 'ok' && delivery.email === 'ok'
+              ? 'Sent — it’s in the developer’s queue and they have been emailed. Nothing else to do.'
+              : delivery.inbox === 'ok'
+                ? 'Sent — it’s in the developer’s queue. Nothing else to do.'
+                : 'Sent — the developer has been emailed. Nothing else to do.'}
           </p>
         )}
         {delivery && !delivery.ok && (
           <p className="mt-4 border-s-2 border-amber-400 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-            Saved here, but it couldn’t be sent: {delivery.why}
+            {delivery.inbox === 'off' && delivery.email === 'off'
+              ? 'Saved here. This copy of Offset has nowhere to send it, so use one of the routes below.'
+              : `Saved here, but it couldn’t be sent: ${delivery.why}`}
           </p>
         )}
 

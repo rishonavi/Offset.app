@@ -508,6 +508,42 @@ block now, bounded so it cannot run on into the preview below it. An assertion
 that cannot fail is worse than no assertion, and this one took a deliberate
 break to expose.
 
+**Done and verified** — an audit for dead wiring, and what it turned up:
+
+A field written and never read is a feature that has never once worked, and
+this codebase has produced one of those at a steady rate. So rather than build
+anything new, three audits: every exported function against whether anything
+calls it, every field the makers produce against whether anything reads it, and
+every column in the shipped SQL against whether the client ever mentions it.
+
+The approval policy was the worst of it, and it slipped past the wire check for
+a structural reason worth writing down: a policy is **one object under its own
+key**, not a row in a synced collection, so it is not in `TABLES` and the check
+never looked at it. It had `alwaysCategories` where the column says
+`always_categories`, and `thresholds` — the per-document limits, the whole point
+of that feature — with **no column at all**. Both would have been dropped on the
+way to the server, and a company's carefully set limits would have come back as
+the base figure for everything. The check knows about the policy now.
+
+Fixing the name introduced a second bug within the same commit, which the round
+trip caught immediately: `approvalPolicy()` re-makes the stored object on every
+read, so a maker that understood its input shape but not its own output silently
+emptied the category list each time anybody looked at it. The same trap
+`makeQuoteLine` fell into earlier. It accepts either spelling now.
+
+Problem reports were being delivered to one destination out of two.
+`deliverReport` was written to try the admin inbox and the operator's email and
+say which took it; only the inbox half was ever called, so on every deployment
+the operator was never told a report had arrived — which is the entire purpose
+of that half. Worse, the caller returned early unless Supabase was configured,
+so a deployment with the mail endpoint and no database delivered to nobody and
+said nothing about it. The dialog now names which destination took it, and says
+plainly when there is nowhere to send it.
+
+`wasDelivered` existed and the caller reimplemented it inline. Two copies of
+"did it reach anyone" is one of them going stale the first time a third
+destination appears.
+
 **Next**, in order:
 
 1. ~~Departments on entry forms; budgets and reports per cost centre~~ — built
