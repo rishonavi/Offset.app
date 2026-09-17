@@ -60,6 +60,7 @@ for Vite's resolver.
 | `samplesite.test.mjs` | 88 | the construction demo, read back through the screens' own reports: stock that balances, bills that run forward, a job over its costing and still paying |
 | `sanitise.test.mjs` | 40 | what a template may not do, tried rather than assumed |
 | `searchhistory.test.mjs` | 29 | remembering searches for a week, and forgetting them |
+| `statutory.test.mjs` | 69 | whether a company runs PF or ESI at all, when the Acts require it, and why nobody having said is not the same as no |
 | `sitedocs.test.mjs` | 67 | the papers that get signed, and rupees in words |
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `sync.test.mjs` | 68 | which version survives when two devices disagree, and who is told |
@@ -69,7 +70,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **3,543** | |
+| | **3,612** | |
 
 ## Browser — `tests/browser/`
 
@@ -133,14 +134,15 @@ node tests/browser/rtlui.mjs
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `salesui.mjs` | 40 | flats and shops, the demand moving with the building, cancellations |
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
+| `statutoryui.mjs` | 45 | two schemes nobody asked about, deducted from every payslip, now asked |
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,792** | |
+| | **1,841** | |
 
-That total is what one sweep of the demo build reports. The column above it sums
-to 1,580: `loginui.mjs`'s 24 are the difference, because that suite needs the
-other build and does not run in the same pass.
+That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
+that suite needs the other build and does not run in the same pass, so a sweep
+of this one reports 1,817.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

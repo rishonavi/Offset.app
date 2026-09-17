@@ -25,7 +25,7 @@ export const PERSONAL = '__personal__'
 export const isConsolidated = (id) => id === CONSOLIDATED
 export const isPersonal = (id) => id === PERSONAL
 
-export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '' } = {}) {
+export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null } = {}) {
   return {
     id: id || newId(),
     name: (name || 'Untitled company').trim().slice(0, 120),
@@ -46,6 +46,12 @@ export function makeEntity({ id, name, registration = '', gstin = '', currency =
     books_locked_through: /^\d{4}-(0[1-9]|1[0-2])$/.test(String(booksLockedThrough || ''))
       ? String(booksLockedThrough)
       : null,
+    // Whether the company is registered under the provident fund and state
+    // insurance Acts. Three answers, not two: null means nobody has said, and
+    // that is different from "no". Deducting twelve per cent from every payslip
+    // because a default said true is what these replace.
+    pf_registered: pfRegistered === true ? true : pfRegistered === false ? false : null,
+    esi_registered: esiRegistered === true ? true : esiRegistered === false ? false : null,
     created_at: new Date().toISOString(),
   }
 }

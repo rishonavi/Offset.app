@@ -59,7 +59,11 @@ await p.evaluate(() => {
   // payroll history to report and the page correctly says so.
   const born = new Date(); born.setFullYear(born.getFullYear() - 1)
   localStorage.setItem('pl_corp_entities', JSON.stringify([
-    { id, name: 'Acme Industries Pvt Ltd', registration: '', gstin: '27AAAPA1234A1Z5', currency: 'INR', fyStartMonth: 4, created_at: born.toISOString() },
+    // Registered for provident fund and not for state insurance, said rather
+    // than assumed. Neither used to be askable and both simply ran, so every
+    // figure below this line was a deduction nobody had agreed to.
+    { id, name: 'Acme Industries Pvt Ltd', registration: '', gstin: '27AAAPA1234A1Z5', currency: 'INR', fyStartMonth: 4,
+      pf_registered: true, esi_registered: false, created_at: born.toISOString() },
   ]))
   localStorage.setItem('pl_corp_members', JSON.stringify([
     { id: 'm1', entity_id: id, user_id: 'local-user', email: '', role: 'owner', department_id: null, created_at: new Date().toISOString() },
@@ -198,7 +202,11 @@ ok('the code shows too', /EMP01/.test(payText))
 ok('gross is basic plus HRA', /42,000/.test(payText))
 // PF is 12% of basic capped at a 15,000 wage → 1,800. ESI does not apply above
 // a 21,000 gross. Both come from the library; the point is that they arrive.
-ok('PF is deducted at the statutory rate', /1,800/.test(payText), payText.slice(0, 260))
+// Anchored to the row rather than to the page. `/1,800/` on its own went on
+// passing with provident fund switched off entirely, matching some other figure
+// on the screen — an assertion that cannot fail is not a test.
+ok('PF is deducted at the statutory rate', /Sunil Rao[^\n]*\n?[\s\S]{0,80}?₹1,800/.test(payText)
+  || /₹42,000\t₹1,800/.test(payText), payText.slice(0, 400).replace(/\n/g, ' | '))
 ok('and the deposit line is shown', /To deposit this month/.test(payText))
 
 // ── 6. Where the three ledgers meet ──

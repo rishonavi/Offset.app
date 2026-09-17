@@ -8,6 +8,7 @@ import * as store from '../lib/storage/corporate'
 import { makeAdvance, makeAdjustment, outstandingAdvances, advancesByParty, balanceOf, canAdjust, ADVANCE_PARTIES } from '../lib/advances'
 import {
   makeEmployee, runPayroll, makePayrollRun, recordedRun, canRerun, canSetStatus,
+  configForEntity, statutoryStatus, SCHEMES, SCHEME_IDS,
   isLocked, RUN_STATUS, RUN_STATUS_LABEL,
 } from '../lib/payroll'
 import { formatCurrency, formatDate } from '../lib/format'
@@ -144,7 +145,7 @@ export default function Operations() {
   const company = { name: ent.entity?.name || 'Company', gstin: ent.entity?.gstin || '', address: ent.entity?.address || '' }
   // The company's own year, not April by assumption: a tax year that starts in
   // the wrong month adds a contractor's payments into the wrong return.
-  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast, gate: ent.gate, role: ent.role, company, fyStart: ent.entity?.fy_start_month || 4 }
+  const shared = { data, eid, actor: ent.actor, canWrite, bump, toast, gate: ent.gate, role: ent.role, company, fyStart: ent.entity?.fy_start_month || 4, entity: ent.entity, reloadEntity: ent.reload }
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -315,7 +316,7 @@ function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
 }
 
 // ── Payroll ─────────────────────────────────────────────────────────────────
-function Payroll({ data, eid, actor, canWrite, bump, toast }) {
+function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity }) {
   const [form, setForm] = useState({ name: '', code: '', basic: '', hra: '', special: '' })
   const [period, setPeriod] = useState(thisMonth())
   // Off by default. Recovering an advance out of someone's salary without being
@@ -324,6 +325,24 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
   const [recover, setRecover] = useState(false)
 
   const byId = useMemo(() => new Map(data.employees.map((e) => [e.id, e])), [data.employees])
+
+  // What the company has said about the two schemes. Neither runs until it has
+  // said yes, and neither used to be askable — the payroll simply deducted.
+  const config = useMemo(() => configForEntity(entity), [entity?.pf_registered, entity?.esi_registered])
+  const employed = useMemo(() => data.employees.filter((e) => e.active !== false).length, [data.employees])
+  const schemes = useMemo(() => statutoryStatus({ headcount: employed, config }), [employed, config])
+
+  const answer = (id, value) => {
+    store.updateEntity(eid, { [`${id}_registered`]: value }, actor)
+    // The answer lives on the company row, not in this page's data, so bumping
+    // the page's own version reads the same stale entity back. Without this the
+    // button looked pressed and the payslips below it did not move.
+    reloadEntity?.()
+    bump()
+    toast(value === null
+      ? `${SCHEMES[id].short} left unanswered`
+      : `${SCHEMES[id].short} ${value ? 'on' : 'off'} for this company`)
+  }
 
   // Where the three ledgers meet: an advance paid to an employee is money the
   // company gets back out of pay. Advances name their party in free text, so
@@ -366,10 +385,10 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
     if (recover) {
       for (const [id, hit] of matched) perEmployee[id] = { advanceRecovery: hit.total }
     }
-    return runPayroll(data.employees, { period, perEmployee })
+    return runPayroll(data.employees, { period, perEmployee, config })
     // A recovery bigger than the pay is clamped by payslipFor and flagged, not
     // hidden — so the run still balances and the problem is visible.
-  }, [kept, data.employees, period, recover, matched])
+  }, [kept, data.employees, period, recover, matched, config])
 
   // Running it writes what is on screen. A month already approved is history
   // and the store refuses, so the button is not the control — `canRerun` is.
@@ -378,7 +397,7 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
     if (!allowed.ok) return toast(allowed.why)
     const perEmployee = {}
     if (recover) for (const [id, hit] of matched) perEmployee[id] = { advanceRecovery: hit.total }
-    const fresh = runPayroll(data.employees, { period, perEmployee })
+    const fresh = runPayroll(data.employees, { period, perEmployee, config })
     const row = makePayrollRun({
       id: kept?.id, entityId: eid, period, run: fresh, employees: data.employees, actor,
     })
@@ -460,6 +479,64 @@ function Payroll({ data, eid, actor, canWrite, bump, toast }) {
         <Stat label="Take home" value={formatCurrency(run.net)} />
         <Stat label="Cost to company" value={formatCurrency(run.employerCost)} />
       </div>
+
+      {/* Neither scheme is something every employer has, and neither used to be
+          askable: the payroll defaulted both to on, so a builder with four men
+          and no registration had twelve per cent taken off every payslip with
+          nowhere to turn it off. */}
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold text-ink-3">Provident fund and state insurance</h2>
+        <p className="mt-1 text-xs text-ink-5">
+          Both turn on a headcount and on whether this company is registered, and they are separate questions — a
+          company can be registered while under the threshold, or over it and not registered. Nothing is deducted
+          until you say.
+        </p>
+        <ul className="mt-3 space-y-2">
+          {SCHEME_IDS.map((id) => {
+            const st = schemes[id]
+            return (
+              <li key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line-soft p-3">
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink-2">
+                    {st.label}
+                    {st.runs && <Badge color="#059669">deducting</Badge>}
+                    {/* Over the threshold and not registered is not a setting.
+                        It is a thing somebody has to do something about. */}
+                    {st.mustRegister && <Badge color="#dc2626">required at {st.threshold}</Badge>}
+                    {!st.answered && !st.mustRegister && <Badge color="#d97706">not answered</Badge>}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-ink-5">{st.why}</span>
+                  <span className="mt-0.5 block text-[0.68rem] text-ink-6">{st.note}</span>
+                </span>
+                <span className="flex shrink-0 gap-1" role="group" aria-label={`${st.short} registration`}>
+                  {[['Yes', true], ['No', false], ['Not sure', null]].map(([label, value]) => (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled={!canWrite}
+                      aria-label={`${st.short} registered: ${label}`}
+                      onClick={() => answer(id, value)}
+                      className={cx('rounded-lg border px-3 py-1.5 text-xs font-semibold transition',
+                        st.registered === value
+                          ? 'border-brand bg-brand/15 text-ink-1'
+                          : 'border-line text-ink-5 hover:border-line-strong hover:text-ink-2')}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+        {/* The per-person half of the ESI rule, which no headcount decides. */}
+        {schemes.esi.runs && (
+          <p className="mt-2 text-[0.68rem] text-ink-6">
+            State insurance covers only those drawing up to {formatCurrency(config.esi.grossCeiling)} gross. Anybody
+            above it is left out of it, person by person.
+          </p>
+        )}
+      </Card>
 
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

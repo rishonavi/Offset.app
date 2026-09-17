@@ -4,7 +4,19 @@
 import { makeItem, makeMovement, stockOf, stockReport, stockOverPeriod, reorderList, consumption, UNITS } from '../../src/lib/inventory.js'
 import { ageing, byParty, workingCapital, daysOverdue, bucketFor, describeAgeing, AGE_BUCKETS } from '../../src/lib/payables.js'
 import { makeAdvance, makeAdjustment, balanceOf, canAdjust, outstandingAdvances, advancesByParty, advancesOverPeriod } from '../../src/lib/advances.js'
-import { makeEmployee, grossOf, providentFund, stateInsurance, professionalTax, payslipFor, runPayroll, payrollByDepartment, onPayrollIn, periodsBetween, payrollOverPeriods, DEFAULT_PAYROLL_CONFIG } from '../../src/lib/payroll.js'
+import { makeEmployee, grossOf, providentFund, stateInsurance, professionalTax, payslipFor, runPayroll, payrollByDepartment, onPayrollIn, periodsBetween, payrollOverPeriods, DEFAULT_PAYROLL_CONFIG, statutoryStatus, schemeStatus, SCHEMES } from '../../src/lib/payroll.js'
+
+// Neither scheme runs until a company says it is registered for it, so the
+// arithmetic below is exercised against a company that has said yes. It used to
+// need no such thing, which was the bug: every company got twelve per cent
+// taken off every payslip whether or not it had ever registered.
+const REGISTERED = {
+  ...DEFAULT_PAYROLL_CONFIG,
+  pf: { ...DEFAULT_PAYROLL_CONFIG.pf, registered: true },
+  esi: { ...DEFAULT_PAYROLL_CONFIG.esi, registered: true },
+}
+const PF = REGISTERED.pf
+const ESI = REGISTERED.esi
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
@@ -228,15 +240,15 @@ eq('the party type is kept', grouped[0].partyType, 'employee')
 
 // ════════ PAYROLL ════════
 console.log('\n── STATUTORY PIECES ──')
-eq('PF is 12% of basic', providentFund(20000, { ...DEFAULT_PAYROLL_CONFIG.pf, applyCeiling: false }).employee, 2400)
-eq('PF respects the wage ceiling', providentFund(50000).employee, 1800)
-eq('the employer matches', providentFund(50000).employer, 1800)
-eq('PF off means nothing deducted', providentFund(50000, { ...DEFAULT_PAYROLL_CONFIG.pf, enabled: false }).employee, 0)
-eq('ESI applies below the ceiling', stateInsurance(18000).employee, 135)
-eq('the employer pays more', stateInsurance(18000).employer, 585)
-ok('ESI does not apply above the ceiling', !stateInsurance(25000).applicable)
-eq('and deducts nothing', stateInsurance(25000).employee, 0)
-eq('ESI at exactly the ceiling still applies', stateInsurance(21000).applicable, true)
+eq('PF is 12% of basic', providentFund(20000, { ...PF, applyCeiling: false }).employee, 2400)
+eq('PF respects the wage ceiling', providentFund(50000, PF).employee, 1800)
+eq('the employer matches', providentFund(50000, PF).employer, 1800)
+eq('PF off means nothing deducted', providentFund(50000, { ...PF, registered: false }).employee, 0)
+eq('ESI applies below the ceiling', stateInsurance(18000, ESI).employee, 135)
+eq('the employer pays more', stateInsurance(18000, ESI).employer, 585)
+ok('ESI does not apply above the ceiling', !stateInsurance(25000, ESI).applicable)
+eq('and deducts nothing', stateInsurance(25000, ESI).employee, 0)
+eq('ESI at exactly the ceiling still applies', stateInsurance(21000, ESI).applicable, true)
 eq('professional tax follows the slab', professionalTax(9000, 5), 175)
 eq('a higher salary pays the top slab', professionalTax(50000, 5), 200)
 eq('a low salary pays nothing', professionalTax(5000, 5), 0)
@@ -247,7 +259,7 @@ console.log('\n── A PAYSLIP ──')
 const emp = makeEmployee({ entityId: 'e1', name: 'R. Mehta', code: 'emp-1', departmentId: 'd1', basic: 30000, hra: 12000, conveyance: 2000, special: 6000 })
 eq('the code is upper-cased', emp.code, 'EMP-1')
 eq('gross is the sum of components', grossOf(emp), 50000)
-const slip = payslipFor(emp, { period: '2026-05' })
+const slip = payslipFor(emp, { config: REGISTERED, period: '2026-05' })
 eq('the payslip gross matches', slip.gross, 50000)
 eq('PF is capped at the ceiling wage', slip.deductions.pf, 1800)
 eq('ESI does not apply at this salary', slip.deductions.esi, 0)
@@ -257,31 +269,31 @@ eq('net is gross less deductions', slip.net, 48000)
 eq('employer cost includes their PF', slip.employerCost, 51800)
 ok('nothing is over-deducted', !slip.overDeducted)
 
-const withTds = payslipFor(emp, { period: '2026-05', tds: 5000, advanceRecovery: 2000 })
+const withTds = payslipFor(emp, { config: REGISTERED, period: '2026-05', tds: 5000, advanceRecovery: 2000 })
 eq('TDS is deducted as given', withTds.deductions.tds, 5000)
 eq('an advance recovery comes off pay', withTds.deductions.advanceRecovery, 2000)
 eq('and the net reflects both', withTds.net, 41000)
 
-const lop = payslipFor(emp, { period: '2026-05', lopDays: 3, monthDays: 30 })
+const lop = payslipFor(emp, { config: REGISTERED, period: '2026-05', lopDays: 3, monthDays: 30 })
 eq('loss of pay pro-rates the gross', lop.gross, 45000)
 eq('and the components with it', lop.components.basic, 27000)
 eq('PF follows the reduced basic', lop.deductions.pf, 1800)
-const fullLop = payslipFor(emp, { period: '2026-05', lopDays: 30, monthDays: 30 })
+const fullLop = payslipFor(emp, { config: REGISTERED, period: '2026-05', lopDays: 30, monthDays: 30 })
 eq('a full month of LOP pays nothing', fullLop.gross, 0)
 eq('and nets nothing', fullLop.net, 0)
-eq('more LOP than days is clamped', payslipFor(emp, { period: '2026-05', lopDays: 99, monthDays: 30 }).gross, 0)
+eq('more LOP than days is clamped', payslipFor(emp, { config: REGISTERED, period: '2026-05', lopDays: 99, monthDays: 30 }).gross, 0)
 
 const low = makeEmployee({ entityId: 'e1', name: 'Junior', basic: 9000, hra: 3000 })
-const lowSlip = payslipFor(low, { period: '2026-05' })
+const lowSlip = payslipFor(low, { config: REGISTERED, period: '2026-05' })
 eq('ESI applies to a lower salary', lowSlip.deductions.esi, 90)
 ok('and is marked applicable', lowSlip.esiApplicable)
 eq('PF is on actual basic below the ceiling', lowSlip.deductions.pf, 1080)
 // PT is charged on gross, not basic: 9,000 + 3,000 = 12,000, so the top slab.
 eq('professional tax is charged on gross, not basic', lowSlip.deductions.professionalTax, 200)
 eq('a gross inside the middle slab pays the middle rate',
-  payslipFor(makeEmployee({ entityId: 'e1', name: 'Part timer', basic: 9000 }), { period: '2026-05' }).deductions.professionalTax, 175)
+  payslipFor(makeEmployee({ entityId: 'e1', name: 'Part timer', basic: 9000 }), { config: REGISTERED, period: '2026-05' }).deductions.professionalTax, 175)
 
-const drowning = payslipFor(low, { period: '2026-05', otherDeductions: 99999 })
+const drowning = payslipFor(low, { config: REGISTERED, period: '2026-05', otherDeductions: 99999 })
 eq('net never goes negative', drowning.net, 0)
 ok('but over-deduction is flagged', drowning.overDeducted)
 
@@ -292,7 +304,7 @@ const staff = [
   makeEmployee({ entityId: 'e1', name: 'Left', basic: 10000, active: false }),
   makeEmployee({ entityId: 'e1', name: 'Ops person', departmentId: 'd2', basic: 20000, hra: 8000 }),
 ]
-const run = runPayroll(staff, { period: '2026-05', perEmployee: { [emp.id]: { tds: 5000 } } })
+const run = runPayroll(staff, { config: REGISTERED, period: '2026-05', perEmployee: { [emp.id]: { tds: 5000 } } })
 eq('inactive employees are left out', run.headcount, 3)
 eq('the gross is the sum of the slips', run.gross, round(run.slips.reduce((t, s) => t + s.gross, 0)))
 eq('the net is the sum of the nets', run.net, round(run.slips.reduce((t, s) => t + s.net, 0)))
@@ -409,7 +421,7 @@ eq('an inactive employee never is',
   onPayrollIn([makeEmployee({ name: 'Gone', active: false })], '2026-05').length, 0)
 eq('a run for a month excludes those not yet hired', runPayroll([joiner, oldHand], { period: '2026-04' }).headcount, 1)
 
-const quarter = payrollOverPeriods([joiner, oldHand], periodsBetween('2026-04-01', '2026-06-30'))
+const quarter = payrollOverPeriods([joiner, oldHand], periodsBetween('2026-04-01', '2026-06-30'), { config: REGISTERED })
 eq('three months are run', quarter.months.length, 3)
 eq('the gross adds the months up', quarter.gross, round(quarter.months.reduce((t, r) => t + r.gross, 0)))
 eq('headcount is the most anyone was paying, not the sum', quarter.headcount, 2)

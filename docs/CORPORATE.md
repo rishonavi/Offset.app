@@ -306,7 +306,9 @@ correctly-rated individuals beside it.
 Indian statutory shape, all rates configurable:
 
 - **PF** 12% of basic, capped at ₹15,000 basic by default (switchable to actual)
+  — only if the company says it is registered
 - **ESI** 0.75% employee / 3.25% employer, only below the ₹21,000 gross ceiling
+  — likewise
 - **Professional tax** by slab on **gross** (Maharashtra by default; ₹300 in February)
 - **TDS is not computed.** It depends on declared investments and projected
   annual income — guessing it is worse than asking for it.
@@ -315,6 +317,54 @@ Loss of pay pro-rates every component. Take-home never goes negative; a
 deduction larger than the pay is flagged as the data error it is. Employer cost
 (gross + employer PF + employer ESI) is reported alongside, because what someone
 costs is not what they are paid.
+
+#### Neither PF nor ESI is something every employer has
+
+Both used to be on. `DEFAULT_PAYROLL_CONFIG` said `enabled: true` for each, no
+screen passed a config, so every company had twelve per cent of basic taken off
+every payslip and three and a quarter of gross on top — including a builder with
+four men and no registration, who had nowhere to turn it off and no hint that
+anything had been assumed on their behalf.
+
+They are now two questions, asked separately on the payroll tab, because they
+have different answers for the same company on the same day:
+
+| | Bites at | Also |
+|---|---|---|
+| **PF** | 20 employees (`EPF & MP Act`) | voluntary registration below that is common |
+| **ESI** | 10 employees (`ESI Act`) — 20 in a few states, hence configurable | per person, only up to the ₹21,000 gross ceiling |
+
+`SCHEMES` holds the thresholds, `schemeStatus(id, { headcount, config })` says
+whether a scheme runs and *why* in a sentence, `statutoryStatus` does both and
+`resolveConfig` is what a run computes from — so a scheme cannot run because a
+default said so.
+
+Three things this gets right that a boolean would not:
+
+- **`registered: null` is not `false`.** Nobody having said is a different
+  answer from having said no, and a payslip that quietly deducts nothing because
+  a question was never asked is as wrong as one that deducts because a flag
+  defaulted to true. The unanswered case is a finding on the dashboard.
+- **Over the threshold and not registered is not a setting.** It is a compliance
+  problem, and the payroll tab and the attention list both say so out loud
+  rather than treating it as a preference that has been exercised.
+- **The headcount is this month's employees, not every row.** An earlier version
+  counted every active employee on the reasoning that the Act applies to the
+  establishment. True of the Act, false of this data: the only way the two sets
+  differ here is somebody hired after the period, and counting them would put a
+  company over a threshold a month before it got there.
+
+The answers live on the company — `entities.pf_registered` and
+`esi_registered`, both nullable on purpose — not in a payroll setting, because
+they are facts about the company rather than about a run.
+
+Three screens need those answers as a config, and each of them built it inline.
+The report forgot: `OperationsSummary` called `payrollOverPeriods` with no
+config at all, so a company that had said it was registered saw the deduction on
+its payslips and a cost to company in its report that did not include the
+employer's half of it — the same figure, two answers, depending on which page
+you were on. `configForEntity(entity)` is now the one way to build it, and the
+payroll tab, the report and the attention list all call it.
 
 ### The parts have to add up to the whole
 

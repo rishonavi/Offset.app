@@ -5,6 +5,7 @@ import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
 import * as store from '../lib/storage/corporate'
 import { attention, LEVELS } from '../lib/attention'
+import { configForEntity } from '../lib/payroll'
 import { formatCurrency } from '../lib/format'
 import { Card, Badge, cx } from './ui'
 
@@ -49,6 +50,7 @@ export default function Attention({ limit = 6 }) {
       income: income.filter((e) => e.entity_id === eid),
       policy: ent.policy, role: ent.role, userId: ent.actor?.id,
       fyStartMonth: ent.entity?.fy_start_month || 4,
+      payrollConfig: configForEntity(ent.entity),
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scoped, eid, ent?.version, ent?.departments, expenses, income, ent?.policy?.enabled])

@@ -4,7 +4,7 @@ import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
 import * as store from '../lib/storage/corporate'
 import { stockOverPeriod } from '../lib/inventory'
-import { periodsBetween, payrollOverPeriods } from '../lib/payroll'
+import { periodsBetween, payrollOverPeriods, configForEntity } from '../lib/payroll'
 import { costCentreReport } from '../lib/costcentres'
 import { advancesOverPeriod } from '../lib/advances'
 import { formatCurrency } from '../lib/format'
@@ -71,7 +71,12 @@ export function useOperationsSummary(filters) {
       periods,
       stock: stockOverPeriod(items, movements, { from: from || null, to: to || null }),
       itemCount: items.length,
-      payroll: payrollOverPeriods(employees, periods, { runs: store.payrollRuns.list(eid), entityId: eid }),
+      // With the company's own answers, not the library defaults. Without this
+      // the report costed provident fund for a company that had said it was not
+      // registered, and left it out for one that had said it was.
+      payroll: payrollOverPeriods(employees, periods, {
+        runs: store.payrollRuns.list(eid), entityId: eid, config: configForEntity(ent.entity),
+      }),
       // What each part of the company spent against what it was given to
       // spend. Absent until somebody has set up departments, like everything
       // else in this card.

@@ -818,6 +818,17 @@ alter table public.ra_bills    add column if not exists approved_by uuid referen
 alter table public.ra_bills    add column if not exists approved_at timestamptz;
 
 
+-- ── Whether the company runs these schemes at all ────────────────
+-- Neither is something every employer has, and neither used to be askable: the
+-- payroll defaulted both to on, so a builder with four men and no registration
+-- had twelve per cent taken off every payslip with nowhere to turn it off.
+--
+-- Nullable on purpose, and null is not false. "Nobody has said" and "no" are
+-- different answers, and the first is the one that needs asking about — more so
+-- once the headcount passes the threshold the Act names.
+alter table public.entities add column if not exists pf_registered boolean;
+alter table public.entities add column if not exists esi_registered boolean;
+
 -- ── A month that has been closed ─────────────────────────────────
 -- Every report is a photograph of a moving thing: somebody prints March, sends
 -- it to the bank, and a bill dated the 28th arrives a fortnight later. March is

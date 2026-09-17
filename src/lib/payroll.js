@@ -21,7 +21,15 @@ const newId = () =>
 // ── Configuration ──────────────────────────────────────────────────
 export const DEFAULT_PAYROLL_CONFIG = {
   pf: {
-    enabled: true,
+    // Whether the company is registered under the EPF Act.
+    //
+    // `null` is not "no". It means nobody has said, and the two are different
+    // answers: a payroll that deducted nothing because a flag was never set is
+    // as wrong as one that deducted because a flag defaulted to true. It used
+    // to default to true, so every company — including a builder with four men
+    // and no registration — had twelve per cent taken off every payslip with
+    // nowhere to turn it off.
+    registered: null,
     employeeRate: 12,
     employerRate: 12,
     // PF is statutorily calculated on basic up to ₹15,000/month. Many employers
@@ -30,7 +38,7 @@ export const DEFAULT_PAYROLL_CONFIG = {
     applyCeiling: true,
   },
   esi: {
-    enabled: true,
+    registered: null,
     employeeRate: 0.75,
     employerRate: 3.25,
     // ESI applies only below a gross ceiling, and once someone is in a
@@ -51,6 +59,127 @@ export const DEFAULT_PAYROLL_CONFIG = {
 }
 
 export const PAY_COMPONENTS = ['basic', 'hra', 'conveyance', 'medical', 'special', 'other']
+
+// ── Who has to run these schemes at all ─────────────────────────────
+//
+// Neither scheme is something an employer opts into on a whim, and neither is
+// something every employer has. Both turn on a headcount, and the headcount is
+// of the establishment rather than of whoever happens to be on this month's
+// payroll.
+//
+//   **Provident fund** — the EPF & MP Act bites at twenty employees. Below
+//   that an employer may register voluntarily and many do, so being under the
+//   threshold is not an answer on its own.
+//
+//   **State insurance** — the ESI Act bites at ten in most states and twenty in
+//   a few, which is why the number is configurable rather than written into a
+//   comparison. On top of that it covers only employees drawing up to the gross
+//   ceiling, and that part is per person rather than per company.
+//
+// So there are two separate questions and this app had been answering neither:
+// is the company registered, and is it over the threshold. A company can be
+// registered and under the threshold (voluntary), or over the threshold and not
+// registered — which is not a payroll setting, it is a compliance problem, and
+// it is the one worth saying out loud.
+export const SCHEMES = {
+  pf: {
+    id: 'pf',
+    label: 'Provident fund',
+    short: 'PF',
+    // Employees, not employees on this month's slips.
+    threshold: 20,
+    act: 'EPF & MP Act',
+    note: 'Mandatory at twenty employees. Voluntary registration below that is common.',
+  },
+  esi: {
+    id: 'esi',
+    label: 'Employee state insurance',
+    short: 'ESI',
+    threshold: 10,
+    act: 'ESI Act',
+    note: 'Mandatory at ten employees in most states — twenty in a few — and only for those drawing up to the gross ceiling.',
+  },
+}
+export const SCHEME_IDS = Object.keys(SCHEMES)
+
+// Whether a scheme runs, and why. Read this before computing anything.
+export function schemeStatus(id, { headcount = 0, config = DEFAULT_PAYROLL_CONFIG } = {}) {
+  const scheme = SCHEMES[id]
+  const own = config?.[id] || {}
+  // `enabled` is the older spelling and still honoured: a config that says so
+  // explicitly means it, and silently ignoring it would turn somebody's
+  // deliberate setting into a default.
+  const registered = own.registered === undefined
+    ? (own.enabled === true ? true : own.enabled === false ? false : null)
+    : own.registered
+  const threshold = Number(own.threshold ?? scheme.threshold)
+  const over = (Number(headcount) || 0) >= threshold
+
+  if (registered === true) {
+    return {
+      ...scheme, threshold, headcount, over, registered: true, runs: true, answered: true,
+      why: over
+        ? `Registered, and at ${headcount} ${headcount === 1 ? 'employee' : 'employees'} it is required.`
+        : `Registered voluntarily — under ${threshold} employees it is not required.`,
+    }
+  }
+  if (registered === false) {
+    return {
+      ...scheme, threshold, headcount, over, registered: false, runs: false, answered: true,
+      // Over the threshold and not registered is not a payroll setting. It is a
+      // thing somebody needs to do something about.
+      mustRegister: over,
+      why: over
+        ? `Not registered, but at ${headcount} employees ${scheme.act} requires it.`
+        : `Not registered, and under ${threshold} employees it is not required.`,
+    }
+  }
+  return {
+    ...scheme, threshold, headcount, over, registered: null, runs: false, answered: false,
+    mustRegister: over,
+    why: over
+      ? `Nobody has said whether the company is registered, and at ${headcount} employees ${scheme.act} requires it.`
+      : 'Nobody has said whether the company is registered, so nothing is being deducted.',
+  }
+}
+
+export function statutoryStatus({ headcount = 0, config = DEFAULT_PAYROLL_CONFIG } = {}) {
+  const out = {}
+  for (const id of SCHEME_IDS) out[id] = schemeStatus(id, { headcount, config })
+  return {
+    ...out,
+    unanswered: SCHEME_IDS.filter((id) => !out[id].answered),
+    // Over a threshold with no registration, whether that was said or never
+    // asked. The only one of these that costs money to ignore.
+    mustRegister: SCHEME_IDS.filter((id) => out[id].mustRegister),
+  }
+}
+
+// The company's answers as a payroll config.
+//
+// Three screens need this — the payroll tab, the report and the attention list
+// — and each of them built it inline, which is three chances to forget. The
+// report did forget: it called `payrollOverPeriods` with no config at all, so a
+// company that had said it was registered for provident fund saw the deduction
+// on its payslips and a cost-to-company in its report that did not include it.
+export function configForEntity(entity, base = DEFAULT_PAYROLL_CONFIG) {
+  const out = { ...base }
+  for (const id of SCHEME_IDS) {
+    out[id] = { ...(base[id] || {}), registered: entity?.[`${id}_registered`] ?? null }
+  }
+  return out
+}
+
+// The config a run should actually use, once the company's own answers and its
+// headcount have been taken into account. Everything downstream computes from
+// this rather than from the raw config, so a scheme cannot run by accident.
+export function resolveConfig(config = DEFAULT_PAYROLL_CONFIG, headcount = 0) {
+  const out = { ...config }
+  for (const id of SCHEME_IDS) {
+    out[id] = { ...(config[id] || {}), enabled: schemeStatus(id, { headcount, config }).runs }
+  }
+  return out
+}
 
 export function makeEmployee({
   id, entityId, name, code = '', email = '', departmentId = null,
@@ -84,8 +213,15 @@ export const grossOf = (employee) =>
   round2(PAY_COMPONENTS.reduce((t, k) => t + (Number(employee.pay?.[k]) || 0), 0))
 
 // ── Statutory pieces ───────────────────────────────────────────────
+//
+// A scheme runs when the company says it is registered for it, and `enabled` is
+// the older spelling of the same switch — `resolveConfig` writes it, and a
+// config somebody set by hand may use it. Neither is a default: with neither
+// said, nothing is deducted.
+const schemeOn = (own = {}) => own.enabled === true || own.registered === true
+
 export function providentFund(basic, config = DEFAULT_PAYROLL_CONFIG.pf) {
-  if (!config.enabled) return { employee: 0, employer: 0, wage: 0 }
+  if (!schemeOn(config)) return { employee: 0, employer: 0, wage: 0 }
   const wage = config.applyCeiling ? Math.min(Number(basic) || 0, config.wageCeiling) : Number(basic) || 0
   return {
     wage: round2(wage),
@@ -95,7 +231,7 @@ export function providentFund(basic, config = DEFAULT_PAYROLL_CONFIG.pf) {
 }
 
 export function stateInsurance(gross, config = DEFAULT_PAYROLL_CONFIG.esi) {
-  if (!config.enabled || (Number(gross) || 0) > config.grossCeiling) {
+  if (!schemeOn(config) || (Number(gross) || 0) > config.grossCeiling) {
     return { employee: 0, employer: 0, applicable: false }
   }
   return {
@@ -190,10 +326,28 @@ export function onPayrollIn(employees, period) {
 
 export function runPayroll(employees, { period, config = DEFAULT_PAYROLL_CONFIG, perEmployee = {} } = {}) {
   const active = period ? onPayrollIn(employees, period) : employees.filter((e) => e.active !== false)
-  const slips = active.map((e) => payslipFor(e, { period, config, ...(perEmployee[e.id] || {}) }))
+  // The headcount for *this* month, which is the set that gets slips.
+  //
+  // An earlier version counted every active employee instead, on the reasoning
+  // that a scheme applies to the establishment rather than to one month's
+  // payroll. That is true of the Act and false of this data: the only way the
+  // two sets differ here is somebody hired after the period, and a person who
+  // has not started is not employed. Counting them would put a company over a
+  // threshold a month before it got there.
+  const employed = active.length
+  const statutory = statutoryStatus({ headcount: employed, config })
+  // Resolved rather than raw, so a scheme the company has not said it is
+  // registered for cannot run because a default said so.
+  const settled = resolveConfig(config, employed)
+  const slips = active.map((e) => payslipFor(e, { period, config: settled, ...(perEmployee[e.id] || {}) }))
   return {
     period,
     slips,
+    employed,
+    // What applies, and why. Carried on the run so a slip can be explained
+    // months later without re-deriving it from a headcount that has changed.
+    schemes: statutory,
+    config: settled,
     headcount: slips.length,
     gross: round2(slips.reduce((t, s) => t + s.gross, 0)),
     deductions: round2(slips.reduce((t, s) => t + s.totalDeductions, 0)),
@@ -207,6 +361,10 @@ export function runPayroll(employees, { period, config = DEFAULT_PAYROLL_CONFIG,
       tds: round2(slips.reduce((t, s) => t + s.deductions.tds, 0)),
     },
     problems: slips.filter((s) => s.overDeducted).length,
+    // A scheme nobody has answered for is not a quiet zero. It is a question,
+    // and the run says so rather than producing a payslip that looks complete.
+    unanswered: statutory.unanswered,
+    mustRegister: statutory.mustRegister,
   }
 }
 
