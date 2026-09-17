@@ -37,6 +37,7 @@ import { costCentreReport } from './costcentres'
 import { materialVariance, labourRateSpread } from './rates'
 import { shrinkage } from './stockcount'
 import { tdsLedger } from './tds'
+import { ptaxFor } from './ptax'
 import { statutoryStatus, SCHEMES, DEFAULT_PAYROLL_CONFIG } from './payroll'
 
 export const LEVELS = {
@@ -174,6 +175,19 @@ export function attention(books = {}, { asOf = null } = {}) {
       `${names.join(' and ')} ${names.length === 1 ? 'is' : 'are'} required at this headcount`,
       `${onBooks} people are on the books. ${schemes.mustRegister.map((id) => schemes[id].why).join(' ')}`,
       { count: names.length, where: OPS('payroll') }))
+  }
+  // A state that does levy professional tax whose slabs nobody has entered.
+  // This is money owed and not deducted, every month, and the payslip looks
+  // finished — which is what makes it worth shouting about rather than filing
+  // under risk.
+  if (onBooks > 0) {
+    const pt = ptaxFor({ state: (payrollConfig || DEFAULT_PAYROLL_CONFIG).professionalTax?.state || '', monthlyGross: 0 })
+    if (pt.needsSlabs) {
+      out.push(finding('ptax.needsSlabs', 'error',
+        `${pt.name}’s professional tax slabs are not entered`,
+        `${pt.name} levies professional tax and this does not carry its slabs, so nothing is coming off any payslip and something is owed on every one. Enter them from the state’s own notification.`,
+        { count: onBooks, where: OPS('payroll') }))
+    }
   }
   const advanceErrors = outstandingAdvances(advances, adjustments, { entityId }).errors
   if (advanceErrors > 0) {
@@ -320,6 +334,17 @@ export function attention(books = {}, { asOf = null } = {}) {
       `Nobody has said whether this company runs ${schemes.unanswered.map((id) => SCHEMES[id].short).join(' or ')}`,
       'Neither is deducted until somebody says, which is right — and a payslip that quietly deducts nothing because a question was never asked is not right either.',
       { count: schemes.unanswered.length, where: OPS('payroll') }))
+  }
+  // Nobody has said which state the work is in, so no professional tax is being
+  // worked out for anybody. The same quiet zero as an unanswered scheme.
+  if (onBooks > 0) {
+    const ptState = (payrollConfig || DEFAULT_PAYROLL_CONFIG).professionalTax?.state || ''
+    if (!ptState) {
+      out.push(finding('ptax.noState', 'risk',
+        'Nobody has said which state the professional tax is for',
+        'It is a state levy with different slabs in every state and none at all in fourteen of them, so nothing is deducted until somebody says which. Entering the company’s GSTIN answers it too.',
+        { count: onBooks, where: OPS('payroll') }))
+    }
   }
   const undated = round2(heldBySub.undated + heldByClient.undated)
   if (undated > 0) {

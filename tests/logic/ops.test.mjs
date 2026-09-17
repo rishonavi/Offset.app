@@ -5,16 +5,23 @@ import { makeItem, makeMovement, stockOf, stockReport, stockOverPeriod, reorderL
 import { ageing, byParty, workingCapital, daysOverdue, bucketFor, describeAgeing, AGE_BUCKETS } from '../../src/lib/payables.js'
 import { makeAdvance, makeAdjustment, balanceOf, canAdjust, outstandingAdvances, advancesByParty, advancesOverPeriod } from '../../src/lib/advances.js'
 import { makeEmployee, grossOf, providentFund, stateInsurance, professionalTax, payslipFor, runPayroll, payrollByDepartment, onPayrollIn, periodsBetween, payrollOverPeriods, DEFAULT_PAYROLL_CONFIG, statutoryStatus, schemeStatus, SCHEMES } from '../../src/lib/payroll.js'
+import { STATES } from '../../src/lib/ptax.js'
 
 // Neither scheme runs until a company says it is registered for it, so the
 // arithmetic below is exercised against a company that has said yes. It used to
 // need no such thing, which was the bug: every company got twelve per cent
 // taken off every payslip whether or not it had ever registered.
+// A company that has said what it is: registered for both schemes, and in
+// Maharashtra. The professional tax used to be Maharashtra's for everybody,
+// which is why these figures needed no state before and do now.
 const REGISTERED = {
   ...DEFAULT_PAYROLL_CONFIG,
   pf: { ...DEFAULT_PAYROLL_CONFIG.pf, registered: true },
   esi: { ...DEFAULT_PAYROLL_CONFIG.esi, registered: true },
+  professionalTax: { ...DEFAULT_PAYROLL_CONFIG.professionalTax, state: '27' },
 }
+// Maharashtra's own slabs, as slabs handed to the function by hand.
+const MH = { slabs: STATES['27'].slabs, februaryAmount: 300, extra: STATES['27'].extra }
 const PF = REGISTERED.pf
 const ESI = REGISTERED.esi
 
@@ -249,11 +256,14 @@ eq('the employer pays more', stateInsurance(18000, ESI).employer, 585)
 ok('ESI does not apply above the ceiling', !stateInsurance(25000, ESI).applicable)
 eq('and deducts nothing', stateInsurance(25000, ESI).employee, 0)
 eq('ESI at exactly the ceiling still applies', stateInsurance(21000, ESI).applicable, true)
-eq('professional tax follows the slab', professionalTax(9000, 5), 175)
-eq('a higher salary pays the top slab', professionalTax(50000, 5), 200)
-eq('a low salary pays nothing', professionalTax(5000, 5), 0)
-eq('February is higher where tax is due', professionalTax(50000, 2), 300)
-eq('but not where none is due', professionalTax(5000, 2), 0)
+eq('professional tax follows the slab', professionalTax(9000, 5, MH), 175)
+eq('a higher salary pays the top slab', professionalTax(50000, 5, MH), 200)
+eq('a low salary pays nothing', professionalTax(5000, 5, MH), 0)
+eq('February is higher where tax is due', professionalTax(50000, 2, MH), 300)
+eq('but not where none is due', professionalTax(5000, 2, MH), 0)
+// There is no longer a default set of slabs, because the default was
+// Maharashtra's and every company in the country was getting it.
+eq('and slabs nobody gave means nothing is deducted', professionalTax(50000, 5), 0)
 
 console.log('\n── A PAYSLIP ──')
 const emp = makeEmployee({ entityId: 'e1', name: 'R. Mehta', code: 'emp-1', departmentId: 'd1', basic: 30000, hra: 12000, conveyance: 2000, special: 6000 })

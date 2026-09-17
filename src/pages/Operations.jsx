@@ -11,6 +11,7 @@ import {
   configForEntity, statutoryStatus, SCHEMES, SCHEME_IDS,
   isLocked, RUN_STATUS, RUN_STATUS_LABEL,
 } from '../lib/payroll'
+import { STATES, STATES_BY_NAME, stateFromGstin, describeState, AS_OF } from '../lib/ptax'
 import { formatCurrency, formatDate } from '../lib/format'
 import { approvalQueue } from '../lib/corporate'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx, attempt } from '../components/ui'
@@ -317,7 +318,7 @@ function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
 
 // ── Payroll ─────────────────────────────────────────────────────────────────
 function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity }) {
-  const [form, setForm] = useState({ name: '', code: '', basic: '', hra: '', special: '' })
+  const [form, setForm] = useState({ name: '', code: '', basic: '', hra: '', special: '', workState: '', female: '' })
   const [period, setPeriod] = useState(thisMonth())
   // Off by default. Recovering an advance out of someone's salary without being
   // asked is the kind of surprise that costs trust, so it is a decision the
@@ -328,7 +329,19 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
 
   // What the company has said about the two schemes. Neither runs until it has
   // said yes, and neither used to be askable — the payroll simply deducted.
-  const config = useMemo(() => configForEntity(entity), [entity?.pf_registered, entity?.esi_registered])
+  const config = useMemo(() => configForEntity(entity),
+    [entity?.pf_registered, entity?.esi_registered, entity?.pt_state, entity?.gstin])
+  // The company has already said which state it is in, at the front of its
+  // GSTIN. Asking a second time only gives the two a chance to disagree, so the
+  // picker's blank option is that answer rather than nothing.
+  const derivedState = stateFromGstin(entity?.gstin)
+  const ptState = entity?.pt_state || derivedState || ''
+  const setPtState = (code) => {
+    store.updateEntity(eid, { pt_state: code || null }, actor)
+    reloadEntity?.()
+    bump()
+    toast(code ? `Professional tax: ${STATES[code]?.name}` : derivedState ? `Professional tax: ${STATES[derivedState]?.name}, from the GSTIN` : 'No state chosen')
+  }
   const employed = useMemo(() => data.employees.filter((e) => e.active !== false).length, [data.employees])
   const schemes = useMemo(() => statutoryStatus({ headcount: employed, config }), [employed, config])
 
@@ -432,8 +445,12 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
     store.employees.add(makeEmployee({
       entityId: eid, name: form.name, code: form.code,
       basic: Number(form.basic) || 0, hra: Number(form.hra) || 0, special: Number(form.special) || 0,
+      // Blank means the company's own state, and blank sex means nobody said —
+      // which is not the same as "not a woman" and is why the run counts them.
+      workState: form.workState,
+      female: form.female === 'f' ? true : form.female === 'm' ? false : null,
     }), actor)
-    setForm({ name: '', code: '', basic: '', hra: '', special: '' })
+    setForm({ name: '', code: '', basic: '', hra: '', special: '', workState: '', female: '' })
     bump()
     toast('Employee added')
   }
@@ -535,6 +552,85 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
             State insurance covers only those drawing up to {formatCurrency(config.esi.grossCeiling)} gross. Anybody
             above it is left out of it, person by person.
           </p>
+        )}
+      </Card>
+
+      {/* Professional tax is twenty-two different taxes wearing one name, and
+          this app had one set of slabs — Maharashtra's — switched on for
+          everybody. A company in Delhi, which levies none at all, had ₹200 a
+          month taken off every payslip. */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-ink-3">Professional tax</h2>
+            <p className="mt-1 text-xs text-ink-5">
+              A state levy, and the states agree on nothing below the ₹2,500 a year the Constitution caps them at.
+              Fourteen states and union territories charge none.
+            </p>
+          </div>
+          <label className="flex shrink-0 items-center gap-2 text-xs text-ink-5">
+            State
+            <Select
+              className="field-input-compact w-auto"
+              aria-label="Professional tax state"
+              disabled={!canWrite}
+              value={entity?.pt_state || ''}
+              onChange={(e) => setPtState(e.target.value)}
+            >
+              <option value="">{derivedState ? `From the GSTIN — ${STATES[derivedState]?.name}` : 'Not chosen'}</option>
+              {STATES_BY_NAME.map((st) => (
+                <option key={st.code} value={st.code}>
+                  {st.name}{st.levies ? (st.known ? '' : ' — slabs not built in') : ' — no professional tax'}
+                </option>
+              ))}
+            </Select>
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-ink-4">{describeState(ptState)}</p>
+        {/* Not a footnote. A slab that moved last April is a wrong payslip every
+            month until somebody notices, and the app cannot know that it has. */}
+        <p className="mt-1 text-[0.68rem] text-ink-6">
+          Slabs as of {formatDate(AS_OF)}. States revise them in their budgets — check yours against its own
+          notification before you file.
+        </p>
+        {ptState && STATES[ptState]?.caveat && (
+          <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/[0.05] p-2.5 text-xs text-ink-4">
+            {STATES[ptState].caveat}
+          </p>
+        )}
+        {run.ptax && (
+          <ul className="mt-3 space-y-1.5 text-xs">
+            {run.ptax.states.filter((st) => st.code).map((st) => (
+              <li key={st.code} className="flex items-center justify-between gap-3 text-ink-4">
+                <span>{st.name} — {st.people} {st.people === 1 ? 'person' : 'people'}</span>
+                <span className="tabular font-medium text-ink-2">{formatCurrency(st.amount)}</span>
+              </li>
+            ))}
+            {/* Three ways this can be quietly wrong, each said rather than
+                folded into a zero. */}
+            {run.ptax.unanswered > 0 && (
+              <li className="text-ink-5">
+                <Badge color="#d97706">no state</Badge>{' '}
+                {run.ptax.unanswered} {run.ptax.unanswered === 1 ? 'person has' : 'people have'} no state, so nothing is
+                worked out for them.
+              </li>
+            )}
+            {run.ptax.needsSlabs > 0 && (
+              <li className="text-ink-5">
+                <Badge color="#dc2626">slabs missing</Badge>{' '}
+                {run.ptax.needsSlabs} {run.ptax.needsSlabs === 1 ? 'person works' : 'people work'} in a state that does
+                levy professional tax whose slabs are not built in. Nothing is being deducted and something is owed.
+              </li>
+            )}
+            {run.ptax.mayBeExempt > 0 && (
+              <li className="text-ink-5">
+                <Badge color="#d97706">sex not recorded</Badge>{' '}
+                {run.ptax.mayBeExempt} {run.ptax.mayBeExempt === 1 ? 'person is' : 'people are'} under{' '}
+                {STATES[ptState]?.name || 'this state'}&rsquo;s women&rsquo;s exemption and nobody recorded whether they
+                are women. They are being deducted from meanwhile.
+              </li>
+            )}
+          </ul>
         )}
       </Card>
 
@@ -662,6 +758,26 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
             </Field>
             <Field label="HRA"><Input type="number" step="0.01" min="0" value={form.hra} onChange={(e) => setForm({ ...form, hra: e.target.value })} /></Field>
             <Field label="Special allowance"><Input type="number" step="0.01" min="0" value={form.special} onChange={(e) => setForm({ ...form, special: e.target.value })} /></Field>
+            {/* Professional tax follows the work, not the head office. For a
+                builder with a site over a state line that is the ordinary case
+                and not the exception. */}
+            <Field label="Works in" hint="Only if not the company’s own state.">
+              <Select value={form.workState} onChange={(e) => setForm({ ...form, workState: e.target.value })}>
+                <option value="">{STATES[ptState]?.name || 'The company’s state'}</option>
+                {STATES_BY_NAME.map((st) => <option key={st.code} value={st.code}>{st.name}</option>)}
+              </Select>
+            </Field>
+            {/* Asked because Maharashtra exempts women up to ₹25,000 a month and
+                an exemption nobody claims costs that person ₹2,400 a year.
+                Nowhere else asks, and the field says so rather than looking
+                like something the app wants for its own reasons. */}
+            <Field label="Sex" hint="Only used where a state exempts women.">
+              <Select value={form.female} onChange={(e) => setForm({ ...form, female: e.target.value })}>
+                <option value="">Not recorded</option>
+                <option value="f">Woman</option>
+                <option value="m">Man</option>
+              </Select>
+            </Field>
             <div className="sm:col-span-3"><Button type="submit"><Plus size={16} /> Add employee</Button></div>
           </form>
         </Card>

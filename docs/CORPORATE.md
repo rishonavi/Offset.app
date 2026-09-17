@@ -309,7 +309,8 @@ Indian statutory shape, all rates configurable:
   — only if the company says it is registered
 - **ESI** 0.75% employee / 3.25% employer, only below the ₹21,000 gross ceiling
   — likewise
-- **Professional tax** by slab on **gross** (Maharashtra by default; ₹300 in February)
+- **Professional tax** by the slabs of whichever state the work is in — all of
+  them, in `ptax.js`
 - **TDS is not computed.** It depends on declared investments and projected
   annual income — guessing it is worse than asking for it.
 
@@ -357,6 +358,57 @@ Three things this gets right that a boolean would not:
 The answers live on the company — `entities.pf_registered` and
 `esi_registered`, both nullable on purpose — not in a payroll setting, because
 they are facts about the company rather than about a run.
+
+#### Professional tax is twenty-two taxes wearing one name
+
+The same defect as the two schemes, one layer down. This app carried one set of
+slabs — Maharashtra's — switched on by default and changeable only by editing
+the source, so a company in Delhi, which levies no professional tax whatsoever,
+had ₹200 a month taken off every payslip.
+
+It is a state levy under Article 276, and the only thing the states agree on is
+the ₹2,500 a year that Article caps them at. Below the cap:
+
+| | |
+|---|---|
+| **Levy it, slabs built in** | Maharashtra, Karnataka, West Bengal, Andhra Pradesh, Telangana, Tamil Nadu, Gujarat, Madhya Pradesh, Kerala, Assam, Odisha, Bihar, Jharkhand, Punjab |
+| **Levy it, slabs still to enter** | Chhattisgarh, Meghalaya, Tripura, Manipur, Mizoram, Nagaland, Sikkim, Puducherry |
+| **Levy none at all** | Delhi, Haryana, Uttar Pradesh, Uttarakhand, Rajasthan, Himachal Pradesh, Jammu and Kashmir, Ladakh, Goa, Arunachal Pradesh, Chandigarh, Andaman and Nicobar, Dadra and Nagar Haveli and Daman and Diu, Lakshadweep |
+
+They disagree about the shape of the thing, not just the numbers. The slab is
+read against a month's pay in Maharashtra, six months' in Tamil Nadu and Kerala,
+and a year's in Bihar, Jharkhand, Madhya Pradesh and Odisha. It is collected
+monthly in most states, twice a year in Tamil Nadu and Kerala, once a year in
+Bihar and Jharkhand — so a payslip carries a share, and `spread` banks the
+remainder in the last month rather than scattering it, because twelve months
+have to add up to the year's liability exactly and not to something near it.
+Four states use an odd month to reach the cap without exceeding it in any other:
+Maharashtra's ₹300 February is eleven ₹200 months short of ₹2,500.
+
+**A zero means four different things** and the payslip carries which: no state
+named, a state that levies none, a state whose slabs are not built in, or a
+person under the threshold. Three of those four are somebody's problem, and the
+third costs money — nothing comes off and something is owed — so it is an error
+on the attention list rather than a quiet nil.
+
+**The eight states with no slabs are deliberate.** A guess here is
+indistinguishable from knowledge, and a wrong slab is a wrong payslip every
+month with nothing on screen to say so. They are marked as levying with slabs to
+enter, and a company in one of them can enter its own, which override the table
+anyway — which is also the answer when a state revises its slabs in its budget.
+
+**The tax follows the work.** For a builder that is the ordinary case: a Mumbai
+company with a site in Bengaluru owes Karnataka for the men on that site, so an
+employee's `work_state` beats the company's. The company's own state is read off
+its GSTIN, whose first two digits are the state code, rather than asked a second
+time and given the chance to disagree.
+
+**Maharashtra exempts women** drawing up to ₹25,000 a month, and nowhere else
+asks. `female` is three-valued for the same reason registration is: nobody
+having recorded it is not the same as everybody being a man. Unrecorded, the tax
+is deducted — not deducting would leave the company short with the state — and
+the payslip says the field is empty, because an exemption nobody claims is
+₹2,400 a year out of that person's pocket.
 
 Three screens need those answers as a config, and each of them built it inline.
 The report forgot: `OperationsSummary` called `payrollOverPeriods` with no

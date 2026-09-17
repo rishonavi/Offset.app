@@ -178,7 +178,9 @@ eq('and not a yes either', configForEntity(undefined).esi.registered, null)
 // The rest of the config has to survive being rebuilt, or every rate in it
 // silently reverts to the library default the moment somebody answers.
 eq('the rates come through untouched', configForEntity(answered).pf.wageCeiling, 15000)
-eq('and so does everything that is not a scheme', configForEntity(answered).professionalTax.februaryAmount, 300)
+// Professional tax is not one of the two schemes and travels in the same
+// config, so it has to survive being rebuilt alongside them.
+eq('and so does everything that is not a scheme', configForEntity({ ...answered, gstin: '27AAAPA1234A1Z5' }).professionalTax.state, '27')
 // The thing the report was getting wrong, at the layer it was wrong at.
 const four = staff(4)
 const withPf = runPayroll(four, { period: '2026-06', config: configForEntity(answered) })

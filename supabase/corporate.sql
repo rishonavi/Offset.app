@@ -829,6 +829,39 @@ alter table public.ra_bills    add column if not exists approved_at timestamptz;
 alter table public.entities add column if not exists pf_registered boolean;
 alter table public.entities add column if not exists esi_registered boolean;
 
+-- ── Which state's professional tax ─────────────────────────────
+-- Professional tax is a state levy and the states agree on nothing below the
+-- ₹2,500 a year that Article 276 caps them at: different slabs, measured
+-- against different income, collected monthly in Maharashtra, half-yearly in
+-- Tamil Nadu and Kerala, annually in Bihar. Fourteen states and union
+-- territories levy none at all. This app had Maharashtra's slabs on by default,
+-- so a company in Delhi had ₹200 a month taken off every payslip.
+--
+-- A GST state code. Null means nobody chose one, in which case it is read off
+-- the GSTIN — whose first two digits are the state — rather than asked twice.
+alter table public.entities add column if not exists pt_state text;
+-- A company's own slabs, for a state that revised them or one the app does not
+-- carry. Null means use the built-in table. Held as JSON because the shape
+-- differs by state: some slab on a month's pay, some on a year's.
+alter table public.entities add column if not exists pt_slabs jsonb;
+
+-- ── Where an employee actually works ────────────────────────
+-- Professional tax follows the work rather than the head office, which for a
+-- builder is the ordinary case and not the exception: a Mumbai company with a
+-- site in Bengaluru owes Karnataka for the men on that site. Blank means the
+-- company's own state.
+alter table public.employees add column if not exists work_state text;
+-- Maharashtra exempts women drawing up to ₹25,000 a month, and nowhere else
+-- asks. Nullable, and null is not false — an exemption going unclaimed because
+-- a field was never filled in costs somebody ₹2,400 a year.
+alter table public.employees add column if not exists female boolean;
+
+-- A run spans as many states as the company has sites in, so which states it
+-- paid — and what was left unresolved about them — is frozen with the run for
+-- the same reason the rates are. Re-deriving it later reads today's states off
+-- today's employees, and the men on the Bengaluru site may have moved.
+alter table public.payroll_runs add column if not exists ptax jsonb not null default '{}'::jsonb;
+
 -- ── A month that has been closed ─────────────────────────────────
 -- Every report is a photograph of a moving thing: somebody prints March, sends
 -- it to the bank, and a bill dated the 28th arrives a fortnight later. March is

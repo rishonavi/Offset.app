@@ -25,7 +25,7 @@ export const PERSONAL = '__personal__'
 export const isConsolidated = (id) => id === CONSOLIDATED
 export const isPersonal = (id) => id === PERSONAL
 
-export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null } = {}) {
+export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null, ptState = '', ptSlabs = null } = {}) {
   return {
     id: id || newId(),
     name: (name || 'Untitled company').trim().slice(0, 120),
@@ -52,6 +52,14 @@ export function makeEntity({ id, name, registration = '', gstin = '', currency =
     // because a default said true is what these replace.
     pf_registered: pfRegistered === true ? true : pfRegistered === false ? false : null,
     esi_registered: esiRegistered === true ? true : esiRegistered === false ? false : null,
+    // Which state's professional tax, as a GST state code. Null rather than a
+    // default, because the default used to be Maharashtra's slabs for every
+    // company in the country — including the fourteen states that levy none.
+    // Blank means read it off the GSTIN, whose first two digits are the state.
+    pt_state: String(ptState || '').trim() || null,
+    // The company's own slabs, where its state revised them or the app does not
+    // carry that state. Null means use the built-in table.
+    pt_slabs: Array.isArray(ptSlabs) && ptSlabs.length ? ptSlabs : null,
     created_at: new Date().toISOString(),
   }
 }

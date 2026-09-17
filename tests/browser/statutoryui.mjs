@@ -51,7 +51,9 @@ const seed = async (count) => {
     const born = new Date(); born.setFullYear(born.getFullYear() - 1)
     for (const k of ['pl_properties', 'pl_expenses', 'pl_income', 'pl_documents']) localStorage.setItem(k, '[]')
     localStorage.setItem('pl_corp_entities', JSON.stringify([
-      { id: ent, name: 'Navi Builders Pvt Ltd', currency: 'INR', fy_start_month: 4, created_at: born.toISOString() },
+      // The GSTIN matters here: its first two digits are the state, which is
+      // how the professional tax knows which of twenty-two it is.
+      { id: ent, name: 'Navi Builders Pvt Ltd', gstin: '27AAAPA1234A1Z5', currency: 'INR', fy_start_month: 4, created_at: born.toISOString() },
     ]))
     localStorage.setItem('pl_corp_members', JSON.stringify([
       { id: 'm1', entity_id: ent, user_id: 'local-user', email: '', role: 'owner', department_id: null, created_at: new Date().toISOString() },
@@ -244,6 +246,130 @@ await p.waitForTimeout(1200)
 att = await attentionCard()
 ok('four men and the same answer is nothing to raise', !/required at this headcount/i.test(att),
   att.slice(0, 1200).replace(/\n/g, ' | '))
+
+console.log('\n── PROFESSIONAL TAX IS TWENTY-TWO TAXES WEARING ONE NAME ──')
+// The same defect as the two schemes, one layer down. This app had Maharashtra's
+// slabs switched on for everybody, so a company in Delhi — which levies no
+// professional tax whatsoever — had ₹200 a month taken off every payslip.
+await seed(4)
+await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+t = await main()
+ok('the payroll asks about it', /Professional tax/.test(t), t.slice(0, 1400).replace(/\n/g, ' | '))
+// The company never chose a state. It did enter a GSTIN, and the first two
+// digits of a GSTIN are the state — asking a second time only gives the two
+// answers a chance to disagree.
+// The description sentence, not the bare word: "Maharashtra" also appears in
+// the picker below, so matching it alone would pass with the derivation gone.
+ok('and knows the state from the GSTIN without being asked',
+  /Maharashtra: Slabs on monthly gross/.test(t), t.slice(0, 1600).replace(/\n/g, ' | '))
+ok('nothing was chosen on the picker', (await entRow())?.pt_state == null, JSON.stringify(await entRow()))
+d = await deposit()
+ok('Maharashtra’s tax comes off', (d?.pt || 0) > 0, JSON.stringify(d))
+// Said out loud, because a slab that moved last April is a wrong payslip every
+// month and the app cannot know that it has.
+ok('and the screen says when the slabs were last checked', /States revise them/.test(t),
+  t.slice(0, 1600).replace(/\n/g, ' | '))
+
+console.log('\n── A STATE THAT CHARGES NOTHING CHARGES NOTHING ──')
+const pickState = (code) => p.locator('#main-content select[aria-label="Professional tax state"]').selectOption(code)
+await pickState('07')
+await p.waitForTimeout(900)
+t = await main()
+ok('Delhi is chosen', (await entRow())?.pt_state === '07', JSON.stringify(await entRow()))
+// Whole sentence, not "Delhi — no professional tax": that is also how Delhi
+// reads in the picker below, so matching it would pass whether or not the
+// description had updated at all.
+ok('and the screen says Delhi levies none', /Delhi levies no professional tax/.test(t),
+  t.slice(0, 1600).replace(/\n/g, ' | '))
+// The figure this whole thing is about.
+ok('so nothing is deducted', (await deposit())?.pt === 0, JSON.stringify(await deposit()))
+ok('while the other two are untouched by it', (await deposit())?.esi === 0 && (await deposit())?.pf === 0)
+
+console.log('\n── A STATE THAT CHARGES SOMETHING NOBODY HAS ENTERED ──')
+// The third kind of zero, and the one that costs money: Chhattisgarh does levy
+// professional tax and this app does not carry its slabs, so nothing comes off
+// and something is owed on every payslip.
+await pickState('22')
+await p.waitForTimeout(900)
+t = await main()
+ok('the screen says the slabs are missing',
+  /Chhattisgarh levies professional tax and its slabs are not built in/.test(t),
+  t.slice(0, 1800).replace(/\n/g, ' | '))
+ok('and says so as a problem, not a setting', /slabs missing/i.test(t), t.slice(0, 1800).replace(/\n/g, ' | '))
+ok('and that money is owed on every payslip meanwhile', /something is owed/.test(t),
+  t.slice(0, 1800).replace(/\n/g, ' | '))
+ok('nothing is deducted meanwhile', (await deposit())?.pt === 0, JSON.stringify(await deposit()))
+// It must read differently from Delhi, or the two zeroes are the same zero.
+ok('which does not read like a state that charges nothing',
+  !/Chhattisgarh levies no professional tax/.test(t), t.slice(0, 1800).replace(/\n/g, ' | '))
+
+console.log('\n── AND A DIFFERENT STATE IS A DIFFERENT NUMBER ──')
+// Karnataka's threshold is ₹25,000 a month, Maharashtra's is ₹7,500. The same
+// four men, the same pay, two different bills — which is the whole reason one
+// set of slabs for the country was wrong.
+await pickState('29')
+await p.waitForTimeout(900)
+const karnataka = await deposit()
+await pickState('27')
+await p.waitForTimeout(900)
+const maharashtra = await deposit()
+ok('Karnataka charges these men less than Maharashtra', karnataka.pt < maharashtra.pt,
+  `${karnataka.pt} vs ${maharashtra.pt}`)
+// Three of the four are on ₹18,000, under Karnataka's ₹25,000 threshold and
+// over Maharashtra's ₹7,500 one.
+ok('because three of the four are under one threshold and over the other',
+  maharashtra.pt - karnataka.pt === 600, `${maharashtra.pt} - ${karnataka.pt}`)
+t = await main()
+ok('and the state is named beside the money, with the headcount under it',
+  /Maharashtra — 4 people/.test(t), t.slice(0, 1800).replace(/\n/g, ' | '))
+
+console.log('\n── NOBODY HAVING SAID REACHES THE DASHBOARD ──')
+await p.evaluate(() => {
+  localStorage.setItem('pl_properties', JSON.stringify([
+    { id: 'a1', name: 'Depot', type: 'Real Estate — Villa / House', entity_id: 'ent-stat-1', created_at: new Date().toISOString() },
+  ]))
+  const list = JSON.parse(localStorage.getItem('pl_corp_entities'))
+  // No chosen state and no GSTIN to read one off: the genuinely unanswered case.
+  list[0].pt_state = null; list[0].gstin = ''
+  list[0].pf_registered = false; list[0].esi_registered = false
+  localStorage.setItem('pl_corp_entities', JSON.stringify(list))
+})
+await p.goto(B, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1200)
+const ptCard = async () => {
+  const txt = await main()
+  const i = txt.indexOf('Needs attention')
+  return i < 0 ? '' : txt.slice(i, i + 2000)
+}
+let pt = await ptCard()
+ok('no state at all is raised', /which state the professional tax is for/i.test(pt),
+  pt.slice(0, 1000).replace(/\n/g, ' | '))
+ok('and points at the GSTIN as the easy answer', /GSTIN/.test(pt), pt.slice(0, 1000).replace(/\n/g, ' | '))
+// The control: naming the state clears it.
+await p.evaluate(() => {
+  const list = JSON.parse(localStorage.getItem('pl_corp_entities'))
+  list[0].pt_state = '27'
+  localStorage.setItem('pl_corp_entities', JSON.stringify(list))
+})
+await p.goto(B, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1200)
+pt = await ptCard()
+ok('answering it takes it off the list', !/which state the professional tax is for/i.test(pt),
+  pt.slice(0, 1000).replace(/\n/g, ' | '))
+// And the louder one: a state that charges, with no slabs entered.
+await p.evaluate(() => {
+  const list = JSON.parse(localStorage.getItem('pl_corp_entities'))
+  list[0].pt_state = '22'
+  localStorage.setItem('pl_corp_entities', JSON.stringify(list))
+})
+await p.goto(B, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1200)
+pt = await ptCard()
+ok('a state whose slabs are missing is raised louder', /slabs are not entered/i.test(pt),
+  pt.slice(0, 1200).replace(/\n/g, ' | '))
+ok('and says money is owed on every payslip', /something is owed/i.test(pt),
+  pt.slice(0, 1200).replace(/\n/g, ' | '))
 
 console.log('\n── AND THE REPORT COSTS THE COMPANY THE SAME WAY ──')
 // The other half of the wiring, and the half that was missed: the answer is

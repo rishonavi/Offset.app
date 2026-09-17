@@ -10,6 +10,8 @@
 // Every rate below is a default, not a constant. A company on a different PF
 // arrangement changes the config; it does not edit this file.
 
+import { ptaxFor, workStateOf, STATES } from './ptax'
+
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 const rupee = (n) => Math.round(Number(n) || 0) // statutory amounts are whole rupees
 
@@ -45,16 +47,19 @@ export const DEFAULT_PAYROLL_CONFIG = {
     // contribution period they stay in it — that subtlety is left to the user.
     grossCeiling: 21000,
   },
-  // Professional tax is a state subject. Maharashtra's slab is the default.
+  // Professional tax is a state subject, and until now Maharashtra's slabs were
+  // the default for everybody — so a company in Delhi, which levies no
+  // professional tax at all, had ₹200 a month taken off every payslip. The
+  // state is the question; `ptax.js` holds all of them.
   professionalTax: {
-    enabled: true,
-    slabs: [
-      { upTo: 7500, amount: 0 },
-      { upTo: 10000, amount: 175 },
-      { upTo: Infinity, amount: 200 },
-    ],
-    // Maharashtra collects ₹300 in February instead of ₹200.
-    februaryAmount: 300,
+    // Null means nobody has said. It is filled in from the company's GSTIN
+    // where there is one, because the first two digits of a GSTIN are the
+    // state and asking a second time only invites the two to disagree.
+    state: null,
+    // A company that has entered its own slabs — because its state revised
+    // them, or because `ptax.js` does not carry that state — overrides the
+    // table. Null means use the table.
+    slabs: null,
   },
 }
 
@@ -167,6 +172,14 @@ export function configForEntity(entity, base = DEFAULT_PAYROLL_CONFIG) {
   for (const id of SCHEME_IDS) {
     out[id] = { ...(base[id] || {}), registered: entity?.[`${id}_registered`] ?? null }
   }
+  // The professional-tax state, chosen if somebody chose one and otherwise read
+  // off the GSTIN, whose first two digits are the state. A company that has
+  // entered its own slabs keeps them.
+  out.professionalTax = {
+    ...(base.professionalTax || {}),
+    state: workStateOf(null, entity) || null,
+    slabs: entity?.pt_slabs?.length ? entity.pt_slabs : (base.professionalTax?.slabs || null),
+  }
   return out
 }
 
@@ -184,7 +197,7 @@ export function resolveConfig(config = DEFAULT_PAYROLL_CONFIG, headcount = 0) {
 export function makeEmployee({
   id, entityId, name, code = '', email = '', departmentId = null,
   basic = 0, hra = 0, conveyance = 0, medical = 0, special = 0, other = 0,
-  pan = '', uan = '', joinedOn = '', active = true,
+  pan = '', uan = '', joinedOn = '', active = true, workState = '', female = null,
 } = {}) {
   return {
     id: id || newId(),
@@ -204,6 +217,16 @@ export function makeEmployee({
     pan: pan.trim().toUpperCase().slice(0, 10),
     uan: uan.trim().slice(0, 12),
     joined_on: joinedOn,
+    // Where this person works, as a GST state code, when that is not where the
+    // company keeps its books. Professional tax follows the work: a Mumbai
+    // builder's men on a Bengaluru site owe Karnataka, not Maharashtra.
+    work_state: STATES[String(workState || '').trim()] ? String(workState).trim() : '',
+    // Whether this person is a woman, which Maharashtra needs and nowhere else
+    // does — it exempts women drawing up to ₹25,000 a month. Three-valued for
+    // the same reason registration is: nobody having recorded it is not the
+    // same as everybody being a man, and an exemption going unclaimed because a
+    // field was never filled in costs somebody ₹2,400 a year.
+    female: female === true ? true : female === false ? false : null,
     active: Boolean(active),
     created_at: new Date().toISOString(),
   }
@@ -242,13 +265,34 @@ export function stateInsurance(gross, config = DEFAULT_PAYROLL_CONFIG.esi) {
   }
 }
 
-export function professionalTax(gross, month, config = DEFAULT_PAYROLL_CONFIG.professionalTax) {
-  if (!config.enabled) return 0
+// Professional tax against a set of slabs given by hand. There is no default:
+// there used to be, it was Maharashtra's, and every company in the country got
+// it. A caller with no slabs is a caller who has not said which state.
+export function professionalTax(gross, month, config = null) {
+  if (!config || config.enabled === false || !config.slabs?.length) return 0
   const slab = config.slabs.find((s) => (Number(gross) || 0) <= s.upTo)
   const base = slab ? slab.amount : 0
-  // February's higher amount only applies where tax is due at all.
-  if (base > 0 && Number(month) === 2 && config.februaryAmount) return config.februaryAmount
+  // A state's odd month only applies where tax is due at all.
+  if (base > 0 && config.februaryAmount && Number(month) === Number(config.extra?.month ?? 2)) return config.februaryAmount
   return base
+}
+
+// Professional tax for one person for one month, which needs to know three
+// things a gross figure does not carry: which state the work is in, which month
+// of the state's year it is, and — in Maharashtra — whether the person is a
+// woman. Returns the whole answer rather than a number, because a zero here has
+// four meanings and a payslip has to be able to tell them apart.
+export function professionalTaxFor(employee, { period = '', gross = 0, config = DEFAULT_PAYROLL_CONFIG, entity = null } = {}) {
+  const own = config?.professionalTax || {}
+  return ptaxFor({
+    // The employee's own work state wins. Professional tax follows where the
+    // work is done, so a Mumbai company's men on a Bengaluru site owe Karnataka.
+    state: workStateOf(employee, entity || { pt_state: own.state }),
+    monthlyGross: gross,
+    period,
+    female: employee?.female ?? null,
+    override: own.slabs?.length ? own : null,
+  })
 }
 
 // ── A payslip ──────────────────────────────────────────────────────
@@ -266,12 +310,12 @@ export function payslipFor(employee, { period, config = DEFAULT_PAYROLL_CONFIG, 
 
   const pf = providentFund(basic, config.pf)
   const esi = stateInsurance(gross, config.esi)
-  const pt = professionalTax(gross, month, config.professionalTax)
+  const pt = professionalTaxFor(employee, { period, gross, config })
 
   const deductions = {
     pf: pf.employee,
     esi: esi.employee,
-    professionalTax: pt,
+    professionalTax: pt.amount,
     tds: Math.max(0, round2(tds)),
     advanceRecovery: Math.max(0, round2(advanceRecovery)),
     other: Math.max(0, round2(otherDeductions)),
@@ -298,6 +342,13 @@ export function payslipFor(employee, { period, config = DEFAULT_PAYROLL_CONFIG, 
     employerCost: round2(gross + pf.employer + esi.employer),
     employer: { pf: pf.employer, esi: esi.employer },
     esiApplicable: esi.applicable,
+    // Why the professional tax is what it is. A zero means one of four
+    // different things — no state named, a state that levies none, a state
+    // whose slabs nobody has entered, or a person under the threshold — and
+    // carrying only the number throws away which.
+    ptax: { state: pt.code, stateName: pt.name, why: pt.why, amount: pt.amount,
+      unanswered: Boolean(pt.unanswered), needsSlabs: Boolean(pt.needsSlabs),
+      none: Boolean(pt.none), mayBeExempt: Boolean(pt.mayBeExempt), exempt: Boolean(pt.exempt) },
     // Flagged rather than silently clamped.
     overDeducted: totalDeductions > gross + 0.001,
   }
@@ -360,11 +411,44 @@ export function runPayroll(employees, { period, config = DEFAULT_PAYROLL_CONFIG,
       professionalTax: round2(slips.reduce((t, s) => t + s.deductions.professionalTax, 0)),
       tds: round2(slips.reduce((t, s) => t + s.deductions.tds, 0)),
     },
+    // Professional tax across the run, which is the only place the state
+    // question shows up as a number. A run can span several states — a builder
+    // with a site over a border is the ordinary case — so this counts them
+    // rather than assuming one.
+    ptax: ptaxSummary(slips),
     problems: slips.filter((s) => s.overDeducted).length,
     // A scheme nobody has answered for is not a quiet zero. It is a question,
     // and the run says so rather than producing a payslip that looks complete.
     unanswered: statutory.unanswered,
     mustRegister: statutory.mustRegister,
+  }
+}
+
+// What the professional tax on a run adds up to, and what is unresolved about
+// it. Four kinds of zero, counted separately, because "nothing is due" and
+// "nobody has said which state" look identical inside a total.
+export function ptaxSummary(slips = []) {
+  const byState = new Map()
+  for (const s of slips) {
+    const code = s.ptax?.state || ''
+    const cur = byState.get(code) || { code, name: s.ptax?.stateName || '', people: 0, amount: 0 }
+    cur.people += 1
+    cur.amount = round2(cur.amount + (s.deductions?.professionalTax || 0))
+    byState.set(code, cur)
+  }
+  const count = (k) => slips.filter((s) => s.ptax?.[k]).length
+  return {
+    total: round2(slips.reduce((t, s) => t + (s.deductions?.professionalTax || 0), 0)),
+    states: [...byState.values()].sort((a, b) => b.people - a.people),
+    // Nobody has named a state for these people at all.
+    unanswered: count('unanswered'),
+    // The state levies professional tax and its slabs are not built in, so this
+    // is deducting nothing where something is owed.
+    needsSlabs: count('needsSlabs'),
+    // Maharashtra exempts women up to a ceiling and nobody recorded who is a
+    // woman, so this may be deducting from somebody who owes nothing.
+    mayBeExempt: count('mayBeExempt'),
+    exempt: count('exempt'),
   }
 }
 
@@ -461,6 +545,11 @@ export function makePayrollRun({
       professionalTax: round2(slips.reduce((t, s) => t + s.deductions.professionalTax, 0)),
       tds: round2(slips.reduce((t, s) => t + s.deductions.tds, 0)),
     },
+    // Professional tax across the run, which is the only place the state
+    // question shows up as a number. A run can span several states — a builder
+    // with a site over a border is the ordinary case — so this counts them
+    // rather than assuming one.
+    ptax: ptaxSummary(slips),
     problems: slips.filter((s) => s.overDeducted).length,
     // The rates it was run under. PF ceilings and ESI thresholds change between
     // financial years, and a run re-read under this year's rates would not be
