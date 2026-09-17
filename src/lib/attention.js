@@ -177,9 +177,10 @@ export function attention(books = {}, { asOf = null } = {}) {
       { count: names.length, where: OPS('payroll') }))
   }
   // A state that does levy professional tax whose slabs nobody has entered.
-  // This is money owed and not deducted, every month, and the payslip looks
-  // finished — which is what makes it worth shouting about rather than filing
-  // under risk.
+  // Money owed and not deducted, every month, on a payslip that looks finished
+  // — which is what makes it worth shouting about rather than filing under
+  // risk. Nothing in the shipped table of states trips this; it is here so that
+  // a state added later without slabs is loud rather than quietly nil.
   if (onBooks > 0) {
     const pt = ptaxFor({ state: (payrollConfig || DEFAULT_PAYROLL_CONFIG).professionalTax?.state || '', monthlyGross: 0 })
     if (pt.needsSlabs) {
@@ -343,6 +344,19 @@ export function attention(books = {}, { asOf = null } = {}) {
       out.push(finding('ptax.noState', 'risk',
         'Nobody has said which state the professional tax is for',
         'It is a state levy with different slabs in every state and none at all in fourteen of them, so nothing is deducted until somebody says which. Entering the company’s GSTIN answers it too.',
+        { count: onBooks, where: OPS('payroll') }))
+    }
+  }
+  // Deducting, but from slabs worth checking. Not an error — money is coming off
+  // and the figure is this app's best reading — but a return filed on it is
+  // being filed on somebody else's homework, and the person filing should know
+  // that before they sign it rather than after.
+  if (onBooks > 0) {
+    const pt = ptaxFor({ state: (payrollConfig || DEFAULT_PAYROLL_CONFIG).professionalTax?.state || '', monthlyGross: 0 })
+    if (pt.verify) {
+      out.push(finding('ptax.verify', 'risk',
+        `${pt.name}’s professional tax slabs are worth checking`,
+        `They are this app’s best reading of the state’s notification rather than something to file on unchecked — the smaller states revise theirs quietly. Check them once and, if they differ, enter your own.`,
         { count: onBooks, where: OPS('payroll') }))
     }
   }

@@ -622,6 +622,18 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
                 levy professional tax whose slabs are not built in. Nothing is being deducted and something is owed.
               </li>
             )}
+            {/* Deducting, but from this app's reading rather than from
+                something anybody should file on unchecked. The smaller states
+                revise their slabs quietly and a wrong one is a wrong payslip
+                every month with nothing on screen to say so. */}
+            {run.ptax.verify > 0 && (
+              <li className="text-ink-5">
+                <Badge color="#d97706">check these slabs</Badge>{' '}
+                {run.ptax.verify} {run.ptax.verify === 1 ? 'person is' : 'people are'} on slabs that are this app&rsquo;s
+                best reading of the state&rsquo;s notification. Check them once against it, and enter your own if they
+                differ.
+              </li>
+            )}
             {run.ptax.mayBeExempt > 0 && (
               <li className="text-ink-5">
                 <Badge color="#d97706">sex not recorded</Badge>{' '}

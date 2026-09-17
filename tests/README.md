@@ -51,7 +51,7 @@ for Vite's resolver.
 | `payrollruns.test.mjs` | 56 | a month that was run against a month worked out again, and what a raise in June must not do to March |
 | `retention.test.mjs` | 89 | when money held back comes back, which tranche a release pays first, and why a client contract can never be a cost |
 | `periods.test.mjs` | 60 | a month that has been closed, and the store rather than the button refusing to write into it |
-| `ptax.test.mjs` | 150 | professional tax in every state that levies it, the constitutional cap, and the four things a zero can mean |
+| `ptax.test.mjs` | 205 | professional tax in all twenty-two states that levy it, four collection periods, the constitutional cap, and the four things a zero can mean |
 | `place.test.mjs` | 29 | what a cost is booked to when the company owns nothing, and what may be left blank |
 | `plant.test.mjs` | 72 | what a machine costs per hour it works, not per hour it is hired |
 | `projects.test.mjs` | 71 | a site against its contract and its estimate, which are not the same number, and the stores counted in |
@@ -71,7 +71,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **3,763** | |
+| | **3,818** | |
 
 ## Browser — `tests/browser/`
 
@@ -135,15 +135,15 @@ node tests/browser/rtlui.mjs
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `salesui.mjs` | 40 | flats and shops, the demand moving with the building, cancellations |
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
-| `statutoryui.mjs` | 67 | two schemes nobody asked about, deducted from every payslip, now asked |
+| `statutoryui.mjs` | 69 | two schemes nobody asked about, deducted from every payslip, now asked |
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,863** | |
+| | **1,865** | |
 
 That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
 that suite needs the other build and does not run in the same pass, so a sweep
-of this one reports 1,839.
+of this one reports 1,841.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

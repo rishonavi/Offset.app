@@ -48,7 +48,10 @@ const slab = (upTo, amount) => ({ upTo, amount })
 //   `known`    whether the slabs below are this file's, or still to be entered
 //   `basis`    what the slab is measured against: a month's pay, six months' or
 //              a year's
-//   `every`    how often the amount in the slab is collected
+//   `every`    how often the amount in the slab is collected: every month,
+//              quarter, half year or year
+//   `verify`   the slabs are this file's best reading of a notification that is
+//              not easy to come by, and want checking before a return is filed
 //   `extra`    a calendar month that carries a different amount, which is how
 //              several states top the year up to the cap
 //
@@ -151,19 +154,61 @@ export const STATES = Object.fromEntries([
     note: 'Slabs on annual gross, collected once a year.',
   }),
 
-  // ── Levying, slabs not entered ────────────────────────────────────
+  // ── Levying, slabs carried but worth checking ──────────────────────
   //
-  // These states do charge professional tax. This file does not carry slabs it
-  // is not sure of, because a wrong slab is a wrong payslip every month and
-  // nothing on screen would say so. A guess here would be indistinguishable
-  // from knowledge, which is the worst of the three states to be in.
-  ...[
-    ['22', 'Chhattisgarh'], ['17', 'Meghalaya'], ['16', 'Tripura'], ['14', 'Manipur'],
-    ['15', 'Mizoram'], ['13', 'Nagaland'], ['11', 'Sikkim'], ['34', 'Puducherry'],
-  ].map(([code, name]) => S(code, name, {
-    levies: true, known: false,
-    note: 'This state levies professional tax. Its slabs are not built in — enter them from the state’s own notification.',
-  })),
+  // The eight below are small states whose notifications are a good deal harder
+  // to come by than Maharashtra's, and these slabs are this file's best reading
+  // of them rather than something anybody should file a return on unchecked.
+  // They carry `verify`, which puts a line on the payroll screen saying so.
+  //
+  // Marking them is the whole point. Slabs this file is sure of and slabs it is
+  // not look identical once they are numbers in a table, and nothing about a
+  // payslip can tell a reader which kind it was computed from unless the table
+  // says.
+  S('22', 'Chhattisgarh', {
+    levies: true, verify: true, basis: 'annual', every: 'month',
+    slabs: [slab(100000, 0), slab(150000, 130), slab(200000, 150), slab(250000, 180), slab(Infinity, 200)],
+    note: 'Slabs on annual gross, deducted monthly.',
+  }),
+  S('17', 'Meghalaya', {
+    levies: true, verify: true, basis: 'annual', every: 'year',
+    slabs: [slab(50000, 0), slab(75000, 200), slab(100000, 300), slab(150000, 500), slab(200000, 750),
+      slab(250000, 1000), slab(300000, 1250), slab(350000, 1500), slab(400000, 1800), slab(450000, 2100),
+      slab(500000, 2400), slab(Infinity, 2500)],
+    note: 'Twelve slabs on annual gross, collected once a year.',
+  }),
+  S('16', 'Tripura', {
+    levies: true, verify: true,
+    slabs: [slab(7500, 0), slab(15000, 150), slab(Infinity, 208)],
+    note: 'Slabs on monthly gross.',
+  }),
+  S('14', 'Manipur', {
+    levies: true, verify: true, basis: 'annual', every: 'year',
+    slabs: [slab(50000, 0), slab(75000, 1200), slab(100000, 2000), slab(125000, 2400), slab(Infinity, 2500)],
+    note: 'Slabs on annual gross, collected once a year.',
+  }),
+  S('15', 'Mizoram', {
+    levies: true, verify: true,
+    slabs: [slab(5000, 0), slab(8000, 75), slab(10000, 120), slab(12000, 150), slab(15000, 180), slab(Infinity, 208)],
+    note: 'Six slabs on monthly gross.',
+  }),
+  S('13', 'Nagaland', {
+    levies: true, verify: true,
+    slabs: [slab(4000, 0), slab(5000, 35), slab(7000, 75), slab(9000, 110), slab(12000, 180), slab(Infinity, 208)],
+    note: 'Six slabs on monthly gross, starting lower than anywhere else.',
+  }),
+  S('11', 'Sikkim', {
+    // The only state that collects quarterly, which is why `every` has a fourth
+    // value rather than a special case sitting here.
+    levies: true, verify: true, basis: 'monthly', every: 'quarter',
+    slabs: [slab(20000, 0), slab(30000, 125), slab(40000, 150), slab(Infinity, 200)],
+    note: 'Slabs on monthly gross, collected every quarter.',
+  }),
+  S('34', 'Puducherry', {
+    levies: true, verify: true, basis: 'annual', every: 'half-year',
+    slabs: [slab(99999, 0), slab(200000, 250), slab(300000, 500), slab(400000, 750), slab(500000, 1000), slab(Infinity, 1250)],
+    note: 'Slabs on annual gross, collected twice a year.',
+  }),
 
   // ── Not levying ───────────────────────────────────────────────────
   //
@@ -244,7 +289,12 @@ export function ptaxFor({
 
   const out = (amount, why, rest = {}) => ({
     amount: round0(amount), code, name: st?.name || '', state: st || null,
-    levies: Boolean(st?.levies), known: Boolean(st?.known), why, ...rest,
+    levies: Boolean(st?.levies), known: Boolean(st?.known),
+    // True where the slabs want checking against the state's own notification.
+    // It rides on the answer rather than being looked up again by the caller,
+    // because the caller that forgets is the one that shows a figure as though
+    // it were settled.
+    verify: Boolean(st?.verify && !override?.slabs?.length), why, ...rest,
   })
 
   // The company has entered its own slabs, which beats anything built in. A
@@ -257,6 +307,10 @@ export function ptaxFor({
   if (!code) return out(0, 'Nobody has said which state the work is in, so no professional tax is worked out.', { unanswered: true })
   if (!st) return out(0, `${code} is not a state code this knows.`, { unknownState: true })
   if (!table.levies) return out(0, `${st.name} levies no professional tax.`, { none: true })
+  // A guard rather than a case anybody reaches: every state in the table above
+  // carries slabs. It exists so that a state added later without them deducts
+  // nothing and says so, instead of quietly falling through to a zero, and
+  // there is an invariant in the tests asserting nothing trips it today.
   if (!table.known || !table.slabs?.length) {
     return out(0, `${st.name} levies professional tax, but its slabs are not built in — enter them and this will deduct.`, { needsSlabs: true })
   }
@@ -283,6 +337,9 @@ export function ptaxFor({
 }
 
 // The income the slab is read against, which is not always a month's pay.
+const COLLECTION = { quarter: 'quarter', 'half-year': 'half year', year: 'year' }
+const WORDS = { 3: 'three', 6: 'six', 12: 'twelve' }
+
 const incomeFor = (table, gross) =>
   table.basis === 'annual' ? gross * 12 : table.basis === 'half-yearly' ? gross * 6 : gross
 
@@ -299,19 +356,22 @@ function pickAmount(table, gross, month, period = '') {
   }
   if (table.every === 'month') return amount
 
-  // Collected twice a year or once a year, so the payslip carries a share.
-  const months = table.every === 'year' ? 12 : 6
-  const idx = table.every === 'year' ? taxYearMonth(period) : taxYearMonth(period) % 6
-  return spread(amount, months, idx)
+  // Collected less often than monthly, so the payslip carries a share.
+  const months = MONTHS_IN[table.every]
+  return spread(amount, months, taxYearMonth(period) % months)
 }
+
+// How many months each collection covers. A year is twelve and a month is one,
+// so the same arithmetic serves all four and there is no special case anywhere.
+export const MONTHS_IN = { month: 1, quarter: 3, 'half-year': 6, year: 12 }
 
 const spreadInfo = (table, gross, period) => {
   if (table.every === 'month') return { collected: 'month' }
-  const months = table.every === 'year' ? 12 : 6
+  const months = MONTHS_IN[table.every]
   const total = pick(table.slabs, incomeFor(table, gross)).amount
   return {
     collected: table.every, periodTotal: total, monthsInPeriod: months,
-    monthOfPeriod: (table.every === 'year' ? taxYearMonth(period) : taxYearMonth(period) % 6) + 1,
+    monthOfPeriod: (taxYearMonth(period) % months) + 1,
   }
 }
 
@@ -324,8 +384,8 @@ function describeWhy(table, gross, month) {
       : `${rupees(income)} a month`
   if (found.amount <= 0) return `${table.name}: ${on} is under the threshold, so nothing is due.`
   const per = table.every === 'month' ? ' a month' : ''
-  const collected = table.every === 'year' ? ' It is collected once a year and spread over the twelve months.'
-    : table.every === 'half-year' ? ' It is collected twice a year and spread over the six months.' : ''
+  const collected = table.every === 'month' ? ''
+    : ` It is collected every ${COLLECTION[table.every]} and spread over the ${WORDS[MONTHS_IN[table.every]]} months.`
   const feb = table.extra && Number(month) === Number(table.extra.month) ? ' This month carries the state’s higher figure.' : ''
   return `${table.name}: ${on} falls in the ${rupees(found.amount)}${per} slab.${collected}${feb}`
 }
@@ -360,5 +420,6 @@ export function describeState(code) {
   // reader glancing at the screen.
   if (!st.levies) return `${st.name} levies no professional tax, so nothing is deducted.`
   if (!st.known) return `${st.name} levies professional tax and its slabs are not built in, so nothing is being deducted and something is owed.`
+  if (st.verify) return `${st.name}: ${st.note} These slabs want checking against the state’s own notification.`
   return `${st.name}: ${st.note}`
 }

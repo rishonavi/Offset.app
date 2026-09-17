@@ -348,6 +348,7 @@ export function payslipFor(employee, { period, config = DEFAULT_PAYROLL_CONFIG, 
     // carrying only the number throws away which.
     ptax: { state: pt.code, stateName: pt.name, why: pt.why, amount: pt.amount,
       unanswered: Boolean(pt.unanswered), needsSlabs: Boolean(pt.needsSlabs),
+      verify: Boolean(pt.verify),
       none: Boolean(pt.none), mayBeExempt: Boolean(pt.mayBeExempt), exempt: Boolean(pt.exempt) },
     // Flagged rather than silently clamped.
     overDeducted: totalDeductions > gross + 0.001,
@@ -443,8 +444,12 @@ export function ptaxSummary(slips = []) {
     // Nobody has named a state for these people at all.
     unanswered: count('unanswered'),
     // The state levies professional tax and its slabs are not built in, so this
-    // is deducting nothing where something is owed.
+    // is deducting nothing where something is owed. A guard: nothing in the
+    // shipped table trips it, and a test asserts as much.
     needsSlabs: count('needsSlabs'),
+    // Deducting, but from slabs that are this app's best reading of a
+    // notification rather than something to file a return on unchecked.
+    verify: count('verify'),
     // Maharashtra exempts women up to a ceiling and nobody recorded who is a
     // woman, so this may be deducting from somebody who owes nothing.
     mayBeExempt: count('mayBeExempt'),

@@ -286,23 +286,32 @@ ok('and the screen says Delhi levies none', /Delhi levies no professional tax/.t
 ok('so nothing is deducted', (await deposit())?.pt === 0, JSON.stringify(await deposit()))
 ok('while the other two are untouched by it', (await deposit())?.esi === 0 && (await deposit())?.pf === 0)
 
-console.log('\n── A STATE THAT CHARGES SOMETHING NOBODY HAS ENTERED ──')
-// The third kind of zero, and the one that costs money: Chhattisgarh does levy
-// professional tax and this app does not carry its slabs, so nothing comes off
-// and something is owed on every payslip.
+console.log('\n── A SMALL STATE, DEDUCTED AND MARKED ──')
+// The eight smallest states were blank at first, because their notifications
+// are a good deal harder to come by than Maharashtra's. They are filled in now,
+// and marked: slabs this app is sure of and slabs it is not look identical once
+// they are numbers on a payslip, so the screen says which kind these are.
 await pickState('22')
 await p.waitForTimeout(900)
 t = await main()
-ok('the screen says the slabs are missing',
-  /Chhattisgarh levies professional tax and its slabs are not built in/.test(t),
+ok('Chhattisgarh deducts', (await deposit())?.pt > 0, JSON.stringify(await deposit()))
+ok('and the screen says the slabs want checking',
+  /These slabs want checking against the state’s own notification/.test(t),
   t.slice(0, 1800).replace(/\n/g, ' | '))
-ok('and says so as a problem, not a setting', /slabs missing/i.test(t), t.slice(0, 1800).replace(/\n/g, ' | '))
-ok('and that money is owed on every payslip meanwhile', /something is owed/.test(t),
-  t.slice(0, 1800).replace(/\n/g, ' | '))
-ok('nothing is deducted meanwhile', (await deposit())?.pt === 0, JSON.stringify(await deposit()))
-// It must read differently from Delhi, or the two zeroes are the same zero.
+ok('with a badge beside the money', /check these slabs/i.test(t), t.slice(0, 1900).replace(/\n/g, ' | '))
+// It must read differently from Delhi, or a state that charges nothing and a
+// state charging an unchecked figure are the same thing on screen.
 ok('which does not read like a state that charges nothing',
   !/Chhattisgarh levies no professional tax/.test(t), t.slice(0, 1800).replace(/\n/g, ' | '))
+// The control: a state this app is sure of carries no such line.
+await pickState('27')
+await p.waitForTimeout(900)
+t = await main()
+ok('and a state this is sure of says no such thing', !/want checking/.test(t),
+  t.slice(0, 1800).replace(/\n/g, ' | '))
+ok('nor carries the badge', !/check these slabs/i.test(t), t.slice(0, 1900).replace(/\n/g, ' | '))
+await pickState('22')
+await p.waitForTimeout(900)
 
 console.log('\n── AND A DIFFERENT STATE IS A DIFFERENT NUMBER ──')
 // Karnataka's threshold is ₹25,000 a month, Maharashtra's is ₹7,500. The same
@@ -357,7 +366,7 @@ await p.waitForTimeout(1200)
 pt = await ptCard()
 ok('answering it takes it off the list', !/which state the professional tax is for/i.test(pt),
   pt.slice(0, 1000).replace(/\n/g, ' | '))
-// And the louder one: a state that charges, with no slabs entered.
+// And the other one: deducting, but on slabs worth checking once.
 await p.evaluate(() => {
   const list = JSON.parse(localStorage.getItem('pl_corp_entities'))
   list[0].pt_state = '22'
@@ -366,9 +375,19 @@ await p.evaluate(() => {
 await p.goto(B, { waitUntil: 'networkidle' })
 await p.waitForTimeout(1200)
 pt = await ptCard()
-ok('a state whose slabs are missing is raised louder', /slabs are not entered/i.test(pt),
+ok('a small state’s slabs are raised as worth checking', /slabs are worth checking/i.test(pt),
   pt.slice(0, 1200).replace(/\n/g, ' | '))
-ok('and says money is owed on every payslip', /something is owed/i.test(pt),
+ok('and says whose reading they are', /best reading/i.test(pt), pt.slice(0, 1200).replace(/\n/g, ' | '))
+// The control: Maharashtra's are not raised, or the warning means nothing.
+await p.evaluate(() => {
+  const list = JSON.parse(localStorage.getItem('pl_corp_entities'))
+  list[0].pt_state = '27'
+  localStorage.setItem('pl_corp_entities', JSON.stringify(list))
+})
+await p.goto(B, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1200)
+pt = await ptCard()
+ok('and a state this is sure of is not raised at all', !/slabs are worth checking/i.test(pt),
   pt.slice(0, 1200).replace(/\n/g, ' | '))
 
 console.log('\n── AND THE REPORT COSTS THE COMPANY THE SAME WAY ──')

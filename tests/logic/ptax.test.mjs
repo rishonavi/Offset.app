@@ -23,7 +23,7 @@
 //   **The tax follows the work**, not the head office, which for a builder with
 //   a site over a state line is the ordinary case.
 import {
-  STATES, STATE_CODES, STATES_BY_NAME, ANNUAL_CAP, AS_OF, ptaxFor, ptaxYear, spread,
+  STATES, STATE_CODES, STATES_BY_NAME, ANNUAL_CAP, AS_OF, MONTHS_IN, ptaxFor, ptaxYear, spread,
   taxYearMonth, stateFromGstin, workStateOf, annualMaximum, describeState,
 } from '../../src/lib/ptax.js'
 import { makeEmployee, runPayroll, payslipFor, configForEntity, professionalTax, DEFAULT_PAYROLL_CONFIG, ptaxSummary } from '../../src/lib/payroll.js'
@@ -35,6 +35,10 @@ const eq = (n, got, want) => ok(n, got === want, `got ${JSON.stringify(got)}, wa
 
 const LEVYING = STATE_CODES.filter((c) => STATES[c].levies && STATES[c].known)
 const at = (state, gross, period = '2026-06', female = false) => ptaxFor({ state, monthlyGross: gross, period, female })
+const own2 = { slabs: [{ upTo: 10000, amount: 0 }, { upTo: Infinity, amount: 250 }] }
+// What a state's slab is read against, which is not always a month's pay.
+const incomeOf = (st, monthly) =>
+  st.basis === 'annual' ? monthly * 12 : st.basis === 'half-yearly' ? monthly * 6 : monthly
 
 console.log('\n── THE CONSTITUTION IS THE ONE THING EVERY STATE AGREES ON ──')
 // Article 276(2) caps professional tax at ₹2,500 a year per person, and no
@@ -66,7 +70,7 @@ for (const c of LEVYING) {
   const st = STATES[c]
   const expect = st.every === 'month'
     ? year.months.reduce((t, m) => t + m.amount, 0)  // monthly states are their own answer
-    : st.every === 'year' ? pickSlab(st, 42000 * 12) : pickSlab(st, 42000 * 6) * 2
+    : pickSlab(st, incomeOf(st, 42000)) * (12 / MONTHS_IN[st.every])
   eq(`${st.name}: twelve months come to the year's liability`, year.total, expect)
 }
 function pickSlab(st, income) {
@@ -91,18 +95,18 @@ const delhi = at('07', 42000)
 eq('Delhi levies none: nothing is deducted', delhi.amount, 0)
 ok('and that is a different sentence', delhi.none === true && !delhi.unanswered, delhi.why)
 ok('which names the state', /Delhi/.test(delhi.why), delhi.why)
-const raipur = at('22', 42000)
-eq('Chhattisgarh levies it but the slabs are not built in', raipur.amount, 0)
-ok('and that is a third sentence', raipur.needsSlabs === true && !raipur.none, raipur.why)
-// The one that costs money. Nothing is coming off and something is owed.
-ok('which says money is owed', /levies professional tax/.test(raipur.why), raipur.why)
 const poor = at('27', 5000)
 eq('under the threshold: nothing is due', poor.amount, 0)
 ok('and nothing is wrong', !poor.unanswered && !poor.none && !poor.needsSlabs, JSON.stringify(poor))
-// A code that is not a state at all, which is what a typo produces.
+ok('which is a third sentence again', /under the threshold/.test(poor.why), poor.why)
+// A code that is not a state at all, which is what a typo in a GSTIN produces.
 const junk = at('99', 42000)
 eq('a code that is not a state deducts nothing', junk.amount, 0)
 ok('and says it does not know it', junk.unknownState === true, JSON.stringify(junk))
+// All four have to be distinguishable from one another, not merely non-empty.
+ok('and no two of the four read the same',
+  new Set([nobody.why, delhi.why, poor.why, junk.why]).size === 4,
+  JSON.stringify([nobody.why, delhi.why, poor.why, junk.why]))
 
 console.log('\n── EACH STATE CHARGES WHAT IT CHARGES ──')
 // Slabs on a month's pay.
@@ -133,6 +137,52 @@ eq('with ₹300 in March', at('21', 30000, '2026-03').amount, 300)
 eq('Punjab does not charge a man under the income-tax limit', at('03', 8000).amount, 0)
 eq('and does charge one above it', at('03', 42000).amount, 200)
 ok('and says the test is really his whole income', /assessable to income tax/.test(STATES['03'].caveat), STATES['03'].caveat)
+
+console.log('\n── THE EIGHT SMALL STATES ──')
+// Filled in last and marked, because their notifications are a good deal harder
+// to come by than Maharashtra's. Slabs this file is sure of and slabs it is not
+// look identical once they are numbers, so the table says which.
+const VERIFY = ['22', '17', '16', '14', '15', '13', '11', '34']
+eq('eight states carry slabs worth checking', STATE_CODES.filter((c) => STATES[c].verify).length, 8)
+ok('and they are the eight that were blank', VERIFY.every((c) => STATES[c].verify), '')
+ok('the big states are not marked', ['27', '29', '19', '33', '32', '10'].every((c) => !STATES[c].verify), '')
+// The flag has to ride on the answer, or the caller that forgets to look it up
+// is the one that shows a figure as though it were settled.
+ok('the flag comes back with the deduction', at('22', 42000).verify === true, JSON.stringify(at('22', 42000)))
+ok('and not for a state this is sure of', at('27', 42000).verify === false, JSON.stringify(at('27', 42000)))
+// A company that entered its own slabs owns them, so the warning goes.
+ok('a company’s own slabs are its own responsibility',
+  ptaxFor({ state: '22', monthlyGross: 42000, period: '2026-06', female: false, override: own2 }).verify === false, '')
+ok('and the sentence says the slabs want checking', /want checking/.test(describeState('22')), describeState('22'))
+ok('while a state this is sure of says no such thing', !/want checking/.test(describeState('27')), describeState('27'))
+// Each of the eight, at a wage a site actually pays.
+eq('Chhattisgarh reads the year and deducts monthly', at('22', 42000).amount, 200)
+eq('and a lower earner sits in a lower band', at('22', 10000).amount, 130)
+eq('Meghalaya collects once a year', at('17', 42000).periodTotal, 2500)
+eq('Tripura, top slab', at('16', 20000).amount, 208)
+eq('Tripura, middle', at('16', 10000).amount, 150)
+eq('Manipur collects once a year', at('14', 9000).periodTotal, 2400)
+eq('Mizoram, one of six monthly bands', at('15', 9000).amount, 120)
+eq('Nagaland starts lower than anywhere else', at('13', 4500).amount, 35)
+eq('and nothing at all below that', at('13', 4000).amount, 0)
+eq('Puducherry reads the year, collects twice', at('34', 42000).periodTotal, 1250)
+
+console.log('\n── AND ONE STATE COLLECTS QUARTERLY ──')
+// Sikkim is the only one, which is why `every` has a fourth value rather than a
+// special case buried in the arithmetic.
+const sikkim = at('11', 42000)
+eq('Sikkim collects every quarter', sikkim.collected, 'quarter')
+eq('over three months', sikkim.monthsInPeriod, 3)
+eq('with ₹200 a quarter at the top', sikkim.periodTotal, 200)
+eq('so April carries a third of it', at('11', 42000, '2026-04').amount, 66)
+eq('and June carries the remainder', at('11', 42000, '2026-06').amount, 68)
+// Four quarters, not two halves and not one year.
+eq('four quarters make the year', ptaxYear({ state: '11', monthlyGross: 42000, female: false }).total, 800)
+eq('under its threshold it is nothing at all', at('11', 20000).amount, 0)
+eq('and the months of each quarter repeat', at('11', 42000, '2026-07').amount, 66)
+// Every collection period divides the year, or the spread would not close.
+ok('every collection period divides twelve months evenly',
+  Object.values(MONTHS_IN).every((n) => 12 % n === 0), JSON.stringify(MONTHS_IN))
 
 console.log('\n── COLLECTED TWICE A YEAR, PAID TWELVE TIMES ──')
 // Tamil Nadu and Kerala slab on six months' pay and collect twice a year. A
@@ -191,18 +241,23 @@ const slipOf = (id) => run.slips.find((s) => s.employee_id === id)
 eq('the Mumbai man pays Maharashtra', slipOf('a').deductions.professionalTax, 200)
 eq('the Bengaluru man pays Karnataka', slipOf('d').deductions.professionalTax, 200)
 eq('the Delhi man pays nothing, because Delhi charges nothing', slipOf('e').deductions.professionalTax, 0)
-eq('and the Raipur man pays nothing because nobody entered the slabs', slipOf('f').deductions.professionalTax, 0)
-// The two zeroes are not the same zero, and the run knows which is which.
-ok('the Delhi zero is not flagged', slipOf('e').ptax.none && !slipOf('e').ptax.needsSlabs)
-ok('the Raipur zero is', slipOf('f').ptax.needsSlabs === true)
-eq('the run counts the state that needs slabs', run.ptax.needsSlabs, 1)
-eq('and lists every state it paid', run.ptax.states.length, 4)
-eq('with the total', run.ptax.total, 400)
+eq('and the Raipur man pays Chhattisgarh', slipOf('f').deductions.professionalTax, 200)
+// He pays, but on slabs worth checking, and the slip carries which kind it is.
+ok('the Delhi zero is not flagged', slipOf('e').ptax.none && !slipOf('e').ptax.verify)
+ok('the Raipur deduction is', slipOf('f').ptax.verify === true, JSON.stringify(slipOf('f').ptax))
+ok('while the Mumbai one is not', slipOf('a').ptax.verify === false)
+eq('the run counts who is on slabs worth checking', run.ptax.verify, 1)
+eq('and nobody is left without slabs at all', run.ptax.needsSlabs, 0)
+eq('it lists every state it paid', run.ptax.states.length, 4)
+eq('with the total', run.ptax.total, 600)
 // The whole point of the change, stated as one number: this company used to
 // pay Maharashtra's tax on all four.
 const oldWay = staff.length * 200
 ok('which is not what one set of slabs for everybody would have said', run.ptax.total !== oldWay,
   `${run.ptax.total} vs ${oldWay}`)
+// Specifically: the Delhi man is the difference, and he should never have been
+// paying anything.
+eq('by exactly the man in the state that charges nothing', oldWay - run.ptax.total, 200)
 
 console.log('\n── THE EXEMPTION NOBODY CLAIMS ──')
 // Maharashtra exempts women drawing up to ₹25,000 a month — ₹2,400 a year to
@@ -235,12 +290,12 @@ eq('and who is', mixed.ptax.exempt, 1)
 console.log('\n── A COMPANY’S OWN SLABS BEAT THE TABLE ──')
 // Because states revise these in their budgets and a slab that moved last
 // April is a wrong payslip every month until somebody notices.
-const own = { slabs: [{ upTo: 10000, amount: 0 }, { upTo: Infinity, amount: 250 }] }
+const own = own2
 eq('the company’s slabs are used', ptaxFor({ state: '27', monthlyGross: 42000, period: '2026-06', female: false, override: own }).amount, 250)
-eq('and they reach a state the table does not carry',
+eq('and they beat a state this carries slabs for',
   ptaxFor({ state: '22', monthlyGross: 42000, period: '2026-06', female: false, override: own }).amount, 250)
-// Without them that same state deducts nothing, which is the control.
-eq('which without them deducts nothing', at('22', 42000).amount, 0)
+// Without them that same state charges its own figure, which is the control.
+eq('which without them charges the state’s own', at('22', 42000).amount, 200)
 eq('an entity carrying slabs passes them through',
   configForEntity({ ...mumbai, pt_slabs: own.slabs }).professionalTax.slabs.length, 2)
 
@@ -269,15 +324,23 @@ ok('every slab table is in ascending order',
 ok('and ends at infinity, so a lookup always lands',
   LEVYING.every((c) => STATES[c].slabs[STATES[c].slabs.length - 1].upTo === Infinity), '')
 eq('fourteen states and union territories levy none', STATE_CODES.filter((c) => !STATES[c].levies).length, 14)
-eq('eight levy it with slabs still to enter', STATE_CODES.filter((c) => STATES[c].levies && !STATES[c].known).length, 8)
-eq('and fourteen are built in', LEVYING.length, 14)
+eq('and the other twenty-two all carry slabs', LEVYING.length, 22)
+eq('so none is left blank', STATE_CODES.filter((c) => STATES[c].levies && !STATES[c].known).length, 0)
+// `needsSlabs` is a guard, not a case. Nothing in the shipped table reaches it,
+// and this is the invariant that says so — if a state is added later without
+// slabs it deducts nothing and shouts, instead of quietly returning a nil.
+ok('no state in the table deducts nothing for want of slabs',
+  STATE_CODES.every((c) => !at(c, 42000).needsSlabs), '')
+ok('but a state with its slabs removed would say so',
+  ptaxFor({ state: '27', monthlyGross: 42000, period: '2026-06', female: false,
+    override: { slabs: [] } }).amount === 200, 'an empty override falls back to the table')
 ok('the picker puts levying states first', STATES_BY_NAME[0].levies === true && STATES_BY_NAME[STATES_BY_NAME.length - 1].levies === false, '')
 // The slabs are a starting point and not a source of law, and the app has to be
 // able to say when it last looked.
 ok('the table says when it was stated', /^\d{4}-\d{2}-\d{2}$/.test(AS_OF), AS_OF)
 ok('a state describes itself in a sentence', /Maharashtra/.test(describeState('27')), describeState('27'))
 ok('including one that charges nothing', /no professional tax/i.test(describeState('07')), describeState('07'))
-ok('and one whose slabs are missing', /not built in/i.test(describeState('22')), describeState('22'))
+ok('and one whose slabs want checking', /want checking/i.test(describeState('22')), describeState('22'))
 
 console.log('\n── WHICH MONTH OF WHOSE YEAR ──')
 // A state's professional-tax year runs April to March whatever the company's

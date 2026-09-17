@@ -371,31 +371,42 @@ the ₹2,500 a year that Article caps them at. Below the cap:
 
 | | |
 |---|---|
-| **Levy it, slabs built in** | Maharashtra, Karnataka, West Bengal, Andhra Pradesh, Telangana, Tamil Nadu, Gujarat, Madhya Pradesh, Kerala, Assam, Odisha, Bihar, Jharkhand, Punjab |
-| **Levy it, slabs still to enter** | Chhattisgarh, Meghalaya, Tripura, Manipur, Mizoram, Nagaland, Sikkim, Puducherry |
+| **Levy it** | Maharashtra, Karnataka, West Bengal, Andhra Pradesh, Telangana, Tamil Nadu, Gujarat, Madhya Pradesh, Kerala, Assam, Odisha, Bihar, Jharkhand, Punjab, Chhattisgarh, Meghalaya, Tripura, Manipur, Mizoram, Nagaland, Sikkim, Puducherry |
 | **Levy none at all** | Delhi, Haryana, Uttar Pradesh, Uttarakhand, Rajasthan, Himachal Pradesh, Jammu and Kashmir, Ladakh, Goa, Arunachal Pradesh, Chandigarh, Andaman and Nicobar, Dadra and Nagar Haveli and Daman and Diu, Lakshadweep |
 
 They disagree about the shape of the thing, not just the numbers. The slab is
 read against a month's pay in Maharashtra, six months' in Tamil Nadu and Kerala,
-and a year's in Bihar, Jharkhand, Madhya Pradesh and Odisha. It is collected
-monthly in most states, twice a year in Tamil Nadu and Kerala, once a year in
-Bihar and Jharkhand — so a payslip carries a share, and `spread` banks the
-remainder in the last month rather than scattering it, because twelve months
-have to add up to the year's liability exactly and not to something near it.
-Four states use an odd month to reach the cap without exceeding it in any other:
-Maharashtra's ₹300 February is eleven ₹200 months short of ₹2,500.
+and a year's in Bihar, Jharkhand, Madhya Pradesh, Odisha, Chhattisgarh,
+Meghalaya, Manipur and Puducherry. It is collected monthly in most states, every
+quarter in Sikkim, twice a year in Tamil Nadu, Kerala and Puducherry, and once a
+year in Bihar, Jharkhand, Meghalaya and Manipur — so a payslip carries a share,
+and `spread` banks the remainder in the last month rather than scattering it,
+because twelve months have to add up to the year's liability exactly and not to
+something near it. `MONTHS_IN` maps each collection period to its months and
+every one of them divides twelve, which is what makes the same arithmetic serve
+all four with no special case anywhere. Four states use an odd month to reach the
+cap without exceeding it in any other: Maharashtra's ₹300 February is eleven
+₹200 months short of ₹2,500.
 
 **A zero means four different things** and the payslip carries which: no state
-named, a state that levies none, a state whose slabs are not built in, or a
-person under the threshold. Three of those four are somebody's problem, and the
-third costs money — nothing comes off and something is owed — so it is an error
-on the attention list rather than a quiet nil.
+named, a state that levies none, a person under the threshold, or a state code
+that is not a state at all — which is what a typo in a GSTIN produces. Three of
+those four are somebody's problem, and the test asserts that no two of the four
+sentences read the same, because being able to tell them apart is the point.
 
-**The eight states with no slabs are deliberate.** A guess here is
-indistinguishable from knowledge, and a wrong slab is a wrong payslip every
-month with nothing on screen to say so. They are marked as levying with slabs to
-enter, and a company in one of them can enter its own, which override the table
-anyway — which is also the answer when a state revises its slabs in its budget.
+**Eight states carry `verify`.** Chhattisgarh, Meghalaya, Tripura, Manipur,
+Mizoram, Nagaland, Sikkim and Puducherry are small states whose notifications are
+a good deal harder to come by than Maharashtra's, and their slabs here are this
+app's best reading rather than something to file a return on unchecked. Slabs
+the app is sure of and slabs it is not look identical once they are numbers on a
+payslip, so the table says which, the flag rides out on the answer rather than
+waiting to be looked up again, and the payroll screen and the attention list
+both carry a line. A company that enters its own slabs owns them and the flag
+goes — which is also the answer when any state revises its slabs in its budget.
+
+`needsSlabs` survives as a guard rather than a case: nothing in the shipped table
+reaches it, and a test asserts as much, so a state added later without slabs
+deducts nothing and shouts instead of quietly returning a nil.
 
 **The tax follows the work.** For a builder that is the ordinary case: a Mumbai
 company with a site in Bengaluru owes Karnataka for the men on that site, so an
