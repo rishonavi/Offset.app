@@ -19,9 +19,10 @@ for Vite's resolver.
 |---|---|---|
 | `apiguard.test.mjs` | 25 | what the endpoints refuse, and the rate ceiling |
 | `appearance.test.mjs` | 110 | accents, tones, avatars, and the two places that must agree |
-| `attention.test.mjs` | 64 | what is going wrong, ranked — and why wrong outranks large |
+| `attention.test.mjs` | 79 | what is going wrong, ranked — and why wrong outranks large |
 | `assettypes.test.mjs` | 75 | which fields an asset type has, how it is grouped and what it looks like |
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
+| `bonus.test.mjs` | 105 | two ceilings doing different jobs, and what running them together costs |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
 | `certainty.test.mjs` | 34 | how a figure was arrived at, and why a total is only as certain as its least certain part |
 | `corp.test.mjs` | 149 | entities, control, ledgers, audit events, and what needs a second pair of eyes |
@@ -32,6 +33,7 @@ for Vite's resolver.
 | `costcentres.test.mjs` | 55 | what each part of the company spent against what it was given, and why the parts must not exceed the whole |
 | `defaults.test.mjs` | 30 | filling a form in from history, and when not to |
 | `filled.test.mjs` | 22 | which values on a form the app put there |
+| `gratuity.test.mjs` | 75 | the money a company already owes and has never added up, and the day either side of six months that costs a month’s wages |
 | `gst2b.test.mjs` | 52 | the input credit a vendor never filed for, and two ways of reading a name that made it invisible |
 | `i18n.test.mjs` | 81 | dictionaries, plurals, coverage |
 | `idempotent.test.mjs` | 31 | a second tap on a slow connection, and the line between that and two real gangs |
@@ -71,7 +73,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **3,818** | |
+| | **4,013** | |
 
 ## Browser — `tests/browser/`
 
@@ -135,15 +137,15 @@ node tests/browser/rtlui.mjs
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
 | `salesui.mjs` | 40 | flats and shops, the demand moving with the building, cancellations |
 | `rtlui.mjs` | 55 | Arabic and Urdu mirror correctly |
-| `statutoryui.mjs` | 69 | two schemes nobody asked about, deducted from every payslip, now asked |
+| `statutoryui.mjs` | 90 | two schemes nobody asked about, deducted from every payslip, now asked |
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,865** | |
+| | **1,886** | |
 
 That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
 that suite needs the other build and does not run in the same pass, so a sweep
-of this one reports 1,841.
+of this one reports 1,862.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

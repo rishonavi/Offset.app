@@ -12,6 +12,8 @@ import {
   isLocked, RUN_STATUS, RUN_STATUS_LABEL,
 } from '../lib/payroll'
 import { STATES, STATES_BY_NAME, stateFromGstin, describeState, AS_OF } from '../lib/ptax'
+import { gratuityLiability, VESTING_YEARS } from '../lib/gratuity'
+import { bonusRegister, MIN_RATE, MAX_RATE, ELIGIBILITY_CEILING, CALCULATION_CEILING } from '../lib/bonus'
 import { formatCurrency, formatDate } from '../lib/format'
 import { approvalQueue } from '../lib/corporate'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx, attempt } from '../components/ui'
@@ -329,8 +331,14 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
 
   // What the company has said about the two schemes. Neither runs until it has
   // said yes, and neither used to be askable — the payroll simply deducted.
-  const config = useMemo(() => configForEntity(entity),
-    [entity?.pf_registered, entity?.esi_registered, entity?.pt_state, entity?.gstin])
+  // Every answer the company gives, or the field is written and never read
+  // back. The bonus rate and the minimum wage were missing from this list: the
+  // input took the number, the entity kept it, and the figure above it did not
+  // move — which looks exactly like the app ignoring you.
+  const config = useMemo(() => configForEntity(entity), [
+    entity?.pf_registered, entity?.esi_registered, entity?.pt_state, entity?.gstin,
+    entity?.bonus_rate, entity?.minimum_wage, entity?.gratuity_voluntary, entity?.bonus_voluntary,
+  ])
   // The company has already said which state it is in, at the front of its
   // GSTIN. Asking a second time only gives the two a chance to disagree, so the
   // picker's blank option is that answer rather than nothing.
@@ -344,6 +352,25 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
   }
   const employed = useMemo(() => data.employees.filter((e) => e.active !== false).length, [data.employees])
   const schemes = useMemo(() => statutoryStatus({ headcount: employed, config }), [employed, config])
+
+  // Neither of these is a deduction and neither reaches a payslip, which is
+  // exactly why they go unnoticed: nothing in a month's accounts moves and both
+  // grow anyway. Gratuity falls due when a job ends and the men are paid off;
+  // bonus falls due eight months after the year closes.
+  const gratuity = useMemo(() => gratuityLiability(data.employees, { config: config.gratuity }),
+    [data.employees, config.gratuity])
+  const bonus = useMemo(() => bonusRegister(data.employees, {
+    fyStartMonth: entity?.fy_start_month || 4,
+    rate: config.bonus.rate, minimumWage: config.bonus.minimumWage, config: config.bonus,
+    born: entity?.created_at || '',
+  }), [data.employees, entity?.fy_start_month, entity?.created_at, config.bonus])
+
+  const setCompany = (patch, said) => {
+    store.updateEntity(eid, patch, actor)
+    reloadEntity?.()
+    bump()
+    toast(said)
+  }
 
   const answer = (id, value) => {
     store.updateEntity(eid, { [`${id}_registered`]: value }, actor)
@@ -646,6 +673,178 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
         )}
       </Card>
 
+      {/* Gratuity: the money the company already owes and has never added up.
+          Nothing monthly mentions it, so the liability grows in silence and
+          falls due all at once when a site finishes and the men are paid off. */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink-3">
+              Gratuity
+              {gratuity.applies
+                ? <Badge color="#2563eb">{gratuity.voluntary ? 'paid voluntarily' : 'applies'}</Badge>
+                : <Badge color="#64748b">under {gratuity.threshold}</Badge>}
+            </h2>
+            <p className="mt-1 text-xs text-ink-5">{gratuity.why}</p>
+          </div>
+          {!gratuity.over && canWrite && (
+            <label className="flex shrink-0 items-center gap-2 text-xs text-ink-5">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-brand"
+                aria-label="This company pays gratuity anyway"
+                checked={Boolean(entity?.gratuity_voluntary)}
+                onChange={(e) => setCompany({ gratuity_voluntary: e.target.checked },
+                  e.target.checked ? 'Gratuity is paid here' : 'Gratuity is not paid here')}
+              />
+              We pay it anyway
+            </label>
+          )}
+        </div>
+        {gratuity.applies && (
+          <>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {/* Owed today against a bet on people staying. Adding the two
+                  together would make one number that is true of neither. */}
+              <Stat label="Owed if everyone left today" value={formatCurrency(gratuity.vestedTotal)} />
+              <Stat label="Not yet vested" value={formatCurrency(gratuity.unvested)} />
+              <Stat label="Accrued in all" value={formatCurrency(gratuity.accrued)} />
+            </div>
+            <p className="mt-2 text-xs text-ink-5">
+              Fifteen days of basic and dearness allowance for each year worked, payable after {VESTING_YEARS} years.
+              It is a cost the company carries, not a deduction, so it appears on no payslip.
+            </p>
+            {gratuity.undated > 0 && (
+              <p className="mt-2 text-xs text-ink-4">
+                <Badge color="#d97706">no joining date</Badge>{' '}
+                {gratuity.undated} {gratuity.undated === 1 ? 'person has' : 'people have'} no joining date, so nothing
+                is worked out for them and the figures above are short by however much they are owed.
+              </p>
+            )}
+            {gratuity.vestingSoon.length > 0 && (
+              <div className="mt-3 rounded-xl border border-line-soft p-3">
+                {/* On a site where a dozen men started together, the cliff
+                    arrives for all of them in the same month. */}
+                <p className="text-xs font-semibold text-ink-3">
+                  Crossing {VESTING_YEARS} years within the year
+                </p>
+                <ul className="mt-1.5 space-y-1 text-xs text-ink-5">
+                  {gratuity.vestingSoon.slice(0, 6).map((l) => (
+                    <li key={l.employee_id} className="flex items-center justify-between gap-3">
+                      <span>{l.name} — {l.monthsToVest === 0 ? 'this month' : `in ${l.monthsToVest} ${l.monthsToVest === 1 ? 'month' : 'months'}`}</span>
+                      <span className="tabular text-ink-3">{formatCurrency(l.accrued)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+
+      {/* Bonus, and the two ceilings everybody runs together. */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink-3">
+              Bonus for {bonus.year.label}
+              {bonus.applies && bonus.year.overdue && <Badge color="#dc2626">overdue</Badge>}
+              {bonus.applies && !bonus.year.overdue && bonus.year.closed && (
+                <Badge color="#d97706">due {formatDate(bonus.year.due)}</Badge>
+              )}
+              {!bonus.applies && <Badge color="#64748b">under {bonus.threshold}</Badge>}
+            </h2>
+            <p className="mt-1 text-xs text-ink-5">{bonus.why}</p>
+          </div>
+          {!bonus.over && canWrite && (
+            <label className="flex shrink-0 items-center gap-2 text-xs text-ink-5">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-brand"
+                aria-label="This company pays a bonus anyway"
+                checked={Boolean(entity?.bonus_voluntary)}
+                onChange={(e) => setCompany({ bonus_voluntary: e.target.checked },
+                  e.target.checked ? 'Bonus is paid here' : 'Bonus is not paid here')}
+              />
+              We pay it anyway
+            </label>
+          )}
+        </div>
+        {bonus.applies && (
+          <>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Stat label={`At ${bonus.rate}%`} value={formatCurrency(bonus.total)} />
+              <Stat label={`At the ${MAX_RATE}% maximum`} value={formatCurrency(bonus.atMaximum)} />
+              <Stat label="People it is owed to" value={`${bonus.eligible} of ${bonus.people}`} />
+            </div>
+            {canWrite && (
+              <div className="mt-3 flex flex-wrap items-end gap-4">
+                <Field label="Rate" hint={`${MIN_RATE}% is the minimum the Act allows.`}>
+                  <Input
+                    type="number" step="0.01" min={MIN_RATE} max={MAX_RATE}
+                    className="field-input-compact w-28"
+                    aria-label="Bonus rate"
+                    value={entity?.bonus_rate ?? ''}
+                    placeholder={String(MIN_RATE)}
+                    onChange={(e) => setCompany({ bonus_rate: e.target.value === '' ? null : Number(e.target.value) },
+                      e.target.value === '' ? 'No rate chosen' : `Bonus at ${e.target.value}%`)}
+                  />
+                </Field>
+                {/* Per state and per scheduled employment, revised twice a year
+                    in most states, construction on its own schedule — so it is
+                    asked for rather than built in and wrong by June. */}
+                <Field label="Minimum wage" hint="For the work, per month. Bonus is computed on this where it is above the ceiling.">
+                  <Input
+                    type="number" step="1" min="0"
+                    className="field-input-compact w-36"
+                    aria-label="Minimum wage"
+                    value={entity?.minimum_wage ?? ''}
+                    placeholder={String(CALCULATION_CEILING)}
+                    onChange={(e) => setCompany({ minimum_wage: e.target.value === '' ? null : Number(e.target.value) },
+                      e.target.value === '' ? 'No minimum wage set' : `Minimum wage ${formatCurrency(Number(e.target.value))}`)}
+                  />
+                </Field>
+              </div>
+            )}
+            {!bonus.rateChosen && (
+              <p className="mt-2 text-xs text-ink-4">
+                <Badge color="#d97706">no rate chosen</Badge>{' '}
+                Nobody has set a rate, so this is the {MIN_RATE}% the Act imposes rather than a figure the company
+                decided. The Act allows anything up to {MAX_RATE}%.
+              </p>
+            )}
+            {/* Section 16, flagged rather than applied. Telling a young company
+                it owes nothing, wrongly, means finding out eight months late. */}
+            {bonus.infancy && (
+              <p className="mt-2 text-xs text-ink-4">
+                <Badge color="#64748b">under {bonus.infancyYears} years old</Badge>{' '}
+                A new establishment is outside the Act for its first {bonus.infancyYears} years, except in a year it
+                makes a profit. Whether this one did is not something the payroll knows, so the figures above assume
+                it owes the bonus.
+              </p>
+            )}
+            {/* The part that gets computed wrong, said plainly. */}
+            <p className="mt-2 text-xs text-ink-5">
+              Two ceilings, and they are different numbers: {formatCurrency(ELIGIBILITY_CEILING)} a month decides who is
+              covered, and {formatCurrency(bonus.ceiling)} decides what the bonus is worked out on
+              {bonus.minimumWage > CALCULATION_CEILING ? ' — the minimum wage, here' : ''}.
+            </p>
+            {bonus.held > 0 && (
+              <p className="mt-1 text-xs text-ink-5">
+                {bonus.held} {bonus.held === 1 ? 'person is' : 'people are'} paid on {formatCurrency(bonus.ceiling)}{' '}
+                rather than on their wages, because the Act caps the calculation there.
+              </p>
+            )}
+            {bonus.overCeiling > 0 && (
+              <p className="mt-1 text-xs text-ink-6">
+                {bonus.overCeiling} {bonus.overCeiling === 1 ? 'person draws' : 'people draw'} more than{' '}
+                {formatCurrency(ELIGIBILITY_CEILING)} a month and are outside the Act altogether.
+              </p>
+            )}
+          </>
+        )}
+      </Card>
+
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink-3">
@@ -694,6 +893,7 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
           <label className="mt-3 flex items-start gap-2.5 rounded-lg border border-line-soft bg-surface-sunk p-3 text-xs text-ink-4">
             <input
               type="checkbox"
+              aria-label="Recover advances in this run"
               checked={recover}
               onChange={(e) => setRecover(e.target.checked)}
               className="mt-0.5 h-4 w-4 accent-brand"

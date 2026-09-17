@@ -38,6 +38,8 @@ import { materialVariance, labourRateSpread } from './rates'
 import { shrinkage } from './stockcount'
 import { tdsLedger } from './tds'
 import { ptaxFor } from './ptax'
+import { gratuityLiability, VESTING_YEARS } from './gratuity'
+import { bonusRegister } from './bonus'
 import { statutoryStatus, SCHEMES, DEFAULT_PAYROLL_CONFIG } from './payroll'
 
 export const LEVELS = {
@@ -189,6 +191,19 @@ export function attention(books = {}, { asOf = null } = {}) {
         `${pt.name} levies professional tax and this does not carry its slabs, so nothing is coming off any payslip and something is owed on every one. Enter them from the state’s own notification.`,
         { count: onBooks, where: OPS('payroll') }))
     }
+  }
+  // Bonus that should already have been paid. Eight months after the year
+  // closes is not a soft date, and the money is owed to the people least able
+  // to wait for it.
+  const bonusBook = onBooks > 0
+    ? bonusRegister(employees, { fyStartMonth, rate: payrollConfig?.bonus?.rate ?? null,
+        minimumWage: payrollConfig?.bonus?.minimumWage || 0, config: payrollConfig?.bonus || {} })
+    : null
+  if (bonusBook?.applies && bonusBook.year.overdue && bonusBook.total > 0) {
+    out.push(finding('bonus.overdue', 'error',
+      `Bonus for ${bonusBook.year.label} is past its date`,
+      `The Act gives eight months from the close of the year and that ran out ${plural(Math.abs(bonusBook.year.daysToDue), 'day', 'days')} ago. ${plural(bonusBook.eligible, 'person is', 'people are')} owed it.`,
+      { amount: bonusBook.total, count: bonusBook.eligible, where: OPS('payroll') }))
   }
   const advanceErrors = outstandingAdvances(advances, adjustments, { entityId }).errors
   if (advanceErrors > 0) {
@@ -359,6 +374,33 @@ export function attention(books = {}, { asOf = null } = {}) {
         `They are this app’s best reading of the state’s notification rather than something to file on unchecked — the smaller states revise theirs quietly. Check them once and, if they differ, enter your own.`,
         { count: onBooks, where: OPS('payroll') }))
     }
+  }
+  // The money the company already owes and has never added up. Not a deduction,
+  // never on a payslip, and it falls due all at once when a site finishes.
+  const owed = onBooks > 0
+    ? gratuityLiability(employees, { config: payrollConfig?.gratuity || {} })
+    : null
+  if (owed?.applies && owed.vestedTotal > 0) {
+    out.push(finding('gratuity.accrued', 'money',
+      `Gratuity is owed and nothing is set aside for it`,
+      `${plural(owed.vestedPeople, 'person has', 'people have')} passed ${VESTING_YEARS} years, so this is payable the day they leave. It is not a deduction and reaches no payslip, which is why it has never been added up.`,
+      { amount: owed.vestedTotal, count: owed.vestedPeople, where: OPS('payroll') }))
+  }
+  // A person with no joining date is quietly worth nothing, which is the
+  // cheapest kind of wrong and the hardest to notice in a total.
+  if (owed?.applies && owed.undated > 0) {
+    out.push(finding('gratuity.undated', 'risk',
+      `${plural(owed.undated, 'person has', 'people have')} no joining date`,
+      'Gratuity is fifteen days’ wages for every year worked, so without a joining date there is no number — and they are counted as nil in a total that looks complete.',
+      { count: owed.undated, where: OPS('payroll') }))
+  }
+  // Bonus at the minimum because nobody chose, which is a decision not taken
+  // rather than a decision to pay the least.
+  if (bonusBook?.applies && !bonusBook.rateChosen && bonusBook.total > 0) {
+    out.push(finding('bonus.noRate', 'risk',
+      'Nobody has set a bonus rate',
+      `Bonus is being worked out at the ${bonusBook.rate}% the Act imposes rather than at a figure this company chose. It allows anything up to 20%, and the amount beside this is what the difference would cost.`,
+      { amount: bonusBook.atMaximum - bonusBook.total, count: bonusBook.eligible, where: OPS('payroll') }))
   }
   const undated = round2(heldBySub.undated + heldByClient.undated)
   if (undated > 0) {

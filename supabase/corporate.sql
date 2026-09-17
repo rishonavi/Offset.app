@@ -862,6 +862,26 @@ alter table public.employees add column if not exists female boolean;
 -- today's employees, and the men on the Bengaluru site may have moved.
 alter table public.payroll_runs add column if not exists ptax jsonb not null default '{}'::jsonb;
 
+-- ── Gratuity and bonus: what accrues without ever reaching a payslip ──
+-- Both are liabilities rather than deductions, which is why they go unnoticed:
+-- nothing in a month's accounts moves and the number grows anyway. Gratuity
+-- falls due when a job ends and the men are paid off; bonus falls due eight
+-- months after the year closes, which for an April year is the end of November.
+--
+-- The rate the company pays, between the 8.33% the Act imposes and the 20% it
+-- allows. Nullable, and null is not 8.33 — nobody having chosen is a decision
+-- not taken, and the minimum is what the law would settle for.
+alter table public.entities add column if not exists bonus_rate numeric(5,2);
+-- The minimum wage for the work. Bonus is computed on ₹7,000 or the minimum
+-- wage, whichever is higher, and that second half is the clause most often
+-- dropped. Per state and per scheduled employment, revised twice a year in most
+-- states, construction on its own schedule — so it is asked for, not built in.
+alter table public.entities add column if not exists minimum_wage numeric(14,2);
+-- Under ten and under twenty neither Act applies, and plenty of small firms pay
+-- both regardless. A promise made is owed whatever the Act says.
+alter table public.entities add column if not exists gratuity_voluntary boolean not null default false;
+alter table public.entities add column if not exists bonus_voluntary boolean not null default false;
+
 -- ── A month that has been closed ─────────────────────────────────
 -- Every report is a photograph of a moving thing: somebody prints March, sends
 -- it to the bank, and a bill dated the 28th arrives a fortnight later. March is

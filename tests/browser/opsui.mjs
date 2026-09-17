@@ -221,7 +221,11 @@ await tab('Payroll')
 let recText = await main()
 ok('payroll notices the outstanding employee advance', /Recover advances in this run/.test(recText), recText.slice(0, 200))
 ok('but does not recover it unasked', !/5,000/.test(recText) && /40,000/.test(recText))
-await p.locator('#main-content input[type="checkbox"]').first().check()
+// By name, not by position. This was `.first()`, and the first checkbox on the
+// payroll tab stopped being this one the moment gratuity and bonus grew their
+// own — a test that passes because of the order things happen to render in is
+// a test that will fail for a reason that has nothing to do with it.
+await p.locator('#main-content input[aria-label="Recover advances in this run"]').check()
 await p.waitForTimeout(400)
 recText = await main()
 ok('ticking it deducts the advance', /5,000/.test(recText), recText.slice(0, 300))

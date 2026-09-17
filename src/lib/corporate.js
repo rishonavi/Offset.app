@@ -25,7 +25,7 @@ export const PERSONAL = '__personal__'
 export const isConsolidated = (id) => id === CONSOLIDATED
 export const isPersonal = (id) => id === PERSONAL
 
-export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null, ptState = '', ptSlabs = null } = {}) {
+export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null, ptState = '', ptSlabs = null, bonusRate = null, minimumWage = null, gratuityVoluntary = false, bonusVoluntary = false } = {}) {
   return {
     id: id || newId(),
     name: (name || 'Untitled company').trim().slice(0, 120),
@@ -60,6 +60,21 @@ export function makeEntity({ id, name, registration = '', gstin = '', currency =
     // The company's own slabs, where its state revised them or the app does not
     // carry that state. Null means use the built-in table.
     pt_slabs: Array.isArray(ptSlabs) && ptSlabs.length ? ptSlabs : null,
+    // What the company pays as bonus, between the 8.33% the Act imposes and the
+    // 20% it allows. Null is not 8.33: nobody having chosen is a decision not
+    // taken, and the minimum is what the law would settle for rather than what
+    // the company decided.
+    bonus_rate: bonusRate == null || bonusRate === '' ? null : Math.min(20, Math.max(8.33, Number(bonusRate) || 8.33)),
+    // The minimum wage for the work, which decides what bonus is computed on
+    // where it is above ₹7,000. It is per state and per scheduled employment,
+    // revised twice a year in most states, and construction has its own
+    // schedule — so it is asked for rather than built in and wrong by June.
+    minimum_wage: minimumWage == null || minimumWage === '' ? null : Math.max(0, Number(minimumWage) || 0),
+    // Under the thresholds neither Act applies, and plenty of small firms pay
+    // both anyway. A promise made is owed whatever the Act says, so it has to
+    // be possible to say so.
+    gratuity_voluntary: gratuityVoluntary === true,
+    bonus_voluntary: bonusVoluntary === true,
     created_at: new Date().toISOString(),
   }
 }

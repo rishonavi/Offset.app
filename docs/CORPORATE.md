@@ -314,6 +314,71 @@ Indian statutory shape, all rates configurable:
 - **TDS is not computed.** It depends on declared investments and projected
   annual income — guessing it is worse than asking for it.
 
+#### Gratuity and bonus: the two that reach no payslip
+
+Everything above is a deduction. These two are costs the company carries, which
+is exactly why they go unnoticed — nothing in a month's accounts moves when
+either grows, and both fall due in one lump. Gratuity when a site finishes and
+the men are paid off; bonus eight months after the year closes, which for an
+April year is the end of November, on top of the season a builder is already
+paying for materials.
+
+Both Acts define wages as **basic plus dearness allowance**, which this payroll
+had no head for. `da` now sits beside `basic` in `PAY_COMPONENTS` and `wagesOf`
+is what both modules read: not gross, because HRA is commonly forty per cent of
+basic and computing on gross overstates gratuity by half.
+
+**Gratuity** (`gratuity.js`, at ten employees, the same ten as state insurance)
+is fifteen days' wages for every year worked, where a month is twenty-six
+working days — so 15/26ths, not a half. Three things it gets right:
+
+- **A part-year *over* six months counts as a whole year**, and the jump is a
+  month's wages wide. Six months to the day does not round up; six months and a
+  day does. Whole-month arithmetic cannot see that day, and rounded a man at
+  five years six months and one day down to five years until `restDays` was
+  added.
+- **Accrued is not payable.** Somebody three years in has a number and would get
+  nothing if they left tomorrow. The card shows what is owed today and what has
+  not vested as two figures, because adding them gives one number true of
+  neither.
+- **The cliff.** Who crosses five years within the year ahead — which on a site
+  where a dozen men started together arrives for all of them in the same month.
+
+Section 2A and the four-years-240-days line of cases is contested and turns on
+the working week, so somebody at four years and eleven months is flagged as
+arguable rather than told no.
+
+**Bonus** (`bonus.js`, at twenty employees, the same twenty as provident fund)
+is between 8.33% and 20% of a year's wages. The part that gets computed wrong is
+that there are **two ceilings doing different jobs**:
+
+| | |
+|---|---|
+| **₹21,000 a month** | decides who the Act covers |
+| **₹7,000 a month, or the minimum wage, whichever is higher** | decides what the bonus is computed on |
+
+Run them together and somebody on ₹18,000 is paid ₹17,993 instead of ₹6,997 —
+two and a half times what is owed. The second half of the second ceiling is the
+clause most often dropped, so the minimum wage is asked for: it is per state,
+per scheduled employment, revised twice a year, and construction has its own
+schedule, so a number built in here would be wrong within six months and wrong
+quietly.
+
+The rate is null until somebody sets it. Null is not 8.33: the minimum is what
+the law would settle for rather than what the company chose, and the card says
+so and shows what the 20% maximum would cost beside it. The register defaults to
+the year that **closed**, not the one in progress — the current year is not
+payable for another twenty months, and the closed one is the one counting down.
+
+Section 16 keeps a new establishment outside the Act for five years except in a
+year it makes a profit, and whether it did is not something a payroll screen
+knows — so it is flagged and not applied. Telling a company it owes nothing,
+wrongly, means finding out eight months late.
+
+Both have the voluntary case: under the thresholds neither Act applies and
+plenty of small firms pay both anyway, and a promise made is owed whatever the
+Act says.
+
 Loss of pay pro-rates every component. Take-home never goes negative; a
 deduction larger than the pay is flagged as the data error it is. Employer cost
 (gross + employer PF + employer ESI) is reported alongside, because what someone

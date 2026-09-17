@@ -51,6 +51,11 @@ export const DEFAULT_PAYROLL_CONFIG = {
   // the default for everybody — so a company in Delhi, which levies no
   // professional tax at all, had ₹200 a month taken off every payslip. The
   // state is the question; `ptax.js` holds all of them.
+  // Both apply on a headcount and neither is deducted from anybody, so the only
+  // thing to configure is the voluntary case and, for bonus, the rate and the
+  // minimum wage.
+  gratuity: { voluntary: false },
+  bonus: { voluntary: false, rate: null, minimumWage: 0 },
   professionalTax: {
     // Null means nobody has said. It is filled in from the company's GSTIN
     // where there is one, because the first two digits of a GSTIN are the
@@ -63,7 +68,16 @@ export const DEFAULT_PAYROLL_CONFIG = {
   },
 }
 
-export const PAY_COMPONENTS = ['basic', 'hra', 'conveyance', 'medical', 'special', 'other']
+// Dearness allowance sits beside basic rather than among the allowances,
+// because two Acts define wages as basic *plus DA* and nothing else: gratuity
+// is 15/26ths of it, and bonus is a percentage of it. Folding DA into "special"
+// would understate both for every company that pays one.
+export const PAY_COMPONENTS = ['basic', 'da', 'hra', 'conveyance', 'medical', 'special', 'other']
+
+// What the Gratuity and Bonus Acts mean by wages, which is not gross and not
+// basic either. HRA, conveyance and the rest are outside it.
+export const wagesOf = (employee) =>
+  round2((Number(employee?.pay?.basic) || 0) + (Number(employee?.pay?.da) || 0))
 
 // ── Who has to run these schemes at all ─────────────────────────────
 //
@@ -172,6 +186,15 @@ export function configForEntity(entity, base = DEFAULT_PAYROLL_CONFIG) {
   for (const id of SCHEME_IDS) {
     out[id] = { ...(base[id] || {}), registered: entity?.[`${id}_registered`] ?? null }
   }
+  // Gratuity and bonus, which apply by operation of law rather than by
+  // registering — so there is no yes/no to ask, only a threshold and, under it,
+  // whether the company pays anyway.
+  out.gratuity = { voluntary: entity?.gratuity_voluntary === true }
+  out.bonus = {
+    voluntary: entity?.bonus_voluntary === true,
+    rate: entity?.bonus_rate ?? null,
+    minimumWage: Number(entity?.minimum_wage) || 0,
+  }
   // The professional-tax state, chosen if somebody chose one and otherwise read
   // off the GSTIN, whose first two digits are the state. A company that has
   // entered its own slabs keeps them.
@@ -196,7 +219,7 @@ export function resolveConfig(config = DEFAULT_PAYROLL_CONFIG, headcount = 0) {
 
 export function makeEmployee({
   id, entityId, name, code = '', email = '', departmentId = null,
-  basic = 0, hra = 0, conveyance = 0, medical = 0, special = 0, other = 0,
+  basic = 0, da = 0, hra = 0, conveyance = 0, medical = 0, special = 0, other = 0,
   pan = '', uan = '', joinedOn = '', active = true, workState = '', female = null,
 } = {}) {
   return {
@@ -208,6 +231,7 @@ export function makeEmployee({
     department_id: departmentId,
     pay: {
       basic: Math.max(0, round2(basic)),
+      da: Math.max(0, round2(da)),
       hra: Math.max(0, round2(hra)),
       conveyance: Math.max(0, round2(conveyance)),
       medical: Math.max(0, round2(medical)),

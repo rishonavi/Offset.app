@@ -39,6 +39,11 @@ const row = async (name) => {
   const nums = [...line.matchAll(/₹([\d,.]+)/g)].map((m) => Number(m[1].replace(/,/g, '')))
   return { line, gross: nums[0], pf: nums[1], esi: nums[2], pt: nums[3], net: nums[4] }
 }
+const attentionCard = async () => {
+  const txt = await main()
+  const i = txt.indexOf('Needs attention')
+  return i < 0 ? '' : txt.slice(i, i + 2000)
+}
 const say = (short, answer) => p.locator(`#main-content button[aria-label="${short} registered: ${answer}"]`)
 const entRow = async () => (await ls('pl_corp_entities')).find((e) => e.id === ENT)
 
@@ -184,11 +189,6 @@ ok('which is the builder this was written for', (await row('W. Worker 2')).net >
 console.log('\n── AND THE QUESTION IS RAISED WHERE IT WILL BE SEEN ──')
 // A question buried in the seventh tab of a page nobody opens is not a question.
 // The dashboard is where somebody finds out they have been asked one.
-const attentionCard = async () => {
-  const t = await main()
-  const i = t.indexOf('Needs attention')
-  return i < 0 ? '' : t.slice(i, i + 2000)
-}
 await p.evaluate(() => {
   // A site, so the dashboard is past getting started and showing real findings.
   localStorage.setItem('pl_properties', JSON.stringify([
@@ -390,7 +390,113 @@ pt = await ptCard()
 ok('and a state this is sure of is not raised at all', !/slabs are worth checking/i.test(pt),
   pt.slice(0, 1200).replace(/\n/g, ' | '))
 
+console.log('\n── THE MONEY THAT REACHES NO PAYSLIP ──')
+// Gratuity and bonus are costs the company carries rather than deductions, so
+// nothing in a month's accounts moves and both grow in silence. This screen is
+// the only place either has ever been added up.
+//
+// Twenty-five men, five of them there since 2016, so both Acts apply and
+// gratuity has vested for some.
+await p.evaluate((ent) => {
+  const born = new Date(); born.setFullYear(born.getFullYear() - 12)
+  const mk = (id, name, basic, da, joined) => ({
+    id, entity_id: ent, name, code: id.toUpperCase(), email: '', department_id: null,
+    pay: { basic, da, hra: 0, conveyance: 0, medical: 0, special: 0, other: 0 },
+    pan: '', uan: '', joined_on: joined, active: true, created_at: born.toISOString(),
+  })
+  const list = [
+    ...Array.from({ length: 5 }, (_, i) => mk(`old${i}`, `Old hand ${i}`, 15000, 3000, '2016-01-01')),
+    ...Array.from({ length: 20 }, (_, i) => mk(`new${i}`, `New hand ${i}`, 9000, 1000, '2024-01-01')),
+  ]
+  localStorage.setItem('pl_corp_employees', JSON.stringify(list))
+  const ents = JSON.parse(localStorage.getItem('pl_corp_entities'))
+  ents[0].pt_state = '27'; ents[0].bonus_rate = null; ents[0].minimum_wage = null
+  localStorage.setItem('pl_corp_entities', JSON.stringify(ents))
+}, ENT)
+await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1000)
+t = await main()
+const money = (label) => {
+  const m = (t.match(new RegExp(`${label}\\s*\\n\\s*₹([\\d,.]+)`, 'i')) || [])[1]
+  return m ? Number(m.replace(/,/g, '')) : null
+}
+ok('gratuity is on the payroll screen', /Gratuity/.test(t), t.slice(0, 600).replace(/\n/g, ' | '))
+ok('and at twenty-five men the Act applies', /At 25 employees the Payment of Gratuity Act/.test(t),
+  t.slice(0, 2500).replace(/\n/g, ' | '))
+const owedToday = money('Owed if everyone left today')
+const notVested = money('Not yet vested')
+const accrued = money('Accrued in all')
+ok('what is owed today is shown', owedToday > 0, String(owedToday))
+ok('separately from what has not vested', notVested > 0, String(notVested))
+// Adding the two together makes one number that is true of neither, so the
+// screen has to keep them apart — and they have to actually differ.
+ok('and the two are not the same figure', owedToday !== notVested, `${owedToday} vs ${notVested}`)
+ok('the parts make the whole', owedToday + notVested === accrued, `${owedToday} + ${notVested} vs ${accrued}`)
+ok('it says the money is on no payslip', /appears on no payslip/.test(t), t.slice(0, 2500).replace(/\n/g, ' | '))
+
+console.log('\n── AND THE BONUS NOBODY HAS SET A RATE FOR ──')
+ok('the bonus card names the year that closed', /Bonus for \d{4}-\d{2}/.test(t), t.slice(0, 3000).replace(/\n/g, ' | '))
+ok('and says nobody chose a rate', /no rate chosen/i.test(t), t.slice(0, 3000).replace(/\n/g, ' | '))
+// The two ceilings, which is the thing this card exists to say out loud.
+ok('both ceilings are stated', /Two ceilings, and they are different numbers/.test(t),
+  t.slice(0, 3000).replace(/\n/g, ' | '))
+ok('and how many are paid on the ceiling rather than their wages',
+  /rather than on their wages, because the Act caps the calculation there/.test(t),
+  t.slice(0, 3000).replace(/\n/g, ' | '))
+const atMin = money(`At 8.33%`)
+const atMax = money('At the 20% maximum')
+ok('the minimum is shown', atMin > 0, String(atMin))
+ok('beside what the maximum would cost', atMax > atMin, `${atMax} vs ${atMin}`)
+
+console.log('\n── A MINIMUM WAGE CHANGES WHAT IT IS WORKED OUT ON ──')
+// The clause most often dropped: ₹7,000 *or the minimum wage, whichever is
+// higher*. Twenty men on ₹10,000 of basic and DA are held to ₹7,000 until the
+// minimum wage says otherwise.
+await p.locator('#main-content input[aria-label="Minimum wage"]').fill('12000')
+await p.waitForTimeout(1000)
+t = await main()
+const raised = money(`At 8.33%`)
+ok('raising the minimum wage raises the bonus', raised > atMin, `${raised} vs ${atMin}`)
+ok('and the screen says which ceiling bit', /the minimum wage, here/.test(t),
+  t.slice(0, 3000).replace(/\n/g, ' | '))
+// The control: a rate the company chooses is not the minimum the Act imposes.
+await p.locator('#main-content input[aria-label="Bonus rate"]').fill('20')
+await p.waitForTimeout(1000)
+t = await main()
+ok('choosing a rate clears the warning', !/no rate chosen/i.test(t), t.slice(0, 3000).replace(/\n/g, ' | '))
+ok('and it is kept on the company', (await entRow())?.bonus_rate === 20, JSON.stringify(await entRow()))
+ok('with the minimum wage', (await entRow())?.minimum_wage === 12000, JSON.stringify(await entRow()))
+
+console.log('\n── AND BOTH REACH THE DASHBOARD ──')
+await p.goto(B, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1200)
+let owedCard = await attentionCard()
+ok('gratuity already owed is raised', /gratuity is owed and nothing is set aside/i.test(owedCard),
+  owedCard.slice(0, 1200).replace(/\n/g, ' | '))
+ok('as money, with a figure', /₹/.test(owedCard), owedCard.slice(0, 1200).replace(/\n/g, ' | '))
+// The control: a payroll where nobody has five years owes nothing yet.
+await p.evaluate(() => {
+  const list = JSON.parse(localStorage.getItem('pl_corp_employees'))
+  localStorage.setItem('pl_corp_employees', JSON.stringify(list.map((e) => ({ ...e, joined_on: '2024-01-01' }))))
+})
+await p.goto(B, { waitUntil: 'networkidle' })
+await p.waitForTimeout(1200)
+owedCard = await attentionCard()
+ok('a payroll where nobody has five years is not told they are owed',
+  !/gratuity is owed/i.test(owedCard), owedCard.slice(0, 1200).replace(/\n/g, ' | '))
+
 console.log('\n── AND THE REPORT COSTS THE COMPANY THE SAME WAY ──')
+// Back to the four men this section's figures are about — the sections above
+// put twenty-five on the books.
+await seed(4)
+await p.evaluate(() => {
+  localStorage.setItem('pl_properties', JSON.stringify([
+    { id: 'a1', name: 'Depot', type: 'Real Estate — Villa / House', entity_id: 'ent-stat-1', created_at: new Date().toISOString() },
+  ]))
+  const list = JSON.parse(localStorage.getItem('pl_corp_entities'))
+  list[0].pf_registered = false; list[0].esi_registered = false; list[0].pt_state = '27'
+  localStorage.setItem('pl_corp_entities', JSON.stringify(list))
+})
 // The other half of the wiring, and the half that was missed: the answer is
 // written on the company and the report read the library defaults instead, so a
 // company that had said yes saw the deduction on its payslips and a cost to

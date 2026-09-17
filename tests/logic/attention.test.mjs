@@ -273,5 +273,59 @@ const fresh = [makeEmployee({ entityId: E2, id: 'new', name: 'New', basic: 10000
 ok('nor is one that only just took somebody on',
   (get(attention({ entityId: E2, employees: fresh, payrollRuns: [] }), 'payroll.unrecorded')?.count || 0) <= 1)
 
+console.log('\n── THE TWO LIABILITIES THAT REACH NO PAYSLIP ──')
+// Gratuity and bonus are costs the company carries rather than deductions, so
+// nothing monthly mentions either and both grow in silence. The dashboard is
+// the only place they can surface at all.
+//
+// These fixtures also exist because the strings below were written calling
+// formatters the module never imported: every branch threw, and nothing caught
+// it because no fixture had ever reached them. A finding nothing exercises is
+// a finding nobody has run.
+const E3 = 'e3'
+const hand = (id, basic, joined, over = {}) =>
+  makeEmployee({ entityId: E3, id, name: `Hand ${id}`, basic, joinedOn: joined, ...over })
+// Twenty-five on the books, so both Acts apply, and long enough in that
+// gratuity has vested for some of them.
+const bigCrew = [
+  ...Array.from({ length: 5 }, (_, i) => hand(`old${i}`, 15000, '2016-01-01')),
+  ...Array.from({ length: 20 }, (_, i) => hand(`new${i}`, 9000, '2024-01-01')),
+]
+const liable = attention({ entityId: E3, employees: bigCrew })
+const gratOwed = get(liable, 'gratuity.accrued')
+ok('gratuity already owed reaches the list', Boolean(gratOwed), JSON.stringify(liable.findings.map((f) => f.id)))
+eq('it is money, not a mistake', gratOwed.level, 'money')
+ok('with an amount on it', gratOwed.amount > 0, String(gratOwed.amount))
+eq('and the five who have vested counted', gratOwed.count, 5)
+ok('it says the money reaches no payslip', /reaches no payslip/.test(gratOwed.detail), gratOwed.detail)
+// The control: a young payroll has accrued but nothing has vested, so there is
+// nothing owed yet and the list stays quiet about it.
+const young = attention({ entityId: E3, employees: Array.from({ length: 25 }, (_, i) => hand(`y${i}`, 15000, '2024-01-01')) })
+ok('a payroll where nobody has five years is not told they are owed', !has(young, 'gratuity.accrued'),
+  JSON.stringify(young.findings.map((f) => f.id)))
+// Somebody with no joining date is quietly worth nothing.
+const undated = attention({ entityId: E3, employees: [...bigCrew, hand('nodate', 12000, '')] })
+const nd = get(undated, 'gratuity.undated')
+ok('a person with no joining date is raised', Boolean(nd), JSON.stringify(undated.findings.map((f) => f.id)))
+eq('as something to watch', nd.level, 'risk')
+ok('and the crew with dates is not', !has(liable, 'gratuity.undated'), '')
+// Bonus at the minimum because nobody chose.
+const noRate = get(liable, 'bonus.noRate')
+ok('a bonus rate nobody set is raised', Boolean(noRate), JSON.stringify(liable.findings.map((f) => f.id)))
+ok('and the amount is what choosing the maximum would add', noRate.amount > 0, String(noRate.amount))
+// The control: choose one and it goes quiet.
+const chosen = attention({ entityId: E3, employees: bigCrew, payrollConfig: { bonus: { rate: 12 } } })
+ok('choosing a rate takes it off the list', !has(chosen, 'bonus.noRate'),
+  JSON.stringify(chosen.findings.map((f) => f.id)))
+// Under twenty the Act does not apply, so neither says anything.
+const small = attention({ entityId: E3, employees: bigCrew.slice(0, 8) })
+ok('a company of eight is not asked about a bonus rate', !has(small, 'bonus.noRate'), '')
+ok('nor told it owes gratuity', !has(small, 'gratuity.accrued'), '')
+// Unless it says it pays them anyway, which many small firms do.
+const paysAnyway = attention({ entityId: E3, employees: bigCrew.slice(0, 8),
+  payrollConfig: { gratuity: { voluntary: true }, bonus: { voluntary: true } } })
+ok('and is if it says it pays them regardless', has(paysAnyway, 'gratuity.accrued'),
+  JSON.stringify(paysAnyway.findings.map((f) => f.id)))
+
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1
