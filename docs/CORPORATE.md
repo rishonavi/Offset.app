@@ -442,8 +442,38 @@ rather than deleting the row: a recorded payroll run already carries their name
 and their slip, and that is what freezing the name was for.
 
 Correcting somebody's pay does not reach into a month already recorded. That
-guarantee is `editui.mjs`'s last section, and it is the same one `payrunui`
-holds for a raise.
+guarantee is in `editui.mjs`, and it is the same one `payrunui` holds for a
+raise.
+
+Advances were worse, because individual advances were never listed at all — the
+only list on that tab was the party totals, so one entered twice or for the
+wrong amount was invisible under a sum. Adjustments had no representation on
+screen whatsoever: a recovery set against the wrong bill could not be seen, let
+alone undone. There is now an **Every advance** list with the adjustments under
+each one, all of it correctable, and three guards in `advances.js` beside the
+`canAdjust` that already existed:
+
+- **`canAmend`** — the mirror of `canAdjust`. Somebody who paid ₹50,000, set
+  ₹30,000 against a bill and then corrects the advance down to ₹20,000 has made
+  a balance of minus ten thousand and a party who owes the company a negative
+  amount. The attention list already calls that an error, so it should not be
+  possible to create one with a correction.
+- **`canRemove`** — an advance with adjustments hanging off it leaves them
+  pointing at nothing, and a recovery against an advance that does not exist is
+  money the books cannot explain. Undoing an adjustment, by contrast, is always
+  safe: it puts the money back as outstanding, which is what somebody who set it
+  against the wrong bill wants.
+- **`canReadjust`** — the same check as `canAdjust` without counting the
+  adjustment being corrected. Without it, raising ₹30,000 to ₹35,000 is checked
+  as though ₹65,000 were going out and refused for a reason nobody can see.
+
+Two test defects came out of writing this, both the same shape as the `.first()`
+one before it. `editui` filled "Paid to" on the add form instead of the edit
+panel, because both carry that label and it reached for the first on the page —
+so the panels are named and the test is scoped to them. And a refusal was being
+read off `#main-content`, where toasts do not render: it matched the card's own
+heading text, "what has been set against each one", and would have passed
+whether or not the error ever appeared.
 
 Loss of pay pro-rates every component. Take-home never goes negative; a
 deduction larger than the pay is flagged as the data error it is. Employer cost

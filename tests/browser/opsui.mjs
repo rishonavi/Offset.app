@@ -239,7 +239,17 @@ ok('against this payroll run', /^payroll:\d{4}-\d{2}$/.test(adjustments[1]?.agai
 await tab('Advances')
 await p.waitForTimeout(300)
 const after = await main()
-ok('and the employee advance is gone from the outstanding list', !/Sunil Rao/.test(after), after.slice(0, 200))
+// Scoped to the "who is holding the company's money" card. Every advance is
+// listed above it now, settled ones included — a settled advance still has to
+// be visible to be corrected — so looking for the name anywhere on the tab
+// finds it whether or not it is still outstanding.
+const holding = after.slice(after.indexOf('Who is holding'))
+ok('and the employee advance is gone from the outstanding list', !/Sunil Rao/.test(holding),
+  holding.slice(0, 300).replace(/\n/g, ' | '))
+// It is still on the ledger, and marked for what it is.
+ok('though it is still on the list of every advance', /Sunil Rao/.test(after), after.slice(0, 400).replace(/\n/g, ' | '))
+ok('marked settled', /settled/i.test(after.slice(0, after.indexOf('Who is holding'))),
+  after.slice(0, 600).replace(/\n/g, ' | '))
 
 // ── 7. Consolidated view ──
 console.log('\n── CONSOLIDATED ──')

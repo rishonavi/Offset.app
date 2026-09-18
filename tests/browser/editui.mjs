@@ -33,7 +33,19 @@ const main = () => p.locator('#main-content').innerText()
 const ENT = 'ent-edit-1'
 const staff = async () => (await ls('pl_corp_employees')).filter((r) => !r.deleted_at)
 const who = async (name) => (await staff()).find((e) => e.name === name)
-const field = (label) => p.locator(`#main-content label:has-text("${label}")`).locator('input, select').first()
+// Scoped to the panel being edited, never "the first one on the page": the add
+// forms carry the same labels, and a test that finds them instead passes while
+// the thing it is about does nothing.
+const within = (panel) => (label) =>
+  p.locator(`#main-content [role=group][aria-label="${panel}"]`)
+    .locator(`label:has-text("${label}")`).locator('input, select').first()
+const field = (label) => within('Editing Avi Shah')(label)
+const saveIn = (panel) => p.locator(`#main-content [role=group][aria-label="${panel}"] button`, { hasText: 'Save' }).first()
+// Toasts render outside #main-content, so a refusal read off the main region is
+// read off the page's own prose instead. This one matched the card's heading
+// text — "what has been set against each one" — and would have passed whether
+// or not the refusal ever appeared.
+const toastText = () => p.locator('body').innerText()
 
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await p.evaluate((ent) => {
@@ -81,9 +93,9 @@ ok('and nobody has a joining date', /no joining date/i.test(t), t.slice(0, 2500)
 console.log('\n── A NAME TYPED WRONG CAN BE PUT RIGHT ──')
 await p.locator('#main-content button[aria-label="Edit Sanket Moore"]').click()
 await p.waitForTimeout(500)
-await field('Name').fill('Sanket More')
-await field('Basic').fill('18000')
-await p.locator('#main-content button', { hasText: 'Save' }).first().click()
+await within('Editing Sanket Moore')('Name').fill('Sanket More')
+await within('Editing Sanket Moore')('Basic').fill('18000')
+await saveIn('Editing Sanket Moore').click()
 await p.waitForTimeout(800)
 ok('the name is corrected', Boolean(await who('Sanket More')), JSON.stringify((await staff()).map((e) => e.name)))
 ok('and the old one is gone, not duplicated', (await staff()).length === 2, String((await staff()).length))
@@ -101,7 +113,7 @@ await p.waitForTimeout(500)
 await field('Joined on').fill('2018-04-01')
 await field('Dearness allowance').fill('3000')
 await field('Leave standing').fill('41')
-await p.locator('#main-content button', { hasText: 'Save' }).first().click()
+await saveIn('Editing Avi Shah').click()
 await p.waitForTimeout(900)
 const avi = await who('Avi Shah')
 ok('the joining date is kept', avi?.joined_on === '2018-04-01', JSON.stringify(avi?.joined_on))
@@ -140,7 +152,7 @@ ok('with a gross on it', before > 0, String(before))
 await p.locator('#main-content button[aria-label="Edit Avi Shah"]').click()
 await p.waitForTimeout(500)
 await field('Basic').fill('60000')
-await p.locator('#main-content button', { hasText: 'Save' }).first().click()
+await saveIn('Editing Avi Shah').click()
 await p.waitForTimeout(1000)
 ok('the correction is kept', (await who('Avi Shah'))?.pay?.basic === 60000, JSON.stringify((await who('Avi Shah'))?.pay))
 ok('but the recorded month is untouched', (await ls('pl_corp_payroll_runs'))[0]?.gross === before,
@@ -171,6 +183,115 @@ await p.waitForTimeout(800)
 ok('and they can be put back', (await who('Sanket More'))?.active === true, JSON.stringify((await who('Sanket More'))?.active))
 ok('the trail records the corrections', (await ls('pl_corp_audit')).some((a) => /employee/.test(a.action || '')),
   JSON.stringify((await ls('pl_corp_audit')).map((a) => a.action).slice(-5)))
+
+console.log('\n── AND ADVANCES, WHICH WERE NEVER EVEN LISTED ──')
+// Worse than the employees. The only list on this tab was the party totals, so
+// an advance entered twice or for the wrong amount was invisible under a sum —
+// and an adjustment set against the wrong bill could not be undone at all.
+await p.evaluate((ent) => {
+  const now = new Date().toISOString()
+  localStorage.setItem('pl_corp_advances', JSON.stringify([
+    { id: 'adv-1', entity_id: ent, party: 'Ravi Contractos', party_type: 'vendor', amount: 50000,
+      purpose: 'Steel', date: '2026-04-01', expected_by: '2026-06-01', created_at: now },
+  ]))
+  localStorage.setItem('pl_corp_adjustments', JSON.stringify([
+    { id: 'adj-1', entity_id: ent, advance_id: 'adv-1', amount: 30000, note: 'Invoice 114', date: '2026-04-20', created_at: now },
+  ]))
+}, ENT)
+const advTab = async () => {
+  await p.goto(`${B}/operations?tab=advances`, { waitUntil: 'networkidle' })
+  await p.waitForTimeout(900)
+  return main()
+}
+const advances = async () => (await ls('pl_corp_advances')).filter((r) => !r.deleted_at)
+const adjustments = async () => (await ls('pl_corp_adjustments')).filter((r) => !r.deleted_at)
+t = await advTab()
+ok('every advance is listed now', /Every advance/.test(t), t.slice(0, 900).replace(/\n/g, ' | '))
+ok('with the one that was paid', /Ravi Contractos/.test(t), t.slice(0, 1500).replace(/\n/g, ' | '))
+// The adjustment under it, which had no representation on screen whatsoever.
+ok('and what has been set against it', /Invoice 114/.test(t), t.slice(0, 1500).replace(/\n/g, ' | '))
+ok('with what is left', /₹20,000 left/.test(t), t.slice(0, 1500).replace(/\n/g, ' | '))
+
+console.log('\n── A NAME AND AN AMOUNT CAN BOTH BE PUT RIGHT ──')
+await p.locator('#main-content button[aria-label="Edit advance to Ravi Contractos"]').click()
+await p.waitForTimeout(500)
+await within('Editing advance to Ravi Contractos')('Paid to').fill('Ravi Contractors')
+await saveIn('Editing advance to Ravi Contractos').click()
+await p.waitForTimeout(800)
+ok('the name is corrected', (await advances())[0]?.party === 'Ravi Contractors',
+  JSON.stringify((await advances()).map((a) => a.party)))
+ok('and it is still one advance', (await advances()).length === 1, String((await advances()).length))
+
+console.log('\n── BUT NOT BELOW WHAT IS ALREADY SET AGAINST IT ──')
+// ₹30,000 has gone out against this advance. Correcting it to ₹20,000 would
+// make a balance of minus ten thousand — which the attention list calls an
+// error, so it must not be possible to create one with a correction.
+await p.locator('#main-content button[aria-label="Edit advance to Ravi Contractors"]').click()
+await p.waitForTimeout(500)
+await within('Editing advance to Ravi Contractors')('Amount').fill('20000')
+await saveIn('Editing advance to Ravi Contractors').click()
+await p.waitForTimeout(800)
+ok('the correction is refused', (await advances())[0]?.amount === 50000, String((await advances())[0]?.amount))
+let said = await toastText()
+ok('and says how much has already gone out', /30000\.00 has already been set against this advance/.test(said),
+  (said.match(/[^\n]*set against[^\n]*/g) || []).slice(0, 3).join(' | '))
+ok('and what to do about it', /Undo the adjustment first/.test(said), '')
+// The control: above what is used is fine, so the refusal is the rule and not
+// a form that never saves.
+await within('Editing advance to Ravi Contractors')('Amount').fill('60000')
+await saveIn('Editing advance to Ravi Contractors').click()
+await p.waitForTimeout(800)
+ok('while raising it is allowed', (await advances())[0]?.amount === 60000, String((await advances())[0]?.amount))
+t = await main()
+ok('and what is left moves with it', /₹30,000 left/.test(t), t.slice(0, 1500).replace(/\n/g, ' | '))
+
+console.log('\n── AN ADJUSTMENT SET AGAINST THE WRONG BILL ──')
+// The likeliest mistake of the lot, and the one with no way back before this.
+await p.locator('#main-content button[aria-label="Edit ₹30,000 against Ravi Contractors"]').click()
+await p.waitForTimeout(500)
+await within('Editing adjustment against Ravi Contractors')('Amount used').fill('35000')
+await within('Editing adjustment against Ravi Contractors')('Note').fill('Invoice 115')
+await saveIn('Editing adjustment against Ravi Contractors').click()
+await p.waitForTimeout(800)
+ok('the adjustment is corrected', (await adjustments())[0]?.amount === 35000, String((await adjustments())[0]?.amount))
+ok('and its note with it', (await adjustments())[0]?.note === 'Invoice 115', (await adjustments())[0]?.note)
+// Raising it must be checked against the advance without counting itself, or
+// ₹35,000 would be read as ₹65,000 going out and refused for no visible reason.
+ok('it was not refused for counting itself twice', (await adjustments()).length === 1, String((await adjustments()).length))
+t = await main()
+ok('and the balance follows', /₹25,000 left/.test(t), t.slice(0, 1500).replace(/\n/g, ' | '))
+// Undoing puts the money back as outstanding, which is what somebody who set
+// it against the wrong bill actually wants.
+await p.locator('#main-content button[aria-label="Undo ₹35,000 against Ravi Contractors"]').click()
+await p.waitForTimeout(800)
+ok('undoing it removes the adjustment', (await adjustments()).length === 0, String((await adjustments()).length))
+t = await main()
+ok('and the whole advance is outstanding again', /₹60,000 left/.test(t), t.slice(0, 1500).replace(/\n/g, ' | '))
+
+console.log('\n── AND DELETING IS ONLY OFFERED WHERE IT IS SAFE ──')
+// With nothing set against it there is nothing left pointing at it.
+await p.locator('#main-content button[aria-label="Delete advance to Ravi Contractors"]').click()
+await p.waitForTimeout(800)
+ok('an untouched advance can be deleted', (await advances()).length === 0, String((await advances()).length))
+// And with an adjustment on it, it cannot — or the recovery is left pointing at
+// an advance that is not there, which is money the books cannot explain.
+await p.evaluate((ent) => {
+  const now = new Date().toISOString()
+  localStorage.setItem('pl_corp_advances', JSON.stringify([
+    { id: 'adv-2', entity_id: ent, party: 'Shah Steel', party_type: 'vendor', amount: 40000,
+      purpose: '', date: '2026-04-01', expected_by: '', created_at: now },
+  ]))
+  localStorage.setItem('pl_corp_adjustments', JSON.stringify([
+    { id: 'adj-2', entity_id: ent, advance_id: 'adv-2', amount: 10000, note: '', date: '2026-05-01', created_at: now },
+  ]))
+}, ENT)
+await advTab()
+await p.locator('#main-content button[aria-label="Delete advance to Shah Steel"]').click()
+await p.waitForTimeout(800)
+ok('one with money against it is not', (await advances()).length === 1, String((await advances()).length))
+said = await toastText()
+ok('and says what to do first', /Undo that first, or leave the advance where it is/.test(said),
+  (said.match(/[^\n]*set against[^\n]*/g) || []).slice(0, 3).join(' | '))
 
 for (const e of errs) ok(e, false)
 console.log(`\n${pass} passed, ${fail} failed`)

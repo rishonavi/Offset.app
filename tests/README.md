@@ -50,7 +50,7 @@ for Vite's resolver.
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
 | `onboarding.test.mjs` | 62 | empty install, sample data, and the different list a builder is given |
-| `ops.test.mjs` | 215 | inventory, payables, advances, payroll, and each over a period |
+| `ops.test.mjs` | 231 | inventory, payables, advances, payroll, and each over a period |
 | `papers.test.mjs` | 89 | a salary slip, a quotation and an allotment letter read as documents, including as a PDF reader actually hands them over |
 | `payrollruns.test.mjs` | 56 | a month that was run against a month worked out again, and what a raise in June must not do to March |
 | `retention.test.mjs` | 89 | when money held back comes back, which tranche a release pays first, and why a client contract can never be a cost |
@@ -75,7 +75,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **4,145** | |
+| | **4,161** | |
 
 ## Browser — `tests/browser/`
 
@@ -109,7 +109,7 @@ node tests/browser/rtlui.mjs
 | `deptui.mjs` | 24 | a cost centre on the entry form, and a budget the report finally checks |
 | `docsui.mjs` | 22 | six documents, offered where the thing lives, producing real files |
 | `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
-| `editui.mjs` | 29 | correcting somebody already on the books, and the recorded month that must not move |
+| `editui.mjs` | 49 | correcting somebody already on the books, an advance and the money set against it, and the recorded month that must not move |
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `gst2bui.mjs` | 16 | the credit a vendor never filed for, and a 2B that was never loaded |
@@ -131,7 +131,7 @@ node tests/browser/rtlui.mjs
 | `pressureui.mjs` | 93 | arriving with nothing, then leaning on everything |
 | `projectsui.mjs` | 53 | sites against contract and estimate, where the money went, what the client owes |
 | `owedui.mjs` | 22 | what is owed in both directions, and how old it is |
-| `opsui.mjs` | 98 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
+| `opsui.mjs` | 100 | sites, materials, advances, payroll — in the report, in a backup, and on their own page |
 | `promisedui.mjs` | 26 | what is agreed and not yet spent, kept apart from what is owed now |
 | `lineageui.mjs` | 20 | the measurement book against the running account, and the contracts it cannot speak for |
 | `ratesui.mjs` | 18 | the lorry that jumped, beside the material that merely got dearer |
@@ -144,11 +144,11 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,915** | |
+| | **1,937** | |
 
 That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
 that suite needs the other build and does not run in the same pass, so a sweep
-of this one reports 1,891.
+of this one reports 1,913.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

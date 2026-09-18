@@ -3,7 +3,7 @@
 // rather than on the shape of the output.
 import { makeItem, makeMovement, stockOf, stockReport, stockOverPeriod, reorderList, consumption, UNITS } from '../../src/lib/inventory.js'
 import { ageing, byParty, workingCapital, daysOverdue, bucketFor, describeAgeing, AGE_BUCKETS } from '../../src/lib/payables.js'
-import { makeAdvance, makeAdjustment, balanceOf, canAdjust, outstandingAdvances, advancesByParty, advancesOverPeriod } from '../../src/lib/advances.js'
+import { makeAdvance, makeAdjustment, balanceOf, canAdjust, canAmend, canRemove, canReadjust, outstandingAdvances, advancesByParty, advancesOverPeriod } from '../../src/lib/advances.js'
 import { makeEmployee, grossOf, providentFund, stateInsurance, professionalTax, payslipFor, runPayroll, payrollByDepartment, onPayrollIn, periodsBetween, payrollOverPeriods, DEFAULT_PAYROLL_CONFIG, statutoryStatus, schemeStatus, SCHEMES } from '../../src/lib/payroll.js'
 import { STATES } from '../../src/lib/ptax.js'
 
@@ -215,6 +215,37 @@ ok('and says how much is left', /20000.00/.test(canAdjust(adv, [adj1], 25000).wh
 ok('adjusting exactly the remainder is allowed', canAdjust(adv, [adj1], 20000).ok)
 ok('a zero adjustment is refused', !canAdjust(adv, [adj1], 0).ok)
 ok('a negative adjustment is refused', !canAdjust(adv, [adj1], -5).ok)
+
+// ── Correcting one after the fact ──────────────────────────────────
+// The guard on the way in has a mirror on the way back. Somebody who paid
+// ₹50,000, set ₹30,000 against a bill and then corrects the advance down to
+// ₹20,000 has made a balance of minus ten thousand and a party who owes the
+// company a negative amount — which the attention list already calls an error,
+// so it should not be possible to create with a correction.
+ok('correcting an advance below what is set against it is refused', !canAmend(adv, [adj1], 20000).ok)
+ok('and says how much has gone out', /30000.00/.test(canAmend(adv, [adj1], 20000).why), canAmend(adv, [adj1], 20000).why)
+ok('and what to do about it', /Undo the adjustment/.test(canAmend(adv, [adj1], 20000).why), '')
+ok('correcting it to exactly what is used is allowed', canAmend(adv, [adj1], 30000).ok)
+ok('and upwards always is', canAmend(adv, [adj1], 80000).ok)
+ok('an advance with nothing against it can go to any amount', canAmend(adv, [], 1).ok)
+ok('but not to nothing', !canAmend(adv, [], 0).ok)
+// Deleting leaves adjustments pointing at an advance that is not there, and a
+// recovery against nothing is money the books cannot explain.
+ok('an advance with money set against it cannot be deleted', !canRemove(adv, [adj1]).ok)
+ok('which says why', /has been set against this advance/.test(canRemove(adv, [adj1]).why), canRemove(adv, [adj1]).why)
+ok('an untouched one can be', canRemove(adv, []).ok)
+// Correcting an adjustment must not count itself, or raising ₹30,000 to
+// ₹35,000 is checked as though ₹65,000 were going out and refused for a reason
+// nobody can see on screen.
+ok('an adjustment can be raised within the advance', canReadjust(adv, [adj1], adj1.id, 35000).ok)
+ok('the whole advance is available to it', canReadjust(adv, [adj1], adj1.id, 50000).ok)
+ok('but not more than was ever paid', !canReadjust(adv, [adj1], adj1.id, 50001).ok)
+// The control: without excluding itself, the same figure would be refused.
+ok('and counting it twice would have refused it', !canAdjust(adv, [adj1], 35000).ok)
+// A second adjustment limits the first to what is left beside it.
+const other = makeAdjustment({ advanceId: adv.id, amount: 15000, date: '2026-05-01' })
+ok('another adjustment beside it takes its room', !canReadjust(adv, [adj1, other], adj1.id, 40000).ok)
+ok('while what is left is allowed', canReadjust(adv, [adj1, other], adj1.id, 35000).ok)
 
 const adj2 = makeAdjustment({ advanceId: adv.id, amount: 20000, against: 'exp-2' })
 bal = balanceOf(adv, [adj1, adj2])

@@ -90,6 +90,43 @@ export function canAdjust(advance, adjustments, amount) {
   return { ok: true, why: '' }
 }
 
+// Changing an advance after money has been set against it.
+//
+// The guard `canAdjust` puts on the way in has a mirror on the way back:
+// somebody who paid ₹50,000, set ₹30,000 of it against a bill and then corrects
+// the advance down to ₹20,000 has produced a balance of minus ten thousand and
+// a party who owes the company a negative amount. The attention list already
+// calls that out as a real error — it should not be possible to create it with
+// a correction in the first place.
+export function canAmend(advance, adjustments, amount) {
+  const amt = round2(amount)
+  if (!(amt > 0)) return { ok: false, why: 'An advance has to be for some amount.' }
+  const { used } = balanceOf(advance, adjustments)
+  if (amt < used - 0.001) {
+    return { ok: false, why: `${used.toFixed(2)} has already been set against this advance, so it cannot be corrected below that. Undo the adjustment first.` }
+  }
+  return { ok: true, why: '' }
+}
+
+// Deleting one. Only where nothing has been set against it: an advance with
+// adjustments hanging off it leaves them pointing at nothing, and a recovery
+// against an advance that no longer exists is money the books cannot explain.
+export function canRemove(advance, adjustments) {
+  const { used } = balanceOf(advance, adjustments)
+  if (used > 0.001) {
+    return { ok: false, why: `${used.toFixed(2)} has been set against this advance. Undo that first, or leave the advance where it is.` }
+  }
+  return { ok: true, why: '' }
+}
+
+// Correcting an adjustment that already exists.
+//
+// It must not count itself, or raising ₹5,000 to ₹6,000 is checked as though
+// ₹11,000 were being taken out and refused for no reason anybody can see.
+export function canReadjust(advance, adjustments, adjustmentId, amount) {
+  return canAdjust(advance, adjustments.filter((a) => a.id !== adjustmentId), amount)
+}
+
 export function outstandingAdvances(advances, adjustments, { entityId = null, asOf = null } = {}) {
   const lines = advances
     // A refused advance was never paid, so nobody is holding the company's

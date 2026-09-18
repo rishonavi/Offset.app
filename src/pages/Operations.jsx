@@ -5,7 +5,7 @@ import { useEntity } from '../context/EntityContext'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import * as store from '../lib/storage/corporate'
-import { makeAdvance, makeAdjustment, outstandingAdvances, advancesByParty, balanceOf, canAdjust, ADVANCE_PARTIES } from '../lib/advances'
+import { makeAdvance, makeAdjustment, outstandingAdvances, advancesByParty, balanceOf, canAdjust, canAmend, canRemove, canReadjust, ADVANCE_PARTIES } from '../lib/advances'
 import {
   makeEmployee, grossOf, runPayroll, makePayrollRun, recordedRun, canRerun, canSetStatus,
   configForEntity, statutoryStatus, SCHEMES, SCHEME_IDS,
@@ -203,6 +203,10 @@ export default function Operations() {
 function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
   const [form, setForm] = useState({ party: '', partyType: 'vendor', amount: '', purpose: '', expectedBy: '' })
   const [settle, setSettle] = useState({ advanceId: '', amount: '', note: '' })
+  // What is open for correction. Advances and the adjustments against them are
+  // separate things to fix and the wrong one is usually the adjustment.
+  const [editing, setEditing] = useState(null)
+  const [draft, setDraft] = useState({})
   const out = useMemo(() => outstandingAdvances(data.advances, data.adjustments, { entityId: eid }), [data, eid])
   const byParty = useMemo(() => advancesByParty(data.advances, data.adjustments, { entityId: eid }), [data, eid])
 
@@ -231,6 +235,66 @@ function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
     setSettle({ advanceId: '', amount: '', note: '' })
     bump()
     toast('Adjusted')
+  }
+
+  // Every advance, not the party totals. An advance entered twice, or for the
+  // wrong amount, was invisible under a total and could not be touched.
+  const ledger = useMemo(() => data.advances
+    .filter((a) => !a.deleted_at && (!eid || a.entity_id === eid))
+    .map((a) => ({
+      ...balanceOf(a, data.adjustments),
+      against: data.adjustments.filter((j) => j.advance_id === a.id && !j.deleted_at)
+        .sort((x, y) => String(x.date).localeCompare(String(y.date))),
+    }))
+    .sort((x, y) => String(y.advance.date).localeCompare(String(x.advance.date))),
+  [data.advances, data.adjustments, eid])
+
+  const editAdvance = (a) => {
+    setEditing(`a:${a.id}`)
+    setDraft({ party: a.party || '', partyType: a.party_type || 'vendor', amount: a.amount ?? '',
+      purpose: a.purpose || '', expectedBy: a.expected_by || '', date: a.date || '' })
+  }
+  const saveAdvance = (a) => {
+    // The mirror of the guard on the way in: correcting an advance below what
+    // has already been set against it makes a balance nobody can explain.
+    const check = canAmend(a, data.adjustments, Number(draft.amount))
+    if (!check.ok) return toast(check.why, { type: 'error' })
+    if (!draft.party.trim()) return toast('Say who it was paid to.', { type: 'error' })
+    const { id: _id, entity_id: _e, created_at: _c, created_by: _b, ...patch } = makeAdvance({
+      entityId: eid, party: draft.party, partyType: draft.partyType, amount: Number(draft.amount),
+      purpose: draft.purpose, expectedBy: draft.expectedBy, date: draft.date || a.date,
+    })
+    if (!attempt(() => store.advances.update(a.id, patch, actor), toast)) return
+    setEditing(null); bump(); toast('Advance corrected')
+  }
+  const dropAdvance = (a) => {
+    const check = canRemove(a, data.adjustments)
+    if (!check.ok) return toast(check.why, { type: 'error' })
+    if (!window.confirm(`Delete the ${formatCurrency(a.amount)} advance to ${a.party}?`)) return
+    if (!attempt(() => store.advances.remove(a.id, actor), toast)) return
+    setEditing(null); bump(); toast('Advance deleted')
+  }
+  const editAdjustment = (j) => {
+    setEditing(`j:${j.id}`)
+    setDraft({ amount: j.amount ?? '', note: j.note || '', date: j.date || '' })
+  }
+  const saveAdjustment = (advance, j) => {
+    // Checked against the advance without counting itself, or raising ₹5,000 to
+    // ₹6,000 is refused as though ₹11,000 were being taken out.
+    const check = canReadjust(advance, data.adjustments, j.id, Number(draft.amount))
+    if (!check.ok) return toast(check.why, { type: 'error' })
+    const { id: _id, entity_id: _e, created_at: _c, ...patch } = makeAdjustment({
+      entityId: eid, advanceId: advance.id, amount: Number(draft.amount), note: draft.note, date: draft.date || j.date,
+    })
+    if (!attempt(() => store.adjustments.update(j.id, patch, actor), toast)) return
+    setEditing(null); bump(); toast('Adjustment corrected')
+  }
+  const dropAdjustment = (j) => {
+    // Always safe: undoing a recovery puts the money back as outstanding, which
+    // is exactly what somebody who set one against the wrong bill wants.
+    if (!window.confirm(`Undo the ${formatCurrency(j.amount)} set against this advance?`)) return
+    if (!attempt(() => store.adjustments.remove(j.id, actor), toast)) return
+    setEditing(null); bump(); toast('Adjustment undone')
   }
 
   return (
@@ -294,6 +358,147 @@ function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
           </Card>
         </div>
       )}
+
+      {/* Every advance, and every adjustment under it. Before this the only
+          list was the party totals below, so an advance entered twice or for
+          the wrong amount was invisible — and an adjustment set against the
+          wrong bill could never be undone at all. */}
+      <Card className="p-5">
+        <h2 className="text-sm font-semibold text-ink-3">Every advance</h2>
+        <p className="mt-1 text-xs text-ink-5">
+          What was paid out, and what has been set against each one. Correcting an advance below what is already set
+          against it is refused — undo the adjustment first.
+        </p>
+        {ledger.length === 0 ? (
+          <p className="mt-3 text-sm text-ink-5">Nothing paid out yet.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-line-soft">
+            {ledger.map(({ advance: a, used, outstanding, settled, overAdjusted, against }) => (
+              <li key={a.id} className="py-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-2 text-sm text-ink-2">
+                      {a.party}
+                      <span className="text-xs text-ink-6">{ADVANCE_PARTIES[a.party_type]?.label}</span>
+                      {settled && <Badge color="#059669">settled</Badge>}
+                      {overAdjusted && <Badge color="#dc2626">over-adjusted</Badge>}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-ink-5">
+                      {formatCurrency(a.amount)} on {formatDate(a.date)}
+                      {used > 0 ? ` · ${formatCurrency(used)} set against it` : ''}
+                      {a.expected_by ? ` · back by ${formatDate(a.expected_by)}` : ''}
+                      {a.purpose ? ` · ${a.purpose}` : ''}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="tabular text-sm font-medium">{formatCurrency(outstanding)} left</span>
+                    {canWrite && (
+                      <>
+                        <Button variant="ghost" aria-label={`Edit advance to ${a.party}`}
+                          onClick={() => (editing === `a:${a.id}` ? setEditing(null) : editAdvance(a))}>
+                          {editing === `a:${a.id}` ? 'Close' : 'Edit'}
+                        </Button>
+                        {/* Offered only where it is allowed, and refused with a
+                            reason where it is not — a disabled button nobody can
+                            explain is its own kind of unhelpful. */}
+                        <Button variant="ghost" aria-label={`Delete advance to ${a.party}`} onClick={() => dropAdvance(a)}>
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                  </span>
+                </div>
+
+                {canWrite && editing === `a:${a.id}` && (
+                  // Named, so the fields in here can be told apart from the
+                  // identically-labelled ones on the form above. Reaching for
+                  // "the first Paid to on the page" finds the add form.
+                  <div className="mt-3 rounded-xl border border-line-soft p-3" role="group"
+                    aria-label={`Editing advance to ${a.party}`}>
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
+                      <Field label="Paid to" required>
+                        <Input value={draft.party} onChange={(e) => setDraft({ ...draft, party: e.target.value })} />
+                      </Field>
+                      <Field label="Who they are">
+                        <Select value={draft.partyType} onChange={(e) => setDraft({ ...draft, partyType: e.target.value })}>
+                          {Object.values(ADVANCE_PARTIES).map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                        </Select>
+                      </Field>
+                      <Field label="Amount" required hint={used > 0 ? `${formatCurrency(used)} is already set against it.` : ''}>
+                        <Input type="number" step="0.01" min="0" value={draft.amount}
+                          onChange={(e) => setDraft({ ...draft, amount: e.target.value })} />
+                      </Field>
+                      <Field label="Paid on">
+                        <Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+                      </Field>
+                      <Field label="Expected back by">
+                        <Input type="date" value={draft.expectedBy} onChange={(e) => setDraft({ ...draft, expectedBy: e.target.value })} />
+                      </Field>
+                      <Field label="What for">
+                        <Input value={draft.purpose} onChange={(e) => setDraft({ ...draft, purpose: e.target.value })} />
+                      </Field>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button onClick={() => saveAdvance(a)}><Check size={16} /> Save</Button>
+                      <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+
+                {against.length > 0 && (
+                  <ul className="mt-2 space-y-1 ps-3">
+                    {against.map((j) => (
+                      <li key={j.id} className="border-s border-line-soft ps-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 py-1 text-xs text-ink-5">
+                          <span>
+                            {formatCurrency(j.amount)} on {formatDate(j.date)}
+                            {j.note ? ` — ${j.note}` : ''}
+                          </span>
+                          {canWrite && (
+                            <span className="flex shrink-0 gap-2">
+                              <button type="button" className="text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
+                                aria-label={`Edit ${formatCurrency(j.amount)} against ${a.party}`}
+                                onClick={() => (editing === `j:${j.id}` ? setEditing(null) : editAdjustment(j))}>
+                                {editing === `j:${j.id}` ? 'Close' : 'Edit'}
+                              </button>
+                              <button type="button" className="text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
+                                aria-label={`Undo ${formatCurrency(j.amount)} against ${a.party}`}
+                                onClick={() => dropAdjustment(j)}>
+                                Undo
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                        {canWrite && editing === `j:${j.id}` && (
+                          <div className="my-2 rounded-xl border border-line-soft p-3" role="group"
+                            aria-label={`Editing adjustment against ${a.party}`}>
+                            <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
+                              <Field label="Amount used" required>
+                                <Input type="number" step="0.01" min="0" value={draft.amount}
+                                  onChange={(e) => setDraft({ ...draft, amount: e.target.value })} />
+                              </Field>
+                              <Field label="On">
+                                <Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+                              </Field>
+                              <Field label="Note">
+                                <Input value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+                              </Field>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Button onClick={() => saveAdjustment(a, j)}><Check size={16} /> Save</Button>
+                              <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <Card className="p-5">
         <h2 className="text-sm font-semibold text-ink-3">Who is holding the company’s money</h2>
@@ -1142,7 +1347,8 @@ function Payroll({ data, eid, actor, canWrite, bump, toast, entity, reloadEntity
                   )}
                 </div>
                 {canWrite && editing === e.id && (
-                  <div className="mt-3 rounded-xl border border-line-soft p-3">
+                  <div className="mt-3 rounded-xl border border-line-soft p-3" role="group"
+                    aria-label={`Editing ${e.name}`}>
                     <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
                       <EmployeeFields form={draft} setForm={setDraft} ptState={ptState} />
                     </div>
