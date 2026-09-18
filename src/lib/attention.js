@@ -40,6 +40,7 @@ import { tdsLedger } from './tds'
 import { ptaxFor } from './ptax'
 import { gratuityLiability, VESTING_YEARS } from './gratuity'
 import { bonusRegister } from './bonus'
+import { leaveLiability } from './leave'
 import { statutoryStatus, SCHEMES, DEFAULT_PAYROLL_CONFIG } from './payroll'
 
 export const LEVELS = {
@@ -401,6 +402,16 @@ export function attention(books = {}, { asOf = null } = {}) {
       'Nobody has set a bonus rate',
       `Bonus is being worked out at the ${bonusBook.rate}% the Act imposes rather than at a figure this company chose. It allows anything up to 20%, and the amount beside this is what the difference would cost.`,
       { amount: bonusBook.atMaximum - bonusBook.total, count: bonusBook.eligible, where: OPS('payroll') }))
+  }
+  // Leave about to lapse. The one finding on this list where the money is the
+  // worker's rather than the company's, and it is always avoidable: the days
+  // could be encashed before the year turns for exactly the same cost.
+  const standing = onBooks > 0 ? leaveLiability(employees, { policy: payrollConfig?.leave || {} }) : null
+  if (standing?.lapsingDays > 0) {
+    out.push(finding('leave.lapsing', 'money',
+      `${plural(standing.lapsingDays, 'day', 'days')} of earned leave will lapse at the year end`,
+      `${plural(standing.lapsingPeople, 'person is', 'people are')} over the ${standing.policy.carryCap}-day carry-forward cap, and anything above it is simply lost. Encashing the excess before the year turns costs the same and keeps it theirs.`,
+      { amount: standing.lapsingValue, count: standing.lapsingPeople, where: OPS('payroll') }))
   }
   const undated = round2(heldBySub.undated + heldByClient.undated)
   if (undated > 0) {

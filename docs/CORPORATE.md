@@ -379,6 +379,72 @@ Both have the voluntary case: under the thresholds neither Act applies and
 plenty of small firms pay both anyway, and a promise made is owed whatever the
 Act says.
 
+#### Earned leave, which is two liabilities at once
+
+Days standing are payable in cash when somebody leaves. Days over the
+carry-forward cap lapse at the year end — the first is the company's money and
+the second is the worker's, and neither had ever been on a screen. A mason with
+forty-one days against a thirty-day cap loses eleven days of pay on the 31st of
+March, and it is always avoidable: encashing the excess first costs the same.
+
+There is no single Act, so `leave.js` carries two shapes rather than bending one
+into the other — the Factories Act's day for every twenty worked with thirty
+carried forward, and the flat fifteen-to-twenty-one a year most state Shops and
+Establishments Acts give. A day is worth basic and dearness allowance over
+twenty-six, the same divisor gratuity uses, and companies on thirty can say so.
+
+#### Maternity benefit, and who writes the cheque
+
+Twenty-six weeks for a first or second child, twelve for a third, in an
+establishment of ten or more. But an employer covered by state insurance usually
+pays none of it: where ESI reaches the woman — the company registered, and her
+gross inside the ceiling — ESIC pays and the employer pays nothing. The
+liability is for the women it does not reach, and this app is unusually placed
+to answer that because it already knows both halves.
+
+Two traps, both caught by probing before the tests were written:
+
+- **This Act means something different by wages.** Gratuity and bonus are on
+  basic plus DA; section 3(n) here is all cash remuneration, house rent
+  allowance included. Reading it off basic plus DA understates the benefit by
+  the whole of somebody's HRA and — worse — puts a woman on ₹15,000 basic and
+  ₹8,000 HRA inside the ESI ceiling when her gross of ₹23,000 is outside it,
+  which is the wrong answer to the only question the module exists to settle.
+- **Eighty days in the year before, or she does not qualify**, which on a site
+  with seasonal work is a real test. A figure shown beside "does not qualify" is
+  a figure somebody budgets for, so it is nil. Nobody having counted the days is
+  unknown rather than disqualifying, and keeps its number.
+
+The creche is a separate duty with a separate threshold — fifty employees, four
+visits a day — and adoption, miscarriage and tubectomy run from the day it
+happens rather than from a delivery date eight weeks earlier.
+
+#### Everything above needed a way to correct it
+
+None of this worked through the screen, and the reason is worth writing down.
+Employees could be added and never edited: a name typed wrong stayed wrong, and
+somebody entered with no pay sat at zero on every payslip for good. Every field
+added since — dearness allowance, the work state, leave standing — could only
+be set at the moment of creation, so a company that had already entered its
+people could never fill them in.
+
+The joining date was the sharpest case, because it was never on the form at all.
+Gratuity is fifteen days' wages for each year *since that date*, so the
+liability the previous commit added was nil for everybody, and nothing on screen
+said why. A feature that cannot be fed is not a feature.
+
+There is now a **People** list on the payroll tab — which also makes inactive
+employees visible for the first time, so somebody taken off the payroll by
+mistake can be put back. Add and edit share one `EmployeeFields` component and
+both go through `makeEmployee`, so a correction is validated exactly as a new
+row is and the two forms cannot drift apart. Taking somebody off sets `active`
+rather than deleting the row: a recorded payroll run already carries their name
+and their slip, and that is what freezing the name was for.
+
+Correcting somebody's pay does not reach into a month already recorded. That
+guarantee is `editui.mjs`'s last section, and it is the same one `payrunui`
+holds for a raise.
+
 Loss of pay pro-rates every component. Take-home never goes negative; a
 deduction larger than the pay is flagged as the data error it is. Employer cost
 (gross + employer PF + employer ESI) is reported alongside, because what someone

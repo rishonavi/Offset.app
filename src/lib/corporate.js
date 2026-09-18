@@ -25,7 +25,7 @@ export const PERSONAL = '__personal__'
 export const isConsolidated = (id) => id === CONSOLIDATED
 export const isPersonal = (id) => id === PERSONAL
 
-export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null, ptState = '', ptSlabs = null, bonusRate = null, minimumWage = null, gratuityVoluntary = false, bonusVoluntary = false } = {}) {
+export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null, ptState = '', ptSlabs = null, bonusRate = null, minimumWage = null, gratuityVoluntary = false, bonusVoluntary = false, leavePolicy = 'factories', leaveCarryCap = null, leaveDaysPerYear = null, leaveDivisor = null } = {}) {
   return {
     id: id || newId(),
     name: (name || 'Untitled company').trim().slice(0, 120),
@@ -75,6 +75,15 @@ export function makeEntity({ id, name, registration = '', gstin = '', currency =
     // be possible to say so.
     gratuity_voluntary: gratuityVoluntary === true,
     bonus_voluntary: bonusVoluntary === true,
+    // Earned leave has no single Act — the Factories Act gives a day for every
+    // twenty worked, the state Shops Acts mostly give a flat fifteen to
+    // twenty-one a year — so the company states which shape it is on and what
+    // it carries forward. Nulls mean the policy's own figures.
+    leave_policy: leavePolicy === 'annual' ? 'annual' : 'factories',
+    leave_carry_cap: leaveCarryCap == null || leaveCarryCap === '' ? null : Math.max(0, Number(leaveCarryCap) || 0),
+    leave_days_per_year: leaveDaysPerYear == null || leaveDaysPerYear === '' ? null : Math.max(0, Number(leaveDaysPerYear) || 0),
+    // Twenty-six working days to the month, or thirty. Both are used.
+    leave_divisor: leaveDivisor == null || leaveDivisor === '' ? null : Math.max(1, Number(leaveDivisor) || 26),
     created_at: new Date().toISOString(),
   }
 }

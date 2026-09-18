@@ -42,7 +42,9 @@ for Vite's resolver.
 | `labour.test.mjs` | 115 | the muster roll, cumulative running-account bills, and what is actually built |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `money.test.mjs` | 44 | what counts as an amount, and what a row is cleaned to on its way in |
+| `leave.test.mjs` | 57 | earned leave standing in cash, and the days over the cap that are quietly taken off people at the year end |
 | `lineage.test.mjs` | 48 | what a contractor certified against what the engineer measured, and why an unlinked contract is not a gap |
+| `maternity.test.mjs` | 74 | twenty-six weeks, the eighty days that decide whether she qualifies, and whether ESIC or the employer pays |
 | `materials.test.mjs` | 187 | construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
 | `metalbill.test.mjs` | 43 | reading a jeweller's bill into a metal holding |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
@@ -68,12 +70,12 @@ for Vite's resolver.
 | `searchmatch.test.mjs` | 24 | matching a query the way people type it |
 | `sync.test.mjs` | 68 | which version survives when two devices disagree, and who is told |
 | `syncwire.test.mjs` | 41 | what a pull asks for, what a push sends, and one table failing |
-| `wirecheck.test.mjs` | 119 | every column the client sends against the columns the schema has, including the ones only an update writes, and whether the type will accept what is sent — the failures that would otherwise wait for a live Supabase |
+| `wirecheck.test.mjs` | 120 | every column the client sends against the columns the schema has, including the ones only an update writes, and whether the type will accept what is sent — the failures that would otherwise wait for a live Supabase |
 | `stockcount.test.mjs` | 64 | what is actually on the shelf, a book figure frozen into the row, and why short and over are never netted |
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **4,013** | |
+| | **4,145** | |
 
 ## Browser — `tests/browser/`
 
@@ -107,6 +109,7 @@ node tests/browser/rtlui.mjs
 | `deptui.mjs` | 24 | a cost centre on the entry form, and a budget the report finally checks |
 | `docsui.mjs` | 22 | six documents, offered where the thing lives, producing real files |
 | `draftui.mjs` | 18 | a half-typed entry surviving the screen being left |
+| `editui.mjs` | 29 | correcting somebody already on the books, and the recorded month that must not move |
 | `exportsui.mjs` | 31 | data in, data out and the summary, as three pages sharing one filter |
 | `flows.mjs` | 35 | create, edit, delete, filter, restore, export, keyboard |
 | `gst2bui.mjs` | 16 | the credit a vendor never filed for, and a 2B that was never loaded |
@@ -141,11 +144,11 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,886** | |
+| | **1,915** | |
 
 That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
 that suite needs the other build and does not run in the same pass, so a sweep
-of this one reports 1,862.
+of this one reports 1,891.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

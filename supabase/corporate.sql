@@ -882,6 +882,23 @@ alter table public.entities add column if not exists minimum_wage numeric(14,2);
 alter table public.entities add column if not exists gratuity_voluntary boolean not null default false;
 alter table public.entities add column if not exists bonus_voluntary boolean not null default false;
 
+-- ── Earned leave, which is two liabilities at once ─────────────
+-- Days standing are payable in cash when somebody leaves, and days over the
+-- carry-forward cap lapse at the year end — the first is the company's money
+-- and the second is the worker's, and neither has ever been on a screen.
+--
+-- No single Act: the Factories Act gives a day for every twenty worked with
+-- thirty carried forward, the state Shops and Establishments Acts mostly give a
+-- flat fifteen to twenty-one a year, and a site is under the Building and Other
+-- Construction Workers Act as well. So the shape is the company's to state.
+alter table public.entities add column if not exists leave_policy text not null default 'factories';
+alter table public.entities add column if not exists leave_carry_cap numeric(6,2);
+alter table public.entities add column if not exists leave_days_per_year numeric(6,2);
+-- Twenty-six working days to the month, or thirty. Both are used.
+alter table public.entities add column if not exists leave_divisor numeric(5,2);
+-- Days of earned leave standing against this person.
+alter table public.employees add column if not exists leave_balance numeric(6,2) not null default 0;
+
 -- ── A month that has been closed ─────────────────────────────────
 -- Every report is a photograph of a moving thing: somebody prints March, sends
 -- it to the bank, and a bill dated the 28th arrives a fortnight later. March is

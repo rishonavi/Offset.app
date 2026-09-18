@@ -55,6 +55,7 @@ export const DEFAULT_PAYROLL_CONFIG = {
   // thing to configure is the voluntary case and, for bonus, the rate and the
   // minimum wage.
   gratuity: { voluntary: false },
+  leave: { policy: 'factories' },
   bonus: { voluntary: false, rate: null, minimumWage: 0 },
   professionalTax: {
     // Null means nobody has said. It is filled in from the company's GSTIN
@@ -190,6 +191,15 @@ export function configForEntity(entity, base = DEFAULT_PAYROLL_CONFIG) {
   // registering — so there is no yes/no to ask, only a threshold and, under it,
   // whether the company pays anyway.
   out.gratuity = { voluntary: entity?.gratuity_voluntary === true }
+  // Earned leave: no single Act, so the policy is the company's to state. The
+  // Factories Act shape is the default because it is the one a site is most
+  // likely under.
+  out.leave = {
+    policy: entity?.leave_policy || 'factories',
+    carryCap: entity?.leave_carry_cap ?? undefined,
+    daysPerYear: entity?.leave_days_per_year ?? undefined,
+    divisor: entity?.leave_divisor ?? undefined,
+  }
   out.bonus = {
     voluntary: entity?.bonus_voluntary === true,
     rate: entity?.bonus_rate ?? null,
@@ -220,7 +230,7 @@ export function resolveConfig(config = DEFAULT_PAYROLL_CONFIG, headcount = 0) {
 export function makeEmployee({
   id, entityId, name, code = '', email = '', departmentId = null,
   basic = 0, da = 0, hra = 0, conveyance = 0, medical = 0, special = 0, other = 0,
-  pan = '', uan = '', joinedOn = '', active = true, workState = '', female = null,
+  pan = '', uan = '', joinedOn = '', active = true, workState = '', female = null, leaveBalance = 0,
 } = {}) {
   return {
     id: id || newId(),
@@ -251,6 +261,10 @@ export function makeEmployee({
     // same as everybody being a man, and an exemption going unclaimed because a
     // field was never filled in costs somebody ₹2,400 a year.
     female: female === true ? true : female === false ? false : null,
+    // Days of earned leave standing. It is a liability like gratuity — payable
+    // in cash on the way out — and a cap that lapses at the year end, which is
+    // the worker's money rather than the company's.
+    leave_balance: Math.max(0, round2(leaveBalance)),
     active: Boolean(active),
     created_at: new Date().toISOString(),
   }
