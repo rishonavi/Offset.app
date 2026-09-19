@@ -100,6 +100,54 @@ console.log('\n── IT STILL FITS A SHORT SCREEN ──')
   }
 }
 
+console.log('\n── AND SAYS SO WHEN THERE IS MORE BELOW ──')
+{
+  // The list scrolled, which is the fix above, but nothing said it scrolled.
+  // Overlay scrollbars appear while you drag and not before, so on a 13-inch
+  // laptop the sidebar simply stopped after Tools and looked like the whole of
+  // it — Bin and Settings existed and could not be found.
+  const { ctx, p } = await open({ width: 1280, height: 620 })
+  const state = await p.evaluate(() => {
+    const el = document.querySelector('aside [aria-hidden="true"].pointer-events-none')
+    const box = document.querySelector('aside nav').parentElement
+    return el ? { op: getComputedStyle(el).opacity, over: box.scrollHeight - box.clientHeight } : null
+  })
+  ok('on a short screen the list has more below it', state && state.over > 1, JSON.stringify(state))
+  ok('and the edge fades to say so', state && Number(state.op) > 0.9, JSON.stringify(state))
+
+  // The control that matters: scroll to the end and it goes. A fade that is
+  // always on is a decoration, and would pass the assertion above while
+  // telling the user nothing.
+  await p.evaluate(() => {
+    const box = document.querySelector('aside nav').parentElement
+    box.scrollTop = box.scrollHeight
+  })
+  await p.waitForTimeout(400)
+  const atEnd = await p.evaluate(() => {
+    const el = document.querySelector('aside [aria-hidden="true"].pointer-events-none')
+    return el ? getComputedStyle(el).opacity : null
+  })
+  ok('and goes once you are at the bottom', Number(atEnd) < 0.1, String(atEnd))
+  // It sits over the last link, so it must not be able to swallow a click.
+  const clicks = await p.evaluate(() => {
+    const el = document.querySelector('aside [aria-hidden="true"].pointer-events-none')
+    return el ? getComputedStyle(el).pointerEvents : null
+  })
+  ok('and never eats a click on the link underneath', clicks === 'none', String(clicks))
+  await ctx.close()
+
+  // A screen tall enough for all of it is not told there is more.
+  const tall = await open({ width: 1280, height: 1400 })
+  const none = await tall.p.evaluate(() => {
+    const el = document.querySelector('aside [aria-hidden="true"].pointer-events-none')
+    const box = document.querySelector('aside nav').parentElement
+    return { op: el ? getComputedStyle(el).opacity : null, over: box.scrollHeight - box.clientHeight }
+  })
+  ok('a tall screen shows the whole list', none.over <= 1, JSON.stringify(none))
+  ok('and is not told there is more', Number(none.op) < 0.1, JSON.stringify(none))
+  await tall.ctx.close()
+}
+
 console.log('\n── EVERY DESTINATION IS STILL COMFORTABLE TO HIT ──')
 {
   const { ctx, p } = await open({ width: 1280, height: 1000 })

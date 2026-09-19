@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -44,7 +44,7 @@ import QuickAddExpense from './QuickAddExpense'
 import CommandPalette from './CommandPalette'
 import ShortcutsHelp from './ShortcutsHelp'
 import { checkIsAdmin } from '../lib/admin'
-import { Spinner, Avatar } from './ui'
+import { Spinner, Avatar, cx } from './ui'
 
 // Eleven destinations in one flat column is eleven things to read before
 // choosing one, and it gave equal weight to the dashboard and to the bin. The
@@ -92,6 +92,60 @@ const CORPORATE_NAV = [
   { to: '/day', key: 'nav.day', icon: CalendarDays },
 ]
 const ADMIN_NAV = { to: '/admin', key: 'nav.admin', icon: ShieldCheck }
+
+// The nav list, and the fact that it does not all fit.
+//
+// Sixteen destinations in six groups. On a 13-inch laptop the last group —
+// Bin and Settings — sits below the fold of the sidebar, and nothing on screen
+// says so: the list simply stops, mid-group, looking like the whole of it. The
+// scrollbar is an overlay on every platform this runs on, so it appears while
+// you scroll and not before, which is no use to somebody who does not know
+// there is anywhere to scroll to.
+//
+// A fade at the bottom edge, shown only while there is more below. It goes
+// when you reach the end, so it is never a decoration lying about what is
+// there. `pointer-events-none` because it sits over the last link.
+function NavScroller({ children }) {
+  const ref = useRef(null)
+  const [more, setMore] = useState(false)
+  const measure = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    // A pixel of slack: fractional layout heights make an element that is
+    // scrolled to the end report a remainder of 0.5 and fade for ever.
+    setMore(el.scrollHeight - el.scrollTop - el.clientHeight > 1)
+  }, [])
+  useEffect(() => {
+    measure()
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return undefined
+    // The list changes height on its own — a company is added, the admin link
+    // appears — so watching the window is not enough.
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    for (const child of el.children) ro.observe(child)
+    return () => ro.disconnect()
+  }, [measure, children])
+  // `min-h-0` as well as `flex-1`: without it a flex child refuses to shrink
+  // below its content, so the column grew past the screen and took the user
+  // footer with it instead of scrolling. Grouping the nav made it tall enough
+  // to matter, but the bug was always there waiting for a short screen or one
+  // more destination.
+  return (
+    <div className="relative mt-6 min-h-0 flex-1">
+      <div ref={ref} onScroll={measure} className="h-full overflow-y-auto pe-1">
+        {children}
+      </div>
+      <div
+        aria-hidden="true"
+        className={cx(
+          'pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-navy to-transparent transition-opacity',
+          more ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+    </div>
+  )
+}
 
 // What is waiting for you, per destination. A sidebar that only links is a list
 // of places; one that counts is a place to look first. Only unsettled entries
@@ -326,15 +380,10 @@ export default function Layout() {
           <span className="flex-1 text-start">{t('chrome.search')}</span>
           <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem]">⌘K</kbd>
         </button>
-        {/* min-h-0 as well as flex-1: without it a flex child refuses to shrink
-            below its content, so the column grew past the screen and took the
-            user footer with it instead of scrolling. Grouping the nav made it
-            tall enough to matter, but the bug was always there waiting for a
-            short screen or one more destination. */}
-        <div className="mt-6 min-h-0 flex-1 overflow-y-auto pe-1">
+        <NavScroller>
           <NavItems isAdmin={isAdmin} />
           <ReportLink onClick={() => openReport({})} />
-        </div>
+        </NavScroller>
         <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
       </aside>
 
@@ -377,10 +426,10 @@ export default function Layout() {
             </div>
             <WorkspaceSwitcher />
             {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
-            <div className="mt-6 min-h-0 flex-1 overflow-y-auto pe-1">
+            <NavScroller>
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
               <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
-            </div>
+            </NavScroller>
             <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
           </div>
         </div>
