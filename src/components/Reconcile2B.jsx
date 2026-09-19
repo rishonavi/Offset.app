@@ -5,6 +5,7 @@ import { useData } from '../context/DataContext'
 import { parse2B, reconcile2B, describe2B } from '../lib/gst2b'
 import { formatCurrency } from '../lib/format'
 import { Card, Field, Input, Badge, cx } from './ui'
+import { thisMonth } from '../lib/today'
 
 // The input credit a vendor has not filed for.
 //
@@ -17,7 +18,6 @@ import { Card, Field, Input, Badge, cx } from './ui'
 // The 2B is read in the browser and never stored. It is somebody's tax filing;
 // keeping a copy would be a liability nobody asked for, and the answer is the
 // same either way.
-const thisMonth = () => new Date().toISOString().slice(0, 7)
 
 export default function Reconcile2B() {
   const ent = useEntity()

@@ -13,8 +13,7 @@ import {
 import { formatCurrency, formatDate } from '../../lib/format'
 import { Card, Button, Field, Input, Select, Badge, attempt } from '../ui'
 import Stat from './Stat'
-
-const today = () => new Date().toISOString().slice(0, 10)
+import { todayISO } from '../../lib/today'
 
 export default function Advances({ data, eid, actor, canWrite, bump, toast, gate }) {
   const [form, setForm] = useState({ party: '', partyType: 'vendor', amount: '', purpose: '', expectedBy: '' })
@@ -29,7 +28,7 @@ export default function Advances({ data, eid, actor, canWrite, bump, toast, gate
   const add = (e) => {
     e.preventDefault()
     if (!form.party.trim() || !Number(form.amount)) return
-    const row = makeAdvance({ entityId: eid, ...form, amount: Number(form.amount), date: today(), createdBy: actor?.id })
+    const row = makeAdvance({ entityId: eid, ...form, amount: Number(form.amount), date: todayISO(), createdBy: actor?.id })
     if (!attempt(() => store.advances.add({ ...row, ...gate(row, 'advance') }, actor), toast)) return
     setForm({ party: '', partyType: 'vendor', amount: '', purpose: '', expectedBy: '' })
     bump()
@@ -47,7 +46,7 @@ export default function Advances({ data, eid, actor, canWrite, bump, toast, gate
       toast(check.why, { type: 'error' })
       return
     }
-    if (!attempt(() => store.adjustments.add(makeAdjustment({ entityId: eid, advanceId: advance.id, amount, note: settle.note, date: today() }), actor), toast)) return
+    if (!attempt(() => store.adjustments.add(makeAdjustment({ entityId: eid, advanceId: advance.id, amount, note: settle.note, date: todayISO() }), actor), toast)) return
     setSettle({ advanceId: '', amount: '', note: '' })
     bump()
     toast('Adjusted')

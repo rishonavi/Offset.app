@@ -16,6 +16,7 @@ import { unitLedger } from './sales'
 import { stockReport, reorderList } from './inventory'
 import { siteProgress } from './progress'
 import { labourReport, TRADES } from './labour'
+import { todayISO } from './today'
 
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
@@ -68,7 +69,7 @@ const doc = ({ kind, title, reference = '', date, company = {}, to = null, meta 
   kind,
   title,
   reference,
-  date: date || new Date().toISOString().slice(0, 10),
+  date: date || todayISO(),
   company: { name: company.name || 'Company', gstin: company.gstin || '', address: company.address || '' },
   to,
   meta: meta.filter((m) => m && m.value !== '' && m.value !== null && m.value !== undefined),
@@ -144,7 +145,7 @@ export function demandLetter(unit, stages, receipts, { company = {}, progressSta
   const outstanding = ledger.lines.filter((l) => l.due && l.outstanding > 0)
   if (!outstanding.length) return null
 
-  const payBy = new Date(Date.parse(`${asOf || new Date().toISOString().slice(0, 10)}T00:00:00Z`) + dueInDays * 86400000)
+  const payBy = new Date(Date.parse(`${asOf || todayISO()}T00:00:00Z`) + dueInDays * 86400000)
     .toISOString().slice(0, 10)
 
   return doc({
@@ -266,7 +267,7 @@ export function stockStatement(items, movements, { company = {}, storeName = nul
 // ── Muster sheet ─────────────────────────────────────────────────
 // The day's labour, for signing at the gate.
 export function musterSheet(muster, { company = {}, date = null, entityId = null, siteName = null } = {}) {
-  const day = date || new Date().toISOString().slice(0, 10)
+  const day = date || todayISO()
   const rows = muster.filter((m) => m.date === day && (!entityId || m.entity_id === entityId) && !m.deleted_at)
   if (!rows.length) return null
   const report = labourReport(rows, { entityId })

@@ -26,6 +26,7 @@
 //   months is six years' gratuity, and the jump is a month's wages wide.
 
 import { round2, wagesOf } from './payroll'
+import { todayISO } from './today'
 
 // Gratuity is paid in whole rupees. Keeping paise would make a total that no
 // cheque ever matches, and the total is the number this exists to produce.
@@ -62,7 +63,7 @@ const parse = (iso) => {
 // round up — the Act says "in excess of six months" — and the boundary is worth
 // a rupee or two thousand to somebody, so it is written down rather than left
 // to a comparison somebody will flip later.
-export function serviceOn(joinedOn, asOf = new Date().toISOString()) {
+export function serviceOn(joinedOn, asOf = todayISO()) {
   const from = parse(joinedOn)
   const to = parse(asOf)
   if (!from || !to || to < from) {
@@ -108,7 +109,7 @@ export function serviceOn(joinedOn, asOf = new Date().toISOString()) {
 // nothing if they left tomorrow. Both facts matter and the caller gets both,
 // because a liability nobody can see is the problem this exists to fix and a
 // liability overstated as payable is a different one.
-export function gratuityFor(employee, { asOf = new Date().toISOString(), config = {} } = {}) {
+export function gratuityFor(employee, { asOf = todayISO(), config = {} } = {}) {
   const service = serviceOn(employee?.joined_on, asOf)
   const wages = wagesOf(employee)
   const perYear = (wages * DAYS_PER_YEAR) / DAYS_PER_MONTH
@@ -175,7 +176,7 @@ export function gratuityStatus({ headcount = 0, config = {} } = {}) {
 // The whole payroll's liability, which is the number that has never been on a
 // screen. Vested and unvested are kept apart on purpose: one is owed and the
 // other is a bet on people staying.
-export function gratuityLiability(employees = [], { asOf = new Date().toISOString(), config = {} } = {}) {
+export function gratuityLiability(employees = [], { asOf = todayISO(), config = {} } = {}) {
   const active = employees.filter((e) => e.active !== false)
   const status = gratuityStatus({ headcount: active.length, config })
   const lines = active.map((e) => gratuityFor(e, { asOf, config }))

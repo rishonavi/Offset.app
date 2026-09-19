@@ -22,6 +22,9 @@
 //   **The rule lives where the writes are, not on the button.** A control
 //   enforced by a disabled field is not a control — a second screen, an
 //   import, or a restored backup all reach the store directly.
+
+import { todayISO } from './today'
+
 const MONTH = /^(\d{4})-(0[1-9]|1[0-2])$/
 
 export const monthOf = (dateISO) => {
@@ -80,7 +83,7 @@ export function checkPeriod(entity, dateISO) {
 // offered — it is not over, and closing it would refuse entries for work being
 // done today.
 export function monthsToClose(entity, asOf = null) {
-  const today = asOf || new Date().toISOString().slice(0, 10)
+  const today = asOf || todayISO()
   const thisMonth = monthOf(today)
   if (!thisMonth) return []
   const last = prevMonth(thisMonth)

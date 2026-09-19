@@ -37,6 +37,7 @@
 import { round2 } from './inventory'
 import { paidHistory } from './quotes'
 import { TRADES } from './labour'
+import { todayISO } from './today'
 
 // Percent a rate may differ from the norm before it is worth a second look.
 export const DEFAULT_TOLERANCE = 7
@@ -142,7 +143,7 @@ export function materialVariance(items = [], movements = [], { entityId = null, 
 export function labourRateSpread(muster = [], {
   entityId = null, days = 14, tolerance = DEFAULT_TOLERANCE, asOf = null, projects = [],
 } = {}) {
-  const day = asOf || new Date().toISOString().slice(0, 10)
+  const day = asOf || todayISO()
   const from = new Date(`${day}T00:00:00Z`)
   from.setUTCDate(from.getUTCDate() - days)
   const since = from.toISOString().slice(0, 10)

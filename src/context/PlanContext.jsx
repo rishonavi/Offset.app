@@ -3,13 +3,14 @@ import { db } from '../lib/storage'
 import { billingEnabled, planById } from '../lib/plans'
 import { useAuth } from './AuthContext'
 import { useConfig } from './ConfigContext'
+import { thisMonth } from '../lib/today'
 
 const PlanContext = createContext(null)
 export const usePlan = () => useContext(PlanContext)
 
 // AI-scan usage is counted per calendar month in localStorage. (A soft client
 // limit; the Stripe-backed plan is the source of truth for what's allowed.)
-const monthKey = () => `pl_scans_${new Date().toISOString().slice(0, 7)}`
+const monthKey = () => `pl_scans_${thisMonth()}`
 
 export function PlanProvider({ children }) {
   const { user } = useAuth()

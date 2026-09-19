@@ -16,6 +16,7 @@ import {
 } from '../lib/plant'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Badge, EmptyState, cx, attempt } from './ui'
+import { todayISO } from '../lib/today'
 
 // Plant and equipment.
 //
@@ -28,7 +29,6 @@ const VIEWS = [
   { id: 'logs', label: 'Log sheets', icon: ClipboardList },
 ]
 
-const today = () => new Date().toISOString().slice(0, 10)
 const num = (v) => Number(v) || 0
 
 export default function Plant(shared) {
@@ -340,7 +340,7 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
 // ── Log sheets ──────────────────────────────────────────────────────────────
 function Logs({ data, eid, actor, canWrite, bump, toast }) {
   const blank = {
-    plantId: '', date: today(), workingHours: '', idleHours: '', breakdownHours: '',
+    plantId: '', date: todayISO(), workingHours: '', idleHours: '', breakdownHours: '',
     trips: '', fuelLitres: '', fuelCost: '', operator: '', projectId: '', note: '',
   }
   const [form, setForm] = useState(blank)
@@ -401,7 +401,7 @@ function Logs({ data, eid, actor, canWrite, bump, toast }) {
               </Select>
             </Field>
             <Field label="Date" required>
-              <Input aria-label="Log date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} max={today()} />
+              <Input aria-label="Log date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} max={todayISO()} />
             </Field>
             {data.projects.length > 0 && (
               <Field label="Site">

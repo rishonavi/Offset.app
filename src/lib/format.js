@@ -1,6 +1,10 @@
 import { format, parseISO, isValid } from 'date-fns'
 import { CURRENCY, LOCALE } from './constants'
 
+// Today's date lives in its own module so leaf modules can read the clock
+// without pulling a date library and two Intl formatters onto the page.
+export { todayISO } from './today'
+
 const currencyFmt = new Intl.NumberFormat(LOCALE, {
   style: 'currency',
   currency: CURRENCY,
@@ -35,8 +39,6 @@ export const formatDate = (d) => {
   const dt = toDate(d)
   return isValid(dt) ? format(dt, 'dd MMM yyyy') : String(d)
 }
-
-export const todayISO = () => format(new Date(), 'yyyy-MM-dd')
 
 export const monthKey = (d) => {
   const dt = toDate(d)

@@ -16,14 +16,14 @@
 // four hours of overtime are not twelve hours at ₹700, and a register that
 // blends them cannot tell you which site is burning its budget on evenings.
 
+import { todayISO } from './today'
+
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
 const newId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 // The trades an Indian site actually musters, with whether the work is skilled.
 // The split matters because the two move at different rates and a site running
@@ -53,7 +53,7 @@ export function makeMuster({
     id: id || newId(),
     entity_id: entityId,
     project_id: projectId || null,
-    date: date || today(),
+    date: date || todayISO(),
     trade: TRADES[trade] ? trade : 'helper',
     // Whole people. Half a mason is a data entry error, not a half day — a
     // half day is recorded as a lower rate, which is how it is paid.

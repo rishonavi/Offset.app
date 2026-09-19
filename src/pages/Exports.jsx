@@ -11,6 +11,7 @@ import { toTallyXML } from '../lib/tally'
 import { Card, Button, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import FilterBar from '../components/FilterBar'
+import { todayISO } from '../lib/today'
 
 // Getting data out. Everything that comes the other way — a mailbox, a
 // spreadsheet, a Tally file, a backup — is on Import, including restoring the
@@ -35,7 +36,7 @@ export default function Exports() {
     [income, filters],
   )
 
-  const baseName = `property-expenses-${new Date().toISOString().slice(0, 10)}`
+  const baseName = `property-expenses-${todayISO()}`
   const subtitle = `${filtered.length} expense${filtered.length === 1 ? '' : 's'} · Total ${formatCurrency(total)}`
 
   const doExport = (kind) => {

@@ -28,6 +28,7 @@
 // derived from measured progress rather than typed in by hand.
 
 import { madeOf } from './certainty'
+import { todayISO } from './today'
 
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
@@ -35,8 +36,6 @@ const newId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 // What is being sold. A shop and a flat in the same tower are priced
 // differently, sell to different buyers and are counted separately by everyone
@@ -158,7 +157,7 @@ export function makeReceipt({
     unit_id: unitId,
     entity_id: entityId,
     project_id: projectId || null,
-    date: date || today(),
+    date: date || todayISO(),
     amount: Math.max(0, round2(amount)),
     mode: ['bank', 'cheque', 'cash', 'loan', 'upi'].includes(mode) ? mode : 'bank',
     reference: String(reference).trim().slice(0, 80),
@@ -194,7 +193,7 @@ const stageReached = (stage, progressStages, asOf) => {
     // money nobody owes is worse than one who has to finish the plan, so an
     // instalment with no trigger waits, and the ledger counts it so somebody
     // fixes it.
-    return Boolean(stage.due_on) && stage.due_on <= (asOf || today())
+    return Boolean(stage.due_on) && stage.due_on <= (asOf || todayISO())
   }
   const built = progressStages.find((s) => s.stage.id === stage.work_stage)
   if (!built || built.percent === null) return false
@@ -233,7 +232,7 @@ export function unitLedger(unit, stages = [], receipts = [], { progressStages = 
   // What has fallen due and has not been paid. The number a developer is asked
   // for and usually cannot produce.
   const dueNow = round2(Math.max(0, demanded - Math.min(received, demanded)))
-  const day = asOf || today()
+  const day = asOf || todayISO()
   const overdue = round2(applied
     .filter((l) => l.due && l.outstanding > 0 && l.stage.due_on && l.stage.due_on < day)
     .reduce((t, l) => t + l.outstanding, 0))

@@ -21,8 +21,7 @@
 
 import { TRADES, TRADE_IDS, makeMuster } from './labour'
 import { makePlantLog } from './plant'
-
-export const today = () => new Date().toISOString().slice(0, 10)
+import { todayISO } from './today'
 
 const live = (rows = []) => rows.filter((r) => !r.deleted_at)
 const on = (rows, projectId, date) =>
@@ -65,7 +64,7 @@ export function plantOn(plant = [], logs = [], projectId, date) {
 
 // The sheet itself: one line per trade and one per machine, each carrying the
 // id of the row it came from so that saving twice cannot double a day.
-export function daySheet({ projectId, date = today(), muster = [], plant = [], plantLogs = [], trades = null } = {}) {
+export function daySheet({ projectId, date = todayISO(), muster = [], plant = [], plantLogs = [], trades = null } = {}) {
   const mine = on(muster, projectId, date)
   const list = trades || tradesOn(muster, projectId)
   // A trade recorded today but not in the default list still appears, or

@@ -8,6 +8,7 @@
 // blank and it's an ordinary invoice with no tax lines.
 
 import { formatCurrency, formatDate } from './format'
+import { todayISO } from './today'
 
 // ── Money ──────────────────────────────────────────────────────────
 // Invoice arithmetic is done in paise. 0.1 + 0.2 is a rounding curiosity in a
@@ -48,7 +49,7 @@ export function lineAmount(line) {
 // disagree with it.
 export function buildInvoice({
   number = '',
-  date = new Date().toISOString().slice(0, 10),
+  date = todayISO(),
   dueDate = '',
   period = '',
   notes = '',

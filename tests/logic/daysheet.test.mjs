@@ -5,7 +5,8 @@
 // a sheet that appends would double a day's wages, and nobody would notice
 // until the month closed. Everything else here is convenience; that one is the
 // reason the module exists.
-import { daySheet, planSave, lastRate, tradesOn, plantOn, today } from '../../src/lib/daysheet.js'
+import { daySheet, planSave, lastRate, tradesOn, plantOn } from '../../src/lib/daysheet.js'
+import { todayISO } from '../../src/lib/today.js'
 import { makeMuster, musterCost } from '../../src/lib/labour.js'
 import { makePlant, makePlantLog } from '../../src/lib/plant.js'
 
@@ -22,7 +23,7 @@ eq('two trades to start with, not eleven', blank.labour.map((l) => l.trade), ['m
 ok('nothing is recorded yet', !blank.started)
 eq('and nobody is on it', blank.heads, 0)
 eq('no machines either', blank.machines.length, 0)
-ok('the date defaults to today', daySheet({ projectId: MD }).date === today())
+ok('the date defaults to today', daySheet({ projectId: MD }).date === todayISO())
 
 console.log('\n── THE TRADES A SITE ACTUALLY USES ──')
 const history = [

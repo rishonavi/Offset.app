@@ -8,7 +8,7 @@ import { useToast } from '../context/ToastContext'
 import { usePlan } from '../context/PlanContext'
 import { db } from '../lib/storage'
 import { CATEGORIES } from '../lib/constants'
-import { currencySymbol, todayISO } from '../lib/format'
+import { currencySymbol } from '../lib/format'
 import { gmailConfigured, connectGmail, isGmailConnected, fetchBillCandidates, attachmentToFile } from '../lib/gmail'
 import { Card, Button, EmptyState, Spinner } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -17,6 +17,7 @@ import { parseSpreadsheet, rowToExpenseInput } from '../lib/exports'
 import { entryKey, seenIndex, skippedNote } from '../lib/dedupe'
 import { parseTallyXML } from '../lib/tally'
 import { useBackup } from '../lib/useBackup'
+import { todayISO } from '../lib/today'
 
 function ImportResult({ msg, source }) {
   if (!msg || msg.source !== source) return null
@@ -48,7 +49,7 @@ export default function ImportBills() {
   const [importMsg, setImportMsg] = useState(null)
   const fileRef = useRef(null)
   const tallyRef = useRef(null)
-  const backup = useBackup(`offset-${new Date().toISOString().slice(0, 10)}`)
+  const backup = useBackup(`offset-${todayISO()}`)
   const [rows, setRows] = useState([])
   const [scanning, setScanning] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0 })

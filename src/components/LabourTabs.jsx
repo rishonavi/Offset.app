@@ -22,6 +22,7 @@ import { paymentCertificate, musterSheet } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Badge, EmptyState, cx, attempt } from './ui'
+import { todayISO } from '../lib/today'
 
 // Labour, in the two shapes a site actually has it.
 //
@@ -38,7 +39,6 @@ const VIEWS = [
   { id: 'contractors', label: 'Contractors', icon: FileSignature },
 ]
 
-const today = () => new Date().toISOString().slice(0, 10)
 const num = (v) => Number(v) || 0
 
 export default function Labour(shared) {
@@ -72,7 +72,7 @@ export default function Labour(shared) {
 // ── Muster roll ─────────────────────────────────────────────────────────────
 function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
   const blank = {
-    date: today(), trade: 'mason', headcount: '', rate: '',
+    date: todayISO(), trade: 'mason', headcount: '', rate: '',
     overtimeHours: '', overtimeRate: '', projectId: '', contractor: '', note: '',
   }
   const [form, setForm] = useState(blank)
@@ -162,7 +162,7 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
           </p>
           <form onSubmit={add} className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-4">
             <Field label="Date" required>
-              <Input aria-label="Muster date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} max={today()} />
+              <Input aria-label="Muster date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} max={todayISO()} />
             </Field>
             <Field label="Trade">
               <Select aria-label="Trade" value={form.trade} onChange={(e) => setForm({ ...form, trade: e.target.value })}>
@@ -440,7 +440,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
   // him, and until now the app could only see the first of the two.
   const [side, setSide] = useState('sub')
   const [billing, setBilling] = useState(null)
-  const [bill, setBill] = useState({ claimedToDate: '', certifiedToDate: '', advanceRecovered: '', materialRecovered: '', penalty: '', date: today() })
+  const [bill, setBill] = useState({ claimedToDate: '', certifiedToDate: '', advanceRecovered: '', materialRecovered: '', penalty: '', date: todayISO() })
 
   const report = useMemo(
     () => subcontractReport(data.workOrders, data.raBills, { entityId: eid, side }),
@@ -494,7 +494,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
       createdBy: actor?.id,
     })
     if (!attempt(() => store.raBills.add({ ...row, ...gate(row, 'rabill') }, actor), toast)) return
-    setBill({ claimedToDate: '', certifiedToDate: '', advanceRecovered: '', materialRecovered: '', penalty: '', date: today() })
+    setBill({ claimedToDate: '', certifiedToDate: '', advanceRecovered: '', materialRecovered: '', penalty: '', date: todayISO() })
     setBilling(null)
     bump()
     toast('Running account bill recorded')

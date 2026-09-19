@@ -2,6 +2,7 @@
 // gracefully: a 501 means AI isn't configured on this deployment.
 
 import { authHeaders } from './authHeader'
+import { todayISO } from './today'
 
 async function postJSON(url, payload) {
   const res = await fetch(url, {
@@ -60,7 +61,7 @@ export function buildDataSummary({ properties = [], expenses = [], income = [] }
       status: r.status || null,
     }))
   return {
-    today: new Date().toISOString().slice(0, 10),
+    today: todayISO(),
     assets: properties.map((p) => ({
       name: p.name,
       type: p.type || null,

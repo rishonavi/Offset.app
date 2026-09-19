@@ -31,6 +31,7 @@
 //   thousand, which is the sort of arithmetic a notice is made of.
 import { round2, billLadder, sideOf } from './subcontract'
 import { madeOf } from './certainty'
+import { todayISO } from './today'
 
 // The sections this covers, with the limits as they stand.
 export const SECTIONS = {
@@ -195,7 +196,7 @@ export function required(payments = [], {
 export function tdsLedger(orders = [], bills = [], {
   entityId = null, fyStartMonth = 4, asOf = null, section = '194C',
 } = {}) {
-  const day = asOf || new Date().toISOString().slice(0, 10)
+  const day = asOf || todayISO()
   const fy = fyOf(day, fyStartMonth)
   const { from, to } = fyRange(fy, fyStartMonth)
 

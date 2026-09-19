@@ -4,7 +4,8 @@ import { CalendarDays, Check, Minus, Plus, HardHat } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import * as store from '../lib/storage/corporate'
-import { daySheet, planSave, today } from '../lib/daysheet'
+import { daySheet, planSave } from '../lib/daysheet'
+import { todayISO } from '../lib/today'
 import { TRADES, TRADE_IDS } from '../lib/labour'
 import { isOpen } from '../lib/projects'
 import { formatCurrency } from '../lib/format'
@@ -56,7 +57,7 @@ export default function DaySheet() {
   const ent = useEntity()
   const toast = useToast()
   const [version, setVersion] = useState(0)
-  const [date, setDate] = useState(today())
+  const [date, setDate] = useState(todayISO())
   const [siteId, setSiteId] = useState('')
   const [extra, setExtra] = useState([])
   const [draft, setDraft] = useState(null)
@@ -197,7 +198,7 @@ export default function DaySheet() {
             </Select>
           </Field>
           <Field label="Date">
-            <Input aria-label="Sheet date" type="date" className="h-11 text-base" value={date} max={today()}
+            <Input aria-label="Sheet date" type="date" className="h-11 text-base" value={date} max={todayISO()}
               onChange={(e) => { setDate(e.target.value); setDraft(null); setExtra([]) }} />
           </Field>
         </div>

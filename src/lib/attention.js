@@ -42,6 +42,7 @@ import { gratuityLiability, VESTING_YEARS } from './gratuity'
 import { bonusRegister } from './bonus'
 import { leaveLiability } from './leave'
 import { statutoryStatus, SCHEMES, DEFAULT_PAYROLL_CONFIG } from './payroll'
+import { thisMonth } from './today'
 
 export const LEVELS = {
   error: { id: 'error', label: 'Wrong', rank: 0, tone: 'bad' },
@@ -62,14 +63,17 @@ const finding = (id, level, title, detail, { amount = 0, count = 1, where = null
 
 const OPS = (tab) => ({ to: `/operations?tab=${tab}`, label: 'Open' })
 
-const thisMonth = (asOf) => (asOf ? new Date(asOf) : new Date()).toISOString().slice(0, 7)
+// `asOf` is a yyyy-MM-dd string in every caller and in every test, so slice it
+// rather than routing it through `new Date`, which would read it as UTC midnight
+// and can hand back the previous month for anybody east of Greenwich.
+const monthOf = (asOf) => (asOf ? String(asOf).slice(0, 7) : thisMonth())
 
 // The months that have closed and could have been run: the three before this
 // one, from no earlier than the oldest joining date on the payroll. Three,
 // because a company six months behind does not need six separate naggings —
 // it needs to know it is behind.
 function closedMonths(asOf, employees) {
-  const now = thisMonth(asOf)
+  const now = monthOf(asOf)
   const earliest = employees
     .map((e) => String(e.joined_on || '').slice(0, 7))
     .filter(Boolean)
@@ -295,7 +299,7 @@ export function attention(books = {}, { asOf = null } = {}) {
 
   // A budget that nothing checks is a number somebody typed once. This is the
   // check — and it is money already spent, not a risk of spending it.
-  const centres = costCentreReport(departments, expenses, income, { entityId, months: [thisMonth(asOf)] })
+  const centres = costCentreReport(departments, expenses, income, { entityId, months: [monthOf(asOf)] })
   if (centres.overspent > 0) {
     out.push(finding('budget.over', 'money',
       `${plural(centres.overspent, 'cost centre is', 'cost centres are')} past this month\u2019s budget`,

@@ -17,14 +17,14 @@
 // a construction schedule it usually is, because finishes cost more than
 // foundations and come last.
 
+import { todayISO } from './today'
+
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
 const newId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 // The trades a schedule of quantities is grouped under, in the order the work
 // happens. Ordering by sequence rather than alphabetically is what lets a
@@ -80,7 +80,7 @@ export function makeMeasurement({
     work_item_id: workItemId,
     entity_id: entityId,
     project_id: projectId || null,
-    date: date || today(),
+    date: date || todayISO(),
     // May be negative: a re-measurement that found less is a correction, and
     // forcing it positive means the only way to fix an error is to delete it.
     qty: round2(qty),

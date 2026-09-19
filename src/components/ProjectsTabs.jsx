@@ -39,6 +39,7 @@ import { measurementSheet } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx, attempt } from './ui'
+import { todayISO } from '../lib/today'
 
 // The jobs, and whether anyone can tell they are losing money.
 //
@@ -337,7 +338,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
   const [siteId, setSiteId] = useState(data.projects[0]?.id || '')
   const blankItem = { code: '', description: '', stage: 'structure', unit: 'cum', plannedQty: '', rate: '', workOrderId: '' }
   const [item, setItem] = useState(blankItem)
-  const [measure, setMeasure] = useState({ workItemId: '', qty: '', date: new Date().toISOString().slice(0, 10), note: '' })
+  const [measure, setMeasure] = useState({ workItemId: '', qty: '', date: todayISO(), note: '' })
 
   const site = data.projects.find((p) => p.id === siteId) || null
   const items = useMemo(

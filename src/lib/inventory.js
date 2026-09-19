@@ -9,6 +9,8 @@
 // money in paise, because a stock valuation that is out by a rounding error is
 // a stock valuation nobody trusts.
 
+import { todayISO } from './today'
+
 const paise = (n) => Math.round((Number(n) || 0) * 100)
 const rupees = (p) => p / 100
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
@@ -122,7 +124,7 @@ export function makeMovement({
     // every other kind carries its direction in the kind itself.
     qty: kind === 'adjustment' ? Number(qty) || 0 : Math.abs(Number(qty) || 0),
     unit_cost: Math.max(0, round2(unitCost)),
-    date: date || new Date().toISOString().slice(0, 10),
+    date: date || todayISO(),
     note: note.trim().slice(0, 200),
     ref: ref.trim().slice(0, 60),
     created_by: createdBy,

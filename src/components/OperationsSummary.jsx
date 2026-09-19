@@ -9,6 +9,7 @@ import { costCentreReport } from '../lib/costcentres'
 import { advancesOverPeriod } from '../lib/advances'
 import { formatCurrency } from '../lib/format'
 import { Card } from './ui'
+import { thisMonth } from '../lib/today'
 
 // What the company cost, next to what the property earned.
 //
@@ -28,8 +29,6 @@ import { Card } from './ui'
 // the company is still owed, and booking it as spending is the single most
 // common way small books go wrong — so it is shown as a balance, under its own
 // heading, and never added into a total with the others.
-
-const thisMonth = () => new Date().toISOString().slice(0, 7)
 
 export function useOperationsSummary(filters) {
   const ent = useEntity()

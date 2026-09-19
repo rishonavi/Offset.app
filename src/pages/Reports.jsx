@@ -20,6 +20,7 @@ import FilterBar from '../components/FilterBar'
 import OperationsSummary, { useOperationsSummary } from '../components/OperationsSummary'
 import WorkingCapital, { useWorkingCapital } from '../components/WorkingCapital'
 import Reconcile2B from '../components/Reconcile2B'
+import { todayISO } from '../lib/today'
 
 const PREVIEW_LIMIT = 100
 
@@ -51,7 +52,7 @@ export default function Reports() {
   // named it, so the one button on this page that produces a file threw
   // ReferenceError instead. Nothing here rendered wrong, which is why it
   // survived a review and a full suite — it only failed on the click.
-  const baseName = `property-expenses-${new Date().toISOString().slice(0, 10)}`
+  const baseName = `property-expenses-${todayISO()}`
 
   // Stock and payroll, when there is a company to have them. Null on a personal
   // install, and null in the consolidated view, where one number over several

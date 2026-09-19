@@ -24,13 +24,12 @@
 //   today's balance would change its own answer every time a later lorry
 //   arrived, and a verification that moves is not a verification.
 import { round2, stockAt, stockReport, CENTRAL, makeMovement } from './inventory'
+import { todayISO } from './today'
 
 const newId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 // How far out a store may be before it is worth a conversation, as a share of
 // what the books say should be there.
@@ -51,7 +50,7 @@ export function makeStockCount({
     // Null is the yard, exactly as it is on a movement. A count sheet for "the
     // central store" and one for "no store" are the same sheet.
     store_id: storeId || null,
-    date: date || today(),
+    date: date || todayISO(),
     counted_qty: counted,
     // Frozen, not derived. See the header.
     book_qty: book,
@@ -68,7 +67,7 @@ export function makeStockCount({
 // included on purpose — a bag found in a store the books say has none is the
 // most interesting line on the sheet.
 export function countSheet(items = [], movements = [], { storeId = CENTRAL, asOf = null, entityId = null } = {}) {
-  const day = asOf || today()
+  const day = asOf || todayISO()
   const upto = movements.filter((m) => !m.deleted_at && String(m.date || '') <= day)
   return items
     .filter((i) => !i.deleted_at)
@@ -171,7 +170,7 @@ export function adjustmentsFrom(counts = [], { entityId = null, actorId = null }
 export function shrinkage(counts = [], items = [], movements = [], {
   entityId = null, asOf = null, tolerance = DEFAULT_TOLERANCE, staleDays = STALE_DAYS, stores = [],
 } = {}) {
-  const day = asOf || today()
+  const day = asOf || todayISO()
   const mine = counts.filter((c) => !c.deleted_at).filter((c) => !entityId || c.entity_id === entityId)
 
   // A sheet is a store and a date.

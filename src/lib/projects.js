@@ -17,6 +17,8 @@
 // against the estimate, and a job can be over its estimate and still make money
 // or under it and still lose.
 
+import { todayISO } from './today'
+
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
 const newId = () =>
@@ -206,14 +208,22 @@ export function unattributed(expenses = [], income = []) {
   return { spent, billed, count: loose(expenses).length + loose(income).length }
 }
 
+// A Date is read in UTC, because the only Dates handed to `daysLate` are built
+// at an explicit UTC midnight. The live clock is read locally instead, because
+// a job is not a day less late at two in the morning in Pune.
+const dayOf = (asOf) =>
+  asOf instanceof Date ? asOf.toISOString().slice(0, 10) : String(asOf).slice(0, 10)
+
 // A job that has run past the day it was due and has not been closed. Said in
 // days rather than as a flag, because "four days over" and "eight months over"
-// are not the same conversation.
-export function daysLate(project, today = new Date()) {
+// are not the same conversation. `asOf` is a yyyy-MM-dd string, a Date, or
+// nothing — in which case it is today where the user is standing.
+export function daysLate(project, asOf = todayISO()) {
   if (!project?.due_on || !isOpen(project.status)) return null
   const due = new Date(`${String(project.due_on).slice(0, 10)}T00:00:00Z`)
   if (Number.isNaN(due.getTime())) return null
-  const now = new Date(`${today.toISOString().slice(0, 10)}T00:00:00Z`)
+  const now = new Date(`${dayOf(asOf)}T00:00:00Z`)
+  if (Number.isNaN(now.getTime())) return null
   const days = Math.floor((now - due) / 86400000)
   return days > 0 ? days : null
 }

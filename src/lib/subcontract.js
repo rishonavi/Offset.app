@@ -41,6 +41,7 @@
 //   it was spent, and a job costed on net payments is understated by both.
 
 import { itemProgress } from './progress'
+import { todayISO } from './today'
 
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
@@ -48,8 +49,6 @@ const newId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 export const ORDER_STATUS = {
   draft: { id: 'draft', label: 'Draft', open: true },
@@ -181,7 +180,7 @@ export function makeRaBill({
     // Bills are numbered, and the number is what orders them. Two bills dated
     // the same day is ordinary; two bills numbered the same is a mistake.
     number: Math.max(1, Math.round(Number(number) || 1)),
-    date: date || today(),
+    date: date || todayISO(),
     claimed_to_date: Math.max(0, round2(claimedToDate)),
     certified_to_date: Math.max(0, round2(certifiedToDate)),
     // Recovered from this bill. An advance paid earlier and material issued
@@ -362,7 +361,7 @@ export function removingBill(order, bills = [], bill) {
 }
 
 export function retentionSchedule(order, ladder, { asOf = null } = {}) {
-  const now = asOf || today()
+  const now = asOf || todayISO()
   const accrued = round2(Number(ladder?.retentionAccrued) || 0)
   const releasedRaw = round2(Number(ladder?.retentionReleased) || 0)
   // More given back than was ever held. Not a tranche problem — an arithmetic

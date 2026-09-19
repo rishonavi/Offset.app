@@ -21,6 +21,7 @@ import { clearSearches } from '../lib/searchHistory'
 import { Card, Button, Spinner, Avatar } from '../components/ui'
 import AppearanceCard from '../components/AppearanceCard'
 import PageHeader from '../components/PageHeader'
+import { todayISO } from '../lib/today'
 
 export default function Settings() {
   const { user, isCloud, signOut } = useAuth()
@@ -128,7 +129,7 @@ export default function Settings() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `offset-data-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `offset-data-${todayISO()}.json`
     a.click()
     URL.revokeObjectURL(url)
     toast('Your data was exported.')

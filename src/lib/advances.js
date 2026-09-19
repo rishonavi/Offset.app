@@ -9,6 +9,7 @@
 // and what remains is a balance the company can see and chase.
 
 import { ageing } from './payables.js'
+import { todayISO } from './today'
 
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
 
@@ -36,7 +37,7 @@ export function makeAdvance({
     party_type: ADVANCE_PARTIES[partyType] ? partyType : 'vendor',
     party: party.trim().slice(0, 120),
     amount: Math.max(0, round2(amount)),
-    date: date || new Date().toISOString().slice(0, 10),
+    date: date || todayISO(),
     purpose: purpose.trim().slice(0, 200),
     department_id: departmentId,
     // When the company expects this to be settled — what makes an advance
@@ -57,7 +58,7 @@ export function makeAdjustment({ id, advanceId, entityId = null, amount = 0, aga
     amount: Math.max(0, round2(amount)),
     // The expense (or payroll run) this advance was set against.
     against,
-    date: date || new Date().toISOString().slice(0, 10),
+    date: date || todayISO(),
     note: note.trim().slice(0, 200),
     created_at: new Date().toISOString(),
   }
@@ -135,7 +136,7 @@ export function outstandingAdvances(advances, adjustments, { entityId = null, as
     .filter((a) => !entityId || a.entity_id === entityId)
     .map((a) => {
       const b = balanceOf(a, adjustments)
-      const overdue = Boolean(a.expected_by) && (asOf || new Date().toISOString().slice(0, 10)) > a.expected_by
+      const overdue = Boolean(a.expected_by) && (asOf || todayISO()) > a.expected_by
       return { ...b, overdue: overdue && !b.settled }
     })
     .filter((l) => !l.settled || l.overAdjusted)

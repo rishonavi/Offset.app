@@ -31,9 +31,7 @@ import { maternityExposure, QUALIFYING_DAYS, MEDICAL_BONUS, NURSING_MONTHS } fro
 import { formatCurrency, formatDate } from '../../lib/format'
 import { Card, Button, Field, Input, Select, Badge, cx } from '../ui'
 import Stat from './Stat'
-
-const thisMonth = () => new Date().toISOString().slice(0, 7)
-const today = () => new Date().toISOString().slice(0, 10)
+import { thisMonth, todayISO } from '../../lib/today'
 
 function EmployeeFields({ form, setForm, ptState }) {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
@@ -297,7 +295,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
           advanceId: l.advance.id,
           amount,
           against: `payroll:${period}`,
-          date: today(),
+          date: todayISO(),
           note: `Recovered in ${period} payroll`,
         }), actor)
         left = Math.round((left - amount) * 100) / 100

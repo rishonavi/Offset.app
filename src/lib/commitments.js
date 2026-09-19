@@ -29,8 +29,7 @@ import { salesReport } from './sales'
 import { siteProgress } from './progress'
 import { ageing } from './payables'
 import { madeOf } from './certainty'
-
-const today = () => new Date().toISOString().slice(0, 10)
+import { todayISO } from './today'
 
 // A bill that has been certified is owed. A draft has not been agreed yet and
 // a paid one is finished, so neither is money waiting to move.
@@ -66,7 +65,7 @@ export function commitments(books = {}, { entityId = null, asOf = null, projectI
     workOrders = [], raBills = [], quotes = [], units = [], planStages = [], receipts = [],
     expenses = [], income = [],
   } = books
-  const day = asOf || today()
+  const day = asOf || todayISO()
 
   const sub = contractSide(workOrders, raBills, { entityId, asOf: day, side: 'sub', projectId })
   const client = contractSide(workOrders, raBills, { entityId, asOf: day, side: 'client', projectId })

@@ -25,6 +25,7 @@
 // hire with nothing recorded against them are money leaving for nothing, and
 // they are invisible in every system that starts from the hire bill.
 import { madeOf } from './certainty'
+import { todayISO } from './today'
 
 
 export const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
@@ -34,7 +35,6 @@ const newId = () =>
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
 
-const today = () => new Date().toISOString().slice(0, 10)
 const DAY = 86400000
 
 // The machines an Indian site actually has, with the basis each is normally
@@ -129,7 +129,7 @@ export function makePlantLog({
     plant_id: plantId,
     entity_id: entityId,
     project_id: projectId || null,
-    date: date || today(),
+    date: date || todayISO(),
     working_hours: Math.max(0, round2(workingHours)),
     // No work for it: the drawings were late, the slab was not ready.
     idle_hours: Math.max(0, round2(idleHours)),

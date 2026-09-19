@@ -19,6 +19,7 @@ import { demandLetter } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Badge, EmptyState, cx, attempt } from './ui'
+import { todayISO } from '../lib/today'
 
 // What the company is building to sell, and what the buyers owe for it.
 //
@@ -33,7 +34,6 @@ const VIEWS = [
 ]
 
 const num = (v) => Number(v) || 0
-const today = () => new Date().toISOString().slice(0, 10)
 
 const STATUS_COLOURS = {
   available: '#059669', blocked: '#d97706', held: '#7c3aed',
@@ -289,7 +289,7 @@ function Collections({ data, eid, actor, canWrite, bump, toast, company }) {
   const [site, setSite] = useState(data.projects[0]?.id || '')
   const [planning, setPlanning] = useState(null)
   const [stage, setStage] = useState({ label: '', percent: '', amount: '', workStage: '', triggerAt: '100', dueOn: '' })
-  const [money, setMoney] = useState({ unitId: '', amount: '', date: today(), mode: 'bank', reference: '' })
+  const [money, setMoney] = useState({ unitId: '', amount: '', date: todayISO(), mode: 'bank', reference: '' })
 
   const stages = useMemo(() => buildFor(data, eid, site), [data, eid, site])
   const report = useMemo(

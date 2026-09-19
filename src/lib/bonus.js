@@ -27,6 +27,7 @@
 // months and wrong quietly. Unset, ₹7,000 applies and the app says so.
 
 import { round2, wagesOf } from './payroll'
+import { todayISO } from './today'
 
 // Paid in whole rupees, and totalled over what each person gets rather than
 // rounded at the end, so the register adds up to the cheque.
@@ -99,7 +100,7 @@ export function bonusFor(employee, {
 
 // Whether the Act applies, and the same voluntary case gratuity has: under
 // twenty a company may pay a bonus anyway, and on a site most do.
-export function bonusStatus({ headcount = 0, config = {}, born = '', asOf = new Date().toISOString() } = {}) {
+export function bonusStatus({ headcount = 0, config = {}, born = '', asOf = todayISO() } = {}) {
   const threshold = Number(config.threshold ?? THRESHOLD)
   const over = (Number(headcount) || 0) >= threshold
   const voluntary = config.voluntary === true
@@ -144,7 +145,7 @@ function ageInYears(born, asOf) {
   return Math.max(0, years)
 }
 
-export function bonusYear(fyStartMonth = 4, asOf = new Date().toISOString(), back = 0) {
+export function bonusYear(fyStartMonth = 4, asOf = todayISO(), back = 0) {
   const d = new Date(`${String(asOf).slice(0, 10)}T00:00:00Z`)
   const m = d.getUTCMonth() + 1
   const start = (m >= fyStartMonth ? d.getUTCFullYear() : d.getUTCFullYear() - 1) - (Number(back) || 0)
@@ -187,7 +188,7 @@ export function monthsInYear(joinedOn, { from, to }) {
 
 // The register a company actually files, and the total it has to find.
 export function bonusRegister(employees = [], {
-  fyStartMonth = 4, asOf = new Date().toISOString(), rate = null, minimumWage = 0, config = {}, back = 1, born = '',
+  fyStartMonth = 4, asOf = todayISO(), rate = null, minimumWage = 0, config = {}, back = 1, born = '',
 } = {}) {
   const active = employees.filter((e) => e.active !== false)
   const status = bonusStatus({ headcount: active.length, config, born, asOf })

@@ -18,13 +18,12 @@
 // nobody ran the job that sets it.
 
 import { round2, UNITS } from './inventory'
+import { todayISO } from './today'
 
 const newId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 // Where a quotation stands. `expired` is absent on purpose — it is derived.
 export const QUOTE_STATUS = {
@@ -79,7 +78,7 @@ export function makeQuote(input = {}) {
     entity_id: entityId,
     vendor: String(vendor || '').trim().slice(0, 120) || 'Unnamed vendor',
     contact: String(contact).trim().slice(0, 80),
-    date: date || today(),
+    date: date || todayISO(),
     // A quote with no validity never expires, which is how vendors write them
     // and is not this module's problem to invent.
     valid_until: validUntil || null,
@@ -122,7 +121,7 @@ export function quoteTotals(quote) {
 export function quoteState(quote, asOf = null) {
   const status = QUOTE_STATUS[quote?.status] ? quote.status : 'draft'
   if (status === 'accepted' || status === 'declined') return status
-  const day = asOf || today()
+  const day = asOf || todayISO()
   if (quote?.valid_until && quote.valid_until < day) return 'expired'
   return status
 }
@@ -269,7 +268,7 @@ export function receiptsFromQuote(quote, { entityId = null, date = null } = {}) 
       unitCost: l.rate,
       vendor: quote.vendor,
       projectId: quote.project_id || null,
-      date: date || today(),
+      date: date || todayISO(),
       ref: quote.ref || '',
       note: `From quote ${quote.ref || quote.vendor}`.slice(0, 200),
     }))
