@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mail, Loader2, Sparkles, Plus, X, Building2, Inbox, Upload, Calculator, CheckCircle2, AlertCircle, DownloadCloud, FileUp, FileSpreadsheet } from 'lucide-react'
+import { Mail, Sparkles, Plus, X, Building2, Inbox, Upload, Calculator, CheckCircle2, AlertCircle, DownloadCloud, FileUp, FileSpreadsheet } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useEntity } from '../context/EntityContext'
 import { assetOptional } from '../lib/place'

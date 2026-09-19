@@ -2,15 +2,23 @@ import { useMemo, useState } from 'react'
 import { Building2, IndianRupee, Plus, AlertTriangle, Wallet, Printer } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
-  makeUnit, makePlanStage, makeReceipt, unitLedger, salesReport, salesAgainstBuild,
-  UNIT_KINDS, UNIT_KIND_IDS, UNIT_STATUS, UNIT_STATUS_IDS, AREA_BASIS, AREA_BASIS_IDS,
-  isSold, isSellable,
+  makeUnit,
+  makePlanStage,
+  makeReceipt,
+  salesReport,
+  salesAgainstBuild,
+  UNIT_KINDS,
+  UNIT_KIND_IDS,
+  UNIT_STATUS,
+  UNIT_STATUS_IDS,
+  AREA_BASIS,
+  AREA_BASIS_IDS,
 } from '../lib/sales'
 import { siteProgress, WORK_STAGES, WORK_STAGE_IDS } from '../lib/progress'
 import { demandLetter } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Badge, EmptyState, cx , attempt } from './ui'
+import { Card, Button, Field, Input, Select, Badge, EmptyState, cx, attempt } from './ui'
 
 // What the company is building to sell, and what the buyers owe for it.
 //

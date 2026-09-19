@@ -1,21 +1,54 @@
 import { useMemo, useState } from 'react'
 import {
-  Boxes, IndianRupee, FileText, HardHat, Plus, AlertTriangle, Printer,
-  TrendingDown, TrendingUp, Undo2, Trash2, ClipboardCheck,
+  Boxes,
+  IndianRupee,
+  FileText,
+  HardHat,
+  Plus,
+  AlertTriangle,
+  Printer,
+  TrendingDown,
+  TrendingUp,
+  Undo2,
+  Trash2,
+  ClipboardCheck,
 } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
-  makeItem, makeMovement, stockReport, reorderList, usageBySite, movementLog,
-  UNITS, MOVEMENT_KINDS, MOVEMENT_KIND_IDS, CENTRAL,
-  canAmendItem, canRemoveItem, stockAfter,
+  makeItem,
+  makeMovement,
+  stockReport,
+  reorderList,
+  usageBySite,
+  movementLog,
+  UNITS,
+  MOVEMENT_KINDS,
+  MOVEMENT_KIND_IDS,
+  CENTRAL,
+  canAmendItem,
+  canRemoveItem,
+  stockAfter,
 } from '../lib/inventory'
 import {
-  MATERIAL_CATEGORIES, MATERIAL_CATEGORY_IDS, CATALOGUE,
-  catalogueFor, fromCatalogue, unitFor, byCategory, categoryOf,
+  MATERIAL_CATEGORIES,
+  MATERIAL_CATEGORY_IDS,
+  CATALOGUE,
+  catalogueFor,
+  fromCatalogue,
+  unitFor,
+  byCategory,
+  categoryOf,
 } from '../lib/materials'
 import {
-  makeQuote, makeQuoteLine, quoteTotals, quoteState, quoteBook, compareQuotes,
-  priceList, receiptsFromQuote, GST_RATES, DEFAULT_GST, QUOTE_STATE_LABELS,
+  makeQuote,
+  makeQuoteLine,
+  quoteBook,
+  compareQuotes,
+  priceList,
+  receiptsFromQuote,
+  GST_RATES,
+  DEFAULT_GST,
+  QUOTE_STATE_LABELS,
 } from '../lib/quotes'
 
 import { stockStatement, materialIndent } from '../lib/siteDocs'

@@ -132,6 +132,158 @@ ok('and nothing else still imports a ready-made client',
   files.filter((f) => /import \{ supabase \}/.test(sourceOf(f))).length === 0,
   files.filter((f) => /import \{ supabase \}/.test(sourceOf(f))).join(', '))
 
+console.log('\n── NOTHING IMPORTED AND THEN NOT USED ──')
+// An import nobody uses is not tidiness. It is weight: the module it names goes
+// into the chunk whether or not a line of it runs, which is how a page that had
+// its payroll screen moved out of it went on shipping four statutory libraries
+// to anybody opening a stock table.
+//
+// It is also the commonest leftover of a refactor, and the thing a linter would
+// catch — except this project has four devDependencies and a test suite that
+// prints PASS and FAIL, and adding a linter to guard one rule would be a large
+// dependency doing less than the twenty lines below.
+// `.` before a name means a property access — `a.map` is not the import `map`.
+// But `...` is the spread operator, and `...balanceOf(x)` is a *use*. The first
+// version of this did not tell the two apart and reported a function called on
+// the very next line as dead; deleting what it flagged would have broken the
+// advances screen. Spreads are blanked before scanning, which is safe because
+// `...` is never part of a name.
+const despread = (src) => src.replace(/\.\.\./g, '   ')
+const NAMES = /(?:^|[^A-Za-z0-9_$.])([A-Za-z_$][A-Za-z0-9_$]*)/g
+const importsOf = (src) => {
+  const found = []
+  const re = /^import\s+(?:([A-Za-z_$][\w$]*)\s*,?\s*)?(?:\{([\s\S]*?)\})?\s*(?:\*\s+as\s+([A-Za-z_$][\w$]*)\s*)?from\s*['"][^'"]+['"]/gm
+  let m
+  while ((m = re.exec(src))) {
+    const names = []
+    if (m[1]) names.push(m[1])
+    if (m[3]) names.push(m[3])
+    for (const part of (m[2] || '').split(',')) {
+      // `loadPdf as load` is used under `load`, not under `loadPdf`.
+      const n = part.trim().split(/\s+as\s+/).pop().trim()
+      if (n) names.push(n)
+    }
+    for (const name of names) found.push({ name, statement: m[0] })
+  }
+  return found
+}
+// Used anywhere other than the import that declared it. The statement is cut
+// out rather than the whole line, because one import can span several lines and
+// one line can hold several imports.
+const usedOutside = (src, name, statement) => {
+  const rest = despread(src.replace(statement, ''))
+  let m
+  const re = new RegExp(NAMES.source, 'g')
+  while ((m = re.exec(rest))) if (m[1] === name) return true
+  return false
+}
+const deadImports = []
+for (const f of files) {
+  const src = sourceOf(f)
+  for (const { name, statement } of importsOf(src)) {
+    if (!usedOutside(src, name, statement)) deadImports.push(`${f.replace(/\\/g, '/')}: ${name}`)
+  }
+}
+ok('nothing is imported and then never used', deadImports.length === 0, deadImports.slice(0, 8).join(' | '))
+// The detector's own controls, because a detector that finds nothing looks
+// exactly like a codebase with nothing to find — and one that finds too much is
+// worse, since acting on it deletes working code.
+const probe = (src) => importsOf(src).filter(({ name, statement }) => !usedOutside(src, name, statement)).map((x) => x.name)
+eq('a named import that is used is not flagged',
+  probe("import { a, b } from 'x'\nconsole.log(a)\n").join(','), 'b')
+eq('nor a default one', probe("import def from 'y'\ndef()\n").length, 0)
+eq('nor a namespace one', probe("import * as store from 'y'\nstore.list()\n").length, 0)
+// The one that would have deleted working code: `...balanceOf(x)` is a use, and
+// the dots of a spread are not a property access.
+eq('a spread call counts as a use', probe("import { balanceOf } from 'x'\nconst a = { ...balanceOf(1) }\n").length, 0)
+// While a genuine property access does not rescue an unused import.
+eq('but a property of the same name does not', probe("import { map } from 'x'\nconst y = [].map(Number)\n").join(','), 'map')
+// Renamed imports are judged by the name actually in use.
+eq('a renamed import is judged by its new name', probe("import { loadPdf as load } from 'x'\nload()\n").length, 0)
+eq('and flagged if the new name is unused', probe("import { loadPdf as load } from 'x'\n").join(','), 'load')
+// JSX counts as use.
+eq('one used only in JSX counts', probe("import Stat from './S'\nexport const A = () => <Stat />\n").length, 0)
+// Two imports on one line, one used.
+eq('several names on one line are judged separately',
+  probe("import { a, b, c } from 'x'\na(); c()\n").join(','), 'b')
+
+console.log('\n── NOR USED WITHOUT BEING IMPORTED ──')
+// The mirror of the check above, and the dangerous direction of the two. An
+// unused import is weight; a *missing* one is a ReferenceError at the moment
+// somebody presses the button, and the build says nothing because a bare name
+// is perfectly good JavaScript until it runs.
+//
+// Splitting the payroll screen out of `Operations.jsx` left it calling
+// `balanceOf` and `canAdjust` without importing either. It built cleanly, and
+// broke the moment anybody closed an advance out of a payroll run.
+//
+// Only names the library modules export are judged: this is not a scope
+// analyser, it is a check that what a page calls, it has asked for.
+const libExports = new Map()
+for (const f of files.filter((x) => x.replace(/\\/g, '/').startsWith('src/lib'))) {
+  const src = sourceOf(f)
+  for (const m of src.matchAll(/^export (?:async )?(?:function|const|class) ([A-Za-z_$][\w$]*)/gm)) libExports.set(m[1], f)
+  for (const m of src.matchAll(/^export \{([^}]*)\}/gm))
+    for (const n of m[1].split(',')) {
+      const t = n.trim().split(/\s+as\s+/).pop().trim()
+      if (t) libExports.set(t, f)
+    }
+}
+// Anything bound locally, including out of a destructuring — `const { addExpense
+// } = useData()` is a declaration, and reading it as a missing import would
+// bury the real finding under a page of noise.
+const boundIn = (src) => {
+  const names = new Set()
+  for (const m of src.matchAll(/(?:^|[^A-Za-z0-9_$.])(?:const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/g)) names.add(m[1])
+  // `const [plan, setPlan] = useState(...)` binds both. Missing this reported
+  // every `setX` from a `useState` as an unimported library call, because the
+  // storage layer happens to export a `setPlan` of its own.
+  for (const m of src.matchAll(/(?:const|let|var)\s*\[([^\]]*)\]\s*=/g))
+    for (const part of m[1].split(',')) {
+      const t = part.trim().replace(/^\.\.\./, '').split('=')[0].trim()
+      if (/^[A-Za-z_$][\w$]*$/.test(t)) names.add(t)
+    }
+  for (const m of src.matchAll(/(?:const|let|var)\s*\{([^}]*)\}\s*=/g))
+    for (const part of m[1].split(',')) {
+      const t = part.trim().split(':').pop().trim().replace(/^\.\.\./, '').split('=')[0].trim()
+      if (/^[A-Za-z_$][\w$]*$/.test(t)) names.add(t)
+    }
+  // Parameters, including destructured props.
+  for (const m of src.matchAll(/(?:function\s+[A-Za-z_$][\w$]*\s*|=>\s*|\(\s*)\(?\{([^}]*)\}\)?\s*(?:=>|\{)/g))
+    for (const part of m[1].split(',')) {
+      const t = part.trim().split(':').pop().trim().replace(/^\.\.\./, '').split('=')[0].trim()
+      if (/^[A-Za-z_$][\w$]*$/.test(t)) names.add(t)
+    }
+  return names
+}
+const missing = []
+for (const f of files) {
+  const path = f.replace(/\\/g, '/')
+  if (path.startsWith('src/lib')) continue
+  const src = sourceOf(f)
+  const have = new Set([...importsOf(src).map((i) => i.name), ...boundIn(src)])
+  const seen = new Set()
+  for (const m of despread(src).matchAll(/(?:^|[^A-Za-z0-9_$.])([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/g)) {
+    const n = m[1]
+    if (libExports.has(n) && !have.has(n) && !seen.has(n)) { seen.add(n); missing.push(`${path}: ${n}`) }
+  }
+}
+ok('nothing calls a library function it never imported', missing.length === 0, missing.slice(0, 8).join(' | '))
+// Controls, in both directions.
+const okFile = "import { balanceOf } from '../../lib/advances'\nbalanceOf(1)\n"
+eq('an imported call is fine', importsOf(okFile).length, 1)
+const destructured = "const { addExpense } = useData()\naddExpense()\n"
+ok('a name destructured out of a hook is not a missing import', boundIn(destructured).has('addExpense'), '')
+const asProp = "export default function A({ budgetFor }) { return budgetFor(1) }\n"
+ok('nor one arriving as a prop', boundIn(asProp).has('budgetFor'), '')
+const renamedOut = "const { a: b } = x\n"
+ok('nor one renamed on the way out of a destructuring', boundIn(renamedOut).has('b'), '')
+// The one that produced the only two false positives: a setter out of
+// `useState` shares its name with an export of the storage layer.
+const stateful = "const [plan, setPlan] = useState(null)\nsetPlan(1)\n"
+ok('nor a setter out of useState', boundIn(stateful).has('setPlan'), '')
+ok('and the value beside it', boundIn(stateful).has('plan'), '')
+
 console.log('\n── ONE COPY OF THE INTEROP RULE ──')
 // CommonJS through a dynamic import comes back wrapped, and how many times
 // depends on the package and the bundler. A static import gets one layer

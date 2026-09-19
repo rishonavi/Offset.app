@@ -23,7 +23,7 @@
 // its contractors' bills into Expenses by hand will see the same money twice —
 // there, here, and in every job cost — and the answer is to stop keying it
 // twice rather than to guess at which copy to drop.
-import { subcontractReport, clientContracts, retentionBook, round2 } from './subcontract'
+import { subcontractReport, retentionBook, round2 } from './subcontract'
 import { quoteTotals, quoteState } from './quotes'
 import { salesReport } from './sales'
 import { siteProgress } from './progress'

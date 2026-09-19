@@ -1427,3 +1427,40 @@ They still say so, because a box with nothing in it reads as a page that failed
 to load. They say it in one line each, and each line says something specific:
 "No costs booked to an asset yet" rather than six copies of "No data for this
 view".
+
+
+## Three screens in one file
+
+`Operations.jsx` had grown to 1,484 lines holding the page shell, the advances
+screen and a payroll screen that was 893 of them on its own. It is 209 now, with
+`AdvancesTab.jsx` and `PayrollTab.jsx` beside it — and because each is its own
+chunk, somebody opening a stock table no longer downloads the payroll screen and
+the four statutory libraries behind it. `/operations` went from 788 kB to 711.
+
+Two ratchets came out of it, both in `bundling.test.mjs`, because the split
+produced one of each fault:
+
+**Nothing imported and then not used.** Twenty-one dead imports were left across
+eighteen files, most of them older than this change. They are not untidiness:
+the module named goes into the chunk whether or not a line of it runs, which is
+how a page with its payroll screen removed went on shipping four statutory
+libraries.
+
+**Nor used without being imported**, which is the dangerous direction. The
+extracted payroll screen called `balanceOf` and `canAdjust` without importing
+either. It built cleanly — a bare name is perfectly good JavaScript until it
+runs — and broke the moment anybody closed an advance out of a payroll run.
+
+ESLint would catch both, and is not here: this project has four devDependencies
+and a test suite that prints PASS and FAIL. Adding a linter to guard two rules
+would be a large dependency doing less than forty lines in the suite that
+already runs.
+
+Both detectors needed their own controls, and both were wrong first time:
+
+- `...balanceOf(x)` is a *use*, but the dots of a spread look like a property
+  access. The first version reported a function called on the very next line as
+  dead — acting on it would have deleted working code.
+- `const [plan, setPlan] = useState(null)` binds `setPlan`, and the storage
+  layer exports a `setPlan` of its own. Missing array destructuring reported
+  every `useState` setter as an unimported library call.

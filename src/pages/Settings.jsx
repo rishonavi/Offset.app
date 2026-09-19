@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Sun, Moon, Languages, Bug, Copy, Mail, Sparkles, Building2, PiggyBank } from 'lucide-react'
+import { Crown, LogOut, Download, Trash2, Check, CreditCard, ShieldCheck, UserPlus, Languages, Bug, Copy, Mail, Sparkles, Building2, PiggyBank } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAppearance } from '../context/ThemeContext'
 import { usePlan } from '../context/PlanContext'

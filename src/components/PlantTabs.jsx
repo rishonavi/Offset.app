@@ -2,11 +2,20 @@ import { useMemo, useState } from 'react'
 import { Truck, ClipboardList, Plus, AlertTriangle, Gauge } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
-  makePlant, makePlantLog, plantReport, plantPeriod, hireVsOwn, dailyOwnershipCost,
-  PLANT_KINDS, PLANT_KIND_IDS, HIRE_BASIS, HIRE_BASIS_IDS, OWNERSHIP, OWNERSHIP_IDS,
+  makePlant,
+  makePlantLog,
+  plantReport,
+  hireVsOwn,
+  dailyOwnershipCost,
+  PLANT_KINDS,
+  PLANT_KIND_IDS,
+  HIRE_BASIS,
+  HIRE_BASIS_IDS,
+  OWNERSHIP,
+  OWNERSHIP_IDS,
 } from '../lib/plant'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Badge, EmptyState, cx , attempt } from './ui'
+import { Card, Button, Field, Input, Select, Badge, EmptyState, cx, attempt } from './ui'
 
 // Plant and equipment.
 //

@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTableImport from 'jspdf-autotable'
-import { format, parseISO, isValid } from 'date-fns'
+import { format } from 'date-fns'
 
 // jspdf-autotable ships as CJS; under Vite's interop the default import can be
 // the module wrapper rather than the function itself, so unwrap defensively.

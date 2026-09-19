@@ -1,24 +1,44 @@
 import { useMemo, useState } from 'react'
 import {
-  HardHat, IndianRupee, ReceiptText, Ruler, Plus, AlertTriangle, CalendarClock, Pencil, Check, X, Printer,
+  HardHat,
+  IndianRupee,
+  ReceiptText,
+  Ruler,
+  Plus,
+  AlertTriangle,
+  CalendarClock,
+  Pencil,
+  Check,
+  X,
+  Printer,
 } from 'lucide-react'
 import * as store from '../lib/storage/corporate'
 import {
-  makeProject, projectSummary, projectReport, unattributed, daysLate,
-  PROJECT_STATUS, PROJECT_STATUS_IDS, isOpen,
+  makeProject,
+  projectSummary,
+  projectReport,
+  unattributed,
+  daysLate,
+  PROJECT_STATUS,
+  PROJECT_STATUS_IDS,
+  isOpen,
 } from '../lib/projects'
 import { usageBySite } from '../lib/inventory'
 import { labourCostsBySite } from '../lib/labour'
 import { subcontractCostsBySite, measurementCheck } from '../lib/subcontract'
 import { plantCostsBySite } from '../lib/plant'
 import {
-  makeWorkItem, makeMeasurement, siteProgress, progressAgainstSpend,
-  WORK_STAGES, WORK_STAGE_IDS, stageOf,
+  makeWorkItem,
+  makeMeasurement,
+  siteProgress,
+  progressAgainstSpend,
+  WORK_STAGES,
+  WORK_STAGE_IDS,
 } from '../lib/progress'
 import { measurementSheet } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
-import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx , attempt } from './ui'
+import { Card, Button, Field, Input, Select, Textarea, Badge, EmptyState, cx, attempt } from './ui'
 
 // The jobs, and whether anyone can tell they are losing money.
 //

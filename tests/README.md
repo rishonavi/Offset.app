@@ -25,7 +25,7 @@ for Vite's resolver.
 | `bonus.test.mjs` | 105 | two ceilings doing different jobs, and what running them together costs |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
 | `budget.test.mjs` | 54 | planned against spent over the same categories, and hitting the number exactly |
-| `bundling.test.mjs` | 37 | the heavy libraries, and which modules are allowed to reach them |
+| `bundling.test.mjs` | 54 | the heavy libraries and who may reach them, and every import used exactly once |
 | `certainty.test.mjs` | 34 | how a figure was arrived at, and why a total is only as certain as its least certain part |
 | `corp.test.mjs` | 149 | entities, control, ledgers, audit events, and what needs a second pair of eyes |
 | `daysheet.test.mjs` | 51 | a day on a site entered once, and what saving it twice must not do |
@@ -77,7 +77,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **4,302** | |
+| | **4,319** | |
 
 ## Browser — `tests/browser/`
 

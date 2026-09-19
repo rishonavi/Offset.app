@@ -5,16 +5,33 @@ import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import { formatCurrency, todayISO } from '../lib/format'
 import {
-  buildInvoice, invoiceTokens, nextNumber, linesFromIncome, round2, isValidGSTIN, taxKind,
+  buildInvoice,
+  invoiceTokens,
+  nextNumber,
+  linesFromIncome,
+  isValidGSTIN,
+  taxKind,
 } from '../lib/invoice'
 import {
-  listTemplates, saveTemplate, deleteTemplate, defaultTemplateId, setDefaultTemplate,
-  parseTemplateFile, templateToFile, analyseTemplate, renderDocument,
-  DEFAULT_TEMPLATE_HTML, DEFAULT_TEMPLATE_CSS, TEMPLATE_EXTENSIONS, TOKENS, LINE_TOKENS, CONDITIONS,
+  listTemplates,
+  saveTemplate,
+  deleteTemplate,
+  defaultTemplateId,
+  setDefaultTemplate,
+  parseTemplateFile,
+  templateToFile,
+  analyseTemplate,
+  renderDocument,
+  DEFAULT_TEMPLATE_HTML,
+  DEFAULT_TEMPLATE_CSS,
+  TEMPLATE_EXTENSIONS,
+  TOKENS,
+  LINE_TOKENS,
+  CONDITIONS,
 } from '../lib/invoiceTemplate'
 import { isOfficeTemplate, officeTemplateToHtml, OFFICE_TEMPLATE_EXTENSIONS } from '../lib/officeTemplate'
 import { invoiceToPDF, printInvoice, downloadHtml } from '../lib/invoicePdf'
-import { Card, Button, CardTitle, Field, Input, Select, Textarea, EmptyState } from '../components/ui'
+import { Card, Button, CardTitle, Field, Input, Select, Textarea } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 
 // Kept per set of books, not per browser.
