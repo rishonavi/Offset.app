@@ -46,7 +46,7 @@ import Attention from '../components/Attention'
 import Commitments from '../components/Commitments'
 import { expiringDocuments } from '../lib/documents'
 import { spendingAnomalies } from '../lib/anomalies'
-import { Card, Button, EmptyState, Skeleton, ChartKey } from '../components/ui'
+import { Card, Button, EmptyState, Skeleton, ChartKey, cx } from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 
 const RANGES = [
@@ -252,6 +252,20 @@ export default function Dashboard() {
     () => monthlyIncomeExpense(propertyScoped, incomePropertyScoped, 12),
     [propertyScoped, incomePropertyScoped],
   )
+
+  // Five charts, each collapsed to a line of "nothing yet", is five rows of an
+  // app saying it has nothing to say. Somebody who has added an asset but not
+  // yet logged a cost already has the checklist above telling them the next
+  // step; the charts underneath only repeat it, at length. So while there is
+  // nothing at all to plot, they are not drawn. The moment one figure exists
+  // they all come back, including the empty ones, because then the collapsed
+  // line is doing its real job — saying which view is waiting on what.
+  //
+  // The whole ledger, not the filtered one. Narrowing to a single asset that
+  // has cost nothing is a question — "what has this one cost me?" — and the
+  // answer is "nothing yet", said by the cards. Making them vanish instead
+  // looks like the filter broke.
+  const nothingToPlot = expenses.length === 0 && income.length === 0
 
   // Portfolio performance (cap rate, NOI, yield, occupancy…) over the assets in
   // the current property filter. Computed from the full income/expense history.
@@ -655,62 +669,66 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Trend */}
-      <ChartCard title="Spending over the last 12 months"
-          emptyHint="No costs logged in the last twelve months" empty={monthly.every((m) => m.total === 0)}>
-        <Drawing>
-          <SpendTrend data={monthly} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
-        </Drawing>
-      </ChartCard>
+      {!nothingToPlot && (
+        <>
+          {/* Trend */}
+          <ChartCard title="Spending over the last 12 months"
+              emptyHint="No costs logged in the last twelve months" empty={monthly.every((m) => m.total === 0)}>
+            <Drawing>
+              <SpendTrend data={monthly} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
+            </Drawing>
+          </ChartCard>
 
-      {/* Income vs expenses */}
-      <ChartCard
-        title="Income vs expenses (last 12 months)"
-          emptyHint="No income or costs in the last twelve months"
-        empty={cashflow.every((m) => m.income === 0 && m.expense === 0)}
-      >
-        <Drawing>
-          <CashflowBars data={cashflow} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
-        </Drawing>
-      </ChartCard>
+          {/* Income vs expenses */}
+          <ChartCard
+            title="Income vs expenses (last 12 months)"
+              emptyHint="No income or costs in the last twelve months"
+            empty={cashflow.every((m) => m.income === 0 && m.expense === 0)}
+          >
+            <Drawing>
+              <CashflowBars data={cashflow} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
+            </Drawing>
+          </ChartCard>
 
-      {/* Category + property charts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard
-          title="Spending by category"
-          emptyHint="No costs to break down yet"
-          empty={byCategory.length === 0}
-          chartKey={
-            <ChartKey
-              items={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
-              format={formatCurrency}
-            />
-          }
-        >
-          <Drawing>
-            <CategoryRing
-              data={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
-              format={formatCurrency}
-              tooltipStyle={tooltipStyle}
-            />
-          </Drawing>
-        </ChartCard>
+          {/* Category + property charts */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <ChartCard
+              title="Spending by category"
+              emptyHint="No costs to break down yet"
+              empty={byCategory.length === 0}
+              chartKey={
+                <ChartKey
+                  items={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
+                  format={formatCurrency}
+                />
+              }
+            >
+              <Drawing>
+                <CategoryRing
+                  data={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
+                  format={formatCurrency}
+                  tooltipStyle={tooltipStyle}
+                />
+              </Drawing>
+            </ChartCard>
 
-        <ChartCard title="Spending by property"
-          emptyHint="No costs booked to an asset yet" empty={byProperty.length === 0}>
-          <Drawing>
-            <PropertyBars
-              data={byProperty.map((d, i) => ({ ...d, color: CHART_PALETTE[i % CHART_PALETTE.length] }))}
-              format={formatCurrency}
-              formatCompact={formatCompact}
-              tooltipStyle={tooltipStyle}
-            />
-          </Drawing>
-        </ChartCard>
-      </div>
+            <ChartCard title="Spending by property"
+              emptyHint="No costs booked to an asset yet" empty={byProperty.length === 0}>
+              <Drawing>
+                <PropertyBars
+                  data={byProperty.map((d, i) => ({ ...d, color: CHART_PALETTE[i % CHART_PALETTE.length] }))}
+                  format={formatCurrency}
+                  formatCompact={formatCompact}
+                  tooltipStyle={tooltipStyle}
+                />
+              </Drawing>
+            </ChartCard>
+          </div>
+        </>
+      )}
 
       {/* Recent activity + breakdown */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className={cx('grid grid-cols-1 gap-4', !nothingToPlot && 'lg:grid-cols-2')}>
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink-3">Recent activity</h2>
@@ -765,9 +783,11 @@ export default function Dashboard() {
               })}
             </div>
           </Card>
-        ) : (
+        ) : nothingToPlot ? null : (
           // Titled, so it is recognisable as the card it will become rather
-          // than an unlabelled grey panel with an apology in it.
+          // than an unlabelled grey panel with an apology in it. Suppressed
+          // entirely on a ledger with nothing in it at all, where it would be
+          // the sixth card in a row apologising for the same absence.
           <Card className="p-5 py-4">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <h2 className="text-sm font-semibold text-ink-3">Where it goes</h2>
