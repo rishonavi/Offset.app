@@ -19,6 +19,15 @@ await p.route('**/fonts.g**/**', (r) => r.abort())
 p.on('dialog', (d) => d.accept())
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
+// Every Operations tab and every Materials view is its own chunk, so a click
+// is a network fetch. The fixed wait that used to follow one was long enough
+// until it was not: under eight browsers at once the chunk took longer than
+// the sleep and the assertion read the loading card. Wait for the thing itself
+// — the Suspense fallback's live region — not for a number of milliseconds.
+const loaded = async (page) => {
+  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await page.waitForTimeout(150)
+}
 
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
 const live = async (k) => (await ls(k)).filter((r) => !r.deleted_at)
@@ -27,7 +36,7 @@ const ENT = 'ent-pay-1'
 // Payroll is the last of the seven tabs.
 const payrollTab = async () => {
   await p.locator('#main-content button[aria-pressed]').nth(6).click()
-  await p.waitForTimeout(600)
+  await loaded(p)
 }
 const btn = (name) => p.locator('#main-content button', { hasText: name }).first()
 // The stat labels are CSS-uppercased and sit a blank line above their figure,

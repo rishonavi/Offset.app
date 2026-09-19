@@ -104,9 +104,14 @@ export function Badge({ color = '#64748b', children }) {
   )
 }
 
-export function Spinner({ label = 'Loading…' }) {
+// `role="status"` and a polite live region: without them a screen reader is
+// told nothing while a page or a tab is being fetched — the old content goes,
+// silence follows, and the new content arrives unannounced. It is also the
+// only stable handle anything has on "still loading", which is why the tests
+// wait on this rather than on a fixed number of milliseconds.
+export function Spinner({ label = 'Loading…', className = 'py-16' }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-16 text-ink-6">
+    <div role="status" aria-live="polite" className={cx('flex items-center justify-center gap-2 text-ink-6', className)}>
       <Loader2 className="animate-spin" size={20} />
       <span className="text-sm">{label}</span>
     </div>

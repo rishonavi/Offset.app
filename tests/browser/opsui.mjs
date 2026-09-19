@@ -24,7 +24,19 @@ const main = () => p.locator('#main-content').innerText()
 // The tab buttons carry an icon, so their text has leading whitespace and an
 // anchored match never fires. They are the only aria-pressed controls here.
 const TABS = ['Projects', 'Materials', 'Labour', 'Plant', 'Sales', 'Advances', 'Payroll']
-const tab = async (name) => { await p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)).click(); await p.waitForTimeout(350) }
+// Every Operations tab is its own chunk, so a click is a network fetch. The
+// fixed wait that used to follow one was long enough until it was not: under
+// eight browsers at once the Materials chunk took longer than 350ms and the
+// assertion read the loading card. Wait for the thing itself — the Suspense
+// fallback's live region — rather than for a number of milliseconds.
+const loaded = async (page) => {
+  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await page.waitForTimeout(150)
+}
+const tab = async (name) => {
+  await p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)).click()
+  await loaded(p)
+}
 
 // ── 1. Dormant without a company ──
 console.log('\n── NO COMPANY, NO OPERATIONS ──')

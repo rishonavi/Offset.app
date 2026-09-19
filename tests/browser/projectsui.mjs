@@ -18,12 +18,21 @@ await p.route('**/fonts.g**/**', (r) => r.abort())
 p.on('dialog', (d) => d.accept())
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
+// Every Operations tab and every Materials view is its own chunk, so a click
+// is a network fetch. The fixed wait that used to follow one was long enough
+// until it was not: under eight browsers at once the chunk took longer than
+// the sleep and the assertion read the loading card. Wait for the thing itself
+// — the Suspense fallback's live region — not for a number of milliseconds.
+const loaded = async (page) => {
+  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await page.waitForTimeout(150)
+}
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
 const main = () => p.locator('#main-content').innerText()
 const OUTER = ['Projects', 'Materials', 'Labour', 'Plant', 'Sales', 'Advances', 'Payroll']
 const outerTab = async (name) => {
   await p.locator('#main-content button[aria-pressed]').nth(OUTER.indexOf(name)).click()
-  await p.waitForTimeout(450)
+  await loaded(p)
 }
 // The summary cards are headed "Over estimate", so a page-wide search for that
 // phrase can never come back false. Every negative check reads the site's own
@@ -31,7 +40,7 @@ const outerTab = async (name) => {
 const siteRow = (name) => p.locator('#main-content li', { hasText: name }).first().innerText()
 const view = async (label) => {
   await p.locator('#main-content [role="tab"]', { hasText: label }).first().click()
-  await p.waitForTimeout(450)
+  await loaded(p)
 }
 
 // ── One company, one asset to hang entries off, nothing else ──

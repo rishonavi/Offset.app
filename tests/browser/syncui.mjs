@@ -20,6 +20,15 @@ await p.route('**/fonts.g**/**', (r) => r.abort())
 p.on('dialog', (d) => d.accept())
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
+// Every Operations tab and every Materials view is its own chunk, so a click
+// is a network fetch. The fixed wait that used to follow one was long enough
+// until it was not: under eight browsers at once the chunk took longer than
+// the sleep and the assertion read the loading card. Wait for the thing itself
+// — the Suspense fallback's live region — not for a number of milliseconds.
+const loaded = async (page) => {
+  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await page.waitForTimeout(150)
+}
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
 const main = () => p.locator('#main-content').innerText()
 
@@ -57,7 +66,7 @@ console.log('\n── A WRITE CARRIES A VERSION ──')
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(700)
 await p.locator('#main-content button[aria-pressed]').nth(2).click()
-await p.waitForTimeout(500)
+await loaded(p)
 await p.locator('input[aria-label="Muster date"]').fill('2026-03-03')
 await p.locator('select[aria-label="Trade"]').selectOption('mason')
 await p.locator('input[aria-label="Headcount"]').fill('14')
@@ -76,9 +85,9 @@ console.log('\n── A DELETE LEAVES A MARK ──')
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(700)
 await p.locator('#main-content button[aria-pressed]').nth(1).click()
-await p.waitForTimeout(500)
+await loaded(p)
 await p.locator('#main-content [role="tab"]', { hasText: 'Quotations' }).first().click()
-await p.waitForTimeout(500)
+await loaded(p)
 await p.evaluate(() => {
   const now = new Date().toISOString()
   localStorage.setItem('pl_corp_quotes', JSON.stringify([{
@@ -90,9 +99,9 @@ await p.evaluate(() => {
 await p.reload({ waitUntil: 'networkidle' })
 await p.waitForTimeout(800)
 await p.locator('#main-content button[aria-pressed]').nth(1).click()
-await p.waitForTimeout(400)
+await loaded(p)
 await p.locator('#main-content [role="tab"]', { hasText: 'Quotations' }).first().click()
-await p.waitForTimeout(500)
+await loaded(p)
 await p.locator('#main-content button[aria-label^="Delete quotation"]').first().click()
 await p.waitForTimeout(700)
 const quotes = await ls('pl_corp_quotes')

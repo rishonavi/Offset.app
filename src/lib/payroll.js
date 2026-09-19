@@ -320,12 +320,16 @@ export function professionalTax(gross, month, config = null) {
 // of the state's year it is, and — in Maharashtra — whether the person is a
 // woman. Returns the whole answer rather than a number, because a zero here has
 // four meanings and a payslip has to be able to tell them apart.
-export function professionalTaxFor(employee, { period = '', gross = 0, config = DEFAULT_PAYROLL_CONFIG, entity = null } = {}) {
+// Not exported, and it takes no entity: the company's state has already been
+// resolved into `config.professionalTax.state` by `configForEntity`, which is
+// the only place that reads a GSTIN. A second entity argument here would be a
+// second answer to the same question, and the one nobody was filling in.
+function professionalTaxFor(employee, { period = '', gross = 0, config = DEFAULT_PAYROLL_CONFIG } = {}) {
   const own = config?.professionalTax || {}
   return ptaxFor({
     // The employee's own work state wins. Professional tax follows where the
     // work is done, so a Mumbai company's men on a Bengaluru site owe Karnataka.
-    state: workStateOf(employee, entity || { pt_state: own.state }),
+    state: workStateOf(employee, { pt_state: own.state }),
     monthlyGross: gross,
     period,
     female: employee?.female ?? null,

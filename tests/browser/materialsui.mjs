@@ -18,13 +18,22 @@ await p.route('**/fonts.g**/**', (r) => r.abort())
 p.on('dialog', (d) => d.accept())
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${e ? '  — ' + e : ''}`) }
+// Every Operations tab and every Materials view is its own chunk, so a click
+// is a network fetch. The fixed wait that used to follow one was long enough
+// until it was not: under eight browsers at once the chunk took longer than
+// the sleep and the assertion read the loading card. Wait for the thing itself
+// — the Suspense fallback's live region — not for a number of milliseconds.
+const loaded = async (page) => {
+  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await page.waitForTimeout(150)
+}
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
 const rows = (page, key) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '[]'), key)
 const main = () => p.locator('#main-content').innerText()
 // The sub-tabs are pills, not the aria-pressed row the outer tabs use.
 const view = async (label) => {
   await p.locator('#main-content [role="tab"]', { hasText: label }).first().click()
-  await p.waitForTimeout(400)
+  await loaded(p)
 }
 
 // ── Set-up: one company, nothing in it ──
@@ -51,7 +60,7 @@ await p.waitForTimeout(700)
 const OUTER = ['Projects', 'Materials', 'Labour', 'Plant', 'Sales', 'Advances', 'Payroll']
 const outerTab = async (name) => {
   await p.locator('#main-content button[aria-pressed]').nth(OUTER.indexOf(name)).click()
-  await p.waitForTimeout(450)
+  await loaded(p)
 }
 await outerTab('Materials')
 

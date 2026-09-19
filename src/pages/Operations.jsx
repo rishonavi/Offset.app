@@ -8,22 +8,28 @@ import * as store from '../lib/storage/corporate'
 
 import { formatCurrency } from '../lib/format'
 import { approvalQueue } from '../lib/corporate'
-import { Card, EmptyState, cx } from '../components/ui'
-// Loaded when somebody opens the Import tab. It reads spreadsheets, so it
-// carries `xlsx` — four hundred kilobytes that were being downloaded by anyone
-// who opened Materials, or Labour, or any other tab on this page.
-const SheetImport = lazy(() => import('../components/SheetImport'))
-// Each tab is its own chunk. Somebody on Materials was downloading the payroll
-// screen, the advances screen and everything they import — four statutory
-// libraries among them — to look at a stock table.
+import { Card, EmptyState, Spinner, cx } from '../components/ui'
+import PageHeader from '../components/PageHeader'
+
+// Every tab is its own chunk, including the one that opens first.
+//
+// Three of these were split out and five were not, under a comment claiming
+// all of them had been. The five that were left carried the whole page: eight
+// hundred lines of sites, nine hundred of labour, the plant register and the
+// sales ledger, plus the spreadsheet reader behind Import — so somebody
+// opening Materials to look up one rate downloaded the payroll screen, the
+// muster, the machine log and `xlsx` to do it.
+//
+// Splitting the default tab as well costs one paint of the loading line on a
+// cold visit and saves that download on every other tab.
+const Projects = lazy(() => import('../components/ProjectsTabs'))
+const Materials = lazy(() => import('../components/MaterialsTabs'))
+const Labour = lazy(() => import('../components/LabourTabs'))
+const Plant = lazy(() => import('../components/PlantTabs'))
+const Sales = lazy(() => import('../components/SalesTabs'))
 const Advances = lazy(() => import('../components/operations/AdvancesTab'))
 const Payroll = lazy(() => import('../components/operations/PayrollTab'))
-import PageHeader from '../components/PageHeader'
-import Materials from '../components/MaterialsTabs'
-import Projects from '../components/ProjectsTabs'
-import Labour from '../components/LabourTabs'
-import Plant from '../components/PlantTabs'
-import Sales from '../components/SalesTabs'
+const SheetImport = lazy(() => import('../components/SheetImport'))
 
 // Sites, materials, labour, plant, advances and payroll — what a company runs
 // on and a landlord does not.
@@ -47,9 +53,6 @@ const TABS = [
   // Everything here can be typed in and on a real site nothing is.
   { id: 'import', label: 'Import', icon: FileSpreadsheet },
 ]
-
-const thisMonth = () => new Date().toISOString().slice(0, 7)
-const today = () => new Date().toISOString().slice(0, 10)
 
 export default function Operations() {
   const ent = useEntity()
@@ -185,16 +188,17 @@ export default function Operations() {
         ))}
       </div>
 
-      {tab === 'projects' && <Projects {...shared} />}
-      {tab === 'materials' && <Materials {...shared} />}
-      {tab === 'labour' && <Labour {...shared} />}
-      {tab === 'plant' && <Plant {...shared} />}
-      {tab === 'sales' && <Sales {...shared} />}
-      {tab === 'advances' && <Suspense fallback={<Card className="p-5"><p className="text-sm text-ink-5">Loading…</p></Card>}><Advances {...shared} /></Suspense>}
-      {tab === 'payroll' && <Suspense fallback={<Card className="p-5"><p className="text-sm text-ink-5">Loading…</p></Card>}><Payroll {...shared} /></Suspense>}
-      {tab === 'import' && <Suspense fallback={<Card className="p-5"><p className="text-sm text-ink-5">Loading the importer…</p></Card>}><SheetImport {...shared} /></Suspense>}
+      <Suspense fallback={<Card className="p-5"><Spinner className="py-10" /></Card>}>
+        {tab === 'projects' && <Projects {...shared} />}
+        {tab === 'materials' && <Materials {...shared} />}
+        {tab === 'labour' && <Labour {...shared} />}
+        {tab === 'plant' && <Plant {...shared} />}
+        {tab === 'sales' && <Sales {...shared} />}
+        {tab === 'advances' && <Advances {...shared} />}
+        {tab === 'payroll' && <Payroll {...shared} />}
+        {tab === 'import' && <SheetImport {...shared} />}
+      </Suspense>
     </div>
   )
 }
 
-// ── Advances ────────────────────────────────────────────────────────────────
