@@ -1,4 +1,4 @@
-import { hasSupabase } from '../supabaseClient'
+import { isCloud } from '../cloudConfig'
 import * as local from './local'
 import * as remote from './supabase'
 
@@ -8,11 +8,9 @@ import * as remote from './supabase'
 //              getExpenses   / addExpense   / updateExpense   / deleteExpense
 //   receipts:  uploadReceipt(file) -> stored string, getReceiptUrl(stored) -> url
 //
-// VITE_OPEN_ACCESS=true → skip login entirely and run on local browser storage,
-// so anyone can open the site and use it with no credentials. The login code
-// stays intact; remove the flag to require login again once the Supabase
-// Google/Apple setup is finished.
-const openAccess = String(import.meta.env.VITE_OPEN_ACCESS || '').toLowerCase() === 'true'
-
-export const isCloud = hasSupabase && !openAccess
+// Which backend is in use is decided by `cloudConfig.js`, which reads two
+// environment variables and nothing else. It used to be decided here from a
+// flag that lived beside `createClient`, so choosing a backend downloaded the
+// cloud library even when the answer was "local".
+export { isCloud }
 export const db = isCloud ? remote : local

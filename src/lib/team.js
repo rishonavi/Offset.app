@@ -1,7 +1,8 @@
 // Client helpers for read-only workspace sharing (cloud mode only).
-import { supabase } from './supabaseClient'
+import { client } from './supabaseClient'
 
 export async function listTeam() {
+  const supabase = await client()
   if (!supabase) return { sharedByMe: [], sharedWithMe: [] }
   const {
     data: { user },
@@ -16,6 +17,7 @@ export async function listTeam() {
 }
 
 export async function inviteMember(email, role = 'viewer') {
+  const supabase = await client()
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -32,6 +34,7 @@ export async function inviteMember(email, role = 'viewer') {
 }
 
 export async function removeMembership(id) {
+  const supabase = await client()
   const { error } = await supabase.from('memberships').delete().eq('id', id)
   if (error) throw new Error(error.message)
 }

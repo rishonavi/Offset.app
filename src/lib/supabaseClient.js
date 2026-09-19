@@ -1,14 +1,21 @@
-import { createClient } from '@supabase/supabase-js'
+import { SUPABASE_URL, SUPABASE_KEY, hasSupabase } from './cloudConfig'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY
+export { hasSupabase }
 
-// When both env vars are present we run against Supabase (cloud + login).
-// Otherwise the app falls back to local "demo mode" (browser storage).
-export const hasSupabase = Boolean(url && key)
-
-export const supabase = hasSupabase
-  ? createClient(url, key, {
+// The client, fetched on first use.
+//
+// `createClient` was called at module scope, so importing this file for any
+// reason pulled the library in. Nothing needs the client while a page is
+// loading — every use is inside an async function or an effect — so it is
+// fetched when somebody actually talks to the cloud, and kept afterwards.
+//
+// Builds with no cloud configured get `null` without downloading anything,
+// which is the common case: a demo install never calls this at all.
+let pending = null
+export function client() {
+  if (!hasSupabase) return Promise.resolve(null)
+  return (pending ||= import('@supabase/supabase-js').then(({ createClient }) =>
+    createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { persistSession: true, autoRefreshToken: true },
-    })
-  : null
+    })))
+}

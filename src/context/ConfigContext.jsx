@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { client } from '../lib/supabaseClient'
 
 // App-wide config driven by the admin area: the broadcast banner, maintenance
 // mode, and editable plan limits. Publicly readable; empty in demo mode.
@@ -11,12 +11,14 @@ export function ConfigProvider({ children }) {
   const [config, setConfig] = useState(DEFAULTS)
 
   useEffect(() => {
-    if (!supabase) return
     let active = true
-    supabase
-      .from('app_config')
-      .select('key, value')
-      .then(({ data }) => {
+    // The cloud library is fetched only if this build has one. A demo install
+    // resolves to null here and downloads nothing.
+    client().then((supabase) => supabase
+      && supabase
+        .from('app_config')
+        .select('key, value')
+        .then(({ data }) => {
         if (!active || !data) return
         const map = {}
         for (const row of data) map[row.key] = row.value
@@ -25,7 +27,7 @@ export function ConfigProvider({ children }) {
           maintenance: map.maintenance || null,
           plans: map.plans || null,
         })
-      })
+        }))
     return () => {
       active = false
     }

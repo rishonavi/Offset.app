@@ -62,6 +62,12 @@ const ALLOWED = {
   html2canvas: [],
   'pdfjs-dist': [],
   'tesseract.js': [],
+  // The cloud library. `hasSupabase` is two environment variables and a
+  // Boolean, and it lived in the module that calls `createClient` — so asking
+  // whether this build has a cloud downloaded the whole answer, on every route,
+  // including demo builds that have no cloud and never call it. The flag is in
+  // `cloudConfig.js` now and the client is fetched on first use.
+  '@supabase/supabase-js': ['src/lib/supabaseClient.js'],
 }
 for (const [pkg, allowed] of Object.entries(ALLOWED)) {
   const offenders = files.filter((f) => staticallyImports(sourceOf(f), pkg))
@@ -95,6 +101,8 @@ console.log('\n── AND THE PAGES THAT USED TO CARRY THEM ──')
 // Named rather than covered by the loop, because these are the four regressions
 // that actually happened and the ones most likely to happen again.
 for (const [f, pkg] of [
+  ['src/lib/cloudConfig.js', '@supabase/supabase-js'],
+  ['src/lib/storage/index.js', '@supabase/supabase-js'],
   ['src/pages/Dashboard.jsx', 'recharts'],
   ['src/pages/Personal.jsx', 'recharts'],
   ['src/pages/Reports.jsx', 'jspdf'],
@@ -107,6 +115,22 @@ ok('and reads dates with nothing heavier than date-fns',
   /^import \{ format, isValid, parseISO \} from 'date-fns'$/m.test(readDate)
   && readDate.split('\n').filter((l) => l.startsWith('import ')).length === 1,
   readDate.split('\n').filter((l) => l.startsWith('import ')).join(' | '))
+
+// Asking whether there is a cloud must cost nothing, which is the whole point
+// of splitting the flag out of the module that builds the client.
+const cfg = sourceOf('src/lib/cloudConfig.js')
+eq('the cloud flag module imports nothing at all',
+  cfg.split('\n').filter((l) => l.startsWith('import ')).length, 0)
+ok('and answers from the environment', /import\.meta\.env\.VITE_SUPABASE_URL/.test(cfg), '')
+// The client has to be reached through a function rather than a binding: a
+// top-level `export const supabase = createClient(...)` is what made this eager
+// in the first place, and it would be the natural thing to write again.
+const sbc = sourceOf('src/lib/supabaseClient.js')
+ok('the client is fetched, not built at module scope',
+  /import\('@supabase\/supabase-js'\)/.test(sbc) && !/^export const supabase = createClient/m.test(sbc), '')
+ok('and nothing else still imports a ready-made client',
+  files.filter((f) => /import \{ supabase \}/.test(sourceOf(f))).length === 0,
+  files.filter((f) => /import \{ supabase \}/.test(sourceOf(f))).join(', '))
 
 console.log('\n── ONE COPY OF THE INTEROP RULE ──')
 // CommonJS through a dynamic import comes back wrapped, and how many times

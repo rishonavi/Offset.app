@@ -1300,11 +1300,11 @@ or exporting anything.
 
 | | before | after |
 |---|---|---|
-| `/` | 1,267 kB | **866 kB** |
-| `/operations?tab=materials` | 1,797 kB | **983 kB** |
-| `/personal` | 1,063 kB | **698 kB** |
-| `/reports` | 1,133 kB | **763 kB** |
-| `/properties` | 1,061 kB | **694 kB** |
+| `/` | 1,267 kB | **670 kB** |
+| `/operations?tab=materials` | 1,797 kB | **788 kB** |
+| `/personal` | 1,063 kB | **503 kB** |
+| `/reports` | 1,133 kB | **567 kB** |
+| `/properties` | 1,061 kB | **498 kB** |
 
 Four causes, none of them visible in a diff:
 
@@ -1344,3 +1344,28 @@ a dynamic one and kept its `.default || module` line. `siteDocsPdf.js` had
 already worked out that CommonJS through a dynamic import comes back wrapped a
 different number of times, and had written it down — two copies of a rule that
 subtle is one of them being wrong. `pdfLib.js` holds the single copy.
+
+
+### The cloud library, on pages with no cloud
+
+`hasSupabase` is two environment variables and a Boolean, and it lived in the
+module that calls `createClient`. `storage/index.js` imports it to choose a
+backend, so asking *whether there is a cloud* downloaded the whole answer —
+197 kB of `@supabase/supabase-js` on every route of every visit, including the
+demo builds that have no cloud configured and never call it.
+
+The flag is in `cloudConfig.js` now, which imports nothing. The client is an
+awaited accessor that fetches the library on first use and keeps it, and every
+consumer already used it inside an async function, so the change was mechanical
+everywhere except one place.
+
+`onAuthStateChange` is the exception: callers expect an unsubscribe back
+immediately and a Promise is not one. It fetches in the background and returns a
+function that covers both cases — unsubscribing if the subscription has arrived,
+and preventing it from ever subscribing if the caller has already gone. Without
+that second half a component that mounts and unmounts faster than the library
+downloads leaks a listener that outlives it.
+
+Verified against the cloud build, not just the demo one: `loginui.mjs` is built
+with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set and passes its 24
+assertions, which is the proof that the lazy client still signs people in.

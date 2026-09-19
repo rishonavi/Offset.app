@@ -1,11 +1,12 @@
 // Client helpers for the operator/platform admin area. Every call is a
 // SECURITY DEFINER RPC guarded by is_admin() in Postgres, so a non-admin
 // session simply gets an error — the gate is enforced server-side, not here.
-import { supabase } from './supabaseClient'
+import { client } from './supabaseClient'
 
 // Cheap check used to decide whether to show the Admin nav/route. Real access
 // control is the is_admin() guard inside every admin_* function.
 export async function checkIsAdmin() {
+  const supabase = await client()
   if (!supabase) return false
   const { data, error } = await supabase.rpc('is_admin')
   if (error) return false
@@ -13,12 +14,14 @@ export async function checkIsAdmin() {
 }
 
 export async function adminOverview() {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_overview')
   if (error) throw error
   return data
 }
 
 export async function adminListUsers(search = '', limit = 50, offset = 0) {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_list_users', {
     p_search: search,
     p_limit: limit,
@@ -29,12 +32,14 @@ export async function adminListUsers(search = '', limit = 50, offset = 0) {
 }
 
 export async function adminSetPlan(userId, plan) {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_set_plan', { p_target: userId, p_plan: plan })
   if (error) throw error
   return data
 }
 
 export async function adminAuditLog(limit = 50) {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_audit_log', { p_limit: limit })
   if (error) throw error
   return data || []
@@ -42,6 +47,7 @@ export async function adminAuditLog(limit = 50) {
 
 // ── Roles & admin management ──
 export async function adminRole() {
+  const supabase = await client()
   if (!supabase) return null
   const { data, error } = await supabase.rpc('admin_role')
   if (error) return null
@@ -49,18 +55,21 @@ export async function adminRole() {
 }
 
 export async function adminListAdmins() {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_list_admins')
   if (error) throw error
   return data || []
 }
 
 export async function adminAddAdmin(email, role = 'admin') {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_add_admin', { p_email: email, p_role: role })
   if (error) throw error
   return data
 }
 
 export async function adminRemoveAdmin(userId) {
+  const supabase = await client()
   const { error } = await supabase.rpc('admin_remove_admin', { p_uid: userId })
   if (error) throw error
 }
@@ -89,6 +98,7 @@ export async function adminHealth() {
 // so callers treat a failure as "no inbox yet" rather than an error worth
 // shouting about.
 export async function adminListReports(status = '', limit = 50) {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_list_reports', {
     p_status: status,
     p_limit: limit,
@@ -99,12 +109,14 @@ export async function adminListReports(status = '', limit = 50) {
 }
 
 export async function adminReportCounts() {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_report_counts')
   if (error) throw error
   return data || {}
 }
 
 export async function adminSetReportStatus(id, status, note = null) {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_set_report_status', {
     p_id: id,
     p_status: status,
@@ -116,6 +128,7 @@ export async function adminSetReportStatus(id, status, note = null) {
 
 // ── App config ──
 export async function adminSetConfig(key, value) {
+  const supabase = await client()
   const { data, error } = await supabase.rpc('admin_set_config', { p_key: key, p_value: value })
   if (error) throw error
   return data

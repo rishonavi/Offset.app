@@ -11,7 +11,7 @@
 // A deployment can have either, both or neither. Delivery reports back exactly
 // which of them took the report, so the dialog never claims a send that didn't
 // happen.
-import { supabase } from './supabaseClient'
+import { client } from './supabaseClient'
 import { authHeaders } from './authHeader'
 import { formatReportText, kindLabel } from './reports'
 
@@ -20,6 +20,7 @@ export const cloudReportsAvailable = () => Boolean(supabase)
 // The reporter's identity is taken from their token inside submit_report(), not
 // from anything sent here — the email below is only "where to reply".
 export async function submitReportToCloud(report) {
+  const supabase = await client()
   if (!supabase) throw new Error('Cloud reporting needs Supabase credentials.')
   const { data, error } = await supabase.rpc('submit_report', {
     p_reference: report.reference,
@@ -74,6 +75,7 @@ export async function emailReportToOperator(report) {
 // Tries both destinations and says what happened to each:
 //   'ok' | 'failed' | 'off'   ('off' = not set up on this deployment)
 export async function deliverReport(report) {
+  const supabase = await client()
   const out = { inbox: 'off', email: 'off', why: '' }
 
   if (supabase) {

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { client } from '../lib/supabaseClient'
 import { isCloud } from '../lib/storage'
 import * as store from '../lib/storage/corporate'
 import { syncAll } from '../lib/storage/corporateSync'
@@ -46,8 +46,11 @@ export function SyncProvider({ children }) {
   }, [lastAt])
 
   const run = useCallback(async () => {
-    if (!isCloud || !supabase || busy.current) return null
+    if (!isCloud || busy.current) return null
     if (typeof navigator !== 'undefined' && navigator.onLine === false) { recount(); return null }
+    // Fetched here rather than imported, so a demo build never downloads it.
+    const supabase = await client()
+    if (!supabase) return null
     busy.current = true
     setRunning(true)
     try {
