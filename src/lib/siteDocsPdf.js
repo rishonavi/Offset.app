@@ -9,26 +9,8 @@
 // until somebody asks for a file.
 
 import { formatCurrency } from './format'
+import { loadPdf as load } from './pdfLib'
 
-// CommonJS reached through a dynamic import comes back wrapped, and how many
-// times depends on the package and the bundler: `ns.default` is sometimes the
-// function and sometimes the module object with the function inside it. The
-// pages that load these statically get one layer unwrapped for free, which is
-// why the same `.default || module` line works there and not here. So unwrap
-// until there is something callable, and say so plainly if there never is.
-const callable = (module_, name) => {
-  let found = module_
-  for (let i = 0; i < 4 && found && typeof found !== 'function'; i += 1) found = found.default
-  if (typeof found !== 'function') throw new Error(`${name} did not load, so there is nothing to make a PDF with.`)
-  return found
-}
-
-let libs
-const load = () =>
-  (libs ||= Promise.all([import('jspdf'), import('jspdf-autotable')]).then(([pdf, table]) => ({
-    jsPDF: callable(pdf, 'The PDF library'),
-    autoTable: callable(table, 'The PDF table plugin'),
-  })))
 
 const INK = [10, 24, 40]
 const isMoney = (v) => typeof v === 'number'

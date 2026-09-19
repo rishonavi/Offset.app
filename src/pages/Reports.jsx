@@ -1,15 +1,17 @@
+// Reports: what the year looked like, and the paperwork that follows from it.
+//
+// The PDF libraries are a third of a megabyte and were loaded by everybody who
+// opened this page — most of whom came to read the figures on screen and never
+// pressed the button. They are fetched on the press now, through the one loader
+// that knows how the CommonJS interop unwraps.
 import { useMemo } from 'react'
-import jsPDF from 'jspdf'
-import autoTableImport from 'jspdf-autotable'
-// jspdf-autotable ships as CJS; under Vite's interop the default import can be
-// the module wrapper rather than the function itself, so unwrap defensively.
-const autoTable = autoTableImport?.default || autoTableImport
 import { Link, useLocation } from 'react-router-dom'
 import { FileText, Landmark, FileUp } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { applyFilters, sumAmount } from '../lib/filters'
 import { useFilterParams } from '../lib/useFilterParams'
 import { formatCurrency, formatDate } from '../lib/format'
+import { loadPdf } from '../lib/pdfLib'
 import { colorForCategory } from '../lib/constants'
 import { Card, Button, EmptyState, Badge } from '../components/ui'
 import PageHeader from '../components/PageHeader'
@@ -118,7 +120,8 @@ export default function Reports() {
     return [...m.values()].sort((a, b) => b.total - a.total)
   }, [filtered])
 
-  const downloadYearEndPDF = () => {
+  const downloadYearEndPDF = async () => {
+    const { jsPDF, autoTable } = await loadPdf()
     const doc = new jsPDF()
     doc.setFontSize(16)
     doc.text('Offset — Year-end & tax summary', 14, 18)

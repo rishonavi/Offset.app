@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Boxes, HandCoins, Users, HardHat, Truck, Building2, Wallet, Plus, Check, FileSpreadsheet } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
@@ -19,7 +19,10 @@ import { maternityExposure, ENTITLEMENT, QUALIFYING_DAYS, MEDICAL_BONUS, NURSING
 import { formatCurrency, formatDate } from '../lib/format'
 import { approvalQueue } from '../lib/corporate'
 import { Card, Button, Field, Input, Select, EmptyState, Badge, cx, attempt } from '../components/ui'
-import SheetImport from '../components/SheetImport'
+// Loaded when somebody opens the Import tab. It reads spreadsheets, so it
+// carries `xlsx` — four hundred kilobytes that were being downloaded by anyone
+// who opened Materials, or Labour, or any other tab on this page.
+const SheetImport = lazy(() => import('../components/SheetImport'))
 import PageHeader from '../components/PageHeader'
 import Materials from '../components/MaterialsTabs'
 import Projects from '../components/ProjectsTabs'
@@ -194,7 +197,7 @@ export default function Operations() {
       {tab === 'sales' && <Sales {...shared} />}
       {tab === 'advances' && <Advances {...shared} />}
       {tab === 'payroll' && <Payroll {...shared} />}
-      {tab === 'import' && <SheetImport {...shared} />}
+      {tab === 'import' && <Suspense fallback={<Card className="p-5"><p className="text-sm text-ink-5">Loading the importer…</p></Card>}><SheetImport {...shared} /></Suspense>}
     </div>
   )
 }

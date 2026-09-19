@@ -1,30 +1,27 @@
-import { useMemo } from 'react'
+import { Suspense, lazy, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts'
 import { startOfMonth, subMonths, format } from 'date-fns'
 import { ArrowLeft, Plus, Pencil, Trash2, MapPin, Wallet, Receipt, CalendarDays, Banknote, Scale } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useToast } from '../context/ToastContext'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory } from '../lib/constants'
+
+// Loaded when there is something to draw, from the same module the dashboard
+// uses. This page was the fourth to carry recharts at the top of the file, and
+// the one the first version of the bundling ratchet could not see: its import
+// ran over several lines, and the check read one line at a time.
+const charts = () => import('../components/DashboardCharts')
+const SpendTrend = lazy(() => charts().then((m) => ({ default: m.SpendTrend })))
+const CategoryRing = lazy(() => charts().then((m) => ({ default: m.CategoryRing })))
+const Drawing = ({ children }) => <Suspense fallback={<div className="h-full w-full" />}>{children}</Suspense>
 import { totalsByCategory, monthlySeries } from '../lib/stats'
 import { sumAmount } from '../lib/filters'
 import { assetMetrics } from '../lib/metrics'
 import { loanSummary } from '../lib/loan'
 import { leaseStatus } from '../lib/lease'
 import { iconForAssetType } from '../lib/assetIcon'
-import { Card, Button, EmptyState, Spinner } from '../components/ui'
+import { Card, Button, EmptyState, Spinner , ChartKey} from '../components/ui'
 import BudgetBar from '../components/BudgetBar'
 import DocumentsCard from '../components/DocumentsCard'
 import ExpenseTable from '../components/ExpenseTable'
@@ -353,21 +350,9 @@ export default function PropertyDetail() {
             <div className="grid h-64 place-items-center text-sm text-ink-6">No data yet</div>
           ) : (
             <div style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
-                <AreaChart data={monthly} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gd" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#C5A059" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#C5A059" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={formatCompact} tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
-                  <Tooltip formatter={(v) => [formatCurrency(v), 'Spent']} contentStyle={tooltipStyle} />
-                  <Area type="monotone" dataKey="total" stroke="#C5A059" strokeWidth={2.5} fill="url(#gd)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <Drawing>
+                <SpendTrend data={monthly} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
+              </Drawing>
             </div>
           )}
         </Card>
@@ -377,18 +362,25 @@ export default function PropertyDetail() {
           {byCategory.length === 0 ? (
             <div className="grid h-64 place-items-center text-sm text-ink-6">No data yet</div>
           ) : (
+            <>
+            {/* This ring had no key under it and no `aria-hidden` on it, unlike
+                the identical ones on the dashboard and on Personal — so a
+                screen reader was offered a chart it could not read and nothing
+                else. The key is the content; the ring is decoration. */}
             <div style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}>
-                    {byCategory.map((d) => (
-                      <Cell key={d.name} fill={colorForCategory(d.name)} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v, n) => [formatCurrency(v), n]} contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
+              <Drawing>
+                <CategoryRing
+                  data={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
+                  format={formatCurrency}
+                  tooltipStyle={tooltipStyle}
+                />
+              </Drawing>
             </div>
+            <ChartKey
+              items={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
+              format={formatCurrency}
+            />
+            </>
           )}
         </Card>
       </div>

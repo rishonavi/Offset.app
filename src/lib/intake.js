@@ -28,7 +28,7 @@
 import { makeUnit, UNIT_KINDS, UNIT_STATUS } from './sales'
 import { makeEmployee } from './payroll'
 import { makeQuote, makeQuoteLine } from './quotes'
-import { normalizeDate } from './exports'
+import { normalizeDate } from './readDate'
 
 // ── Reading what a person actually typed ────────────────────────────
 // Headers arrive with units in brackets, underscores, stray punctuation and

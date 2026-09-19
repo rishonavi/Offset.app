@@ -1,20 +1,5 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-} from 'recharts'
 import { startOfMonth, startOfYear, subMonths, format } from 'date-fns'
 import {
   Wallet,
@@ -39,6 +24,17 @@ import { useEntity } from '../context/EntityContext'
 import { shouldShow as shouldShowOnboarding } from '../lib/onboarding'
 import { formatCurrency, formatCompact, formatDate } from '../lib/format'
 import { colorForCategory, CHART_PALETTE } from '../lib/constants'
+
+// One chunk for all four, fetched when the page has something to draw. The
+// figures above these are text and the rings carry a key in words, so until it
+// arrives nobody is looking at a hole where their data should be — which is why
+// the fallback is the space the chart will fill rather than a spinner.
+const charts = () => import('../components/DashboardCharts')
+const SpendTrend = lazy(() => charts().then((m) => ({ default: m.SpendTrend })))
+const CashflowBars = lazy(() => charts().then((m) => ({ default: m.CashflowBars })))
+const CategoryRing = lazy(() => charts().then((m) => ({ default: m.CategoryRing })))
+const PropertyBars = lazy(() => charts().then((m) => ({ default: m.PropertyBars })))
+const Drawing = ({ children }) => <Suspense fallback={<div className="h-full w-full" />}>{children}</Suspense>
 import { totalsByCategory, totalsByPlace, monthlySeries, monthlyIncomeExpense } from '../lib/stats'
 import { portfolioMetrics } from '../lib/metrics'
 import { sumAmount } from '../lib/filters'
@@ -653,21 +649,9 @@ export default function Dashboard() {
 
       {/* Trend */}
       <ChartCard title="Spending over the last 12 months" empty={monthly.every((m) => m.total === 0)}>
-        <ResponsiveContainer>
-          <AreaChart data={monthly} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#C5A059" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#C5A059" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
-            <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={formatCompact} tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
-            <Tooltip formatter={(v) => [formatCurrency(v), 'Spent']} contentStyle={tooltipStyle} />
-            <Area type="monotone" dataKey="total" stroke="#C5A059" strokeWidth={2.5} fill="url(#g)" />
-          </AreaChart>
-        </ResponsiveContainer>
+        <Drawing>
+          <SpendTrend data={monthly} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
+        </Drawing>
       </ChartCard>
 
       {/* Income vs expenses */}
@@ -675,21 +659,9 @@ export default function Dashboard() {
         title="Income vs expenses (last 12 months)"
         empty={cashflow.every((m) => m.income === 0 && m.expense === 0)}
       >
-        <ResponsiveContainer>
-          <BarChart data={cashflow} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef2f7" />
-            <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={formatCompact} tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={48} />
-            <Tooltip
-              formatter={(v, n) => [formatCurrency(v), n === 'income' ? 'Income' : 'Expense']}
-              contentStyle={tooltipStyle}
-              cursor={{ fill: '#f1f5f9' }}
-            />
-            <Legend wrapperStyle={{ fontSize: 12 }} formatter={(v) => (v === 'income' ? 'Income' : 'Expense')} />
-            <Bar dataKey="income" fill="#2F8F6B" radius={[3, 3, 0, 0]} />
-            <Bar dataKey="expense" fill="#C5A059" radius={[3, 3, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <Drawing>
+          <CashflowBars data={cashflow} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
+        </Drawing>
       </ChartCard>
 
       {/* Category + property charts */}
@@ -704,35 +676,24 @@ export default function Dashboard() {
             />
           }
         >
-          <ResponsiveContainer>
-            {/* The ring is decoration; the key below it is the content. Hidden
-                from the accessibility tree because everything it shows is in
-                the key, in words. */}
-            <PieChart role="presentation" aria-hidden="true">
-              <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}>
-                {byCategory.map((d) => (
-                  <Cell key={d.name} fill={colorForCategory(d.name)} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v, n) => [formatCurrency(v), n]} contentStyle={tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
+          <Drawing>
+            <CategoryRing
+              data={byCategory.map((d) => ({ ...d, color: colorForCategory(d.name) }))}
+              format={formatCurrency}
+              tooltipStyle={tooltipStyle}
+            />
+          </Drawing>
         </ChartCard>
 
         <ChartCard title="Spending by property" empty={byProperty.length === 0}>
-          <ResponsiveContainer>
-            <BarChart data={byProperty} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eef2f7" />
-              <XAxis type="number" tickFormatter={formatCompact} tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(v) => [formatCurrency(v), 'Spent']} contentStyle={tooltipStyle} cursor={{ fill: '#f1f5f9' }} />
-              <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={22}>
-                {byProperty.map((d, i) => (
-                  <Cell key={d.id} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <Drawing>
+            <PropertyBars
+              data={byProperty.map((d, i) => ({ ...d, color: CHART_PALETTE[i % CHART_PALETTE.length] }))}
+              format={formatCurrency}
+              formatCompact={formatCompact}
+              tooltipStyle={tooltipStyle}
+            />
+          </Drawing>
         </ChartCard>
       </div>
 

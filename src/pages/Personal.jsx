@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react'
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { Wallet, Receipt, Scale, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
 import { usePersonal } from '../context/PersonalContext'
 import { useToast } from '../context/ToastContext'
@@ -12,6 +11,12 @@ import { budgetStatus } from '../lib/budget'
 import { Card, Button, Field, Input, Select, Textarea, Spinner, Badge, EmptyState, ChartKey } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import BudgetBar from '../components/BudgetBar'
+
+// Loaded when there is something to draw. The ring is decoration and the key
+// below it is the content, so until this arrives the reader is not missing
+// anything — which is why the fallback is the space it will occupy and not a
+// spinner over the part that does not matter.
+const SpendRing = lazy(() => import('../components/SpendRing'))
 
 const tooltipStyle = { borderRadius: 12, border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(15,23,42,0.08)', fontSize: 13 }
 const emptyForm = { date: todayISO(), amount: '', category: PERSONAL_CATEGORIES[0], note: '', payment_method: '' }
@@ -207,19 +212,13 @@ export default function Personal() {
             <div className="grid h-64 place-items-center text-sm text-ink-6">No spending this month</div>
           ) : (
             <>
-            <div style={{ width: '100%', height: 260 }}>
-              <ResponsiveContainer>
-                {/* The ring is decoration; the key below it is the content. */}
-                <PieChart role="presentation" aria-hidden="true">
-                  <Pie data={byCategory} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={2}>
-                    {byCategory.map((d) => (
-                      <Cell key={d.name} fill={colorForPersonal(d.name)} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v, n) => [formatCurrency(v), n]} contentStyle={tooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <Suspense fallback={<div style={{ width: '100%', height: 260 }} />}>
+              <SpendRing
+                data={byCategory.map((d) => ({ ...d, color: colorForPersonal(d.name) }))}
+                format={formatCurrency}
+                tooltipStyle={tooltipStyle}
+              />
+            </Suspense>
             <ChartKey
               items={byCategory.map((d) => ({ ...d, color: colorForPersonal(d.name) }))}
               format={formatCurrency}

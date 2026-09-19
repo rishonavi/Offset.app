@@ -1289,3 +1289,58 @@ destination appears.
 5. SSO (Google Workspace / SAML) *(unverifiable here)*
 
 Billing for the corporate tier is deliberately not built yet.
+
+
+## What a visitor downloads
+
+The app shipped 1.27 MB to open the dashboard and 1.80 MB to open a materials
+tab, and almost none of it was the app. Three of the heaviest libraries in the
+project reached first paint through imports that had nothing to do with drawing
+or exporting anything.
+
+| | before | after |
+|---|---|---|
+| `/` | 1,267 kB | **866 kB** |
+| `/operations?tab=materials` | 1,797 kB | **983 kB** |
+| `/personal` | 1,063 kB | **698 kB** |
+| `/reports` | 1,133 kB | **763 kB** |
+| `/properties` | 1,061 kB | **694 kB** |
+
+Four causes, none of them visible in a diff:
+
+- **`normalizeDate` lived in `exports.js`**, which statically imports xlsx and
+  jspdf. `papers.js` and `intake.js` wanted that one forty-line date function
+  and got three quarters of a megabyte with it, on every screen that reads a
+  document. It is `readDate.js` now, and imports nothing but `date-fns`.
+- **recharts was imported at the top of four pages** — the dashboard, Personal,
+  Property detail and, through it, anything that linked there. That is 367 kB of
+  charting in front of the first paint of pages whose headline figures are all
+  text and whose rings are explicitly decoration. They are in
+  `DashboardCharts.jsx` and `SpendRing.jsx` now, behind `lazy()`, and because
+  the key beside each ring is the content, the fallback is the space the chart
+  will fill rather than a spinner over the part that does not matter.
+- **jspdf was imported at the top of Reports**, by everybody who came to read
+  the figures on screen and never pressed export.
+- **The Import tab was imported at the top of Operations**, so xlsx arrived for
+  anyone who opened Materials, or Labour, or any other tab on that page.
+
+`bundling.test.mjs` is the ratchet. A static import costs nothing to write and
+the number it moves is on a page nobody measures, so each heavy library may be
+reached only from the module that exists to load it, and adding one anywhere
+else fails there.
+
+The ratchet found its own bug immediately: it read one line at a time, so the
+three-line recharts import in `DashboardCharts.jsx` did not look like a recharts
+import at all — and neither did the one in `PropertyDetail.jsx`, which is how
+that fourth page went unnoticed. Braced specifier lists are flattened first now,
+and the detector has its own controls.
+
+`PropertyDetail`'s ring also turned out to have no key under it and no
+`aria-hidden` on it, unlike the identical rings elsewhere: a screen reader was
+being offered a chart it could not read and nothing else. It has a key now.
+
+One regression, caught by `clickui`: Reports moved from a static jspdf import to
+a dynamic one and kept its `.default || module` line. `siteDocsPdf.js` had
+already worked out that CommonJS through a dynamic import comes back wrapped a
+different number of times, and had written it down — two copies of a rule that
+subtle is one of them being wrong. `pdfLib.js` holds the single copy.

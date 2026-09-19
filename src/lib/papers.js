@@ -26,7 +26,7 @@
 // The text comes from `ocr.js`, which already reads a generated PDF as text and
 // falls back to OCR on a scanned one. Nothing here cares which it was.
 import { normaliseHeader, toNumber, TARGETS } from './intake'
-import { normalizeDate } from './exports'
+import { normalizeDate } from './readDate'
 import { makeQuote, makeQuoteLine } from './quotes'
 
 const MONTHS = {
