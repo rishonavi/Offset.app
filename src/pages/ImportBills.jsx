@@ -287,6 +287,7 @@ export default function ImportBills() {
           <input
             ref={backup.backupFileRef}
             type="file"
+              aria-label="Backup file to restore"
             accept="application/json,.json"
             className="hidden"
             onChange={(e) => backup.restoreFromFile(e.target.files?.[0])}
@@ -356,6 +357,7 @@ export default function ImportBills() {
           <input
             ref={fileRef}
             type="file"
+              aria-label="Spreadsheet of bills to import"
             accept=".xlsx,.xls,.csv"
             className="hidden"
             onChange={(e) => handleImport(e.target.files?.[0])}
@@ -384,6 +386,7 @@ export default function ImportBills() {
           <input
             ref={tallyRef}
             type="file"
+              aria-label="Tally XML to import"
             accept=".xml,text/xml,application/xml"
             className="hidden"
             onChange={(e) => handleTallyImport(e.target.files?.[0])}

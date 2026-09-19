@@ -193,6 +193,7 @@ export default function BankImport() {
       <input
         ref={fileRef}
         type="file"
+              aria-label="Bank statement to reconcile"
         accept=".csv,.xlsx,.xls"
         className="hidden"
         onChange={(e) => onFile(e.target.files?.[0])}

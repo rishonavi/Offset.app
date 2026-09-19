@@ -138,6 +138,7 @@ node tests/browser/rtlui.mjs
 | `promisedui.mjs` | 26 | what is agreed and not yet spent, kept apart from what is owed now |
 | `lineageui.mjs` | 20 | the measurement book against the running account, and the contracts it cannot speak for |
 | `ratesui.mjs` | 18 | the lorry that jumped, beside the material that merely got dearer |
+| `reachui.mjs` | 56 | every page at a phone and a desk: nothing scrolls sideways, every control has a name |
 | `reportui.mjs` | 37 | the problem-report flow |
 | `retentionui.mjs` | 29 | money held back, when it comes back, and which side of the contract is holding it |
 | `searchui.mjs` | 19 | the palette: what it finds and what it remembers |
@@ -147,11 +148,11 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **2,005** | |
+| | **2,061** | |
 
 That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
 that suite needs the other build and does not run in the same pass, so a sweep
-of this one reports 1,981.
+of this one reports 2,037.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

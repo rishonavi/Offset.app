@@ -602,8 +602,10 @@ export default function IncomeForm({ initial, properties, payers = [], history =
                 <Upload size={15} /> {t('entry.chooseFile')}
               </button>
             </div>
-            <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPickFile} className="hidden" />
-            <input ref={fileRef} type="file" accept={ATTACHMENT_ACCEPT} onChange={onPickFile} className="hidden" />
+            <input ref={cameraRef} type="file"
+              aria-label="Photograph a receipt" accept="image/*" capture="environment" onChange={onPickFile} className="hidden" />
+            <input ref={fileRef} type="file"
+              aria-label="Photograph a receipt" accept={ATTACHMENT_ACCEPT} onChange={onPickFile} className="hidden" />
           </div>
         )}
       </Field>

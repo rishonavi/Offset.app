@@ -141,6 +141,7 @@ export default function DocumentsCard({ propertyId, documents, canWrite, onAdd, 
               <input
                 ref={fileRef}
                 type="file"
+              aria-label="Document to attach"
                 accept={ATTACHMENT_ACCEPT}
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="hidden"
