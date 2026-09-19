@@ -208,7 +208,7 @@ console.log('\n── UNDER LOAD ──')
   ok('the list pages rather than rendering everything', rows > 0 && rows < 300, `${rows} rows in the DOM`)
 
   // Typing into a filter over 2,000 rows is where a slow path shows up.
-  const search = p.locator('input[aria-label="Search expenses"]')
+  const search = p.locator('input[aria-label="Search expenses by vendor or note"]')
   if (await search.count()) {
     const t0 = Date.now()
     await search.fill('Vendor 42')
