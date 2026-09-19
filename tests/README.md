@@ -24,6 +24,7 @@ for Vite's resolver.
 | `auth.test.mjs` | 21 | the API's shared bearer-token check |
 | `bonus.test.mjs` | 105 | two ceilings doing different jobs, and what running them together costs |
 | `brokers.test.mjs` | 42 | broker holdings exports, column aliasing |
+| `budget.test.mjs` | 54 | planned against spent over the same categories, and hitting the number exactly |
 | `bundling.test.mjs` | 37 | the heavy libraries, and which modules are allowed to reach them |
 | `certainty.test.mjs` | 34 | how a figure was arrived at, and why a total is only as certain as its least certain part |
 | `corp.test.mjs` | 149 | entities, control, ledgers, audit events, and what needs a second pair of eyes |
@@ -76,7 +77,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **4,248** | |
+| | **4,302** | |
 
 ## Browser — `tests/browser/`
 
@@ -97,6 +98,7 @@ node tests/browser/rtlui.mjs
 | `appearanceui.mjs` | 53 | accent, base tone and avatar; every combination still readable |
 | `attachui.mjs` | 20 | what the pickers take; attachments in IndexedDB; viewing and backup |
 | `booksui.mjs` | 27 | one login, two sets of books, and nothing leaking between them |
+| `budgetui.mjs` | 32 | the figure at the top of Personal, and what it used to claim |
 | `bulkui.mjs` | 17 | settling several at once, and re-importing a file |
 | `chartui.mjs` | 11 | whether a chart says what it means or only shows it in colour |
 | `closeui.mjs` | 24 | closing a month, the two write paths that refuse it, and reopening taking the months after it |
@@ -145,11 +147,11 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,973** | |
+| | **2,005** | |
 
 That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
 that suite needs the other build and does not run in the same pass, so a sweep
-of this one reports 1,949.
+of this one reports 1,981.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

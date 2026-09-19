@@ -100,16 +100,24 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   )
 }
 
-function ChartCard({ title, children, empty, action, chartKey }) {
+// A chart, or one line saying there is nothing to draw.
+//
+// An empty chart used to hold its full height: a 260-pixel box with "No data
+// for this view" in the middle of it. On a new install all six of these are
+// empty at once, so the dashboard opened as fourteen hundred pixels of
+// identical grey holes underneath a checklist telling somebody how to start —
+// and a page of empty containers reads as broken rather than as new.
+//
+// It still says so, because an empty box with nothing in it reads as a page
+// that failed to load. It just says it in one line instead of six screenfuls.
+function ChartCard({ title, children, empty, action, chartKey, emptyHint }) {
   return (
-    <Card className="p-5">
-      <div className="mb-4 flex items-center justify-between">
+    <Card className={empty ? 'p-5 py-4' : 'p-5'}>
+      <div className={empty ? 'flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1' : 'mb-4 flex items-center justify-between'}>
         <h2 className="text-sm font-semibold text-ink-3">{title}</h2>
-        {action}
+        {empty ? <p className="text-xs text-ink-6">{emptyHint || 'Nothing to show yet'}</p> : action}
       </div>
-      {empty ? (
-        <div className="grid h-64 place-items-center text-sm text-ink-6">No data for this view</div>
-      ) : (
+      {!empty && (
         <>
           <div style={{ width: '100%', height: 260 }}>{children}</div>
           {chartKey}
@@ -648,7 +656,8 @@ export default function Dashboard() {
       )}
 
       {/* Trend */}
-      <ChartCard title="Spending over the last 12 months" empty={monthly.every((m) => m.total === 0)}>
+      <ChartCard title="Spending over the last 12 months"
+          emptyHint="No costs logged in the last twelve months" empty={monthly.every((m) => m.total === 0)}>
         <Drawing>
           <SpendTrend data={monthly} format={formatCurrency} formatCompact={formatCompact} tooltipStyle={tooltipStyle} />
         </Drawing>
@@ -657,6 +666,7 @@ export default function Dashboard() {
       {/* Income vs expenses */}
       <ChartCard
         title="Income vs expenses (last 12 months)"
+          emptyHint="No income or costs in the last twelve months"
         empty={cashflow.every((m) => m.income === 0 && m.expense === 0)}
       >
         <Drawing>
@@ -668,6 +678,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard
           title="Spending by category"
+          emptyHint="No costs to break down yet"
           empty={byCategory.length === 0}
           chartKey={
             <ChartKey
@@ -685,7 +696,8 @@ export default function Dashboard() {
           </Drawing>
         </ChartCard>
 
-        <ChartCard title="Spending by property" empty={byProperty.length === 0}>
+        <ChartCard title="Spending by property"
+          emptyHint="No costs booked to an asset yet" empty={byProperty.length === 0}>
           <Drawing>
             <PropertyBars
               data={byProperty.map((d, i) => ({ ...d, color: CHART_PALETTE[i % CHART_PALETTE.length] }))}
@@ -707,7 +719,9 @@ export default function Dashboard() {
             </Link>
           </div>
           {recent.length === 0 ? (
-            <div className="grid h-32 place-items-center text-sm text-ink-6">No expenses yet</div>
+            // One line, like the charts above. A tall grey box on a page that
+            // is new says "broken"; a sentence says "nothing yet".
+            <p className="text-sm text-ink-6">Costs will appear here as you log them.</p>
           ) : (
             <div className="divide-y divide-line-soft">
               {recent.map((e) => (
@@ -752,7 +766,14 @@ export default function Dashboard() {
             </div>
           </Card>
         ) : (
-          <Card className="grid place-items-center p-5 text-sm text-ink-6">No category data yet</Card>
+          // Titled, so it is recognisable as the card it will become rather
+          // than an unlabelled grey panel with an apology in it.
+          <Card className="p-5 py-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <h2 className="text-sm font-semibold text-ink-3">Where it goes</h2>
+              <p className="text-xs text-ink-6">No costs to break down yet</p>
+            </div>
+          </Card>
         )}
       </div>
     </div>

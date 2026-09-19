@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { Wallet, Receipt, Scale, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
 import { usePersonal } from '../context/PersonalContext'
 import { useToast } from '../context/ToastContext'
-import { PERSONAL_CATEGORIES, colorForPersonal, monthKey, monthLabel, shiftMonth, inMonth } from '../lib/personal'
+import { PERSONAL_CATEGORIES, colorForPersonal, monthKey, monthLabel, shiftMonth, inMonth, monthPlan } from '../lib/personal'
 import { PAYMENT_METHODS } from '../lib/constants'
 import { sumAmount } from '../lib/filters'
 import { totalsByCategory } from '../lib/stats'
@@ -40,7 +40,7 @@ function Stat({ icon: Icon, label, value, accent }) {
 }
 
 export default function Personal() {
-  const { expenses, loading, addExpense, updateExpense, deleteExpense, restoreExpense, setBudget, budgetFor } = usePersonal()
+  const { expenses, budgets, loading, addExpense, updateExpense, deleteExpense, restoreExpense, setBudget, budgetFor } = usePersonal()
   const toast = useToast()
 
   const removeExpense = async (e) => {
@@ -59,14 +59,12 @@ export default function Personal() {
   const monthExpenses = useMemo(() => inMonth(expenses, month), [expenses, month])
   const spent = useMemo(() => sumAmount(monthExpenses), [monthExpenses])
   const byCategory = useMemo(() => totalsByCategory(monthExpenses), [monthExpenses])
-  const spentByCat = useMemo(() => {
-    const m = new Map()
-    for (const e of monthExpenses) m.set(e.category || 'Other', (m.get(e.category || 'Other') || 0) + (Number(e.amount) || 0))
-    return m
-  }, [monthExpenses])
 
-  const budgetedCats = PERSONAL_CATEGORIES.filter((c) => budgetFor(c) > 0)
-  const totalBudget = budgetedCats.reduce((s, c) => s + budgetFor(c), 0)
+  // All of it worked out in `personal.js`, where it can be tested. A budget
+  // saying the wrong thing to somebody watching their money is not a rendering
+  // detail, and none of this could be reached from a test while it lived here.
+  const plan = useMemo(() => monthPlan(monthExpenses, budgets), [monthExpenses, budgets])
+  const { planned: totalBudget, budgetedSpent, unbudgetedSpent, left, rows: categoryRows } = plan
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const submit = async (e) => {
@@ -150,12 +148,31 @@ export default function Personal() {
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* Planned, spent, left — the three figures, over the same categories.
+          "Left" leads because it is the question somebody opens this page to
+          ask, and it is the only one of the three that needs a colour. */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <Stat icon={Receipt} label="Spent" value={formatCurrency(spent)} accent="#C5A059" />
-        <Stat icon={Wallet} label="Budget" value={totalBudget ? formatCurrency(totalBudget) : '—'} accent="#3B5A7A" />
-        <Stat icon={Scale} label="Remaining" value={totalBudget ? formatCurrency(totalBudget - spent) : '—'} accent={totalBudget - spent >= 0 ? '#2F8F6B' : '#C0492F'} />
+        <Stat
+          icon={Scale}
+          label={totalBudget ? (left >= 0 ? 'Left to spend' : 'Over budget') : 'Spent'}
+          value={totalBudget ? formatCurrency(Math.abs(left)) : formatCurrency(spent)}
+          accent={totalBudget ? (left >= 0 ? '#2F8F6B' : '#C0492F') : '#C5A059'}
+        />
+        <Stat icon={Wallet} label="Planned" value={totalBudget ? formatCurrency(totalBudget) : '—'} accent="#3B5A7A" />
+        <Stat icon={Receipt} label="Spent of that" value={totalBudget ? formatCurrency(budgetedSpent) : '—'} accent="#C5A059" />
       </div>
+      {/* The money the plan says nothing about. For most people this is the
+          larger number, and folding it into the shortfall above was what made
+          that figure meaningless. */}
+      {totalBudget > 0 && unbudgetedSpent > 0 && (
+        <p className="-mt-1 text-xs text-ink-5">
+          <strong className="tabular font-semibold text-ink-3">{formatCurrency(unbudgetedSpent)}</strong> more went to
+          categories with no budget, so the figures above say nothing about it.{' '}
+          <button type="button" onClick={openBudgets} className="font-medium text-brand hover:underline">
+            Bring it into the plan
+          </button>
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Budgets */}
@@ -186,19 +203,45 @@ export default function Personal() {
                 Save budgets
               </Button>
             </div>
-          ) : budgetedCats.length === 0 ? (
+          ) : categoryRows.length === 0 ? (
             <div className="py-6 text-center text-sm text-ink-6">
-              No budgets set yet. Use <strong>Manage</strong> to set a monthly limit per category.
+              Nothing spent yet this month. Use <strong>Manage</strong> to set a monthly limit per category.
             </div>
           ) : (
             <div className="space-y-4">
-              {budgetedCats.map((c) => (
-                <div key={c}>
-                  <div className="mb-1 flex items-center gap-2 text-sm font-medium text-ink-3">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: colorForPersonal(c) }} />
-                    {c}
+              {/* Budgeted categories first, then the ones money went to with no
+                  budget behind it. Listing only the budgeted ones hid exactly
+                  the spending somebody would want to bring into the plan — and
+                  made a page with six categories of spending look like a page
+                  with two. */}
+              {categoryRows.map((row) => (
+                <div key={row.name}>
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-ink-3">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorForPersonal(row.name) }} />
+                      <span className="truncate">{row.name}</span>
+                    </span>
+                    {row.budget <= 0 && (
+                      <button
+                        type="button"
+                        onClick={openBudgets}
+                        className="shrink-0 text-xs font-medium text-brand hover:underline"
+                      >
+                        Set a budget
+                      </button>
+                    )}
                   </div>
-                  <BudgetBar spent={spentByCat.get(c) || 0} budget={budgetFor(c)} showLabel showStatus />
+                  {row.budget > 0 ? (
+                    <BudgetBar spent={row.spent} budget={row.budget} showLabel showStatus />
+                  ) : (
+                    // No bar, because there is nothing to be a proportion of. A
+                    // full-width bar here would read as "spent it all" and an
+                    // empty one as "spent nothing", and both are untrue.
+                    <p className="flex items-center justify-between gap-2 text-xs text-ink-5">
+                      <span>No budget set</span>
+                      <span className="tabular font-medium text-ink-3">{formatCurrency(row.spent)} spent</span>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

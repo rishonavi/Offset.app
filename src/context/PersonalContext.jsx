@@ -19,10 +19,19 @@ export function PersonalProvider({ children }) {
     setLoading(true)
     try {
       const [e, b] = await Promise.all([db.getPersonalExpenses(), db.getPersonalBudgets()])
-      setExpenses([...e].sort(byDateDesc))
-      setBudgets(b)
+      // Coerced rather than trusted. These come back from browser storage,
+      // which can hold anything an older version of this app wrote — and a
+      // shape nobody expects took the whole page down with `find is not a
+      // function`, behind an error boundary that said "something went wrong"
+      // and gave no way back. A local-first app reads its own past, so it has
+      // to survive it: the worst case here is a month that looks empty, which
+      // is recoverable, rather than a screen that cannot be opened at all.
+      setExpenses(Array.isArray(e) ? [...e].sort(byDateDesc) : [])
+      setBudgets(Array.isArray(b) ? b : [])
     } catch {
       /* personal tables may not exist yet in cloud — treated as empty */
+      setExpenses([])
+      setBudgets([])
     } finally {
       setLoading(false)
     }

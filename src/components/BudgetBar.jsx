@@ -26,7 +26,13 @@ export default function BudgetBar({ spent, budget, showLabel = true, showStatus 
         <div className="mt-1.5 flex items-center gap-1 text-xs font-medium" style={{ color }}>
           {status.level === 'over' ? (
             <>
-              <AlertTriangle size={12} /> Over budget by {formatCurrency(status.spent - status.budget)}
+              <AlertTriangle size={12} /> Over budget by {formatCurrency(status.over)}
+            </>
+          ) : status.level === 'spent' ? (
+            // Hitting the number exactly is what a budget is for. It used to
+            // report as "Over budget by ₹0".
+            <>
+              <CheckCircle2 size={12} /> Budget used up, nothing over
             </>
           ) : status.level === 'warn' ? (
             <>

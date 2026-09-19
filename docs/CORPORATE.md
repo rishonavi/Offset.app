@@ -1369,3 +1369,61 @@ downloads leaks a listener that outlives it.
 Verified against the cloud build, not just the demo one: `loginui.mjs` is built
 with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set and passes its 24
 assertions, which is the proof that the lazy client still signs people in.
+
+
+## The figure at the top of Personal
+
+Three numbers sat there — spent, budget, remaining — and "remaining" subtracted
+every rupee of the month from a budget that covered two categories out of six.
+Somebody who had budgeted groceries and nothing else, and who then paid their
+rent, was shown **Remaining −₹48,700**: a frightening number describing nothing,
+because almost none of that spending was ever inside the plan it was being
+measured against.
+
+Two apps worth copying here, EveryDollar and DollarWise, build their whole
+interface on one spine: a single figure at the top answering *am I all right?*,
+and planned, spent and left stated over the same set of categories. That is what
+this is now.
+
+- **Planned, spent-of-that, and left** — over the same categories, so the three
+  can be compared. Left leads, because it is the question somebody opens the
+  page to ask, and it is the only one of the three that needs a colour.
+- **What falls outside the plan gets its own line.** For most people it is the
+  larger number, and folding it into the shortfall is exactly what made the
+  shortfall meaningless.
+- **Every category with a budget or with money against it is listed.** Showing
+  only the budgeted ones hid the spending somebody would most want to bring into
+  the plan, and made a month with six categories of spending look like a month
+  with two.
+- **Spending exactly the budget is its own state.** It fell into `over`, which
+  put a red bar and "Over budget by ₹0" against the one outcome a budget is
+  aimed at.
+
+Two bugs came out of it. The totals filtered through `PERSONAL_CATEGORIES`, so a
+budget against anything not on that fixed list stopped counting in the header
+while still drawing its own bar below — six budgets on screen and two in the
+sum. The list has been edited before and will be again; a budget somebody set is
+a budget whatever it says today.
+
+And the page crashed outright on a budgets value it did not recognise —
+`find is not a function`, behind "Something went wrong" with no way back. A
+local-first app reads its own past, so it has to survive it: the worst case is
+now a month that looks empty, which is recoverable, rather than a screen that
+cannot be opened.
+
+All of the arithmetic moved into `personal.js` as `monthPlan`. None of it could
+be reached from a test while it lived in the page, and a budget saying the wrong
+thing to somebody watching their money is not a rendering detail.
+
+## The dashboard when there is nothing on it yet
+
+Six charts, each holding its full 260-pixel height with "No data for this view"
+in the middle. On a new install all six are empty at once, so the page opened as
+fourteen hundred pixels of identical grey holes underneath a checklist telling
+somebody how to start — and a page of empty containers reads as broken rather
+than as new. It went from 2,316 pixels to 1,476.
+
+They still say so, because a box with nothing in it reads as a page that failed
+to load. They say it in one line each, and each line says something specific:
+"No costs booked to an asset yet" rather than six copies of "No data for this
+view".
