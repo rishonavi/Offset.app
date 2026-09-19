@@ -38,6 +38,12 @@ const open = async (path, marker) => {
   let found = true
   await p.locator('#main-content').getByText(marker, { exact: false }).first()
     .waitFor({ state: 'visible', timeout: 30000 }).catch(() => { found = false })
+  // Every Operations tab is its own chunk, so the marker can be on screen while
+  // the panel under it is still a loading card. The time a page takes to arrive
+  // is the time until there is something to read, which means waiting for the
+  // Suspense fallback's live region to go as well.
+  await p.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+    .catch(() => { found = false })
   return { ms: Date.now() - started, found }
 }
 
@@ -187,7 +193,9 @@ const BUDGET = 25000
 const pages = [
   ['/', 'Dashboard'],
   ['/operations', 'Tower A'],
-  ['/operations?tab=materials', 'Material'],
+  // Not 'Material': that matches the Materials tab button, which is on screen
+  // before the panel is, so it proved nothing about the panel.
+  ['/operations?tab=materials', 'Stock value'],
   ['/operations?tab=labour', 'muster'],
   ['/operations?tab=plant', 'Machine'],
   ['/operations?tab=sales', 'A-1'],
@@ -209,7 +217,7 @@ console.log('\n── AND THE FIGURES ARE REALLY THERE ──')
 await open('/operations', 'Tower A')
 let t = await main()
 ok('the sites are listed', (t.match(/Tower [ABCD]/g) || []).length >= 4, t.slice(0, 300).replace(/\n/g, ' | '))
-await open('/operations?tab=materials', 'Material')
+await open('/operations?tab=materials', 'Stock value')
 t = await main()
 ok('stock is valued rather than blank', /₹[\d,]{4,}/.test(t), t.slice(0, 400).replace(/\n/g, ' | '))
 await open('/reports', 'Cost centres')
