@@ -7,7 +7,7 @@ import { assetOptional } from '../lib/place'
 import { useToast } from '../context/ToastContext'
 import { sumAmount } from '../lib/filters'
 import { formatCurrency, todayISO } from '../lib/format'
-import { Card, EmptyState, Spinner } from '../components/ui'
+import { Card, EmptyState, Spinner, DateFilter } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import IncomeTable from '../components/IncomeTable'
 
@@ -121,11 +121,11 @@ export default function Income() {
         <>
           <Card className="p-3">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-12">
-              <div className="relative lg:col-span-4">
+              <div className="relative lg:col-span-3">
                 <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-ink-6" />
-                <input className="field-input pl-9" aria-label="Search income" placeholder="Search source, payer, note…" value={filters.q} onChange={set('q')} />
+                <input className="field-input pl-9" aria-label="Search income by source, payer or note" placeholder="Search…" value={filters.q} onChange={set('q')} />
               </div>
-              <select className="field-input lg:col-span-4" aria-label="Filter by asset" value={filters.propertyId} onChange={set('propertyId')}>
+              <select className="field-input lg:col-span-3" aria-label="Filter by asset" value={filters.propertyId} onChange={set('propertyId')}>
                 <option value="">All assets</option>
                 {properties.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -133,8 +133,12 @@ export default function Income() {
                   </option>
                 ))}
               </select>
-              <input type="date" className="field-input lg:col-span-2" value={filters.from} onChange={set('from')} title="From date" />
-              <input type="date" className="field-input lg:col-span-2" value={filters.to} onChange={set('to')} title="To date" />
+              {/* These carried a `title` and nothing else: a tooltip on hover,
+                  which a phone never shows and a hurried eye never waits for.
+                  Two identical empty boxes at the end of the row, and no way
+                  to tell the start of the range from the end. */}
+              <DateFilter label="From" className="lg:col-span-3" value={filters.from} onChange={set('from')} />
+              <DateFilter label="To" className="lg:col-span-3" value={filters.to} onChange={set('to')} />
             </div>
             {active && (
               <button onClick={() => setFilters(EMPTY)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2">

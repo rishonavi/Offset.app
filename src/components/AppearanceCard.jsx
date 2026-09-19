@@ -145,7 +145,7 @@ export default function AppearanceCard() {
               <span className="sr-only">Accent colour hex</span>
               <span aria-hidden="true" className="text-xs text-ink-5">#</span>
               <input
-                className="field-input py-1.5 text-xs uppercase"
+                className="field-input py-1.5 text-xs uppercase placeholder:normal-case"
                 value={hex}
                 onChange={(e) => {
                   const next = e.target.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
@@ -153,7 +153,12 @@ export default function AppearanceCard() {
                   const h = hueOfHex(`#${next}`)
                   if (h !== null) setAccent(String(h))
                 }}
-                placeholder="0D9488"
+                // Not a hex. The accent is stored as a hue, so this box only
+                // ever reads — there is no current hex to show — and a greyed
+                // `0D9488` sitting under a checked *gold* swatch read as if
+                // teal were the colour in use. A prompt cannot be mistaken for
+                // a value.
+                placeholder="paste a hex"
                 aria-label="Accent colour hex"
                 spellCheck="false"
               />

@@ -118,6 +118,29 @@ export function Spinner({ label = 'Loading…', className = 'py-16' }) {
   )
 }
 
+// One end of a date range, with the word inside the control.
+//
+// `<input type="date">` takes no placeholder, so unlike a search box or a
+// select it cannot say what it is from the inside — and the two ends of a range
+// sit side by side looking identical. Both filter bars in this app had put the
+// word above the field and then hidden it above `lg`, which is exactly the
+// width where there is room for it. The word goes in the control instead, so
+// the row keeps one height and reads like its neighbours at every size.
+export function DateFilter({ label, value, onChange, className = '' }) {
+  return (
+    <label className={cx('field-input flex min-w-0 items-center gap-2', className)}>
+      <span className="shrink-0 text-xs font-medium text-ink-5">{label}</span>
+      <input
+        type="date"
+        aria-label={`${label} date`}
+        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-ink-1 outline-none"
+        value={value}
+        onChange={onChange}
+      />
+    </label>
+  )
+}
+
 export function EmptyState({ icon: Icon, title, subtitle, action }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-strong bg-white/60 px-6 py-16 text-center">

@@ -141,6 +141,45 @@ for (const r of ROUTES) {
   ok(`${r}: every button says what it does`, unnamed.length === 0, unnamed.slice(0, 2).join(' / '))
   ok(`${r}: every field has a label`, unlabelled.length === 0, unlabelled.slice(0, 3).join(' / '))
 }
+console.log('\n── AND ON A WIDE SCREEN YOU CAN SEE IT ──')
+// An accessible name is not a visible one, and this suite could not tell the
+// difference. The two date fields on the expenses filter bar each sat inside a
+// `<label>`, so the check above was satisfied — but the label text was
+// `lg:hidden`, so on a desktop the row ended in two identical empty boxes and
+// nothing said which was the start of the range. A screen reader knew; nobody
+// looking at it did.
+await p.setViewportSize({ width: 1280, height: 900 })
+await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(500)
+const dateLabels = await p.evaluate(() => {
+  const seen = []
+  for (const input of document.querySelectorAll('#main-content input[type="date"]')) {
+    const owner = input.closest('label')
+    // Only text that is actually painted counts.
+    const words = owner
+      ? [...owner.querySelectorAll('span')]
+        .filter((el) => el.offsetParent !== null && el.textContent.trim())
+        .map((el) => el.textContent.trim())
+      : []
+    seen.push(words.join(' '))
+  }
+  return seen
+})
+ok('both ends of the range are labelled on screen', dateLabels.length === 2 && dateLabels.every(Boolean),
+  JSON.stringify(dateLabels))
+ok('and the two labels are not the same word', new Set(dateLabels).size === dateLabels.length,
+  JSON.stringify(dateLabels))
+// The control: hide one of them the way the old markup did, and the check fails.
+await p.evaluate(() => {
+  const owner = document.querySelector('#main-content input[type="date"]').closest('label')
+  owner.querySelector('span').style.display = 'none'
+})
+await p.waitForTimeout(150)
+const afterHiding = await p.evaluate(() => [...document.querySelectorAll('#main-content input[type="date"]')]
+  .map((i) => [...(i.closest('label')?.querySelectorAll('span') || [])]
+    .filter((el) => el.offsetParent !== null && el.textContent.trim()).length))
+ok('and a hidden label is noticed', afterHiding[0] === 0, JSON.stringify(afterHiding))
+
 // The control again, and for the other half. A hidden file input with no
 // `aria-label` is exactly what nine of these were.
 await p.evaluate(() => {
