@@ -24,18 +24,25 @@ const main = () => p.locator('#main-content').innerText()
 // The tab buttons carry an icon, so their text has leading whitespace and an
 // anchored match never fires. They are the only aria-pressed controls here.
 const TABS = ['Projects', 'Materials', 'Labour', 'Plant', 'Sales', 'Advances', 'Payroll']
-// Every Operations tab is its own chunk, so a click is a network fetch. The
-// fixed wait that used to follow one was long enough until it was not: under
-// eight browsers at once the Materials chunk took longer than 350ms and the
-// assertion read the loading card. Wait for the thing itself — the Suspense
-// fallback's live region — rather than for a number of milliseconds.
-const loaded = async (page) => {
-  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
-  await page.waitForTimeout(150)
+// Clicking a tab is a network fetch now, and React commits the switch
+// asynchronously. So "no loading card on screen" is true for a moment *before*
+// the new panel starts loading, and a check made in that moment passes while
+// still reading the tab you just left — which is how four assertions came to
+// read the demo-mode banner off a page that was perfectly correct.
+//
+// The control reports itself chosen in the same commit that mounts the loading
+// card, so waiting for that first closes the gap. Then wait for the card to go.
+const chose = async (locator) => {
+  await locator.click()
+  const handle = await locator.elementHandle()
+  await p.waitForFunction(
+    (el) => el.getAttribute('aria-pressed') === 'true' || el.getAttribute('aria-selected') === 'true',
+    handle, { timeout: 30000 })
+  await p.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await p.waitForTimeout(150)
 }
 const tab = async (name) => {
-  await p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)).click()
-  await loaded(p)
+  await chose(p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)))
 }
 
 // ── 1. Dormant without a company ──

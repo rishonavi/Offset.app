@@ -22,21 +22,28 @@ await p.route('**/fonts.g**/**', (r) => r.abort())
 p.on('dialog', (d) => d.accept())
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
-// Every Operations tab and every Materials view is its own chunk, so a click
-// is a network fetch. The fixed wait that used to follow one was long enough
-// until it was not: under eight browsers at once the chunk took longer than
-// the sleep and the assertion read the loading card. Wait for the thing itself
-// — the Suspense fallback's live region — not for a number of milliseconds.
-const loaded = async (page) => {
-  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
-  await page.waitForTimeout(150)
+// Clicking a tab is a network fetch now, and React commits the switch
+// asynchronously. So "no loading card on screen" is true for a moment *before*
+// the new panel starts loading, and a check made in that moment passes while
+// still reading the tab you just left — which is how four assertions came to
+// read the demo-mode banner off a page that was perfectly correct.
+//
+// The control reports itself chosen in the same commit that mounts the loading
+// card, so waiting for that first closes the gap. Then wait for the card to go.
+const chose = async (locator) => {
+  await locator.click()
+  const handle = await locator.elementHandle()
+  await p.waitForFunction(
+    (el) => el.getAttribute('aria-pressed') === 'true' || el.getAttribute('aria-selected') === 'true',
+    handle, { timeout: 30000 })
+  await p.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await p.waitForTimeout(150)
 }
 
 const ls = (k) => p.evaluate((key) => JSON.parse(localStorage.getItem(key) || '[]'), k)
 const main = () => p.locator('#main-content').innerText()
 const view = async (label) => {
-  await p.locator('#main-content [role="tab"]', { hasText: label }).first().click()
-  await loaded(p)
+  await chose(p.locator('#main-content [role="tab"]', { hasText: label }).first())
 }
 // Just the comparison block: the Progress view carries several totals of its
 // own and a check that reads the whole page can be satisfied by one of those.
