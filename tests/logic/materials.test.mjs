@@ -11,6 +11,7 @@ import {
 import {
   makeItem, makeMovement, stockOf, stockAt, stockReport, stockOverPeriod,
   usageBySite, movementLog, UNITS, MOVEMENT_KINDS, CENTRAL, isCentral,
+  canAmendItem, canRemoveItem, stockAfter,
 } from '../../src/lib/inventory.js'
 import {
   makeQuote, makeQuoteLine, quoteTotals, quoteState, isLiveQuote,
@@ -472,6 +473,73 @@ eq('and it is a movement the stock module accepts', built.kind, 'receipt')
 eq('carrying the vendor through', built.vendor, 'Konkan Cement')
 eq('a line for something not stocked produces no receipt',
   receiptsFromQuote(makeQuote({ lines: [makeQuoteLine({ name: 'Loose item', qty: 1, rate: 5 })] })).length, 0)
+
+console.log('\n── CORRECTING WHAT IS ALREADY RECORDED ──')
+// None of this could be touched once entered, and a receipt booked at the wrong
+// rate is worse here than a wrong figure elsewhere: stock is valued at a moving
+// average, so one bad rate quietly reprices every issue after it and the job
+// costs that follow are all a little wrong with nothing to point at.
+const fix = makeItem({ entityId: 'e1', name: 'Cement', unit: 'bag' })
+const fixMoves = [
+  makeMovement({ entityId: 'e1', itemId: fix.id, kind: 'receipt', qty: 500, unitCost: 400, date: '2026-01-01', storeId: 'site-a', projectId: 'site-a' }),
+  makeMovement({ entityId: 'e1', itemId: fix.id, kind: 'issue', qty: 300, date: '2026-02-01', storeId: 'site-a', projectId: 'site-a' }),
+]
+// The name and the reorder level are free. The unit is not, once anything has
+// moved: a hundred bags that become a hundred kilos are still a hundred, and
+// every quantity in the history silently changes meaning. There is no
+// conversion to do, because none of the numbers are wrong — only what they
+// count.
+ok('a material can be renamed whatever has moved', canAmendItem(fix, fixMoves, { name: 'Cement OPC 53' }).ok)
+ok('but its unit cannot, once it has moved', !canAmendItem(fix, fixMoves, { unit: 'kg' }).ok)
+ok('and says how many movements count on it', /2 movements/.test(canAmendItem(fix, fixMoves, { unit: 'kg' }).why),
+  canAmendItem(fix, fixMoves, { unit: 'kg' }).why)
+ok('and why it is not a conversion', /change what every quantity in the history means/.test(canAmendItem(fix, fixMoves, { unit: 'kg' }).why), '')
+// The control: the guard is on the movements, not on the field.
+ok('a material nobody has moved can change unit freely', canAmendItem(fix, [], { unit: 'kg' }).ok)
+ok('and keeping the same unit is never refused', canAmendItem(fix, fixMoves, { unit: 'bag' }).ok)
+// Deleting: a movement pointing at a material that is not there is a quantity
+// of nothing that still carries value into the stock total.
+ok('a material with movements cannot be deleted', !canRemoveItem(fix, fixMoves).ok)
+ok('which says to delete those first', /Delete those first/.test(canRemoveItem(fix, fixMoves).why), canRemoveItem(fix, fixMoves).why)
+ok('an unused one can be', canRemoveItem(fix, []).ok)
+ok('and movements on a different material do not count',
+  canRemoveItem(makeItem({ entityId: 'e1', name: 'Sand', unit: 'cft' }), fixMoves).ok)
+
+console.log('\n── AND WHAT A CORRECTION DOES TO THE BALANCE ──')
+// Negative stock is not forbidden — a store that has issued more than it was
+// sent is a real thing and the attention list says so rather than the app
+// refusing an entry and losing it. But somebody about to make one should hear
+// it before rather than after.
+const now = stockOf(fix, fixMoves)
+eq('two hundred bags on hand', now.qty, 200)
+const pull = stockAfter(fix, fixMoves, { remove: fixMoves[0].id })
+eq('deleting the receipt leaves minus three hundred', pull.after.qty, -300)
+eq('a store goes short that was not', pull.newlyShort.length, 1)
+eq('and it was not short before', pull.wasShort.length, 0)
+// The control: deleting the issue instead takes stock up, not down.
+const undo = stockAfter(fix, fixMoves, { remove: fixMoves[1].id })
+eq('deleting the issue leaves the full five hundred', undo.after.qty, 500)
+eq('and nothing goes short', undo.newlyShort.length, 0)
+// The bad rate, which is the case this is really for — and the arithmetic that
+// makes it so hard to spot. Repricing a 500-bag receipt by ₹50 moves the books
+// by ₹25,000, but only ₹10,000 of that is still on the shelf: the other
+// ₹15,000 went out with the 300 bags already issued and is sitting in a job
+// cost nobody is looking at.
+const repriced = stockAfter(fix, fixMoves, { replace: { ...fixMoves[0], unit_cost: 450 } })
+eq('repricing the receipt moves what is on hand by the bags still there', repriced.value, 200 * 50)
+ok('which is less than the receipt moved by', repriced.value < 500 * 50, String(repriced.value))
+eq('and not the quantity at all', repriced.qty, 0)
+// Already short stays already short: telling somebody they caused it would be
+// wrong, and is the kind of noise that teaches people to click through
+// warnings.
+const alreadyShort = [
+  makeMovement({ entityId: 'e1', itemId: fix.id, kind: 'receipt', qty: 100, unitCost: 400, date: '2026-01-01' }),
+  makeMovement({ entityId: 'e1', itemId: fix.id, kind: 'issue', qty: 50, date: '2026-02-01', storeId: 'site-b', projectId: 'site-b' }),
+]
+ok('a store already short is not blamed on the change',
+  stockAfter(fix, alreadyShort, { remove: alreadyShort[0].id }).newlyShort.length === 0,
+  JSON.stringify(stockAfter(fix, alreadyShort, { remove: alreadyShort[0].id })))
+ok('though it is still reported as short', stockAfter(fix, alreadyShort, { remove: alreadyShort[0].id }).goesShort.length > 0, '')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

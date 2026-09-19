@@ -289,6 +289,131 @@ const personal = await main()
 ok('in personal books the page says these belong to a company', /personal books/i.test(personal), personal.slice(0, 300))
 ok('and no muster is shown', !/Sharma Plastering/.test(personal) && !/Mason/.test(personal))
 
+console.log('\n── CORRECTING A DAY THAT IS ALREADY IN THE REGISTER ──')
+// A day entered wrong stayed wrong. The heads and the rate are bad enough; the
+// site it was booked to is the one that quietly moves a day's cost onto the
+// wrong job, and nothing anywhere would say so.
+await p.evaluate(() => {
+  const id = 'ent-lab-1'
+  const now = new Date().toISOString()
+  localStorage.setItem('pl_corp_muster', JSON.stringify([
+    { id: 'mu-1', entity_id: id, project_id: null, date: '2026-03-02', trade: 'mason',
+      headcount: 8, rate: 900, overtime_hours: 0, overtime_rate: 0, contractor: '', note: '', created_at: now },
+  ]))
+  localStorage.setItem('pl_corp_active', id)
+})
+await p.goto(`${B}/operations?tab=labour`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
+await view('Muster roll')
+await p.waitForTimeout(500)
+const days = async () => (await ls('pl_corp_muster')).filter((r) => !r.deleted_at)
+const inPanel = (name) => (label) =>
+  p.locator(`#main-content [role=group][aria-label="${name}"]`).locator(`label:has-text("${label}")`).locator('input, select').first()
+const savePanel = (name) => p.locator(`#main-content [role=group][aria-label="${name}"] button`, { hasText: 'Save' }).first()
+
+let reg = await main()
+ok('the day is in the register', /2026-03-02/.test(reg), reg.slice(0, 900).replace(/\n/g, ' | '))
+ok('and is not booked to a site', /Not booked to a site/.test(reg), reg.slice(0, 900).replace(/\n/g, ' | '))
+await p.locator('#main-content button[aria-label="Edit 8 mason on 2026-03-02"]').click()
+await p.waitForTimeout(500)
+await inPanel('Editing muster of 2026-03-02')('Heads').fill('9')
+await inPanel('Editing muster of 2026-03-02')('Rate a day').fill('950')
+await savePanel('Editing muster of 2026-03-02').click()
+await p.waitForTimeout(800)
+ok('the heads are corrected', (await days())[0]?.headcount === 9, String((await days())[0]?.headcount))
+ok('and the rate', (await days())[0]?.rate === 950, String((await days())[0]?.rate))
+ok('it is still one day, not two', (await days()).length === 1, String((await days()).length))
+reg = await main()
+ok('and the cost follows', /₹8,550/.test(reg), reg.slice(0, 900).replace(/\n/g, ' | '))
+
+console.log('\n── INCLUDING THE SITE IT WAS BOOKED TO ──')
+// The correction that moves money between jobs.
+await p.locator('#main-content button[aria-label="Edit 9 mason on 2026-03-02"]').click()
+await p.waitForTimeout(500)
+await inPanel('Editing muster of 2026-03-02')('Site').selectOption({ index: 1 })
+await savePanel('Editing muster of 2026-03-02').click()
+await p.waitForTimeout(800)
+ok('the day is booked to a site now', Boolean((await days())[0]?.project_id), String((await days())[0]?.project_id))
+// Scoped to the register, not the whole tab: "Not booked to a site" is also an
+// option in the form above, so looking for it anywhere finds it either way.
+reg = (await main()).slice((await main()).indexOf('The register'))
+ok('and the register stops flagging it as unbooked', !/Not booked to a site/.test(reg),
+  reg.slice(0, 600).replace(/\n/g, ' | '))
+ok('naming the site instead', /Marine Drive Tower/.test(reg), reg.slice(0, 600).replace(/\n/g, ' | '))
+
+console.log('\n── AND A DAY ENTERED TWICE CAN BE TAKEN OUT ──')
+await p.locator('#main-content button[aria-label="Edit 9 mason on 2026-03-02"]').click()
+await p.waitForTimeout(400)
+await p.locator('#main-content button[aria-label="Delete 9 mason on 2026-03-02"]').click()
+await p.waitForTimeout(800)
+ok('the day is gone', (await days()).length === 0, String((await days()).length))
+
+console.log('\n── AND A BILL IN THE MIDDLE OF A CUMULATIVE LADDER ──')
+// RA bills carry the work certified *to date*, so a bill has two neighbours and
+// correcting it has to respect both. Below the one before it and this bill goes
+// negative; above the one after it and the *next* one does — which is worse,
+// because the figure that breaks is not the one on screen.
+await p.evaluate(() => {
+  const id = 'ent-lab-1'
+  const now = new Date().toISOString()
+  localStorage.setItem('pl_corp_work_orders', JSON.stringify([
+    { id: 'wo-1', entity_id: id, project_id: null, side: 'sub', party: 'Ravi Contractors', contractor: 'Ravi Contractors',
+      scope: 'Blockwork', order_value: 1000000, retention_percent: 5, tds_percent: 1, pricing: 'item_rate',
+      status: 'running', started_on: '2026-01-01', completed_on: '', retention_released: 0, created_at: now },
+  ]))
+  localStorage.setItem('pl_corp_ra_bills', JSON.stringify([1, 2, 3].map((n) => ({
+    id: `rb-${n}`, entity_id: id, work_order_id: 'wo-1', project_id: null, number: n,
+    date: `2026-0${n}-15`, claimed_to_date: n * 300000, certified_to_date: n * 250000,
+    advance_recovered: 0, material_recovered: 0, penalty: 0, other_deduction: 0,
+    status: 'certified', note: '', created_at: now,
+  }))))
+})
+await p.goto(`${B}/operations?tab=labour`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
+await view('Contractors')
+await p.waitForTimeout(600)
+const bills = async () => (await ls('pl_corp_ra_bills')).filter((r) => !r.deleted_at)
+let led = await main()
+ok('three bills are in the ladder', /RA 1/.test(led) && /RA 2/.test(led) && /RA 3/.test(led),
+  led.slice(0, 1200).replace(/\n/g, ' | '))
+ok('each paying two and a half lakh', (led.match(/₹2,50,000/g) || []).length >= 3,
+  led.slice(0, 1400).replace(/\n/g, ' | '))
+
+await p.locator('#main-content button[aria-label="Edit RA 2 for Ravi Contractors"]').click()
+await p.waitForTimeout(500)
+led = await main()
+// The bounds, shown before somebody types rather than as a refusal after.
+ok('the panel says what the figure has to sit between', /has to sit between ₹2,50,000 and ₹7,50,000/.test(led),
+  led.slice(0, 1600).replace(/\n/g, ' | '))
+const billPanel = 'Editing RA 2'
+await inPanel(billPanel)('Certified to date').fill('200000')
+await savePanel(billPanel).click()
+await p.waitForTimeout(800)
+ok('below the bill before it is refused', (await bills()).find((b) => b.id === 'rb-2')?.certified_to_date === 500000,
+  String((await bills()).find((b) => b.id === 'rb-2')?.certified_to_date))
+let told = await p.locator('body').innerText()
+ok('and names the bill that sets the floor', /Bill 1 certified 250000/.test(told),
+  (told.match(/[^\n]*certified[^\n]*/g) || []).slice(0, 2).join(' | '))
+// The one that breaks a figure somebody is not looking at.
+await inPanel(billPanel)('Certified to date').fill('800000')
+await savePanel(billPanel).click()
+await p.waitForTimeout(800)
+ok('above the bill after it is refused too', (await bills()).find((b) => b.id === 'rb-2')?.certified_to_date === 500000,
+  String((await bills()).find((b) => b.id === 'rb-2')?.certified_to_date))
+told = await p.locator('body').innerText()
+ok('and says it would make the next bill negative', /make bill 3 pay a negative/.test(told),
+  (told.match(/[^\n]*bill 3[^\n]*/gi) || []).slice(0, 2).join(' | '))
+// The control: between them is allowed, so the refusal is the rule and not a
+// form that never saves.
+await inPanel(billPanel)('Certified to date').fill('600000')
+await savePanel(billPanel).click()
+await p.waitForTimeout(900)
+ok('between them it saves', (await bills()).find((b) => b.id === 'rb-2')?.certified_to_date === 600000,
+  String((await bills()).find((b) => b.id === 'rb-2')?.certified_to_date))
+led = await main()
+ok('and the ladder re-reckons both bills either side', /₹3,50,000/.test(led),
+  led.slice(0, 1600).replace(/\n/g, ' | '))
+
 console.log('\n── NOTHING BROKE ──')
 ok('no page errors anywhere in the run', errs.length === 0, errs.slice(0, 3).join(' / '))
 

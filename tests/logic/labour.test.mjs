@@ -11,6 +11,7 @@ import {
 import {
   makeWorkOrder, makeRaBill, billLadder, subcontractReport, subcontractCostsBySite,
   ORDER_STATUS_IDS, PRICING_IDS, isOrderOpen,
+  canAmendBill, removingBill,
 } from '../../src/lib/subcontract.js'
 import {
   makeWorkItem, makeMeasurement, itemProgress, siteProgress, progressAgainstSpend,
@@ -251,6 +252,76 @@ ok('with no priced schedule there is no answer', !blind.known)
 ok('and it says why', /No priced schedule/.test(blind.why), blind.why)
 ok('with no estimate, likewise',
   /No estimate/.test(progressAgainstSpend({ earned: 10, value: 100, spent: 5, estimate: 0 }).why))
+
+console.log('\n── CORRECTING A BILL THAT IS ALREADY IN THE LADDER ──')
+// RA bills are cumulative — each carries the work certified *to date*, and what
+// is payable is that figure less the one before it. So a bill has two
+// neighbours and correcting it has to respect both, which is a constraint no
+// other document in this app has.
+const wo = makeWorkOrder({ entityId: 'e1', party: 'Ravi Contractors', orderValue: 1000000, retentionPercent: 5, tdsPercent: 1 })
+const three = [1, 2, 3].map((n) => makeRaBill({
+  entityId: 'e1', workOrderId: wo.id, number: n,
+  claimedToDate: n * 300000, certifiedToDate: n * 250000, date: `2026-0${n}-01`,
+}))
+const mid = three[1]
+// Below the bill before it and this bill's own amount goes negative — money
+// flowing backwards out of a subcontractor.
+ok('a bill cannot be corrected below the one before it', !canAmendBill(wo, three, mid, 200000).ok)
+ok('and is told which bill sets the floor', /Bill 1 certified 250000/.test(canAmendBill(wo, three, mid, 200000).why),
+  canAmendBill(wo, three, mid, 200000).why)
+ok('and why it matters', /would be negative/.test(canAmendBill(wo, three, mid, 200000).why), '')
+// Above the bill after it and the *next* one goes negative instead, which is
+// worse: the figure that breaks is not the one being edited, so nobody looking
+// at this screen would connect the two.
+ok('nor above the one after it', !canAmendBill(wo, three, mid, 800000).ok)
+ok('and is told which bill that breaks', /make bill 3 pay a negative/.test(canAmendBill(wo, three, mid, 800000).why),
+  canAmendBill(wo, three, mid, 800000).why)
+// Anywhere between them is fine, boundaries included.
+ok('exactly at the floor is allowed', canAmendBill(wo, three, mid, 250000).ok)
+ok('exactly at the ceiling is allowed', canAmendBill(wo, three, mid, 750000).ok)
+ok('and anywhere between', canAmendBill(wo, three, mid, 500000).ok)
+// The bounds come back, because "invalid" on a cumulative figure is useless
+// without saying what it has to sit between.
+eq('the floor is reported', canAmendBill(wo, three, mid, 500000).floor, 250000)
+eq('and the ceiling', canAmendBill(wo, three, mid, 500000).ceiling, 750000)
+// And on a refusal, which is when they are actually wanted. This returned them
+// only on success, so the screen offering guidance could say what the limits
+// were only while you were already inside them.
+eq('the floor comes back when the figure is below it', canAmendBill(wo, three, mid, 1).floor, 250000)
+eq('with the ceiling beside it', canAmendBill(wo, three, mid, 1).ceiling, 750000)
+eq('and likewise when it is above', canAmendBill(wo, three, mid, 9000000).floor, 250000)
+eq('with its ceiling', canAmendBill(wo, three, mid, 9000000).ceiling, 750000)
+// The ends of the ladder have one neighbour each.
+eq('the first bill has nothing below it', canAmendBill(wo, three, three[0], 100000).floor, 0)
+eq('and the last has nothing above it', canAmendBill(wo, three, three[2], 9000000).ceiling, null)
+ok('so the last one can be raised freely', canAmendBill(wo, three, three[2], 9000000).ok)
+ok('but still not below its predecessor', !canAmendBill(wo, three, three[2], 400000).ok)
+// A single bill has no neighbours at all.
+ok('a lone bill can be anything', canAmendBill(wo, [three[0]], three[0], 999999).ok)
+ok('except a negative', !canAmendBill(wo, three, mid, -1).ok)
+
+console.log('\n── AND DELETING ONE RE-BASES THE LADDER ──')
+// Arithmetically safe at any position, so this says what will happen rather
+// than refusing. Being told afterwards that another bill doubled is how
+// somebody stops trusting the screen.
+const cut = removingBill(wo, three, mid)
+ok('deleting a middle bill is allowed', cut.ok)
+ok('and it is not the last', cut.last === false, JSON.stringify(cut))
+// Optional chaining on purpose: when this broke in testing it threw, and a
+// throw takes the rest of the file with it. A guard that fails should report,
+// not stop everything after it from running.
+eq('the bill after it takes over what this one was paying', cut.absorbs?.number, 3)
+// RA 3 certified 750,000 to date; with RA 2 gone it certifies from RA 1's
+// 250,000, so it pays 500,000 instead of 250,000.
+eq('which doubles it', cut.absorbs?.gross, 500000)
+const end = removingBill(wo, three, three[2])
+ok('deleting the last one absorbs into nothing', end.absorbs === null, JSON.stringify(end))
+ok('and knows it is the last', end.last === true, '')
+// The ladder holds afterwards, which is the real check.
+const after = billLadder(wo, three.filter((b) => b.id !== mid.id))
+eq('two bills are left', after.lines.length, 2)
+eq('and the second now pays what the deleted one did too', after.lines[1].gross, 500000)
+ok('with nothing negative', after.lines.every((l) => l.gross >= 0), JSON.stringify(after.lines.map((l) => l.gross)))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

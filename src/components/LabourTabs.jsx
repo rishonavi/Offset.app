@@ -4,6 +4,7 @@ import * as store from '../lib/storage/corporate'
 import { makeMuster, musterCost, labourReport, TRADES, TRADE_IDS } from '../lib/labour'
 import {
   makeWorkOrder, makeRaBill, billLadder, subcontractReport, retentionSchedule,
+  canAmendBill, removingBill,
   ORDER_STATUS, ORDER_STATUS_IDS, PRICING, PRICING_IDS, SIDE, SIDE_IDS, round2,
 } from '../lib/subcontract'
 import { tdsLedger, DEDUCTEE, DEDUCTEE_IDS } from '../lib/tds'
@@ -89,6 +90,34 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
     setForm({ ...blank, date: form.date, trade: form.trade, rate: form.rate, projectId: form.projectId })
     bump()
     toast('Muster recorded')
+  }
+
+  // A day's muster entered wrong stayed wrong: the heads, the rate and the site
+  // it was booked to were all permanent, and the site is the one that quietly
+  // moves cost onto the wrong job.
+  const [editing, setEditing] = useState(null)
+  const [draft, setDraft] = useState({})
+  const startEdit = (m) => {
+    setEditing(m.id)
+    setDraft({ date: m.date || '', trade: m.trade || 'other', projectId: m.project_id || '',
+      headcount: m.headcount ?? '', rate: m.rate ?? '', overtimeHours: m.overtime_hours ?? '',
+      overtimeRate: m.overtime_rate ?? '', contractor: m.contractor || '', note: m.note || '' })
+  }
+  const saveEdit = (m) => {
+    if (!num(draft.headcount) || !num(draft.rate)) return toast('A day needs heads and a rate.', { type: 'error' })
+    const { id: _i, entity_id: _e, created_at: _c, created_by: _b, ...patch } = makeMuster({
+      entityId: eid, projectId: draft.projectId || null, date: draft.date || m.date, trade: draft.trade,
+      headcount: num(draft.headcount), rate: num(draft.rate),
+      overtimeHours: num(draft.overtimeHours), overtimeRate: num(draft.overtimeRate),
+      contractor: draft.contractor, note: draft.note,
+    })
+    if (!attempt(() => store.muster.update(m.id, patch, actor), toast)) return
+    setEditing(null); bump(); toast('Muster corrected')
+  }
+  const dropEdit = (m) => {
+    if (!window.confirm(`Delete ${m.headcount} ${TRADES[m.trade]?.label.toLowerCase() || m.trade} on ${m.date}?`)) return
+    if (!attempt(() => store.muster.remove(m.id, actor), toast)) return
+    setEditing(null); bump(); toast('Muster day deleted')
   }
 
   const recent = useMemo(
@@ -261,7 +290,19 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
                   const c = musterCost(m)
                   return (
                     <tr key={m.id}>
-                      <td className="py-2 text-ink-4">{m.date}</td>
+                      <td className="py-2 text-ink-4">
+                        {m.date}
+                        {/* Beside the date rather than in a column of its own,
+                            for the same reason as the stock table. */}
+                        {canWrite && (
+                          <button type="button"
+                            aria-label={`Edit ${m.headcount} ${TRADES[m.trade]?.label.toLowerCase() || m.trade} on ${m.date}`}
+                            className="ms-2 text-xs text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
+                            onClick={() => (editing === m.id ? setEditing(null) : startEdit(m))}>
+                            {editing === m.id ? 'Close' : 'Edit'}
+                          </button>
+                        )}
+                      </td>
                       <td className="ps-3 text-ink-2">{TRADES[m.trade]?.label || m.trade}</td>
                       <td className="text-end tabular text-ink-3">{m.headcount}</td>
                       <td className="text-end tabular text-ink-4">{formatCurrency(m.rate)}</td>
@@ -271,6 +312,55 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
                     </tr>
                   )
                 })}
+                {/* Under the row it belongs to, so the figures being corrected
+                    against are still on screen. */}
+                {canWrite && recent.filter((m) => editing === m.id).map((m) => (
+                  <tr key={`${m.id}-edit`}>
+                    <td colSpan={7} className="py-3">
+                      <div className="rounded-xl border border-line-soft p-3" role="group"
+                        aria-label={`Editing muster of ${m.date}`}>
+                        <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
+                          <Field label="Date"><Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} /></Field>
+                          <Field label="Trade">
+                            <Select value={draft.trade} onChange={(e) => setDraft({ ...draft, trade: e.target.value })}>
+                              {TRADE_IDS.map((id) => <option key={id} value={id}>{TRADES[id].label}</option>)}
+                            </Select>
+                          </Field>
+                          {/* The field that quietly moves a day's cost onto the
+                              wrong job, and the reason the register needed this
+                              more than the rest of it. */}
+                          <Field label="Site" hint="Blank leaves the day unbooked.">
+                            <Select value={draft.projectId} onChange={(e) => setDraft({ ...draft, projectId: e.target.value })}>
+                              <option value="">Not booked to a site</option>
+                              {data.projects.map((pr) => <option key={pr.id} value={pr.id}>{pr.name}</option>)}
+                            </Select>
+                          </Field>
+                          <Field label="Heads" required>
+                            <Input type="number" min="0" value={draft.headcount} onChange={(e) => setDraft({ ...draft, headcount: e.target.value })} />
+                          </Field>
+                          <Field label="Rate a day" required>
+                            <Input type="number" step="0.01" min="0" value={draft.rate} onChange={(e) => setDraft({ ...draft, rate: e.target.value })} />
+                          </Field>
+                          <Field label="Overtime hours">
+                            <Input type="number" step="0.5" min="0" value={draft.overtimeHours} onChange={(e) => setDraft({ ...draft, overtimeHours: e.target.value })} />
+                          </Field>
+                          <Field label="Overtime rate an hour">
+                            <Input type="number" step="0.01" min="0" value={draft.overtimeRate} onChange={(e) => setDraft({ ...draft, overtimeRate: e.target.value })} />
+                          </Field>
+                          <Field label="Through whom"><Input value={draft.contractor} onChange={(e) => setDraft({ ...draft, contractor: e.target.value })} /></Field>
+                          <Field label="Note"><Input value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} /></Field>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button onClick={() => saveEdit(m)}>Save</Button>
+                          <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                          <Button variant="ghost"
+                            aria-label={`Delete ${m.headcount} ${TRADES[m.trade]?.label.toLowerCase() || m.trade} on ${m.date}`}
+                            onClick={() => dropEdit(m)}>Delete</Button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -282,8 +372,47 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
 
 // ── Contractors ─────────────────────────────────────────────────────────────
 function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, fyStart = 4 }) {
+  // RA bills are cumulative, so a bill has two neighbours and correcting one has
+  // to respect both. Below the bill before it and this bill's own amount goes
+  // negative; above the bill after it and the *next* one does instead — which is
+  // worse, because the figure that breaks is not the one on screen.
+  const [editingBill, setEditingBill] = useState(null)
+  const [billDraft, setBillDraft] = useState({})
   // The document with legal weight: what was measured, what was certified
   // before, and therefore what is payable now.
+  const startBill = (b) => {
+    setEditingBill(b.id)
+    setBillDraft({ date: b.date || '', claimedToDate: b.claimed_to_date ?? '',
+      certifiedToDate: b.certified_to_date ?? '', advanceRecovered: b.advance_recovered ?? '',
+      materialRecovered: b.material_recovered ?? '', penalty: b.penalty ?? '' })
+  }
+  const saveBill = (order, b) => {
+    const check = canAmendBill(order, data.raBills, b, num(billDraft.certifiedToDate))
+    if (!check.ok) return toast(check.why, { type: 'error' })
+    const { id: _i, entity_id: _e, created_at: _c, created_by: _b, ...patch } = makeRaBill({
+      entityId: eid, workOrderId: order.id, projectId: b.project_id, number: b.number,
+      date: billDraft.date || b.date,
+      claimedToDate: num(billDraft.claimedToDate), certifiedToDate: num(billDraft.certifiedToDate),
+      advanceRecovered: num(billDraft.advanceRecovered), materialRecovered: num(billDraft.materialRecovered),
+      penalty: num(billDraft.penalty), otherDeduction: b.other_deduction, status: b.status, note: b.note,
+    })
+    if (!attempt(() => store.raBills.update(b.id, patch, actor), toast)) return
+    setEditingBill(null); bump(); toast(`RA ${b.number} corrected`)
+  }
+  const dropBill = (order, b) => {
+    // Arithmetically safe anywhere in the ladder — it re-bases and the bill
+    // after certifies from further back — so this says what will happen
+    // instead of refusing. Being told afterwards that another bill doubled is
+    // how somebody stops trusting the screen.
+    const effect = removingBill(order, data.raBills, b)
+    const absorbs = effect.absorbs
+      ? ` RA ${effect.absorbs.number} then pays ${formatCurrency(effect.absorbs.gross)}, because it certifies from further back.`
+      : ''
+    if (!window.confirm(`Delete RA ${b.number}?${absorbs}`)) return
+    if (!attempt(() => store.raBills.remove(b.id, actor), toast)) return
+    setEditingBill(null); bump(); toast(`RA ${b.number} deleted`)
+  }
+
   const certify = async (order, bill) => {
     try {
       await documentToPDF(paymentCertificate(order, data.raBills, { company, billId: bill.id }),
@@ -718,6 +847,13 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                             <Printer size={11} /> Certificate
                           </button>
                           {r.negative && <span className="block text-[0.7rem] text-amber-600">certifies less than the last</span>}
+                          {canWrite && (
+                            <button type="button" aria-label={`Edit RA ${r.bill.number} for ${l.order.contractor}`}
+                              className="mt-1 ms-3 inline-flex text-[0.7rem] text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
+                              onClick={() => (editingBill === r.bill.id ? setEditingBill(null) : startBill(r.bill))}>
+                              {editingBill === r.bill.id ? 'Close' : 'Edit'}
+                            </button>
+                          )}
                         </td>
                         <td className="text-end tabular text-ink-4">{formatCurrency(r.certifiedToDate)}</td>
                         <td className="text-end tabular font-medium text-ink-2">{formatCurrency(r.gross)}</td>
@@ -729,6 +865,60 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                         </td>
                       </tr>
                     ))}
+                    {canWrite && l.lines.filter((r) => editingBill === r.bill.id).map((r) => {
+                      // The bounds, shown before somebody types rather than as a
+                      // refusal after: on a cumulative figure "invalid" is
+                      // useless without saying what it has to sit between.
+                      const bounds = canAmendBill(l.order, data.raBills, r.bill, num(billDraft.certifiedToDate))
+                      const room = canAmendBill(l.order, data.raBills, r.bill, 0)
+                      return (
+                        <tr key={`${r.bill.id}-edit`}>
+                          <td colSpan={7} className="py-3">
+                            <div className="rounded-xl border border-line-soft p-3" role="group"
+                              aria-label={`Editing RA ${r.bill.number}`}>
+                              <p className="text-xs text-ink-5">
+                                Certified <strong className="text-ink-3">to date</strong>, not this bill&rsquo;s amount.
+                                It has to sit between {formatCurrency(room.floor || 0)}
+                                {room.ceiling == null ? ' and whatever comes next' : ` and ${formatCurrency(room.ceiling)}`} —
+                                the bills on either side are what make those the limits.
+                              </p>
+                              <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
+                                <Field label="Bill date">
+                                  <Input type="date" value={billDraft.date} onChange={(e) => setBillDraft({ ...billDraft, date: e.target.value })} />
+                                </Field>
+                                <Field label="Claimed to date">
+                                  <Input type="number" min="0" step="0.01" value={billDraft.claimedToDate}
+                                    onChange={(e) => setBillDraft({ ...billDraft, claimedToDate: e.target.value })} />
+                                </Field>
+                                <Field label="Certified to date" required
+                                  hint={bounds.ok ? `This bill pays ${formatCurrency(num(billDraft.certifiedToDate) - (room.floor || 0))}.` : bounds.why}>
+                                  <Input type="number" min="0" step="0.01" value={billDraft.certifiedToDate}
+                                    onChange={(e) => setBillDraft({ ...billDraft, certifiedToDate: e.target.value })} />
+                                </Field>
+                                <Field label="Advance recovered">
+                                  <Input type="number" min="0" step="0.01" value={billDraft.advanceRecovered}
+                                    onChange={(e) => setBillDraft({ ...billDraft, advanceRecovered: e.target.value })} />
+                                </Field>
+                                <Field label="Material recovered">
+                                  <Input type="number" min="0" step="0.01" value={billDraft.materialRecovered}
+                                    onChange={(e) => setBillDraft({ ...billDraft, materialRecovered: e.target.value })} />
+                                </Field>
+                                <Field label="Penalty">
+                                  <Input type="number" min="0" step="0.01" value={billDraft.penalty}
+                                    onChange={(e) => setBillDraft({ ...billDraft, penalty: e.target.value })} />
+                                </Field>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Button onClick={() => saveBill(l.order, r.bill)}>Save</Button>
+                                <Button variant="ghost" onClick={() => setEditingBill(null)}>Cancel</Button>
+                                <Button variant="ghost" aria-label={`Delete RA ${r.bill.number}`}
+                                  onClick={() => dropBill(l.order, r.bill)}>Delete</Button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

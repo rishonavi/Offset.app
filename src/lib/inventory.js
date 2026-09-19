@@ -230,6 +230,71 @@ const settle = (store) => {
 // show for it, and rejected material was never really ours — it is money the
 // supplier owes back. A single "out" figure hides all three. A transfer is in
 // none of them: it changes which shelf, not how much there is.
+// ── Correcting what is already recorded ────────────────────────────
+//
+// None of this could be touched once entered. A receipt booked at the wrong
+// rate is worse here than a wrong figure elsewhere, because stock is valued at
+// a moving average: one bad rate quietly reprices every issue after it, and the
+// job costs that follow are all a little wrong with nothing to point at.
+
+// Changing a material itself. The name and the reorder level are free; the unit
+// is not, once anything has moved.
+//
+// A hundred bags that become a hundred kilos are still a hundred, and every
+// quantity in the history silently changes meaning — there is no conversion to
+// do because nothing about the numbers is wrong, only what they count. Renaming
+// the unit on an item nobody has moved is harmless, which is why the guard is
+// on the movements rather than on the field.
+export function canAmendItem(item, movements = [], patch = {}) {
+  const moved = movements.filter((m) => m.item_id === item?.id && !m.deleted_at).length
+  if (patch.unit && patch.unit !== item?.unit && moved > 0) {
+    return { ok: false, why: `${moved} movement${moved === 1 ? '' : 's'} already ${moved === 1 ? 'counts' : 'count'} this in ${item.unit}. Changing the unit would not convert them — it would change what every quantity in the history means.` }
+  }
+  return { ok: true, why: '' }
+}
+
+// Deleting one. Only where nothing has moved: a movement pointing at a material
+// that is not there is a quantity of nothing, and it still carries value into
+// the stock total.
+export function canRemoveItem(item, movements = []) {
+  const moved = movements.filter((m) => m.item_id === item?.id && !m.deleted_at).length
+  if (moved > 0) {
+    return { ok: false, why: `${moved} movement${moved === 1 ? ' is' : 's are'} recorded against this material. Delete those first, or leave it — an unused material costs nothing to keep.` }
+  }
+  return { ok: true, why: '' }
+}
+
+// What correcting or removing a movement does to the balance.
+//
+// Negative stock is not forbidden here, and deliberately so: a store that has
+// issued more than it was sent is a real thing that happens, and the attention
+// list says so rather than the app refusing the entry and losing it. But
+// somebody about to make one by deleting a receipt should be told before rather
+// than after.
+export function stockAfter(item, movements = [], change = {}) {
+  const next = movements
+    .filter((m) => !(change.remove && m.id === change.remove))
+    .map((m) => (change.replace && m.id === change.replace.id ? change.replace : m))
+  const before = stockOf(item, movements)
+  const after = stockOf(item, next)
+  return {
+    before, after,
+    qty: round2(after.qty - before.qty),
+    value: round2(after.value - before.value),
+    // Any location left holding less than nothing.
+    goesShort: after.byLocation.filter((l) => l.qty < -0.001).map((l) => l.locationId),
+    wasShort: before.byLocation.filter((l) => l.qty < -0.001).map((l) => l.locationId),
+    // The one worth a warning: short *because of this*. A store that was
+    // already short stays short whatever anybody does here, and telling
+    // somebody they caused it would be both wrong and the kind of noise that
+    // teaches people to click through warnings.
+    newlyShort: after.byLocation
+      .filter((l) => l.qty < -0.001)
+      .filter((l) => !before.byLocation.some((b) => b.locationId === l.locationId && b.qty < -0.001))
+      .map((l) => l.locationId),
+  }
+}
+
 export function stockOf(item, movements) {
   let received = 0
   let receivedPaise = 0

@@ -300,6 +300,67 @@ export function billLadder(order, bills = []) {
 // than read: money given back fills the completion tranche first and the
 // defects tranche with whatever is left. Any other rule would let a company
 // that released the first half look as though it still owed it.
+// ── Correcting a bill that is already in the ladder ────────────────
+//
+// RA bills are cumulative — each one carries the work certified *to date*, and
+// what is payable is that figure less the one before it. So a bill has two
+// neighbours and correcting it has to respect both, which is a constraint no
+// other document in this app has:
+//
+//   Below the bill before it, and this bill's own gross goes negative — money
+//   flowing backwards out of a subcontractor.
+//
+//   Above the bill after it, and the *next* bill's gross goes negative instead,
+//   which is worse: the figure that breaks is not the one being edited, so
+//   nobody looking at this screen would connect the two.
+//
+// Both are refused with the number that bounds them, because "invalid" on a
+// cumulative figure is useless without saying what it has to sit between.
+export function canAmendBill(order, bills = [], bill, certifiedToDate) {
+  const value = round2(certifiedToDate)
+  if (!(value >= 0)) return { ok: false, why: 'Certified to date has to be a number.', floor: 0, ceiling: null }
+  const rows = bills
+    .filter((b) => b.work_order_id === order?.id && !b.deleted_at && b.approval_status !== 'rejected')
+    .slice()
+    .sort((a, b) => a.number - b.number || String(a.date || '').localeCompare(String(b.date || '')))
+  const at = rows.findIndex((b) => b.id === bill?.id)
+  const below = at > 0 ? round2(Number(rows[at - 1].certified_to_date) || 0) : 0
+  const above = at >= 0 && at < rows.length - 1 ? round2(Number(rows[at + 1].certified_to_date) || 0) : null
+
+  // The bounds come back on every answer, refusal included. They are most
+  // wanted exactly when the figure is out of range — a screen that can only say
+  // what the limits are while you are already inside them is no help at all,
+  // and this returned them only on success until a panel started showing
+  // "between ₹0 and whatever comes next".
+  const bounds = { floor: below, ceiling: above }
+  if (value < below - 0.001) {
+    return { ok: false, ...bounds, why: `Bill ${rows[at - 1].number} certified ${below.toFixed(2)} to date, so this one cannot be below that — the difference is what this bill pays, and it would be negative.` }
+  }
+  if (above != null && value > above + 0.001) {
+    return { ok: false, ...bounds, why: `Bill ${rows[at + 1].number} certified ${above.toFixed(2)} to date, so this one cannot be above that — it would make bill ${rows[at + 1].number} pay a negative amount.` }
+  }
+  return { ok: true, why: '', ...bounds }
+}
+
+// Deleting one. Arithmetically safe at any position — the ladder re-bases and
+// the bill after it simply certifies from further back — so this says what will
+// happen rather than refusing.
+export function removingBill(order, bills = [], bill) {
+  const rows = bills
+    .filter((b) => b.work_order_id === order?.id && !b.deleted_at && b.approval_status !== 'rejected')
+    .slice()
+    .sort((a, b) => a.number - b.number || String(a.date || '').localeCompare(String(b.date || '')))
+  const at = rows.findIndex((b) => b.id === bill?.id)
+  const next = at >= 0 && at < rows.length - 1 ? rows[at + 1] : null
+  return {
+    ok: true,
+    last: at === rows.length - 1,
+    // The bill after it takes over what this one was paying, which is right but
+    // worth saying out loud before rather than being noticed afterwards.
+    absorbs: next ? { number: next.number, gross: round2((Number(next.certified_to_date) || 0) - (at > 0 ? Number(rows[at - 1].certified_to_date) || 0 : 0)) } : null,
+  }
+}
+
 export function retentionSchedule(order, ladder, { asOf = null } = {}) {
   const now = asOf || today()
   const accrued = round2(Number(ladder?.retentionAccrued) || 0)

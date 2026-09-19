@@ -7,6 +7,7 @@ import * as store from '../lib/storage/corporate'
 import {
   makeItem, makeMovement, stockReport, reorderList, usageBySite, movementLog,
   UNITS, MOVEMENT_KINDS, MOVEMENT_KIND_IDS, CENTRAL,
+  canAmendItem, canRemoveItem, stockAfter,
 } from '../lib/inventory'
 import {
   MATERIAL_CATEGORIES, MATERIAL_CATEGORY_IDS, CATALOGUE,
@@ -79,6 +80,11 @@ export default function Materials(shared) {
 
 // ── Inventory ───────────────────────────────────────────────────────────────
 function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
+  // Nothing here could be touched once entered. A receipt booked at the wrong
+  // rate is worse than a wrong figure elsewhere, because stock is valued at a
+  // moving average: one bad rate quietly reprices every issue after it.
+  const [editing, setEditing] = useState(null)
+  const [draft, setDraft] = useState({})
   // The yard has no row of its own anywhere, so it needs a name here.
   const storeName = (id) => (id ? data.projects.find((p) => p.id === id)?.name || 'Unknown site' : 'Central store')
   const blank = { category: 'cement', name: '', brand: '', spec: '', sku: '', unit: 'bag', reorderLevel: '' }
@@ -117,6 +123,32 @@ function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
     setForm({ ...blank, category: form.category, unit: unitFor(form.category) })
     bump()
     toast('Material added')
+  }
+
+  const startItem = (i) => {
+    setEditing(`i:${i.id}`)
+    setDraft({ name: i.name || '', brand: i.brand || '', spec: i.spec || '', sku: i.sku || '',
+      unit: i.unit || 'nos', reorderLevel: i.reorder_level ?? '' })
+  }
+  const saveItem = (i) => {
+    if (!draft.name.trim()) return toast('Give it a name.', { type: 'error' })
+    // The unit is the one field that cannot move once anything has: a hundred
+    // bags that become a hundred kilos are still a hundred, and every quantity
+    // in the history silently changes meaning.
+    const check = canAmendItem(i, data.movements, { unit: draft.unit })
+    if (!check.ok) return toast(check.why, { type: 'error' })
+    const { id: _i, entity_id: _e, created_at: _c, ...patch } = makeItem({
+      entityId: eid, ...draft, hsn: i.hsn || '', reorderLevel: num(draft.reorderLevel),
+    })
+    if (!attempt(() => store.items.update(i.id, patch, actor), toast)) return
+    setEditing(null); bump(); toast('Material updated')
+  }
+  const dropItem = (i) => {
+    const check = canRemoveItem(i, data.movements)
+    if (!check.ok) return toast(check.why, { type: 'error' })
+    if (!window.confirm(`Delete ${i.name}?`)) return
+    if (!attempt(() => store.items.remove(i.id, actor), toast)) return
+    setEditing(null); bump(); toast('Material deleted')
   }
 
   const addMovement = (e) => {
@@ -406,6 +438,17 @@ function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
                         {l.item.name}
                         {l.item.brand && <span className="text-ink-6"> · {l.item.brand}</span>}
                         {l.negative && <span className="ms-2"><Badge color="#dc2626">negative</Badge></span>}
+                        {/* Beside the name rather than in a column of its own:
+                            a ninth column pushed this table past what its
+                            scroll container was absorbing and the page itself
+                            started scrolling sideways on a phone. */}
+                        {canWrite && (
+                          <button type="button" aria-label={`Edit ${l.item.name}`}
+                            className="ms-2 text-xs text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
+                            onClick={() => (editing === `i:${l.item.id}` ? setEditing(null) : startItem(l.item))}>
+                            {editing === `i:${l.item.id}` ? 'Close' : 'Edit'}
+                          </button>
+                        )}
                       </td>
                       <td className="text-end tabular text-ink-4">{l.received}</td>
                       <td className="text-end tabular text-ink-4">{l.issued}</td>
@@ -425,6 +468,44 @@ function Inventory({ data, eid, actor, canWrite, bump, toast, company }) {
                       </td>
                       <td className="text-end tabular text-ink-4">{formatCurrency(l.avgCost)}</td>
                       <td className="text-end tabular font-medium">{formatCurrency(l.value)}</td>
+                    </tr>
+                  ))}
+                  {/* The edit sits in the table so it appears under the row it
+                      belongs to, rather than in a dialog that hides the figures
+                      somebody is correcting against. */}
+                  {canWrite && g.lines.filter((l) => editing === `i:${l.item.id}`).map((l) => (
+                    <tr key={`${l.item.id}-edit`}>
+                      <td colSpan={8} className="py-3">
+                        <div className="rounded-xl border border-line-soft p-3" role="group" aria-label={`Editing ${l.item.name}`}>
+                          <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
+                            <Field label="Material" required>
+                              <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+                            </Field>
+                            <Field label="Brand"><Input value={draft.brand} onChange={(e) => setDraft({ ...draft, brand: e.target.value })} /></Field>
+                            <Field label="Grade / size"><Input value={draft.spec} onChange={(e) => setDraft({ ...draft, spec: e.target.value })} /></Field>
+                            <Field label="SKU"><Input value={draft.sku} onChange={(e) => setDraft({ ...draft, sku: e.target.value })} /></Field>
+                            {/* Fixed once anything has moved, and the hint says
+                                so rather than leaving somebody to discover it
+                                from a refusal. */}
+                            <Field label="Unit" hint={l.received > 0 || l.issued > 0 ? 'Fixed — this has already moved in this unit.' : ''}>
+                              <Select value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })}>
+                                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                              </Select>
+                            </Field>
+                            <Field label="Reorder level" hint="Zero means never warn.">
+                              <Input type="number" min="0" value={draft.reorderLevel}
+                                onChange={(e) => setDraft({ ...draft, reorderLevel: e.target.value })} />
+                            </Field>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Button onClick={() => saveItem(l.item)}>Save</Button>
+                            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                            <Button variant="ghost" aria-label={`Delete ${l.item.name}`} onClick={() => dropItem(l.item)}>
+                              <Trash2 size={15} /> Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -997,8 +1078,47 @@ function Quotations({ data, eid, actor, canWrite, bump, toast }) {
 }
 
 // ── Usage ───────────────────────────────────────────────────────────────────
-function Usage({ data, canWrite }) {
+function Usage({ data, eid, actor, canWrite, bump, toast }) {
   const [filter, setFilter] = useState({ kind: '', projectId: '' })
+  // A movement entered wrong was permanent, and a wrong receipt rate is the
+  // worst of them: stock is valued at a moving average, so one bad rate quietly
+  // reprices every issue after it and every job cost that follows.
+  const [editing, setEditing] = useState(null)
+  const [draft, setDraft] = useState({})
+  const num = (v) => Number(v) || 0
+
+  const startMovement = (m) => {
+    setEditing(m.id)
+    setDraft({ qty: m.qty ?? '', unitCost: m.unit_cost ?? '', otherCost: m.other_cost ?? '',
+      vendor: m.vendor || '', reason: m.reason || '', note: m.note || '', date: m.date || '' })
+  }
+  const saveMovement = (m) => {
+    const item = data.items.find((i) => i.id === m.item_id)
+    const next = makeMovement({
+      entityId: eid, itemId: m.item_id, kind: m.kind,
+      qty: num(draft.qty), unitCost: num(draft.unitCost), otherCost: num(draft.otherCost),
+      vendor: draft.vendor, storeId: m.store_id, toStoreId: m.to_store_id, projectId: m.project_id,
+      reason: draft.reason, note: draft.note, date: draft.date || m.date, createdBy: m.created_by,
+    })
+    // Negative stock is not forbidden — a store that has issued more than it was
+    // sent is a real thing, and the attention list says so rather than the app
+    // refusing an entry and losing it. But somebody about to create one should
+    // hear it before rather than after.
+    const effect = stockAfter(item, data.movements, { replace: { ...next, id: m.id } })
+    if (effect.newlyShort.length && !window.confirm(
+      `That leaves ${effect.newlyShort.length === 1 ? 'a store' : `${effect.newlyShort.length} stores`} holding less than nothing. Record it anyway?`)) return
+    const { id: _i, entity_id: _e, created_at: _c, ...patch } = next
+    if (!attempt(() => store.movements.update(m.id, patch, actor), toast)) return
+    setEditing(null); bump(); toast('Movement corrected')
+  }
+  const dropMovement = (m) => {
+    const item = data.items.find((i) => i.id === m.item_id)
+    const effect = stockAfter(item, data.movements, { remove: m.id })
+    const warn = effect.newlyShort.length ? ' That leaves a store holding less than nothing.' : ''
+    if (!window.confirm(`Delete this ${MOVEMENT_KINDS[m.kind]?.label.toLowerCase() || 'movement'} of ${m.qty}?${warn}`)) return
+    if (!attempt(() => store.movements.remove(m.id, actor), toast)) return
+    setEditing(null); bump(); toast('Movement deleted')
+  }
   const logStore = (id) => (id ? data.projects.find((p) => p.id === id)?.name || 'Unknown site' : 'Central store')
 
   const usage = useMemo(
@@ -1096,10 +1216,66 @@ function Usage({ data, canWrite }) {
                       ` · charged to ${siteName(l.movement.project_id)}`}
                   </span>
                 </span>
-                <span className="tabular text-ink-4">
-                  {l.movement.qty} {l.item?.unit || ''}
-                  {l.value > 0 && <span className="ms-2 text-ink-3">{formatCurrency(l.value)}</span>}
+                <span className="flex items-baseline gap-3">
+                  <span className="tabular text-ink-4">
+                    {l.movement.qty} {l.item?.unit || ''}
+                    {l.value > 0 && <span className="ms-2 text-ink-3">{formatCurrency(l.value)}</span>}
+                  </span>
+                  {canWrite && (
+                    <button type="button" aria-label={`Edit ${l.kind.label.toLowerCase()} of ${l.movement.qty} ${l.item?.name || ''}`}
+                      className="text-xs text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
+                      onClick={() => (editing === l.movement.id ? setEditing(null) : startMovement(l.movement))}>
+                      {editing === l.movement.id ? 'Close' : 'Edit'}
+                    </button>
+                  )}
                 </span>
+                {canWrite && editing === l.movement.id && (
+                  <div className="mt-2 w-full rounded-xl border border-line-soft p-3" role="group"
+                    aria-label={`Editing ${l.kind.label.toLowerCase()} of ${l.item?.name || 'material'}`}>
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-3">
+                      <Field label="Quantity" required>
+                        <Input type="number" step="0.01" value={draft.qty}
+                          onChange={(e) => setDraft({ ...draft, qty: e.target.value })} />
+                      </Field>
+                      {/* The field that poisons everything downstream when it is
+                          wrong, and the reason this whole section exists. */}
+                      {l.movement.kind === 'receipt' && (
+                        <>
+                          <Field label="Rate per unit" hint="Stock is valued at the average of these.">
+                            <Input type="number" step="0.01" min="0" value={draft.unitCost}
+                              onChange={(e) => setDraft({ ...draft, unitCost: e.target.value })} />
+                          </Field>
+                          <Field label="Freight and handling">
+                            <Input type="number" step="0.01" min="0" value={draft.otherCost}
+                              onChange={(e) => setDraft({ ...draft, otherCost: e.target.value })} />
+                          </Field>
+                          <Field label="Supplier">
+                            <Input value={draft.vendor} onChange={(e) => setDraft({ ...draft, vendor: e.target.value })} />
+                          </Field>
+                        </>
+                      )}
+                      <Field label="Date">
+                        <Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+                      </Field>
+                      {['wastage', 'rejected'].includes(l.movement.kind) && (
+                        <Field label="Reason">
+                          <Input value={draft.reason} onChange={(e) => setDraft({ ...draft, reason: e.target.value })} />
+                        </Field>
+                      )}
+                      <Field label="Note">
+                        <Input value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+                      </Field>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button onClick={() => saveMovement(l.movement)}>Save</Button>
+                      <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                      <Button variant="ghost" aria-label={`Delete ${l.kind.label.toLowerCase()} of ${l.movement.qty} ${l.item?.name || ''}`}
+                        onClick={() => dropMovement(l.movement)}>
+                        <Trash2 size={15} /> Delete
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

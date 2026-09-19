@@ -400,6 +400,129 @@ ok('in personal books the page says these belong to a company',
   /personal books/i.test(personal), personal.slice(0, 300))
 ok('and shows no materials', !/TMT bar/.test(personal) && !/Cement OPC/.test(personal))
 
+console.log('\n── CORRECTING WHAT IS ALREADY RECORDED ──')
+// None of this could be touched once entered, and a receipt booked at the wrong
+// rate is the worst of it: stock is valued at a moving average, so one bad rate
+// quietly reprices every issue after it and the job costs that follow are all a
+// little wrong with nothing to point at.
+await p.evaluate(() => {
+  const id = 'ent-mat-1'
+  const now = new Date().toISOString()
+  localStorage.setItem('pl_corp_items', JSON.stringify([
+    { id: 'it-1', entity_id: id, name: 'Cment OPC 53', brand: '', spec: '', sku: 'CEM53',
+      unit: 'bag', category: 'cement', hsn: '', reorder_level: 20, created_at: now },
+    { id: 'it-2', entity_id: id, name: 'Unused sand', brand: '', spec: '', sku: '',
+      unit: 'cft', category: 'aggregate', hsn: '', reorder_level: 0, created_at: now },
+  ]))
+  localStorage.setItem('pl_corp_movements', JSON.stringify([
+    { id: 'mv-1', entity_id: id, item_id: 'it-1', kind: 'receipt', qty: 500, unit_cost: 40,
+      other_cost: 0, store_id: null, to_store_id: null, project_id: null, vendor: 'Shah Traders',
+      reason: '', note: '', ref: '', date: '2026-01-01', created_at: now },
+    { id: 'mv-2', entity_id: id, item_id: 'it-1', kind: 'issue', qty: 300, unit_cost: 0,
+      other_cost: 0, store_id: null, to_store_id: null, project_id: null, vendor: '',
+      reason: '', note: '', ref: '', date: '2026-02-01', created_at: now },
+  ]))
+  localStorage.setItem('pl_corp_quotes', '[]')
+  // The section before this one switches to personal books, which have no
+  // company and therefore no materials at all.
+  localStorage.setItem('pl_corp_active', id)
+})
+await p.goto(`${B}/operations?tab=materials`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
+const onFile = async () => (await ls('pl_corp_items')).filter((r) => !r.deleted_at)
+const logged = async () => (await ls('pl_corp_movements')).filter((r) => !r.deleted_at)
+const panel = (name) => (label) =>
+  p.locator(`#main-content [role=group][aria-label="${name}"]`).locator(`label:has-text("${label}")`).locator('input, select').first()
+const saveIn = (name) => p.locator(`#main-content [role=group][aria-label="${name}"] button`, { hasText: 'Save' }).first()
+
+await view('Inventory')
+await p.waitForTimeout(500)
+let now = await main()
+ok('the material with the typo is on the stock table', /Cment OPC 53/.test(now), now.slice(0, 600).replace(/\n/g, ' | '))
+await p.locator('#main-content button[aria-label="Edit Cment OPC 53"]').click()
+await p.waitForTimeout(500)
+await panel('Editing Cment OPC 53')('Material').fill('Cement OPC 53')
+await panel('Editing Cment OPC 53')('Reorder level').fill('50')
+await saveIn('Editing Cment OPC 53').click()
+await p.waitForTimeout(800)
+ok('the name is corrected', (await onFile())[0]?.name === 'Cement OPC 53',
+  JSON.stringify((await onFile()).map((i) => i.name)))
+ok('and the reorder level with it', (await onFile())[0]?.reorder_level === 50, String((await onFile())[0]?.reorder_level))
+ok('it is still two materials, not three', (await onFile()).length === 2, String((await onFile()).length))
+
+console.log('\n── BUT NOT THE UNIT, ONCE ANYTHING HAS MOVED ──')
+// A hundred bags that become a hundred kilos are still a hundred, and every
+// quantity in the history silently changes meaning. There is no conversion to
+// do, because none of the numbers are wrong — only what they count.
+await p.locator('#main-content button[aria-label="Edit Cement OPC 53"]').click()
+await p.waitForTimeout(500)
+await panel('Editing Cement OPC 53')('Unit').selectOption('kg')
+await saveIn('Editing Cement OPC 53').click()
+await p.waitForTimeout(800)
+ok('changing the unit is refused', (await onFile())[0]?.unit === 'bag', (await onFile())[0]?.unit)
+let why = await p.locator('body').innerText()
+ok('and says what every quantity would come to mean',
+  /change what every quantity in the history means/.test(why),
+  (why.match(/[^\n]*unit[^\n]*/gi) || []).slice(0, 2).join(' | '))
+// The control: a material nobody has moved can change unit freely, so the
+// refusal is the rule and not a form that never saves.
+await p.locator('#main-content button[aria-label="Edit Unused sand"]').click()
+await p.waitForTimeout(500)
+await panel('Editing Unused sand')('Unit').selectOption('kg')
+await saveIn('Editing Unused sand').click()
+await p.waitForTimeout(800)
+ok('a material nobody has moved can change unit', (await onFile()).find((i) => i.id === 'it-2')?.unit === 'kg',
+  (await onFile()).find((i) => i.id === 'it-2')?.unit)
+
+console.log('\n── AND DELETING IS ONLY OFFERED WHERE IT IS SAFE ──')
+await p.locator('#main-content button[aria-label="Edit Unused sand"]').click()
+await p.waitForTimeout(400)
+await p.locator('#main-content button[aria-label="Delete Unused sand"]').click()
+await p.waitForTimeout(800)
+ok('an unused material can be deleted', (await onFile()).length === 1, String((await onFile()).length))
+await p.locator('#main-content button[aria-label="Edit Cement OPC 53"]').click()
+await p.waitForTimeout(400)
+await p.locator('#main-content button[aria-label="Delete Cement OPC 53"]').click()
+await p.waitForTimeout(800)
+ok('one with movements against it is not', (await onFile()).length === 1, String((await onFile()).length))
+why = await p.locator('body').innerText()
+ok('and says to delete those first', /Delete those first/.test(why), '')
+
+console.log('\n── THE RATE THAT REPRICES EVERYTHING AFTER IT ──')
+await view('Usage')
+await p.waitForTimeout(600)
+now = await main()
+ok('the movement log lists the receipt', /Received/i.test(now), now.slice(0, 900).replace(/\n/g, ' | '))
+const wasRate = (await logged()).find((m) => m.id === 'mv-1')?.unit_cost
+ok('booked at the wrong rate', wasRate === 40, String(wasRate))
+await p.locator('#main-content button[aria-label^="Edit received of 500"]').first().click()
+await p.waitForTimeout(500)
+const mvPanel = 'Editing received of Cement OPC 53'
+await panel(mvPanel)('Rate per unit').fill('400')
+await saveIn(mvPanel).click()
+await p.waitForTimeout(900)
+ok('the rate is corrected', (await logged()).find((m) => m.id === 'mv-1')?.unit_cost === 400,
+  String((await logged()).find((m) => m.id === 'mv-1')?.unit_cost))
+ok('and it is still two movements', (await logged()).length === 2, String((await logged()).length))
+// Which is the point: the valuation follows.
+await view('Inventory')
+await p.waitForTimeout(600)
+now = await main()
+ok('the stock is revalued at the corrected rate', /₹80,000/.test(now), now.slice(0, 1200).replace(/\n/g, ' | '))
+
+console.log('\n── AND A MOVEMENT CAN BE DELETED, WITH WARNING ──')
+await view('Usage')
+await p.waitForTimeout(600)
+await p.locator('#main-content button[aria-label^="Edit issued to work of 300"]').first().click()
+await p.waitForTimeout(500)
+await p.locator('#main-content button[aria-label^="Delete issued to work of 300"]').first().click()
+await p.waitForTimeout(900)
+ok('the issue is gone', (await logged()).length === 1, String((await logged()).length))
+await view('Inventory')
+await p.waitForTimeout(600)
+now = await main()
+ok('and all five hundred bags are back on hand', /500 bag/.test(now), now.slice(0, 1200).replace(/\n/g, ' | '))
+
 console.log('\n── NOTHING BROKE ──')
 ok('no page errors anywhere in the run', errs.length === 0, errs.slice(0, 3).join(' / '))
 

@@ -39,13 +39,13 @@ for Vite's resolver.
 | `idempotent.test.mjs` | 31 | a second tap on a slow connection, and the line between that and two real gangs |
 | `intake.test.mjs` | 62 | somebody else's spreadsheet into the books, and why a loose column match has to be shown before it is acted on |
 | `invoice.test.mjs` | 81 | template language, GST, totals, what a template may not do |
-| `labour.test.mjs` | 115 | the muster roll, cumulative running-account bills, and what is actually built |
+| `labour.test.mjs` | 144 | a bill in the middle of a cumulative ladder, bounded on both sides — the muster roll, cumulative running-account bills, and what is actually built |
 | `langs.test.mjs` | 139 | the thirteen languages, RTL, detection |
 | `money.test.mjs` | 44 | what counts as an amount, and what a row is cleaned to on its way in |
 | `leave.test.mjs` | 57 | earned leave standing in cash, and the days over the cap that are quietly taken off people at the year end |
 | `lineage.test.mjs` | 48 | what a contractor certified against what the engineer measured, and why an unlinked contract is not a gap |
 | `maternity.test.mjs` | 74 | twenty-six weeks, the eighty days that decide whether she qualifies, and whether ESIC or the employer pays |
-| `materials.test.mjs` | 187 | construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
+| `materials.test.mjs` | 208 | correcting a material and a movement, and the moving average a bad rate poisons — construction trades, in/out/wasted/rejected, landed cost, prices, quotations |
 | `metalbill.test.mjs` | 43 | reading a jeweller's bill into a metal holding |
 | `metals.test.mjs` | 92 | units, purity, quoting, session close |
 | `office.test.mjs` | 18 | Word / Excel drafts becoming invoice formats |
@@ -75,7 +75,7 @@ for Vite's resolver.
 | `store.test.mjs` | 116 | corporate storage layer, the trail every ledger leaves, and a backup that carries it |
 | `tds.test.mjs` | 97 | what the law requires deducting against what the orders said to, counted per contractor across a year |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
-| | **4,161** | |
+| | **4,211** | |
 
 ## Browser — `tests/browser/`
 
@@ -116,9 +116,9 @@ node tests/browser/rtlui.mjs
 | `importui.mjs` | 45 | the mapping shown before anything is written, the rows it will skip, and the file it declines to read |
 | `invoiceui.mjs` | 36 | default and imported templates, Word drafts, GST, PDF |
 | `loginui.mjs` | 24 | the sign-in screen, its three providers, and what it says when one refuses |
-| `labourui.mjs` | 67 | the muster roll, RA bills stated to date, retention, and built against spent |
+| `labourui.mjs` | 86 | the muster roll, RA bills stated to date, retention, and built against spent |
 | `langui.mjs` | 64 | the picker, what it changes, how honest coverage is, and the entry forms |
-| `materialsui.mjs` | 89 | the trades on screen, rejection kept out of the job's cost, prices and quotes |
+| `materialsui.mjs` | 106 | the trades on screen, rejection kept out of the job's cost, prices and quotes |
 | `loadui.mjs` | 21 | a year of a builder: every page still arrives, and nothing has gone quadratic |
 | `metalbillui.mjs` | 15 | filling a holding from a purchase bill |
 | `metalsui.mjs` | 27 | metal holdings on screen |
@@ -144,11 +144,11 @@ node tests/browser/rtlui.mjs
 | `syncui.mjs` | 16 | no false tick with no server, versions on writes, tombstoned deletes, repeats |
 | `sweepui.mjs` | 6 | the startup sweeps, and what they must not delete |
 | `transparencyui.mjs` | 11 | the app admitting on screen when a value is its guess |
-| | **1,937** | |
+| | **1,973** | |
 
 That total is what one sweep of the demo build reports, plus `loginui.mjs`'s 24:
 that suite needs the other build and does not run in the same pass, so a sweep
-of this one reports 1,913.
+of this one reports 1,949.
 
 `schema.mjs` is shared rather than per-suite: it reads the two shipped `.sql`
 files and works out what columns each table has. `wirecheck.test.mjs` compares

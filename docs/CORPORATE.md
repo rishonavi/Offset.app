@@ -467,6 +467,40 @@ each one, all of it correctable, and three guards in `advances.js` beside the
   adjustment being corrected. Without it, raising ₹30,000 to ₹35,000 is checked
   as though ₹65,000 were going out and refused for a reason nobody can see.
 
+Materials and labour were the same story again, with two invariants neither
+employees nor advances had.
+
+**A material's unit is fixed once anything has moved.** A hundred bags that
+become a hundred kilos are still a hundred: there is no conversion to do,
+because none of the numbers are wrong — only what they count. `canAmendItem`
+puts the guard on the movements rather than on the field, so a material nobody
+has touched can be renamed in any unit. `canRemoveItem` refuses to delete one
+with movements against it, since a movement pointing at nothing is a quantity of
+nothing that still carries value into the stock total.
+
+**A wrong receipt rate is worse here than a wrong figure elsewhere**, because
+stock is valued at a moving average: one bad rate quietly reprices every issue
+after it, and the job costs that follow are all a little wrong with nothing to
+point at. Correcting a 500-bag receipt by ₹50 moves the books by ₹25,000 and
+only ₹10,000 of it is still on the shelf — the rest went out with the bags
+already issued. `stockAfter` reports what a change does before it is made, and
+distinguishes a store that goes short *because of this* from one that was
+already short: blaming somebody for the second is both wrong and the kind of
+noise that teaches people to click through warnings. Negative stock stays
+allowed, because a store that has issued more than it was sent is a real thing
+and the attention list says so.
+
+**RA bills are cumulative, so a bill has two neighbours.** Each carries the work
+certified *to date*, and what is payable is that figure less the one before it.
+Below the bill before it and this bill's own amount goes negative; above the bill
+after it and the *next* one does instead — which is worse, because the figure
+that breaks is not the one on screen. `canAmendBill` refuses both and names the
+bill that bounds it, and returns the bounds on a refusal as well as on success:
+it returned them only on success at first, so the panel offering guidance could
+say what the limits were only while you were already inside them. Deleting is
+allowed anywhere — the ladder re-bases — so `removingBill` says which bill takes
+over what the deleted one was paying instead of refusing.
+
 Two test defects came out of writing this, both the same shape as the `.first()`
 one before it. `editui` filled "Paid to" on the add form instead of the edit
 panel, because both carry that label and it reached for the first on the page —
@@ -474,6 +508,13 @@ so the panels are named and the test is scoped to them. And a refusal was being
 read off `#main-content`, where toasts do not render: it matched the card's own
 heading text, "what has been set against each one", and would have passed
 whether or not the error ever appeared.
+
+The same false positive turned up twice more in the labour and materials work: a
+register checked for "Not booked to a site" across the whole tab, where the form
+above it carries that as a dropdown option; and an item's edit control, added as
+a ninth column, pushed the stock table past what its scroll container was
+absorbing so the page itself scrolled sideways on a phone. `opsui` caught that
+one. Both edit controls now sit beside the name in an existing cell.
 
 Loss of pay pro-rates every component. Take-home never goes negative; a
 deduction larger than the pay is flagged as the data error it is. Employer cost
