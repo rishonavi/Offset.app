@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, Lock, LockOpen, Pencil } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
@@ -13,7 +14,6 @@ import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Textarea, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import SyncStatus from '../components/SyncStatus'
-import AuditLog from '../components/AuditLog'
 
 // The corporate control panel: the companies themselves, who is in them, how
 // they are divided up, and what needs signing off. Everything on this page is
@@ -556,7 +556,23 @@ export default function Companies() {
 
               <SyncStatus />
 
-              {ent.can('audit.view') && <AuditLog events={audit} />}
+              {/* The trail has a page of its own now. Two copies of it is two
+                  chances for one to drift; this points at the one place. */}
+              {ent.can('audit.view') && (
+                <Card className="flex flex-wrap items-center justify-between gap-3 p-5">
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-semibold text-ink-3">Activity</h2>
+                    <p className="mt-1 text-xs text-ink-5">
+                      {audit.length === 0
+                        ? 'Nothing recorded yet.'
+                        : `${audit.length} ${audit.length === 1 ? 'change' : 'changes'} recorded — who changed what, and what it was before.`}
+                    </p>
+                  </div>
+                  <Link to="/activity" className="text-sm font-semibold text-brand underline-offset-4 hover:underline">
+                    Open the log
+                  </Link>
+                </Card>
+              )}
             </div>
           )}
         </>

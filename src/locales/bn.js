@@ -10,6 +10,7 @@ export default {
   'nav.invoices': 'চালান',
   'nav.reports': 'রিপোর্ট',
   'nav.exports': 'রপ্তানি',
+  'nav.activity': 'কার্যকলাপ',
   'nav.bin': 'আবর্জনা',
   'nav.companies': 'কোম্পানি',
   'nav.operations': 'পরিচালনা',

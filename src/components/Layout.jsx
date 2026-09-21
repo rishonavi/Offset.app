@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   PiggyBank,
   Trash2,
+  ScrollText,
   Search,
   Building2,
   Briefcase,
@@ -74,6 +75,10 @@ const NAV = [
     { to: '/exports', key: 'nav.exports', icon: FileUp, keepsFilter: true },
   ] },
   { group: 'nav.groupManage', items: [
+    // Only where there is a company: personal books have no members, no roles
+    // and nothing logged against them, so the destination would be an empty
+    // page explaining itself.
+    { to: '/activity', key: 'nav.activity', icon: ScrollText, corporateOnly: true },
     { to: '/bin', key: 'nav.bin', icon: Trash2 },
     { to: '/settings', key: 'nav.settings', icon: SettingsIcon },
   ] },
@@ -171,7 +176,7 @@ function NavItems({ onNavigate, isAdmin }) {
     if (corporate && g.group === 'nav.groupHoldings') return { ...g, items: [...g.items, ...CORPORATE_NAV] }
     if (isAdmin && g.group === 'nav.groupManage') return { ...g, items: [ADMIN_NAV, ...g.items] }
     return g
-  })
+  }).map((g) => ({ ...g, items: g.items.filter((i) => !i.corporateOnly || corporate) }))
   return (
     <nav className="flex flex-col gap-5">
       {groups.map((g, i) => (

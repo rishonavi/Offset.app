@@ -15,6 +15,7 @@ export default {
   'nav.invoices': 'فواتير المبيعات',
   'nav.reports': 'التقارير',
   'nav.exports': 'تصدير',
+  'nav.activity': 'السجل',
   'nav.bin': 'سلة المحذوفات',
   'nav.companies': 'الشركات',
   'nav.operations': 'العمليات',

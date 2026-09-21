@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
-import { ScrollText, Download } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ScrollText, Download, X } from 'lucide-react'
 import { AUDIT_ACTIONS, auditAt, auditChanges, describeAuditEvent } from '../lib/corporate'
 import { formatDate } from '../lib/format'
-import { Card, Button, Select, Input, cx } from './ui'
+import { Card, Button, Select, Input, DateFilter, cx } from './ui'
 
 // Who changed what, and what it was before.
 //
@@ -38,11 +38,38 @@ const timeOf = (iso) => {
 
 const PAGE = 40
 
+// What you were looking at, kept. Somebody chasing one person's changes across
+// a fortnight does not want to set the same three filters every time they come
+// back to the page — and the filters are the whole point of the page. Per
+// browser, like every other preference here; nothing about them is worth a row
+// on a server.
+const REMEMBERED = 'pl_audit_filters'
+const BLANK = { who: '', kind: '', q: '', from: '', to: '' }
+
+const recall = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(REMEMBERED) || 'null')
+    // Only the keys we know: storage can hold whatever an older build wrote,
+    // and spreading a stray shape into state is how a page ends up behind
+    // "Something went wrong".
+    return saved && typeof saved === 'object'
+      ? Object.fromEntries(Object.keys(BLANK).map((k) => [k, typeof saved[k] === 'string' ? saved[k] : '']))
+      : BLANK
+  } catch {
+    return BLANK
+  }
+}
+
 export default function AuditLog({ events }) {
-  const [who, setWho] = useState('')
-  const [kind, setKind] = useState('')
-  const [q, setQ] = useState('')
+  const [f, setF] = useState(recall)
   const [shown, setShown] = useState(PAGE)
+  const { who, kind, q, from, to } = f
+  const set = (key) => (e) => { setF((prev) => ({ ...prev, [key]: e.target.value })); setShown(PAGE) }
+  const active = Object.values(f).some(Boolean)
+
+  useEffect(() => {
+    try { localStorage.setItem(REMEMBERED, JSON.stringify(f)) } catch { /* not worth failing over */ }
+  }, [f])
 
   // Whoever actually appears in the trail, not the member list: somebody who
   // has left still did what they did, and their name has to stay selectable.
@@ -54,10 +81,16 @@ export default function AuditLog({ events }) {
   const filtered = useMemo(() => events.filter((e) => {
     if (who && e.actor_email !== who) return false
     if (kind && verbOf(e.action) !== kind) return false
+    // The stamp is a full ISO instant; the filters are days. Comparing the
+    // first ten characters keeps both ends inclusive, which is what somebody
+    // typing the same date in both boxes means by it.
+    const day = auditAt(e).slice(0, 10)
+    if (from && day < from) return false
+    if (to && day > to) return false
     if (!q.trim()) return true
     const hay = `${describeAuditEvent(e)} ${auditChanges(e).map((c) => `${c.field} ${c.from} ${c.to}`).join(' ')}`
     return hay.toLowerCase().includes(q.trim().toLowerCase())
-  }), [events, who, kind, q])
+  }), [events, who, kind, q, from, to])
 
   // One line per event, as a string, for a spreadsheet or an auditor's email.
   const download = () => {
@@ -96,27 +129,38 @@ export default function AuditLog({ events }) {
         Who changed what, and what it was before. Most recent first.
       </p>
 
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Select value={who} onChange={(e) => { setWho(e.target.value); setShown(PAGE) }} aria-label="Filter the log by person">
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <Select value={who} onChange={set('who')} aria-label="Filter the log by person">
           <option value="">Everyone</option>
           {people.map((p) => <option key={p} value={p}>{p}</option>)}
         </Select>
-        <Select value={kind} onChange={(e) => { setKind(e.target.value); setShown(PAGE) }} aria-label="Filter the log by what was done">
+        <Select value={kind} onChange={set('kind')} aria-label="Filter the log by what was done">
           {KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}
         </Select>
-        <Input
-          value={q}
-          onChange={(e) => { setQ(e.target.value); setShown(PAGE) }}
-          aria-label="Search the audit log"
-          placeholder="Search…"
-        />
+        {/* Both ends inclusive: the same date in both boxes means that day. */}
+        <DateFilter label="From" value={from} onChange={set('from')} />
+        <DateFilter label="To" value={to} onChange={set('to')} />
+        <Input value={q} onChange={set('q')} aria-label="Search the audit log" placeholder="Search…" />
       </div>
 
-      <p className="mt-2 text-xs text-ink-6">
-        {filtered.length === events.length
-          ? `${events.length} ${events.length === 1 ? 'entry' : 'entries'}`
-          : `${filtered.length} of ${events.length}`}
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <p className="text-xs text-ink-6">
+          {filtered.length === events.length
+            ? `${events.length} ${events.length === 1 ? 'entry' : 'entries'}`
+            : `${filtered.length} of ${events.length}`}
+        </p>
+        {/* Filters that are remembered have to be visibly undoable, or somebody
+            comes back a week later to a log that looks empty and has no idea
+            why. */}
+        {active && (
+          <button
+            onClick={() => { setF(BLANK); setShown(PAGE) }}
+            className="inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2"
+          >
+            <X size={13} /> Clear filters
+          </button>
+        )}
+      </div>
 
       <div className="mt-2 divide-y divide-border-subtle">
         {filtered.length === 0 && (

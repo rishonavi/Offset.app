@@ -11,6 +11,7 @@ export default {
   'nav.invoices': 'चालान',
   'nav.reports': 'रिपोर्ट',
   'nav.exports': 'निर्यात',
+  'nav.activity': 'गतिविधि',
   'nav.bin': 'रद्दी',
   'nav.companies': 'कंपनियाँ',
   'nav.operations': 'संचालन',

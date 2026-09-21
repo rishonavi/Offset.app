@@ -14,6 +14,7 @@ export default {
   'nav.invoices': 'Выставленные счета',
   'nav.reports': 'Отчёты',
   'nav.exports': 'Экспорт',
+  'nav.activity': 'Действия',
   'nav.bin': 'Корзина',
   'nav.companies': 'Компании',
   'nav.operations': 'Операции',

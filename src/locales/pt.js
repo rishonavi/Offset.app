@@ -11,6 +11,7 @@ export default {
   'nav.invoices': 'Faturas emitidas',
   'nav.reports': 'Relatórios',
   'nav.exports': 'Exportar',
+  'nav.activity': 'Atividade',
   'nav.bin': 'Lixeira',
   'nav.companies': 'Empresas',
   'nav.operations': 'Operações',

@@ -381,8 +381,8 @@ ok('every entry names the company it belongs to', trail.every((a) => a.entity_id
 ok('and reads as a sentence rather than a dotted string',
   trail.every((a) => a.summary && !/^[a-z]+\.[a-z]+$/.test(a.summary)),
   trail.filter((a) => /^[a-z]+\.[a-z]+$/.test(a.summary || '')).map((a) => a.action).join(', '))
-await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
+await p.goto(`${B}/activity`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
 const shown = await main()
 ok('and the log on screen shows the construction work',
   /recorded a stock movement|added a material/i.test(shown), shown.slice(-900))

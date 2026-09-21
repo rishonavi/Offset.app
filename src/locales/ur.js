@@ -10,6 +10,7 @@ export default {
   'nav.invoices': 'جاری کردہ انوائسز',
   'nav.reports': 'رپورٹس',
   'nav.exports': 'برآمد',
+  'nav.activity': 'سرگرمی',
   'nav.bin': 'ردی کی ٹوکری',
   'nav.companies': 'کمپنیاں',
   'nav.operations': 'آپریشنز',

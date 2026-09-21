@@ -42,8 +42,9 @@ const seed = () => p.evaluate(() => {
   const ev = (id, mins, email, action, summary, detail) => ({
     id, entity_id: 'e1', actor_id: 'u', actor_email: email, action, target_id: 't', summary, detail, created_at: iso(mins),
   })
+  // A day apart each, so ninety of them cover roughly three months.
   const filler = Array.from({ length: 90 }, (_, i) =>
-    ev('f' + i, 2000 + i, 'filler@navi.example', 'measurement.create', 'measured work done', { qty: 60 }))
+    ev('f' + i, 1440 * (i + 2), 'filler@navi.example', 'measurement.create', 'measured work done', { qty: 60 }))
   localStorage.setItem('pl_corp_audit', JSON.stringify([
     ...filler,
     ev('a1', 300, 'deepak@navi.example', 'muster.create', 'recorded a day’s muster', { trade: 'mason', headcount: 14 }),
@@ -56,7 +57,7 @@ const seed = () => p.evaluate(() => {
 
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await seed()
-await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
+await p.goto(`${B}/activity`, { waitUntil: 'networkidle' })
 await p.waitForTimeout(1000)
 
 console.log('\n── IT SAYS WHAT CHANGED, NOT ONLY THAT SOMETHING DID ──')
@@ -112,6 +113,50 @@ ok('a word from the detail finds its event', /approved a running account bill/.t
 ok('and nothing else', !/removed a material/.test(t), t.slice(0, 300).replace(/\n/g, ' | '))
 await p.locator('input[aria-label="Search the audit log"]').fill('')
 await p.waitForTimeout(400)
+
+console.log('\n── AND BY WHEN ──')
+// The question that brings somebody to this page is usually "what happened on
+// the 4th", not "what happened ever".
+const today = new Date()
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+await p.locator('input[aria-label="From date"]').fill(ymd(today))
+await p.waitForTimeout(500)
+const fromToday = await card()
+ok('from today leaves only today', /\d+ of 95/.test(fromToday), (/\d+ of \d+/.exec(fromToday) || ['no count'])[0])
+t = await log()
+ok('which is the recent handful, not the filler', /removed a material/.test(t) && !/measured work done/.test(t),
+  t.slice(0, 200).replace(/\n/g, ' | '))
+// Both ends inclusive: the same day in both boxes means that day.
+await p.locator('input[aria-label="To date"]').fill(ymd(today))
+await p.waitForTimeout(500)
+ok('and the same day in both boxes still shows it', /removed a material/.test(await log()),
+  (await log()).slice(0, 200).replace(/\n/g, ' | '))
+// The control: a range that ended yesterday must not contain today's events.
+const yest = new Date(today.getTime() - 86400000)
+await p.locator('input[aria-label="From date"]').fill(ymd(yest))
+await p.locator('input[aria-label="To date"]').fill(ymd(yest))
+await p.waitForTimeout(500)
+ok('a range that ends before them excludes them', !/removed a material/.test(await log()),
+  (await log()).slice(0, 200).replace(/\n/g, ' | '))
+
+console.log('\n── AND IT REMEMBERS WHAT YOU WERE LOOKING AT ──')
+// Chasing one person across a fortnight should not mean setting the same three
+// filters on every visit.
+await p.locator('select[aria-label="Filter the log by person"]').selectOption('priya@navi.example')
+await p.waitForTimeout(400)
+await p.reload({ waitUntil: 'networkidle' })
+await p.waitForTimeout(900)
+ok('the person survives a reload',
+  (await p.locator('select[aria-label="Filter the log by person"]').inputValue()) === 'priya@navi.example')
+ok('and so do the dates', (await p.locator('input[aria-label="From date"]').inputValue()) === ymd(yest))
+// Remembered filters have to be visibly undoable, or the log looks empty a
+// week later for no apparent reason.
+await p.locator('#main-content').getByRole('button', { name: /Clear filters/i }).click()
+await p.waitForTimeout(500)
+ok('and there is a way back to everything',
+  (await p.locator('select[aria-label="Filter the log by person"]').inputValue()) === ''
+  && (await p.locator('input[aria-label="From date"]').inputValue()) === '')
+ok('which brings the whole trail back', /95 entr/.test(await card()), (/\d+ entr[^\n]*/.exec(await card()) || ['no count'])[0])
 
 console.log('\n── AND IT DOES NOT STOP AT FORTY ──')
 const all = await card()

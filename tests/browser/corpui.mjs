@@ -177,9 +177,21 @@ ok('turning it on is audited', (await ls('pl_corp_audit')).some((a) => a.action 
 
 // ── 6. Audit log on screen ──
 console.log('\n── AUDIT LOG ──')
+// It lives on its own page now. Companies keeps a line pointing at it, because
+// somebody administering a company is one click from wanting to know who
+// changed what — but the log itself is a different errand and has its own URL.
 const pageText = await p.locator('#main-content').innerText()
-ok('the audit log is shown', /Audit log/.test(pageText))
-ok('and names what happened', /created a company|added a member|added a department/.test(pageText), pageText.slice(-300).replace(/\n/g, ' | '))
+ok('Companies says how much has been recorded', /\d+ changes? recorded/.test(pageText),
+  (/Activity[\s\S]{0,120}/.exec(pageText) || [''])[0].replace(/\n/g, ' | '))
+await p.locator('#main-content a[href="/activity"]').click()
+await p.waitForURL('**/activity')
+await p.waitForTimeout(800)
+const trailPage = await p.locator('#main-content').innerText()
+ok('and the link opens the log', /Audit log/.test(trailPage), trailPage.slice(0, 200).replace(/\n/g, ' | '))
+ok('which names what happened', /created a company|added a member|added a department/.test(trailPage),
+  trailPage.slice(0, 400).replace(/\n/g, ' | '))
+await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(700)
 
 // ── 7. A second company and the consolidated view ──
 console.log('\n── A SECOND COMPANY ──')

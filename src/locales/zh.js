@@ -13,6 +13,7 @@ export default {
   'nav.invoices': '发票',
   'nav.reports': '报表',
   'nav.exports': '导出',
+  'nav.activity': '操作记录',
   'nav.bin': '回收站',
   'nav.companies': '公司',
   'nav.operations': '运营',

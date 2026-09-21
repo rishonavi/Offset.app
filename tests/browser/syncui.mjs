@@ -67,7 +67,8 @@ const quiet = await main()
 // reassurance, which is the worst kind.
 ok('demo mode claims nothing about being up to date', !/up to date/i.test(quiet), quiet.slice(0, 400))
 ok('and shows no tick for a sync that is not happening', !/Last reconciled/i.test(quiet))
-ok('the page is otherwise itself', /Audit log/.test(quiet))
+// The trail moved to its own page; Companies keeps the line that points at it.
+ok('the page is otherwise itself', /Activity/.test(quiet), quiet.slice(-300).replace(/\n/g, ' | '))
 
 console.log('\n── A WRITE CARRIES A VERSION ──')
 // Without one, nothing can tell a row that has been sent from one that has not.

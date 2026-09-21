@@ -10,6 +10,7 @@ export default {
   'nav.invoices': 'बीजके',
   'nav.reports': 'अहवाल',
   'nav.exports': 'निर्यात',
+  'nav.activity': 'घडामोडी',
   'nav.bin': 'कचरापेटी',
   'nav.companies': 'कंपन्या',
   'nav.operations': 'कामकाज',

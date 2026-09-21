@@ -13,6 +13,7 @@ export default {
   'nav.invoices': 'Factures émises',
   'nav.reports': 'Rapports',
   'nav.exports': 'Exporter',
+  'nav.activity': 'Activité',
   'nav.bin': 'Corbeille',
   'nav.companies': 'Sociétés',
   'nav.operations': 'Opérations',

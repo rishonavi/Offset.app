@@ -10,6 +10,7 @@ export default {
   'nav.invoices': 'ઇન્વોઇસ',
   'nav.reports': 'અહેવાલો',
   'nav.exports': 'નિકાસ',
+  'nav.activity': 'પ્રવૃત્તિ',
   'nav.bin': 'કચરાપેટી',
   'nav.companies': 'કંપનીઓ',
   'nav.operations': 'સંચાલન',

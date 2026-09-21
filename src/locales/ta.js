@@ -10,6 +10,7 @@ export default {
   'nav.invoices': 'விலைப்பட்டியல்',
   'nav.reports': 'அறிக்கைகள்',
   'nav.exports': 'ஏற்றுமதி',
+  'nav.activity': 'செயல்பாடு',
   'nav.bin': 'குப்பைத் தொட்டி',
   'nav.companies': 'நிறுவனங்கள்',
   'nav.operations': 'செயல்பாடுகள்',
