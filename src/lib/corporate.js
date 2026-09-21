@@ -14,6 +14,8 @@
 // A legal entity: the thing that files its own return. "Consolidated" is not an
 // entity — it is the view across all of them, and it is read-only by
 // definition, because you cannot book a cost against a group.
+import { LOCALE } from './constants'
+
 export const CONSOLIDATED = '__all__'
 
 // Your own books, kept even after the first company exists. A landlord who
@@ -495,6 +497,12 @@ export const AUDIT_ACTIONS = {
   'adjustment.create': 'set an advance against a bill',
   'adjustment.update': 'changed an adjustment',
   'adjustment.delete': 'removed an adjustment',
+  // Counting the shelf against the ledger. Registered with the noun 'stock
+  // count', so the store has always written `stock count.create` — and there
+  // was no phrase for it, which is how a raw key reached a user's screen.
+  'stock count.create': 'counted stock against the ledger',
+  'stock count.update': 'corrected a stock count',
+  'stock count.delete': 'discarded a stock count',
   'employee.create': 'added an employee',
   'employee.update': 'edited an employee',
   'employee.delete': 'removed an employee',
@@ -504,6 +512,94 @@ export const AUDIT_ACTIONS = {
   'payroll run.create': 'ran a month\u2019s payroll',
   'payroll run.update': 'changed a payroll run',
   'payroll run.delete': 'discarded a payroll run',
+}
+
+// ── Reading a stored event back ─────────────────────────────────────
+//
+// Every update in the corporate store records the fields that moved and what
+// they moved from — `{ rate: [550, 620], note: 'changed' }` — and every create
+// and delete records what identified the row. All of it was written and none
+// of it was ever shown: the trail on screen said "Deepak edited a site" and
+// stopped, which tells you an argument happened and not what it was about.
+//
+// `auditChanges` turns that back into lines a person can read. It is the whole
+// difference between a log you keep for form and one you can settle a dispute
+// with.
+
+// Field names as they are spoken, where the column name is not it.
+const FIELD_WORDS = {
+  fy_start_month: 'financial year start',
+  books_locked_through: 'books closed through',
+  pf_registered: 'provident fund registration',
+  esi_registered: 'state insurance registration',
+  pt_state: 'professional tax state',
+  pt_slabs: 'professional tax slabs',
+  minimum_wage: 'minimum wage',
+  bonus_rate: 'bonus rate',
+  unit_cost: 'rate',
+  other_cost: 'other cost',
+  reorder_level: 'reorder level',
+  contract_value: 'contract value',
+  due_on: 'due date',
+  started_on: 'start date',
+  headcount: 'headcount',
+  overtime_hours: 'overtime hours',
+  overtime_rate: 'overtime rate',
+  approval_status: 'approval',
+  entity_id: 'company',
+  project_id: 'site',
+  department_id: 'department',
+  property_id: 'asset',
+}
+
+export const auditFieldLabel = (field) =>
+  FIELD_WORDS[field] || String(field || '').replace(/_/g, ' ').trim()
+
+// A stored value as it should read on the line. `null` and `''` are both
+// "nothing was there", and saying so beats printing an empty gap.
+const shown = (v) => {
+  if (v === null || v === undefined || v === '') return 'nothing'
+  if (v === true) return 'yes'
+  if (v === false) return 'no'
+  // Grouped, in the Indian style the rest of the app uses, once a number is
+  // long enough to be hard to read — `1840000` against `18,40,000`. No currency
+  // symbol: the trail does not know whether a field is money, and a wrong ₹ on
+  // an audit line is worse than none. Under ten thousand is left alone so a
+  // year or a pincode is not dressed up as a quantity.
+  if (typeof v === 'number' && Number.isFinite(v) && Math.abs(v) >= 10000) {
+    return v.toLocaleString(LOCALE)
+  }
+  return String(v)
+}
+
+// What a single event says happened, as `{ field, from, to }` rows.
+//
+// An update carries pairs and reads as a move. A create or a delete carries
+// the identifying fields of the row, which are not a move — so they read as
+// plain values rather than pretending something changed from nothing.
+export function auditChanges(event) {
+  const detail = event?.detail
+  if (!detail || typeof detail !== 'object' || Array.isArray(detail)) return []
+  const pairs = Object.entries(detail)
+  return pairs.map(([field, value]) => {
+    const label = auditFieldLabel(field)
+    // `changed` is what the store writes for an object or an array: it knows
+    // they differ and will not print either of them.
+    if (value === 'changed') return { field: label, from: null, to: null, note: 'changed' }
+    if (Array.isArray(value) && value.length === 2) {
+      return { field: label, from: shown(value[0]), to: shown(value[1]), note: null }
+    }
+    return { field: label, from: null, to: shown(value), note: null }
+  })
+}
+
+// The same thing as one sentence, for anywhere with a single line to spend.
+export function describeAuditChanges(event) {
+  return auditChanges(event)
+    .map((c) => (c.note ? `${c.field} ${c.note}`
+      : c.from === null ? `${c.field} ${c.to}`
+        : `${c.field} ${c.from} → ${c.to}`))
+    .join(', ')
 }
 
 export function makeAuditEvent({ entityId, actorId, actorEmail, action, targetId = null, summary = '', detail = null }) {

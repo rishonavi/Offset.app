@@ -1,18 +1,19 @@
 import { useMemo, useState } from 'react'
-import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, ScrollText, Lock, LockOpen, Pencil } from 'lucide-react'
+import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, Lock, LockOpen, Pencil } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import { useData } from '../context/DataContext'
 import {
   ROLES, ROLE_IDS, roleLabel, departmentLabel, CONSOLIDATED,
-  APPROVABLE, APPROVABLE_IDS, approvalQueue, auditAt, makeEntity,
+  APPROVABLE, APPROVABLE_IDS, approvalQueue, makeEntity,
 } from '../lib/corporate'
 import * as store from '../lib/storage/corporate'
 import { monthsToClose, reopenTo, lockedThrough, describeLock } from '../lib/periods'
-import { formatCurrency, formatDate } from '../lib/format'
+import { formatCurrency } from '../lib/format'
 import { Card, Button, Field, Input, Select, Textarea, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import SyncStatus from '../components/SyncStatus'
+import AuditLog from '../components/AuditLog'
 
 // The corporate control panel: the companies themselves, who is in them, how
 // they are divided up, and what needs signing off. Everything on this page is
@@ -74,7 +75,7 @@ export default function Companies() {
 
   const entries = useMemo(() => [...expenses, ...income], [expenses, income])
   const audit = useMemo(
-    () => (ent.enabled ? store.listAudit({ entityId: ent.consolidated ? null : ent.activeId, limit: 40 }) : []),
+    () => (ent.enabled ? store.listAudit({ entityId: ent.consolidated ? null : ent.activeId, limit: 500 }) : []),
     // Re-read whenever anything on this page changes something.
     [ent.enabled, ent.activeId, ent.consolidated, ent.version],
   )
@@ -555,24 +556,7 @@ export default function Companies() {
 
               <SyncStatus />
 
-              {/* Audit */}
-              {ent.can('audit.view') && (
-                <Card className="p-5">
-                  <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3"><ScrollText size={16} className="text-gold" /> Audit log</h2>
-                  <p className="mt-1 text-xs text-ink-5">Who changed what, most recent first.</p>
-                  <div className="mt-3 max-h-72 divide-y divide-border-subtle overflow-y-auto">
-                    {audit.length === 0 && <p className="py-2 text-sm text-ink-6">Nothing recorded yet.</p>}
-                    {audit.map((a) => (
-                      <div key={a.id} className="flex items-baseline justify-between gap-3 py-1.5 text-xs">
-                        <span className="min-w-0 text-ink-4">
-                          <span className="font-medium text-ink-2">{a.actor_email || 'Someone'}</span> {a.summary}
-                        </span>
-                        <span className="shrink-0 text-ink-6">{formatDate(auditAt(a))}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
+              {ent.can('audit.view') && <AuditLog events={audit} />}
             </div>
           )}
         </>

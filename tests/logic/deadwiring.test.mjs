@@ -71,8 +71,6 @@ ok('a name that is obviously used is not reported', /\bmakeMovement\b/.test(src.
 // ── Exported and called by nothing ──────────────────────────────────
 // Reasons, not excuses: each says what it is, so the next person can act.
 const UNCALLED = {
-  'src/lib/corporate.js :: describeAuditEvent':
-    'redundant rather than missing — a stored event’s summary already carries the phrase, and the trail renders the actor itself',
   'src/lib/errorLog.js :: clearErrorLog':
     'no screen offers clearing the log yet; the log itself is read in Settings',
   'src/lib/inventory.js :: locationOf':
