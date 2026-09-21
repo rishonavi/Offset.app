@@ -25,12 +25,17 @@ export const PERSONAL = '__personal__'
 export const isConsolidated = (id) => id === CONSOLIDATED
 export const isPersonal = (id) => id === PERSONAL
 
-export function makeEntity({ id, name, registration = '', gstin = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null, ptState = '', ptSlabs = null, bonusRate = null, minimumWage = null, gratuityVoluntary = false, bonusVoluntary = false, leavePolicy = 'factories', leaveCarryCap = null, leaveDaysPerYear = null, leaveDivisor = null } = {}) {
+export function makeEntity({ id, name, registration = '', gstin = '', address = '', currency = 'INR', fyStartMonth = 4, booksLockedThrough = '', pfRegistered = null, esiRegistered = null, ptState = '', ptSlabs = null, bonusRate = null, minimumWage = null, gratuityVoluntary = false, bonusVoluntary = false, leavePolicy = 'factories', leaveCarryCap = null, leaveDaysPerYear = null, leaveDivisor = null } = {}) {
   return {
     id: id || newId(),
     name: (name || 'Untitled company').trim().slice(0, 120),
     registration: registration.trim(),
     gstin: gstin.trim().toUpperCase(),
+    // Every document that leaves the building — the stock statement, the
+    // material indent, the demand letter — prints this under the company name.
+    // It was being read from the entity by all three and written by nothing, so
+    // the line was always blank on paper a supplier or a buyer actually holds.
+    address: String(address || '').trim().slice(0, 240),
     currency,
     // India's financial year starts in April; a subsidiary abroad may not.
     //

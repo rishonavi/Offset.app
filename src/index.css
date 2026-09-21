@@ -86,6 +86,15 @@
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
 
+/* Native checkboxes and radios paint themselves in the browser's own blue,
+   which on a gold app is the one control on the page that belongs to somebody
+   else. `accent-color` is the whole fix — one line, and it follows the accent
+   the user picked in Settings rather than being hard-coded gold. */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--color-brand);
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

@@ -1297,3 +1297,10 @@ create policy "entity members edit entity income" on public.income
           and created_by = auth.uid())
     )
   );
+
+-- ── The registered address ───────────────────────────────────────
+-- Printed under the company name on the stock statement, the material indent
+-- and the demand letter. All three read it off the entity; nothing had ever
+-- written it, because no screen asked, so the line was blank on every document
+-- that left the building.
+alter table public.entities add column if not exists address text;

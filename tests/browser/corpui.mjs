@@ -345,6 +345,79 @@ await p.waitForTimeout(700)
 ok('and back again', !/PERSONAL/i.test(await chosen()), await chosen())
 
 // ── 10. Layout ──
+console.log('\n── A COMPANY CAN BE CORRECTED AFTER IT IS ADDED ──')
+// `updateEntity` had existed and been tested since the corporate layer was
+// written, and no screen ever called it for a company's own details. A name
+// typed wrong, a GSTIN entered before the certificate arrived, or a subsidiary
+// whose year starts in January were all permanent; the only control on the
+// list was Archive, which is not a correction.
+await p.evaluate(() => {
+  localStorage.clear()
+  const now = new Date().toISOString()
+  for (const k of ['pl_expenses', 'pl_income', 'pl_documents', 'pl_properties']) localStorage.setItem(k, '[]')
+  localStorage.setItem('pl_corp_entities', JSON.stringify([{
+    id: 'e-fix', name: 'U.K. Builders', registration: '', gstin: '', currency: 'INR',
+    fy_start_month: 4, created_at: now,
+    // What the statutory screens own. This panel does not ask about any of it
+    // and must not reset it — which is the whole risk of rebuilding a row.
+    pf_registered: true, esi_registered: false, pt_state: '27', bonus_rate: 12.5,
+    minimum_wage: 14400, gratuity_voluntary: true, leave_policy: 'annual',
+    leave_days_per_year: 18, books_locked_through: '2026-06',
+  }]))
+  localStorage.setItem('pl_corp_members', JSON.stringify([{ id: 'm-fix', entity_id: 'e-fix', user_id: 'local-user', email: '', role: 'owner', department_id: null, created_at: now }]))
+  localStorage.setItem('pl_corp_active', 'e-fix')
+})
+await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
+await p.waitForTimeout(800)
+await p.locator('button[aria-label="Edit U.K. Builders"]').click()
+await p.waitForTimeout(350)
+const panel = p.locator('[role="group"][aria-label="Editing U.K. Builders"]')
+ok('the panel opens on the company you asked for', await panel.count() === 1)
+ok('and it arrives holding what is already there', (await panel.getByLabel('Registered name').inputValue()) === 'U.K. Builders')
+
+await panel.getByLabel('Registered name').fill('Navi Builders Pvt Ltd')
+await panel.getByLabel('GSTIN').fill('27aaapa1234a1z5')
+await panel.getByLabel('Registered address').fill('Plot 14, MIDC, Navi Mumbai 400703')
+await panel.getByLabel('Financial year starts').selectOption('1')
+await panel.getByRole('button', { name: 'Save changes' }).click()
+await p.waitForTimeout(700)
+
+const fixed = (await ls('pl_corp_entities'))[0]
+ok('the name is corrected', fixed.name === 'Navi Builders Pvt Ltd', fixed.name)
+ok('the GSTIN is cleaned the way the add form cleans it', fixed.gstin === '27AAAPA1234A1Z5', fixed.gstin)
+ok('the year start is no longer stuck on the default', fixed.fy_start_month === 1, String(fixed.fy_start_month))
+ok('the row keeps its id', fixed.id === 'e-fix', fixed.id)
+ok('and the day it was created', Boolean(fixed.created_at))
+
+// The address existed nowhere. Operations reads `entity.address` and prints it
+// under the company name on the stock statement, the material indent and the
+// demand letter — three documents that go to a supplier or a buyer — and
+// nothing in the app could ever write it, so the line was always blank.
+ok('the address a document prints can now be set', fixed.address === 'Plot 14, MIDC, Navi Mumbai 400703', String(fixed.address))
+
+// The assertion that matters most: this panel asks about six fields and the
+// row has twenty. Rebuilding it through `makeEntity` regenerates the other
+// fourteen at their defaults, which would silently un-register the company for
+// provident fund, move it back to Maharashtra's professional tax, drop the
+// bonus rate it had agreed and re-open a month that was closed.
+ok('provident-fund registration survives', fixed.pf_registered === true, JSON.stringify(fixed.pf_registered))
+ok('and the state-insurance answer, which is false rather than unset', fixed.esi_registered === false, JSON.stringify(fixed.esi_registered))
+ok('the professional-tax state survives', fixed.pt_state === '27', String(fixed.pt_state))
+ok('the agreed bonus rate survives', fixed.bonus_rate === 12.5, String(fixed.bonus_rate))
+ok('the minimum wage survives', fixed.minimum_wage === 14400, String(fixed.minimum_wage))
+ok('the gratuity promise survives', fixed.gratuity_voluntary === true, String(fixed.gratuity_voluntary))
+ok('the leave policy survives', fixed.leave_policy === 'annual' && fixed.leave_days_per_year === 18,
+  `${fixed.leave_policy}/${fixed.leave_days_per_year}`)
+ok('and a closed month stays closed', fixed.books_locked_through === '2026-06', String(fixed.books_locked_through))
+
+// It reads back on the page, not just in storage.
+const listed = await p.locator('#main-content').innerText()
+ok('the list shows the corrected name', /Navi Builders Pvt Ltd/.test(listed))
+ok('and the year start in words rather than a number', /FY from January/.test(listed), (/FY from [^\n·]*/.exec(listed) || [''])[0])
+// The control: the old default is gone, so the assertion above is not agreeing
+// with a string that was there all along.
+ok('and not the month number it used to print', !/FY from month/.test(listed))
+
 console.log('\n── LAYOUT ──')
 await p.setViewportSize({ width: 390, height: 800 })
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })

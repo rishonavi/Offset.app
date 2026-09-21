@@ -1,28 +1,74 @@
 import { useMemo, useState } from 'react'
-import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, ScrollText, Lock, LockOpen } from 'lucide-react'
+import { Building2, Plus, Users, Network, ShieldCheck, Trash2, Archive, ScrollText, Lock, LockOpen, Pencil } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import { useToast } from '../context/ToastContext'
 import { useData } from '../context/DataContext'
 import {
   ROLES, ROLE_IDS, roleLabel, departmentLabel, CONSOLIDATED,
-  APPROVABLE, APPROVABLE_IDS, approvalQueue, auditAt,
+  APPROVABLE, APPROVABLE_IDS, approvalQueue, auditAt, makeEntity,
 } from '../lib/corporate'
 import * as store from '../lib/storage/corporate'
 import { monthsToClose, reopenTo, lockedThrough, describeLock } from '../lib/periods'
 import { formatCurrency, formatDate } from '../lib/format'
-import { Card, Button, Field, Input, Select, EmptyState } from '../components/ui'
+import { Card, Button, Field, Input, Select, Textarea, EmptyState } from '../components/ui'
 import PageHeader from '../components/PageHeader'
 import SyncStatus from '../components/SyncStatus'
 
 // The corporate control panel: the companies themselves, who is in them, how
 // they are divided up, and what needs signing off. Everything on this page is
 // gated on the role the current user holds in the active company.
+const FY_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+// The fields a company is, asked the same way whether it is being created or
+// corrected. Kept in one place so the two forms cannot drift into asking
+// different questions about the same row.
+function CompanyFields({ value, onChange, autoFocus = false }) {
+  const set = (key, clean = (v) => v) => (e) => onChange({ ...value, [key]: clean(e.target.value) })
+  return (
+    <>
+      <Field label="Registered name" required>
+        <Input value={value.name} onChange={set('name')} placeholder="Acme Industries Pvt Ltd" autoFocus={autoFocus} />
+      </Field>
+      <Field label="GSTIN">
+        <Input value={value.gstin} onChange={set('gstin', (v) => v.toUpperCase())} placeholder="27AAAPA1234A1Z5" />
+      </Field>
+      <Field label="CIN / registration">
+        <Input value={value.registration} onChange={set('registration')} />
+      </Field>
+      <Field label="Reporting currency" hint="Companies in another currency are shown separately, never converted.">
+        <Input value={value.currency} onChange={set('currency', (v) => v.toUpperCase().slice(0, 3))} />
+      </Field>
+      {/* Printed under the company name on the stock statement, the material
+          indent and the demand letter. All three read it off the entity and
+          nothing ever wrote it, so the line was blank on every document that
+          left the building. */}
+      <Field label="Registered address" hint="Printed on indents, stock statements and demand letters.">
+        <Textarea className="h-16 resize-y" value={value.address} onChange={set('address')} />
+      </Field>
+      {/* Shown on this page as "FY from month 4" and never askable: the default
+          was the only value it could ever hold. A subsidiary on a calendar year
+          had its whole year reported three months out. */}
+      <Field label="Financial year starts" hint="April in India. A subsidiary abroad may differ.">
+        <Select value={String(value.fyStartMonth)} onChange={set('fyStartMonth')}>
+          {FY_MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
+        </Select>
+      </Field>
+    </>
+  )
+}
+
 export default function Companies() {
   const ent = useEntity()
   const { expenses, income, updateExpense } = useData()
   const toast = useToast()
   const [creating, setCreating] = useState(false)
-  const [draft, setDraft] = useState({ name: '', gstin: '', registration: '', currency: 'INR' })
+  const [draft, setDraft] = useState({ name: '', gstin: '', registration: '', address: '', currency: 'INR', fyStartMonth: 4 })
+  // Which company's details are open for editing, and the working copy.
+  const [editing, setEditing] = useState(null)
+  const [edit, setEdit] = useState({})
   const [dept, setDept] = useState({ name: '', code: '', parentId: '', budgetMonthly: '' })
   const [invite, setInvite] = useState({ email: '', role: 'member' })
 
@@ -76,6 +122,41 @@ export default function Companies() {
     }
   }
 
+  // Everything asked for when a company is created, askable again afterwards.
+  //
+  // `updateEntity` has existed and been tested since the corporate layer was
+  // written, and nothing on any screen ever called it for a company's own
+  // details: a name typed wrong, a GSTIN entered before the certificate
+  // arrived, or a subsidiary whose year starts in January were all permanent.
+  // The only control on this list was Archive, which is not a correction.
+  const startEdit = (e) => {
+    setEditing(e.id)
+    setEdit({
+      name: e.name || '',
+      gstin: e.gstin || '',
+      registration: e.registration || '',
+      address: e.address || '',
+      currency: e.currency || 'INR',
+      fyStartMonth: String(e.fy_start_month ?? e.fyStartMonth ?? 4),
+    })
+  }
+
+  const saveEdit = (e, company) => {
+    e.preventDefault()
+    if (!edit.name.trim()) return toast('Give the company a name.', { type: 'error' })
+    // Rebuilt through `makeEntity` so a name, a GSTIN or a month typed here is
+    // cleaned exactly as one typed on the form above — and then the id, the
+    // creation date and everything the statutory screens own are put back,
+    // because this panel did not ask about any of them and must not reset them.
+    const { id: _i, created_at: _c, ...patch } = makeEntity({ ...edit, fyStartMonth: edit.fyStartMonth })
+    const { pf_registered: _pf, esi_registered: _esi, pt_state: _pt, pt_slabs: _ps, bonus_rate: _br,
+      minimum_wage: _mw, gratuity_voluntary: _gv, bonus_voluntary: _bv, leave_policy: _lp,
+      leave_carry_cap: _lc, leave_days_per_year: _ld, leave_divisor: _lv,
+      books_locked_through: _bl, ...safe } = patch
+    act(() => store.updateEntity(company.id, safe, ent.actor), `${safe.name} updated.`)
+    setEditing(null)
+  }
+
   const createCompany = (e) => {
     e.preventDefault()
     if (!draft.name.trim()) return toast('Give the company a name.', { type: 'error' })
@@ -90,7 +171,7 @@ export default function Companies() {
       // active id only on mount, so it could not have caught this.
       ent.switchTo(created.id)
     }, `${draft.name.trim()} created.`)
-    setDraft({ name: '', gstin: '', registration: '', currency: 'INR' })
+    setDraft({ name: '', gstin: '', registration: '', address: '', currency: 'INR', fyStartMonth: 4 })
     setCreating(false)
   }
 
@@ -125,18 +206,7 @@ export default function Companies() {
         <Card className="p-5">
           <h2 className="text-sm font-semibold text-ink-3">New company</h2>
           <form onSubmit={createCompany} className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Registered name" required>
-              <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Acme Industries Pvt Ltd" autoFocus />
-            </Field>
-            <Field label="GSTIN">
-              <Input value={draft.gstin} onChange={(e) => setDraft({ ...draft, gstin: e.target.value.toUpperCase() })} placeholder="27AAAPA1234A1Z5" />
-            </Field>
-            <Field label="CIN / registration">
-              <Input value={draft.registration} onChange={(e) => setDraft({ ...draft, registration: e.target.value })} />
-            </Field>
-            <Field label="Reporting currency" hint="Companies in another currency are shown separately, never converted.">
-              <Input value={draft.currency} onChange={(e) => setDraft({ ...draft, currency: e.target.value.toUpperCase().slice(0, 3) })} />
-            </Field>
+            <CompanyFields value={draft} onChange={setDraft} autoFocus />
             <div className="sm:col-span-2 flex gap-2">
               <Button type="submit"><Building2 size={16} /> Create company</Button>
               <Button type="button" variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
@@ -152,16 +222,27 @@ export default function Companies() {
             <h2 className="text-sm font-semibold text-ink-3">Your companies</h2>
             <div className="mt-3 divide-y divide-border-light">
               {ent.entities.map((e) => (
-                <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <div key={e.id} className="py-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5">
                     <input type="radio" name="active-company" checked={ent.activeId === e.id} onChange={() => ent.switchTo(e.id)} />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-ink-2">{e.name}</span>
                       <span className="block text-xs text-ink-6">
-                        {[e.gstin, e.currency, `FY from month ${e.fy_start_month ?? e.fyStartMonth}`].filter(Boolean).join(' · ')}
+                        {[e.gstin, e.currency, `FY from ${FY_MONTHS[(e.fy_start_month ?? e.fyStartMonth ?? 4) - 1]}`].filter(Boolean).join(' · ')}
                       </span>
                     </span>
                   </label>
+                  {ent.can('entity.manage') && (
+                    <button
+                      onClick={() => (editing === e.id ? setEditing(null) : startEdit(e))}
+                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-ink-2"
+                      aria-label={`Edit ${e.name}`}
+                      title={`Edit ${e.name}`}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  )}
                   {ent.can('entity.manage') && ent.entities.length > 1 && (
                     <button
                       onClick={() => {
@@ -175,6 +256,25 @@ export default function Companies() {
                       <Archive size={15} />
                     </button>
                   )}
+                </div>
+                {ent.can('entity.manage') && editing === e.id && (
+                  // Named, so its fields can be told apart from the
+                  // identically-labelled ones on the New company form above.
+                  <form
+                    onSubmit={(ev) => saveEdit(ev, e)}
+                    className="mt-3 rounded-xl border border-line-soft p-3"
+                    role="group"
+                    aria-label={`Editing ${e.name}`}
+                  >
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <CompanyFields value={edit} onChange={setEdit} autoFocus />
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button type="submit">Save changes</Button>
+                      <Button type="button" variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
+                    </div>
+                  </form>
+                )}
                 </div>
               ))}
               {ent.entities.length > 1 && (
