@@ -103,9 +103,21 @@ ok('and the page says why that is the order', /downstream of a wrong number/.tes
 // Money you might make is not money you have lost.
 ok('what is at stake does not include the two crore', !/2,00,00,000 wrong, owed or at risk/.test(shown))
 
+// Two waits, and both are needed. `waitForURL` returns when the address bar
+// changes, which is before React has committed the new route — so at that
+// instant there is no loading card on screen yet, and a check for its absence
+// passes while the *previous* page is still being read. Wait for something only
+// the new page has, then for the card it puts up while its chunk arrives.
+const settled = async (page, heading) => {
+  await page.locator('#main-content').getByRole('heading', { name: heading }).first()
+    .waitFor({ state: 'visible', timeout: 30000 }).catch(() => {})
+  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await page.waitForTimeout(200)
+}
+
 console.log('\n── THE LINK GOES SOMEWHERE ──')
 await p.locator('#main-content a[href^="/operations?tab="]').first().click()
-await p.waitForTimeout(900)
+await settled(p, 'Operations')
 ok('a finding opens the tab it is about', /tab=/.test(p.url()), p.url())
 const landed = await main()
 ok('and lands on that tab rather than the first one',

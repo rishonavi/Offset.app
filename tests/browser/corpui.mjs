@@ -39,6 +39,9 @@ ok('and no books tabs', (await p.locator('aside [role="tablist"]').count()) === 
 ok('nothing corporate is written to storage',
   (await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pl_corp')).length)) === 0)
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
+// `networkidle` is the network going quiet, not the route's chunk having run
+// and the table having rendered from storage. Wait for the row.
+await p.locator('#main-content').getByText('Adani').first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {})
 ok('the ledger still shows the personal entry', /Adani/.test(await p.locator('#main-content').innerText()))
 
 // ── 1b. There has to be a way in ──

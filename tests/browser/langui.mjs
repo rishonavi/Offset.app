@@ -87,7 +87,11 @@ const EXPECT = { hi: 'डैशबोर्ड', mr: 'डॅशबोर्ड',
 for (const [code, word] of Object.entries(EXPECT)) {
   await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
   await picker().selectOption(code)
-  await p.waitForTimeout(600)
+  // Each dictionary is its own chunk, fetched on the switch. A fixed wait meant
+  // that under load the check read the *previous* language's sidebar — Bengali
+  // where Tamil was expected — and reported it as Tamil failing to render.
+  await p.waitForFunction((w) => (document.querySelector('aside nav')?.innerText || '').includes(w),
+    word, { timeout: 30000 }).catch(() => {})
   const text = await nav()
   ok(`${code}: the sidebar renders in that language`, text.includes(word), text.split('\n')[0])
   ok(`${code}: the document declares it`, (await p.getAttribute('html', 'lang')) === code)

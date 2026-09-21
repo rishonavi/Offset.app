@@ -41,6 +41,17 @@ const chose = async (locator) => {
   await p.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
   await p.waitForTimeout(150)
 }
+// Two waits, and both are needed. `waitForURL` returns when the address bar
+// changes, which is before React has committed the new route — so at that
+// instant there is no loading card on screen yet, and a check for its absence
+// passes while the *previous* page is still being read. Wait for something only
+// the new page has, then for the card it puts up while its chunk arrives.
+const settled = async (page, heading) => {
+  await page.locator('#main-content').getByRole('heading', { name: heading }).first()
+    .waitFor({ state: 'visible', timeout: 30000 }).catch(() => {})
+  await page.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 30000 })
+  await page.waitForTimeout(200)
+}
 const tab = async (name) => {
   await chose(p.locator('#main-content button[aria-pressed]').nth(TABS.indexOf(name)))
 }
@@ -94,7 +105,7 @@ await p.waitForTimeout(400)
 ok('Operations appears in the sidebar', /OPERATIONS/i.test(await p.locator('aside nav').innerText()))
 await p.locator('aside nav a[href="/operations"]').click()
 await p.waitForURL('**/operations')
-await p.waitForTimeout(500)
+await settled(p, 'Operations')
 // A cost belongs to a job before it belongs to a ledger, so the page opens on
 // Projects and Materials is one click away.
 const landed = await main()
