@@ -253,6 +253,72 @@ await p.waitForTimeout(500)
 pal = await palette()
 ok('and the company\'s are its own', /acme search/.test(pal) && !/personal search/.test(pal), pal.slice(0, 200))
 
+console.log('\n── AND FROM A PHONE, WHERE IT LIVES INSIDE THE DRAWER ──')
+// Reported as "it does not switch". It switched: storage changed and the tab
+// moved. What did not happen is the drawer closing, so the whole thing
+// happened behind a panel still covering the page and nothing appeared to.
+// Every nav link in that drawer already closed it; the books switcher was the
+// one control that did not.
+{
+  const phone = await b.newContext({ viewport: { width: 390, height: 800 }, serviceWorkers: 'block' })
+  const m = await phone.newPage(); m.setDefaultTimeout(30000)
+  await m.route('**/fonts.g**/**', (r) => r.abort())
+  await m.goto(B, { waitUntil: 'domcontentloaded' })
+  await m.evaluate(() => {
+    localStorage.clear()
+    const now = new Date().toISOString()
+    for (const k of ['pl_expenses', 'pl_income', 'pl_documents', 'pl_properties']) localStorage.setItem(k, '[]')
+    const mk = (id, name) => ({ id, name, registration: '', gstin: '', currency: 'INR', fy_start_month: 4, created_at: now })
+    localStorage.setItem('pl_corp_entities', JSON.stringify([mk('e1', 'Acme Industries'), mk('e2', 'Acme Logistics')]))
+    localStorage.setItem('pl_corp_members', JSON.stringify(['e1', 'e2'].map((e, i) => ({
+      id: 'm' + i, entity_id: e, user_id: 'local-user', email: '', role: 'owner', department_id: null, created_at: now }))))
+    localStorage.setItem('pl_corp_active', 'e1')
+  })
+  await m.goto(B, { waitUntil: 'networkidle' })
+  await m.waitForTimeout(900)
+  // The desktop sidebar is still in the DOM at this width, just hidden — so
+  // everything here asks for the *visible* control, or it drives a copy of the
+  // switcher no thumb can reach.
+  ok('the switcher is not on screen until the drawer is open',
+    (await m.locator('[role="tab"]:visible').count()) === 0)
+  await m.locator('header button').last().click()
+  await m.waitForTimeout(500)
+  const personalTab = m.locator('[role="tab"]:visible', { hasText: /personal/i }).first()
+  ok('and is there once it is', (await personalTab.count()) === 1)
+
+  const box = await personalTab.boundingBox()
+  ok('the tab is big enough for a finger', box && box.height >= 44, box ? `${Math.round(box.height)}px` : 'not visible')
+
+  await personalTab.click()
+  await m.waitForTimeout(700)
+  ok('tapping it switches the books', (await m.evaluate(() => localStorage.getItem('pl_corp_active'))) === '__personal__',
+    String(await m.evaluate(() => localStorage.getItem('pl_corp_active'))))
+  ok('and closes the drawer, so you can see that it did',
+    (await m.locator('[role="tab"]:visible').count()) === 0,
+    String(await m.locator('[role="tab"]:visible').count()))
+
+  // The control: the drawer really was open a moment ago, so "closed" is the
+  // switch doing it rather than the drawer never having opened.
+  await m.locator('header button').last().click()
+  await m.waitForTimeout(500)
+  ok('the drawer still opens afterwards', (await m.locator('[role="tab"]:visible').count()) === 2,
+    String(await m.locator('[role="tab"]:visible').count()))
+  // And the company dropdown closes it too — same control, same expectation.
+  await m.locator('[role="tab"]:visible', { hasText: /company/i }).first().click()
+  await m.waitForTimeout(600)
+  await m.locator('header button').last().click()
+  await m.waitForTimeout(500)
+  const picker = m.locator('select[aria-label]:visible').last()
+  if (await picker.count()) {
+    await picker.selectOption('e2')
+    await m.waitForTimeout(600)
+    ok('choosing another company closes it as well',
+      (await m.locator('[role="tab"]:visible').count()) === 0,
+      String(await m.locator('[role="tab"]:visible').count()))
+  }
+  await phone.close()
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 console.log('errors:', errs.length ? errs.slice(0, 4) : 'none')
 await b.close()

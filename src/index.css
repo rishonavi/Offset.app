@@ -264,6 +264,33 @@ select.field-input {
   padding-right: 2.25rem;
 }
 
+/* The same control on the navy sidebar. It needs its own rule rather than
+   `.field-input`, whose ground and border belong to a white card — and without
+   one it kept the OS stepper, which is the single thing that made the books
+   switcher read as a raw form rather than part of the app. The chevron is drawn
+   in a light stroke because it sits on navy. */
+select.field-dark {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.55)' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 1rem;
+  padding-right: 2rem;
+}
+[dir='rtl'] select.field-dark {
+  background-position: left 0.6rem center;
+  padding-right: 0.7rem;
+  padding-left: 2rem;
+}
+/* The popup is an OS window, not ours — on navy the options would otherwise
+   inherit white-on-white in some browsers. */
+select.field-dark option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
 /* Arabic and Urdu read right-to-left, so the chevron and the space made for it
    have to move to the other side. background-position has no logical form, so
    this is one of the few places that needs an explicit direction rule. */

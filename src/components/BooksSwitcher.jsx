@@ -14,24 +14,37 @@ import { cx } from './ui'
 //
 // Absent entirely until a company exists: with none there is nothing to switch
 // between, and Settings offers to create one instead.
+// Rounded like everything else, because nothing else in this app has a square
+// corner — the group and the select had no radius at all, which is most of why
+// they read as a raw form dropped into the sidebar rather than part of it. The
+// chosen side is a raised pill on a sunk track: one lit thing against a quiet
+// one, which is what makes a small control look considered rather than loud.
+//
+// Every colour here is a token, never a hex. The accent follows whatever was
+// picked in Settings — gold out of the box, but the person who sets it to teal
+// gets a teal switcher, and hardcoding the default would quietly break that.
 const TONE = {
   sidebar: {
-    group: 'border border-white/15 bg-white/5',
-    on: 'bg-gold text-navy',
-    off: 'text-white/55 hover:text-white/90',
-    select: 'border border-white/15 bg-white/5 px-2 py-2 text-xs text-white/90',
+    group: 'rounded-xl border border-white/10 bg-black/20 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]',
+    on: 'rounded-lg bg-gold text-navy shadow-[0_1px_2px_rgba(0,0,0,0.35)]',
+    off: 'rounded-lg text-white/50 hover:bg-white/5 hover:text-white/90',
+    select: 'field-dark rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/85 transition hover:border-white/25 hover:bg-white/[0.07] focus:border-gold focus:outline-none',
     caption: 'text-white/45',
   },
   card: {
-    group: 'border border-line bg-surface-sunk',
-    on: 'bg-brand text-navy',
-    off: 'text-ink-5 hover:text-ink-2',
+    group: 'rounded-xl border border-line bg-surface-sunk p-1',
+    on: 'rounded-lg bg-brand text-navy shadow-sm',
+    off: 'rounded-lg text-ink-5 hover:bg-black/[0.04] hover:text-ink-2',
     select: 'field-input',
     caption: 'text-ink-6',
   },
 }
 
-export default function BooksSwitcher({ variant = 'sidebar', className }) {
+// `onSwitch` is how the mobile drawer learns to close. Without it the switch
+// happened — storage changed, the tab moved — behind a drawer still covering
+// the page, so from the user's side nothing had happened at all. Every nav
+// link in that drawer already closes it; this was the one control that did not.
+export default function BooksSwitcher({ variant = 'sidebar', className, onSwitch }) {
   const { enabled, entities, activeId, switchTo, consolidated, personal } = useEntity()
   const t = useT()
   if (!enabled) return null
@@ -40,15 +53,16 @@ export default function BooksSwitcher({ variant = 'sidebar', className }) {
   // Coming back to a company lands on the one you were last in, so the tab is a
   // toggle rather than a thing that loses your place.
   const lastCompany = entities.some((e) => e.id === activeId) ? activeId : entities[0].id
+  const go = (id) => { switchTo(id); onSwitch?.() }
 
   return (
     <div className={className}>
-      <div role="tablist" aria-label={t('company.books')} className={cx('flex gap-1 p-1', tone.group)}>
-        <Tab tone={tone} selected={personal} onSelect={() => switchTo(PERSONAL)} label={t('company.personal')} icon={PiggyBank} />
+      <div role="tablist" aria-label={t('company.books')} className={cx('flex gap-1', tone.group)}>
+        <Tab tone={tone} selected={personal} onSelect={() => go(PERSONAL)} label={t('company.personal')} icon={PiggyBank} />
         <Tab
           tone={tone}
           selected={!personal}
-          onSelect={() => switchTo(consolidated ? CONSOLIDATED : lastCompany)}
+          onSelect={() => go(consolidated ? CONSOLIDATED : lastCompany)}
           label={t('company.company')}
           icon={Building2}
         />
@@ -57,8 +71,8 @@ export default function BooksSwitcher({ variant = 'sidebar', className }) {
       {!personal && entities.length > 1 && (
         <select
           value={consolidated ? CONSOLIDATED : activeId}
-          onChange={(e) => switchTo(e.target.value)}
-          className={cx('mt-1.5 w-full', tone.select)}
+          onChange={(e) => go(e.target.value)}
+          className={cx('mt-2 w-full', tone.select)}
           aria-label={t('company.switch')}
           title={t('company.switch')}
         >
@@ -87,8 +101,15 @@ function Tab({ tone, selected, onSelect, label, icon: Icon }) {
       aria-selected={selected}
       onClick={onSelect}
       className={cx(
-        'flex min-h-9 flex-1 items-center justify-center gap-1.5 px-2 py-1.5',
-        'text-[0.68rem] font-semibold uppercase tracking-[1px] transition',
+        'flex min-h-11 flex-1 items-center justify-center gap-1.5 px-2 py-1.5',
+        'text-[0.68rem] font-semibold uppercase tracking-[1px]',
+        // The same press the rest of the app's buttons have. `transition-all`
+        // rather than `transition`, so the scale is animated too.
+        'transition-all duration-200 active:scale-[0.97]',
+        // A segmented control is a row of buttons in a div, and without this it
+        // had no focus style at all — reachable by keyboard and invisible once
+        // you got there.
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70',
         selected ? tone.on : tone.off,
       )}
     >

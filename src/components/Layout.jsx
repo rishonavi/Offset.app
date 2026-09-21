@@ -430,7 +430,7 @@ export default function Layout() {
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
               <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
             </NavScroller>
-            <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
+            <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} onNavigate={() => setMobileOpen(false)} />
           </div>
         </div>
       )}
@@ -498,7 +498,7 @@ export default function Layout() {
   )
 }
 
-function UserFooter({ user, isCloud, onSignOut }) {
+function UserFooter({ user, isCloud, onSignOut, onNavigate }) {
   const t = useT()
   const { avatar } = useAppearance()
   return (
@@ -525,7 +525,7 @@ function UserFooter({ user, isCloud, onSignOut }) {
       {/* Which books you are in is the same kind of question as who you are
           signed in as, so it sits with it rather than competing with the brand
           at the top of the column. Absent entirely until a company exists. */}
-      <BooksSwitcher variant="sidebar" className="mt-3" />
+      <BooksSwitcher variant="sidebar" className="mt-3" onSwitch={onNavigate} />
     </div>
   )
 }
