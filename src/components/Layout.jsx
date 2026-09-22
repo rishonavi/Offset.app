@@ -138,13 +138,18 @@ function NavScroller({ children }) {
   // more destination.
   return (
     <div className="relative mt-6 min-h-0 flex-1">
-      <div ref={ref} onScroll={measure} className="h-full overflow-y-auto pe-1">
+      {/* The padding is not decoration: without it the list is sliced flush at
+          the container's edge, and a group heading caught by that cut reads as
+          a rendering fault rather than as something scrolled past. The fade is
+          deep enough to take a whole row, so what is under it is dimmed out
+          rather than chopped. */}
+      <div ref={ref} onScroll={measure} className="h-full overflow-y-auto pb-6 pe-1">
         {children}
       </div>
       <div
         aria-hidden="true"
         className={cx(
-          'pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-navy to-transparent transition-opacity',
+          'pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-navy via-navy/80 to-transparent transition-opacity',
           more ? 'opacity-100' : 'opacity-0',
         )}
       />

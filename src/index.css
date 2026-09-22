@@ -163,9 +163,18 @@ h1, h2, h3 {
     font-variant-numeric: tabular-nums;
   }
   /* The one field a form is actually about. */
+  /* The amount is the figure that matters on an entry form, so it is set
+     larger and heavier than its neighbours. It is *not* set taller: it sits
+     beside the date, and a box half a rem deeper than the one next to it reads
+     as a mistake rather than as emphasis. Every input on a form is the same
+     height; weight and size carry the hierarchy. */
   .field-input-lead {
     @apply text-lg font-semibold;
-    min-height: 3.25rem;
+    /* Larger type grows the line box, which grew the control past the 2.75rem
+       every other input holds — 50px beside a 44px date. Pinning the leading to
+       the one the default size uses puts the height back under the shared
+       minimum, so the figure is bigger and the box is not. */
+    line-height: 1.25rem;
   }
   /* 0.7rem uppercase with 1.5px of tracking is about as small as an interactive
      label can get before it stops being read and starts being decoration. */
@@ -381,17 +390,43 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
    plays, not the shade it happens to be, which is the only way the next person
    can tell which one they want. */
 .dark {
-  --color-surface-page:   #070f1d;
-  --color-surface-card:   #0e1c33;
-  --color-surface-raised: #0d2040;
-  --color-surface-sunk:   #091a30;
-  --color-surface-hover:  #13294d;
-  --color-surface-grab:   #1a3a6e;
-  --color-field-bg:       #0a1a33;
-  --color-field-bg-focus: #0d2244;
+  /* A ladder, not a puddle.
+     ─────────────────────────────────────────────────────────────────────
+     Measured, these five surfaces used to sit inside 1.13:1 of each other —
+     card against its own input fields was 1.03:1, which is no difference at
+     all. So a form was a dark rectangle on a dark rectangle on a dark page,
+     and the only thing telling them apart was a hairline border, every one
+     of them the same weight. That is what made these screens read as flat
+     and uneven: nothing said which plane anything was on.
 
-  --color-border-subtle:  #16284a;
-  --color-surface-chip:   #091a30;
+     A shadow cannot fix it. Shadows work on light grounds by simulating
+     blocked light; on a dark ground there is nothing for a dark shadow to
+     contrast against. Depth in a dark theme is luminance — a surface that
+     comes forward gets *lighter* — which is what Material's elevation
+     overlays and Atlassian's dark elevation both do.
+
+     So each rung is now a visible step above the last:
+
+       page   → sunk    1.07:1     the ground, and the wells cut into it
+       sunk   → card    1.11:1     inputs below the sheet they sit on
+       card   → raised  1.16:1     nested cards, hover, the chosen thing
+       raised → over    1.19:1     menus and popovers, above everything
+
+     The ratios look small because the contrast formula's +0.05 floor
+     dominates at these luminances; what matters is that the two steps a
+     form actually uses went from 1.03 and 1.05 to 1.11 and 1.16 — three
+     times the separation, on the ones that were doing no work. */
+  --color-surface-page:   #060d18;
+  --color-surface-card:   #121f36;
+  --color-surface-raised: #1a2b47;
+  --color-surface-sunk:   #0b1526;
+  --color-surface-hover:  #1a2b47;
+  --color-surface-grab:   #22375a;
+  --color-field-bg:       #0b1526;
+  --color-field-bg-focus: #101d33;
+
+  --color-border-subtle:  #1b2c4d;
+  --color-surface-chip:   #1a2b47;
   --color-line:           #1e3560;
   --color-line-soft:      #16284a;
   --color-border-card:    #1b2c4d;

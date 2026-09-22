@@ -46,15 +46,43 @@ export const accentById = (id) => ACCENTS.find((a) => a.id === id) || ACCENTS[0]
 // [lightness, chroma] per token. Split by which family it belongs to: `base`
 // follows the tone chosen here, `warm` follows the accent, because those tokens
 // are the brand showing through rather than structure.
+// The dark ladder.
+//
+// These are OKLCH lightnesses, so the numbers are perceptual: a step of about
+// 0.03 is where a difference starts being seen on a large area. Measured, the
+// old table had a card sitting 0.0079 above its own input fields and 0.0203
+// above a nested one — a quarter of a step, and two thirds of one. So a form
+// was a dark rectangle on a dark rectangle on a dark page, told apart only by
+// hairlines that were all the same weight, and the whole screen read as flat
+// and uneven without anybody being able to name why.
+//
+// A shadow cannot fix this. Shadows work on light grounds by simulating light
+// blocked by something raised; on a dark ground there is nothing for a dark
+// shadow to contrast against. Depth in a dark theme is luminance — a surface
+// that comes forward gets lighter — which is what Material's elevation
+// overlays and Atlassian's dark elevation both do.
+//
+// So every rung is now a step somebody can see:
+//
+//   page    0.155                the ground
+//   sunk    0.195   +0.040       wells cut into it: inputs, tracks
+//   card    0.245   +0.050       the sheet you read on
+//   raised  0.300   +0.055       nested cards, hover, the chosen thing
+//   grab    0.360   +0.060       dragged, held, most forward
+//
+// Chroma climbs with lightness so the navy stays navy rather than washing out
+// to grey as the surfaces rise.
 const DARK_BASE = {
-  'surface-page': [0.1686, 0.0322], 'surface-card': [0.2274, 0.0490],
-  'surface-raised': [0.2477, 0.0658], 'surface-sunk': [0.2166, 0.0492],
-  'surface-chip': [0.2166, 0.0492], 'surface-hover': [0.2843, 0.0720],
-  'surface-grab': [0.3548, 0.0979], 'field-bg': [0.2195, 0.0538],
-  'field-bg-focus': [0.2561, 0.0695], 'border-subtle': [0.2812, 0.0672],
-  'border-card': [0.2966, 0.0644], 'border-light': [0.3343, 0.0814],
-  'line': [0.3343, 0.0814], 'line-soft': [0.2812, 0.0672],
-  'border-strong': [0.4158, 0.1083], 'field-line': [0.4032, 0.0889],
+  'surface-page': [0.1550, 0.0300], 'surface-card': [0.2450, 0.0520],
+  'surface-raised': [0.3000, 0.0680], 'surface-sunk': [0.1950, 0.0420],
+  'surface-chip': [0.3000, 0.0680], 'surface-hover': [0.3000, 0.0680],
+  'surface-grab': [0.3600, 0.0980], 'field-bg': [0.1950, 0.0420],
+  // Focus lifts the well by a visible step rather than a hair, so the field
+  // you are typing in is obvious without relying on the border alone.
+  'field-bg-focus': [0.2300, 0.0560], 'border-subtle': [0.3100, 0.0700],
+  'border-card': [0.3300, 0.0680], 'border-light': [0.3600, 0.0840],
+  'line': [0.3600, 0.0840], 'line-soft': [0.3100, 0.0700],
+  'border-strong': [0.4400, 0.1083], 'field-line': [0.4032, 0.0889],
   'field-line-hi': [0.4757, 0.0979], 'hint': [0.6611, 0.0420],
 }
 const DARK_WARM = {

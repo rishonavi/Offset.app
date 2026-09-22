@@ -415,8 +415,15 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
 
         <FormSection title="The cost" />
 
-        <Field className="sm:col-span-2" label={t('entry.date')} required origin={originText('date')}>
-          <Input type="date" className="field-input-compact" value={form.date} onChange={set('date')} max={todayISO()} />
+        {/* When and how much, side by side and the same width.
+            A field whose width matches what goes in it is read faster, and two
+            related fields at two different widths send a signal there is no
+            difference to send: the date was capped at 15rem inside a full-width
+            row while the amount filled a column nearly twice that, so the pair
+            looked arbitrary rather than deliberate. They are one question —
+            what did this cost, and when — so they sit together. */}
+        <Field label={t('entry.date')} required origin={originText('date')}>
+          <Input type="date" value={form.date} onChange={set('date')} max={todayISO()} />
         </Field>
 
         <Field label={t('entry.amount')} required origin={originText('amount')}>
