@@ -653,6 +653,36 @@ tbody tr:hover {
   padding-bottom: max(var(--safe-pad, 0px), env(safe-area-inset-bottom, 0px));
 }
 
+/* The floating quick-add, and who outranks it.
+ *
+ * Fixed at the bottom-right corner — the same corner the home indicator sits
+ * in on an iPhone, and the same corner a page's own pinned Save button sits
+ * in. `bottom-5` measured from the bottom of a viewport that runs *under* the
+ * indicator, so the button was 20px above the edge of the glass rather than
+ * 20px above anything a thumb can reach.
+ *
+ * The second rule is the one that matters. `Layout` decides whether to show
+ * this from a regular expression over the path, written for three add/edit
+ * forms; the day sheet came later, pinned its own action bar to the same
+ * corner at the same z-index, and lost — the chrome renders after the outlet,
+ * so the shortcut covered the Save button of the one screen built to be used
+ * standing on a site, clipping it to "SAVE TH". A page that pins a bar marks
+ * itself and the shortcut steps aside. No list of routes to keep up to date:
+ * the page states what it owns.
+ *
+ * Only a pinned bar, and only because a pinned bar is always on screen. The
+ * first version let any empty state claim the corner too, which hid the
+ * shortcut on an asset page whose expenses section happened to be empty —
+ * a rule firing on pages it was never meant for, to fix an overlap that
+ * measurement showed did not exist. */
+.fab-quick-add {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+}
+main:has([data-page-action]) ~ [data-fab] { display: none; }
+
 /* ─── Accessibility ──────────────────────────────────────────────── */
 /* Visible focus ring for keyboard users on interactive, non-field elements.
    (Form fields already show a gold glow via the input:focus rule above.) */

@@ -28,10 +28,20 @@ export function Card({ className, children, ...props }) {
 // A card's heading, with room for a control on the right. An <h2> because
 // cards sit under the page's single <h1> — the level is part of the component
 // so a new card can't quietly break the document outline.
+//
+// `basis-48` is what keeps the control beside the title on a phone. A wrapping
+// flex row decides where to break from each child's *natural* width, before
+// any shrinking happens — so a two-line description made the row too wide on
+// paper and the control was pushed onto a line of its own, left-aligned under
+// the text, even though there was room for it all along. That is how the
+// getting-started card's dismiss × ended up floating in the middle of the
+// header on a 390px screen. Giving the text a 12rem basis instead of its full
+// natural width means the row only breaks when it is genuinely cramped, which
+// is what the wrap was for.
 export function CardTitle({ title, description, icon: Icon, action }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-2">
-      <div className="min-w-0">
+      <div className="min-w-0 grow basis-48">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3">
           {Icon && <Icon size={16} className="shrink-0 text-ink-6" />}
           {title}
@@ -154,6 +164,14 @@ export function DateFilter({ label, value, onChange, className = '' }) {
 
 export function EmptyState({ icon: Icon, title, subtitle, action }) {
   return (
+    // Deliberately *not* marked `data-page-action`, though it was for an hour.
+    // The reasoning was that an empty state with a button is the whole page, so
+    // the floating quick-add is redundant there. Measuring it killed it twice
+    // over: on an empty /expenses the two never touched — 274px against the
+    // FAB's 314 — and the asset page uses this same component for the empty
+    // half of a section, so marking it hid the shortcut on a page full of
+    // content. A rule that fires on pages it was not meant for, to fix an
+    // overlap that turned out not to exist.
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-strong bg-white/60 px-6 py-16 text-center">
       {Icon && (
         <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-light text-brand-ink">

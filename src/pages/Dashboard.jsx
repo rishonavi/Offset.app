@@ -47,6 +47,7 @@ import Commitments from '../components/Commitments'
 import { expiringDocuments } from '../lib/documents'
 import { spendingAnomalies } from '../lib/anomalies'
 import { Card, Button, EmptyState, Skeleton, ChartKey, cx } from '../components/ui'
+import PageHeader from '../components/PageHeader'
 import BudgetBar from '../components/BudgetBar'
 
 const RANGES = [
@@ -319,8 +320,8 @@ export default function Dashboard() {
     // has been dismissed, fall back to the plain greeting rather than showing
     // an empty page.
     return (
-      <div className="animate-fade-in">
-        <h1 className="mb-6 text-2xl font-bold text-ink-1">Dashboard</h1>
+      <div className="animate-fade-in space-y-6">
+        <PageHeader title="Dashboard" />
         {shouldShowOnboarding(books) ? (
           <GettingStarted />
         ) : books.corporate ? (
@@ -362,36 +363,43 @@ export default function Dashboard() {
       {/* What the ledger above cannot see: agreed, and not yet a cost. */}
       <Commitments />
 
-      {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-ink-1">Dashboard</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* w-auto sizes the control to its widest option, and an option is an
-              asset name the user chose — a long one would drag the page
-              sideways. Cap it and let the native popup show the full text. */}
-          <select className="field-input h-9 w-auto max-w-[12rem] py-1 sm:max-w-[18rem]" aria-label="Filter dashboard by asset" value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
-            <option value="">All assets</option>
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <div className="inline-flex rounded-xl border border-line bg-surface-raised p-0.5">
-            {RANGES.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => setRange(r.id)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  range === r.id ? 'bg-brand text-white' : 'text-ink-4 hover:text-ink-1'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* The one page in the app that built its own title instead of using
+          PageHeader, so the first screen anybody sees was the odd one out: no
+          gold rule under it, and text-2xl where every other page grows to
+          text-3xl above 640px. Two h1s, both hand-rolled, both slightly wrong
+          in the same way — the toolbar's and the empty-books one below. */}
+      <PageHeader
+        title="Dashboard"
+        actions={
+          <>
+            {/* w-auto sizes the control to its widest option, and an option is
+                an asset name the user chose — a long one would drag the page
+                sideways. Cap it and let the native popup show the full text. */}
+            <select className="field-input h-9 w-auto max-w-[12rem] py-1 sm:max-w-[18rem]" aria-label="Filter dashboard by asset" value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
+              <option value="">All assets</option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <div className="inline-flex rounded-xl border border-line bg-surface-raised p-0.5">
+              {RANGES.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => setRange(r.id)}
+                  aria-pressed={range === r.id}
+                  className={`min-h-9 rounded-lg px-3 text-xs font-medium transition ${
+                    range === r.id ? 'bg-brand text-white' : 'text-ink-4 hover:text-ink-1'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </>
+        }
+      />
 
       {/* Removes itself once the books can answer something */}
       <GettingStarted />

@@ -29,7 +29,7 @@ const STEP = 'grid h-11 w-11 shrink-0 place-items-center rounded-xl border borde
 function Stepper({ label, value, onChange, min = 0, step = 1 }) {
   const n = Number(value) || 0
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       <button type="button" className={STEP} aria-label={`One fewer ${label}`}
         disabled={n <= min} onClick={() => onChange(Math.max(min, Math.round((n - step) * 100) / 100))}>
         <Minus size={18} />
@@ -214,8 +214,14 @@ export default function DaySheet() {
         <div className="mt-3 space-y-3">
           {shown.labour.map((l) => (
             <div key={l.trade} className={cx('rounded-xl border p-3', l.headcount > 0 ? 'border-gold/50 bg-brand-light/20' : 'border-line')}>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
+              {/* Not wrapping. A wrapping row decides where to break from each
+                  child's natural width, before anything shrinks — so "Mason"
+                  kept its counter alongside and "Helper / unskilled" dropped
+                  it onto a second line, two rows of the same list laid out two
+                  different ways because one trade has a longer name. The label
+                  is already set to truncate; let it. */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-ink-2">{l.label}</p>
                   {l.recorded && <p className="text-[0.6875rem] text-ink-6">Already on the sheet</p>}
                 </div>
@@ -294,8 +300,18 @@ export default function DaySheet() {
     </div>
 
       {/* Pinned, because the thing you came to do should not be below three
-          cards of scrolling on the screen this page is for. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface-raised/95 p-3 backdrop-blur">
+          cards of scrolling on the screen this page is for.
+
+          `data-page-action` tells the chrome this corner is taken — without it
+          the floating quick-add covered Save, which is the whole page. And the
+          padding clears the home indicator: the page runs under it, so `p-3`
+          alone put Save beneath the system's own gesture area, the same fault
+          `.form-actions` was fixed for and this bar then repeated. */}
+      <div
+        data-page-action
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface-raised/95 p-3 backdrop-blur"
+      >
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-1">
           <div className="min-w-0 text-xs text-ink-5">
             <span className="font-semibold text-ink-2">{heads}</span> on site

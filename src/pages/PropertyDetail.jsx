@@ -22,6 +22,7 @@ import { loanSummary } from '../lib/loan'
 import { leaseStatus } from '../lib/lease'
 import { iconForAssetType } from '../lib/assetIcon'
 import { Card, Button, EmptyState, Spinner , ChartKey} from '../components/ui'
+import PageHeader from '../components/PageHeader'
 import BudgetBar from '../components/BudgetBar'
 import DocumentsCard from '../components/DocumentsCard'
 import ExpenseTable from '../components/ExpenseTable'
@@ -137,38 +138,40 @@ export default function PropertyDetail() {
         <ArrowLeft size={15} /> All assets
       </Link>
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-brand-ink">
-            <AssetIcon size={22} />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink-1">{property.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-5">
+      {/* Its own header markup for the sake of one icon tile, which is how it
+          drifted: no gold rule, and a title that stayed text-2xl while every
+          page using PageHeader grew to text-3xl. The tile is a prop now. */}
+      <PageHeader
+        icon={AssetIcon}
+        title={property.name}
+        subtitle={
+          (property.type || property.address) && (
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
               {property.type && <span>{property.type}</span>}
               {property.address && (
                 <span className="inline-flex items-center gap-1">
                   <MapPin size={13} /> {property.address}
                 </span>
               )}
-            </div>
-          </div>
-        </div>
-        {canWrite && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Link to={`/properties/${property.id}/edit`} className="btn-ghost">
-              <Pencil size={15} /> Edit
-            </Link>
-            <Button variant="ghost" onClick={onDeleteProperty} className="text-bad hover:bg-red-50">
-              <Trash2 size={15} /> Delete
-            </Button>
-            <Link to={`/expenses/new?asset=${property.id}`} className="btn-primary">
-              <Plus size={16} /> Add expense
-            </Link>
-          </div>
-        )}
-      </div>
+            </span>
+          )
+        }
+        actions={
+          canWrite && (
+            <>
+              <Link to={`/properties/${property.id}/edit`} className="btn-ghost">
+                <Pencil size={15} /> Edit
+              </Link>
+              <Button variant="ghost" onClick={onDeleteProperty} className="text-bad hover:bg-red-50">
+                <Trash2 size={15} /> Delete
+              </Button>
+              <Link to={`/expenses/new?asset=${property.id}`} className="btn-primary">
+                <Plus size={16} /> Add expense
+              </Link>
+            </>
+          )
+        }
+      />
 
       {/* Budget */}
       {property.monthly_budget ? (

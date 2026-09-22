@@ -473,11 +473,21 @@ export default function Layout() {
         </div>
       </main>
 
-      {/* Mobile floating quick-add */}
+      {/* Mobile floating quick-add.
+          Square-cornered since the day it was added, in an app where every
+          other raised thing is rounded — a gold box pasted onto the corner.
+
+          `data-fab` is what the stylesheet hides it by: a page that pins its
+          own action bar, or that is empty but for one call to action, owns the
+          bottom of the screen. The route list above cannot know that — it was
+          written for the three add/edit forms and never learnt about the day
+          sheet, so on a phone this button sat squarely on top of "Save the
+          day". The page says what it owns; the chrome gets out of the way. */}
       {showFab && (
         <button
+          data-fab
           onClick={() => setQuickAdd(true)}
-          className="fixed bottom-5 right-5 z-30 grid h-14 w-14 place-items-center bg-gold text-navy shadow-lg shadow-navy/40 transition active:scale-95 lg:hidden"
+          className="fab-quick-add grid h-14 w-14 place-items-center rounded-2xl bg-gold text-navy shadow-lg shadow-navy/40 transition active:scale-95 lg:hidden"
           aria-label={t('chrome.addExpense')}
         >
           <Plus size={26} />

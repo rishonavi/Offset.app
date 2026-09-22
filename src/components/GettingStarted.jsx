@@ -9,7 +9,7 @@ import { steps as onboardingSteps, progress, dismiss, shouldShow } from '../lib/
 import { installSampleData, hasRealData } from '../lib/sampleData'
 import { installSampleSite, hasRealSite, hasSampleSite } from '../lib/sampleSite'
 import { collections } from '../lib/storage/corporate'
-import { Card, Button } from './ui'
+import { Card, CardTitle, Button } from './ui'
 
 // The short list of things still worth doing, on the dashboard, until they are
 // done. Each line is ticked by the books themselves, so it cannot claim you
@@ -87,21 +87,21 @@ export default function GettingStarted() {
 
   return (
     <Card className="p-5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-ink-3">Getting started</h2>
-          <p className="mt-1 text-xs text-ink-5">
-            {done} of {total} done. This disappears on its own once it's finished.
-          </p>
-        </div>
-        <button
-          onClick={hide}
-          aria-label="Hide getting started"
-          className="grid h-8 w-8 shrink-0 place-items-center text-ink-6 hover:text-ink-3"
-        >
-          <X size={16} />
-        </button>
-      </div>
+      {/* Hand-rolled markup identical to CardTitle's, which is how it missed
+          that component's fix and kept its own bug. */}
+      <CardTitle
+        title="Getting started"
+        description={`${done} of ${total} done. This disappears on its own once it's finished.`}
+        action={
+          <button
+            onClick={hide}
+            aria-label="Hide getting started"
+            className="icon-btn-tight text-ink-6 hover:text-ink-3"
+          >
+            <X size={16} />
+          </button>
+        }
+      />
 
       <ol className="mt-4 space-y-2">
         {list.map((s) => (
