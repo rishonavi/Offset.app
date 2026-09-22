@@ -233,13 +233,13 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
         <ul className="space-y-3">
           {comments.map((c) => (
             <li key={c.id} className="flex gap-2.5">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-light text-[0.7rem] font-semibold text-brand-ink">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-light text-[0.6875rem] font-semibold text-brand-ink">
                 {(c.author || 'U')[0].toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-xs font-semibold text-ink-3">{c.author || 'Someone'}</span>
-                  <span className="shrink-0 text-[0.65rem] text-ink-6">{formatDate(c.created_at)}</span>
+                  <span className="shrink-0 text-[0.625rem] text-ink-6">{formatDate(c.created_at)}</span>
                   {canWrite && (
                     <button
                       onClick={() => onDelete(c.id)}

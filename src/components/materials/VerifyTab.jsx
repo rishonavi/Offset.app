@@ -142,7 +142,7 @@ export default function Verify({ data, eid, actor, canWrite, bump, toast }) {
                         <tr key={r.item.id}>
                           <td className="py-2 text-ink-2">
                             {r.item.name}
-                            <span className="block text-[0.7rem] text-ink-6">{storeName(storeId)} · {r.item.unit}</span>
+                            <span className="block text-[0.6875rem] text-ink-6">{storeName(storeId)} · {r.item.unit}</span>
                           </td>
                           <td className="text-end tabular text-ink-4">{r.bookQty}</td>
                           <td className="text-end">
@@ -198,7 +198,7 @@ export default function Verify({ data, eid, actor, canWrite, bump, toast }) {
               <li key={`${sh.storeId || 'yard'}-${sh.date}`} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
                 <span className="text-ink-2">
                   {storeName(sh.storeId)}
-                  <span className="block text-[0.7rem] text-ink-6">
+                  <span className="block text-[0.6875rem] text-ink-6">
                     {sh.date} · {sh.count} counted · {sh.short} short, {sh.over} over, {sh.square} square
                   </span>
                 </span>

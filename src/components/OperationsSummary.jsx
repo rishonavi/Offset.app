@@ -341,7 +341,7 @@ export default function OperationsSummary({ summary }) {
 function Figure({ label, value, strong, muted, count }) {
   return (
     <div>
-      <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+      <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
       <div
         className={
           strong

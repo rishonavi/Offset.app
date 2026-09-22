@@ -315,7 +315,7 @@ export default function Invoices() {
                       {t.name}
                       {t.builtIn && <span className="ml-2 text-xs font-normal text-ink-6">built in</span>}
                       {isDefault && (
-                        <span className="ml-2 bg-brand-light px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-brand-ink">
+                        <span className="ml-2 bg-brand-light px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-brand-ink">
                           Default
                         </span>
                       )}
@@ -571,7 +571,7 @@ function Row({ label, value, strong }) {
 function TokenReference() {
   const group = (title, map, prefix = '') => (
     <div>
-      <div className="text-[0.6rem] font-semibold uppercase tracking-[1px] text-ink-6">{title}</div>
+      <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-6">{title}</div>
       <dl className="mt-1 space-y-0.5">
         {Object.entries(map).map(([k, v]) => (
           <div key={k} className="flex gap-3 text-xs">

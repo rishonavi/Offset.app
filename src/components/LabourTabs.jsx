@@ -53,7 +53,7 @@ export default function Labour(shared) {
             onClick={() => setView(v.id)}
             aria-selected={view === v.id}
             className={cx(
-              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-[0.78rem] font-semibold transition',
+              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition',
               view === v.id
                 ? 'border-brand bg-brand/15 text-ink-1'
                 : 'border-line text-ink-5 hover:border-line-strong hover:text-ink-2',
@@ -212,7 +212,7 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
                 <li key={t.trade.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                   <span className="text-ink-2">
                     {t.trade.label}
-                    {!t.trade.skilled && <span className="ms-2 text-[0.7rem] text-ink-6">unskilled</span>}
+                    {!t.trade.skilled && <span className="ms-2 text-[0.6875rem] text-ink-6">unskilled</span>}
                   </span>
                   <span className="tabular text-ink-4">
                     {t.headDays} days · <span className="font-medium text-ink-2">{formatCurrency(t.cost)}</span>
@@ -574,7 +574,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
         <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-ink-3">Tax deducted at source — {tax.fy.label}</h3>
-            <span className="text-[0.7rem] text-ink-6">194C · {tax.from} to {tax.to}</span>
+            <span className="text-[0.6875rem] text-ink-6">194C · {tax.from} to {tax.to}</span>
           </div>
           <p className="mt-1 text-xs text-ink-5">
             Counted per contractor across the year, not per order. The payment that takes a contractor past
@@ -595,7 +595,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                 <li key={l.party} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
                   <span className="text-ink-3">
                     {l.party}
-                    <span className="block text-[0.68rem] text-ink-6">
+                    <span className="block text-[0.6875rem] text-ink-6">
                       {formatCurrency(l.paid)} across {l.orders} {l.orders === 1 ? 'order' : 'orders'} · {l.rate}%
                       {l.crossedOn && ` · crossed the year on ${l.crossedOn}`}
                     </span>
@@ -610,7 +610,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
               ))}
             </ul>
           )}
-          <div className="mt-3 flex flex-wrap gap-4 border-t border-line-soft pt-3 text-[0.7rem] text-ink-5">
+          <div className="mt-3 flex flex-wrap gap-4 border-t border-line-soft pt-3 text-[0.6875rem] text-ink-5">
             {tax.quarters.map((q) => (
               <span key={q.quarter}>
                 Q{q.quarter} <span className="tabular font-semibold text-ink-3">{formatCurrency(q.tds)}</span>
@@ -776,7 +776,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
               <div className="mt-3 rounded-xl border border-line-soft p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="text-xs font-semibold uppercase tracking-[1px] text-ink-5">Retention release</h4>
-                  <label className="flex items-center gap-2 text-[0.7rem] text-ink-5">
+                  <label className="flex items-center gap-2 text-[0.6875rem] text-ink-5">
                     Work finished
                     <input
                       type="date"
@@ -784,12 +784,12 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                       value={l.order.completed_on || ''}
                       disabled={!canWrite}
                       onChange={(e) => setCompleted(l.order.id, e.target.value)}
-                      className="rounded-lg border border-line-soft bg-surface-1 px-2 py-1 text-[0.7rem] text-ink-2"
+                      className="rounded-lg border border-line-soft bg-surface-1 px-2 py-1 text-[0.6875rem] text-ink-2"
                     />
                   </label>
                 </div>
                 {schedules[l.order.id].overReleased > 0 && (
-                  <p className="mt-2 text-[0.7rem] font-semibold text-bad">
+                  <p className="mt-2 text-[0.6875rem] font-semibold text-bad">
                     {formatCurrency(schedules[l.order.id].overReleased)} more has been released than was ever held.
                   </p>
                 )}
@@ -818,7 +818,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                   ))}
                 </ul>
                 {side === 'client' && schedules[l.order.id].due > 0 && (
-                  <p className="mt-2 text-[0.7rem] text-warn">
+                  <p className="mt-2 text-[0.6875rem] text-warn">
                     {formatCurrency(schedules[l.order.id].due)} of this stopped being security and became a debt. Nobody
                     sends an invoice for retention, which is why it sits.
                   </p>
@@ -845,21 +845,21 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                       <tr key={r.bill.id}>
                         <td className="py-2 text-ink-2">
                           RA {r.bill.number}
-                          <span className="block text-[0.7rem] text-ink-6">{r.bill.date}</span>
-                          {r.bill.approval_status === 'pending' && <span className="block text-[0.7rem] text-warn">waiting for approval</span>}
-                          {r.overClaimed && <span className="block text-[0.7rem] text-bad">certified above the claim</span>}
+                          <span className="block text-[0.6875rem] text-ink-6">{r.bill.date}</span>
+                          {r.bill.approval_status === 'pending' && <span className="block text-[0.6875rem] text-warn">waiting for approval</span>}
+                          {r.overClaimed && <span className="block text-[0.6875rem] text-bad">certified above the claim</span>}
                           <button
                             type="button"
                             aria-label={`Payment certificate for RA ${r.bill.number}`}
                             onClick={() => certify(l.order, r.bill)}
-                            className="mt-1 inline-flex items-center gap-1 text-[0.7rem] font-semibold text-brand-ink underline-offset-4 hover:underline"
+                            className="mt-1 inline-flex items-center gap-1 text-[0.6875rem] font-semibold text-brand-ink underline-offset-4 hover:underline"
                           >
                             <Printer size={11} /> Certificate
                           </button>
-                          {r.negative && <span className="block text-[0.7rem] text-warn">certifies less than the last</span>}
+                          {r.negative && <span className="block text-[0.6875rem] text-warn">certifies less than the last</span>}
                           {canWrite && (
                             <button type="button" aria-label={`Edit RA ${r.bill.number} for ${l.order.contractor}`}
-                              className="mt-1 ms-3 inline-flex text-[0.7rem] text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
+                              className="mt-1 ms-3 inline-flex text-[0.6875rem] text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
                               onClick={() => (editingBill === r.bill.id ? setEditingBill(null) : startBill(r.bill))}>
                               {editingBill === r.bill.id ? 'Close' : 'Edit'}
                             </button>
@@ -948,7 +948,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
 function Cell({ label, value, tone }) {
   return (
     <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
       <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-2')}>{value}</p>
     </div>
   )
@@ -957,7 +957,7 @@ function Cell({ label, value, tone }) {
 function Stat({ label, value, tone }) {
   return (
     <Card className="p-4">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
       <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-1')}>{value}</p>
     </Card>
   )

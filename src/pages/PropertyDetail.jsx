@@ -44,7 +44,7 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
           <Icon size={20} />
         </div>
         <div className="min-w-0">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+          <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
           <div className="truncate font-serif text-xl font-bold text-ink-1">{value}</div>
         </div>
       </div>
@@ -206,22 +206,22 @@ export default function PropertyDetail() {
               { label: 'Total ROI', v: totalRoi, suffix: '%', hint: 'net to date' },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div
                   className="font-serif text-2xl font-bold"
                   style={{ color: m.v == null ? '#0A1828' : m.v >= 0 ? '#2F8F6B' : '#C0492F' }}
                 >
                   {m.v == null ? '—' : `${m.v.toFixed(1)}${m.suffix}`}
                 </div>
-                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
+                <div className="text-[0.625rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Net to date</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Net to date</div>
               <div className="font-serif text-2xl font-bold" style={{ color: net >= 0 ? '#2F8F6B' : '#C0492F' }}>
                 {formatCurrency(net)}
               </div>
-              <div className="text-[0.65rem] text-ink-6">income − expenses</div>
+              <div className="text-[0.625rem] text-ink-6">income − expenses</div>
             </div>
           </div>
 
@@ -239,14 +239,14 @@ export default function PropertyDetail() {
               },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div
                   className={`font-serif text-xl font-bold ${m.tone == null ? 'text-ink-1' : ''}`}
                   style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
                 >
                   {m.value}
                 </div>
-                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
+                <div className="text-[0.625rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
           </div>
@@ -277,11 +277,11 @@ export default function PropertyDetail() {
               { label: 'Loan amount', value: formatCurrency(loan.principal), hint: 'original principal' },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div className="font-serif text-2xl font-bold" style={{ color: m.accent || '#0A1828' }}>
                   {m.value}
                 </div>
-                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
+                <div className="text-[0.625rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
           </div>
@@ -323,19 +323,19 @@ export default function PropertyDetail() {
           </div>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Tenant</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Tenant</div>
               <div className="truncate font-serif text-lg font-bold text-ink-1">{lease.tenant || '—'}</div>
             </div>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Lease start</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Lease start</div>
               <div className="font-serif text-lg font-bold text-ink-1">{lease.start ? formatDate(lease.start) : '—'}</div>
             </div>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Lease end</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Lease end</div>
               <div className="font-serif text-lg font-bold text-ink-1">{lease.end ? formatDate(lease.end) : '—'}</div>
             </div>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Deposit held</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Deposit held</div>
               <div className="font-serif text-lg font-bold text-ink-1">{lease.deposit ? formatCurrency(lease.deposit) : '—'}</div>
             </div>
           </div>

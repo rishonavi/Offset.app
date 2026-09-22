@@ -54,7 +54,7 @@ export default function Prices({ data }) {
               <li key={r.item.id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
                 <span className="text-ink-2">
                   {r.item.name}
-                  <span className="block text-[0.7rem] text-ink-6">
+                  <span className="block text-[0.6875rem] text-ink-6">
                     {formatCurrency(r.worst.rate)} on {r.worst.date} against {formatCurrency(r.worst.baseline)} normal
                     {r.worst.vendor && ` · ${r.worst.vendor}`}
                   </span>
@@ -94,11 +94,11 @@ export default function Prices({ data }) {
                   <tr key={r.item.id}>
                     <td className="py-2 text-ink-2">
                       {r.item.name}
-                      <span className="block text-[0.7rem] text-ink-6">{categoryOf(r.item).label}</span>
+                      <span className="block text-[0.6875rem] text-ink-6">{categoryOf(r.item).label}</span>
                     </td>
                     <td className="text-end tabular text-ink-3">
                       {r.lastRate === null ? '—' : formatCurrency(r.lastRate)}
-                      {r.lastPaidOn && <span className="block text-[0.7rem] text-ink-6">{r.lastPaidOn}</span>}
+                      {r.lastPaidOn && <span className="block text-[0.6875rem] text-ink-6">{r.lastPaidOn}</span>}
                     </td>
                     <td className={cx('text-end tabular', (r.driftPercent || 0) > 0 ? 'text-warn' : 'text-ink-4')}>
                       {r.driftPercent === null ? '—' : `${r.driftPercent > 0 ? '+' : ''}${r.driftPercent}%`}
@@ -111,7 +111,7 @@ export default function Prices({ data }) {
                         ? '—'
                         : formatCurrency(byItem[r.item.id].norm)}
                       {byItem[r.item.id]?.dear > 0 && (
-                        <span className="block text-[0.7rem] font-semibold text-warn">
+                        <span className="block text-[0.6875rem] font-semibold text-warn">
                           {byItem[r.item.id].dear} above it
                         </span>
                       )}
@@ -119,13 +119,13 @@ export default function Prices({ data }) {
                     <td className="text-end tabular text-ink-3">
                       {r.bestRate === null ? '—' : formatCurrency(r.bestRate)}
                       {r.spreadPercent > 0 && (
-                        <span className="block text-[0.7rem] text-ink-6">{r.quotes} quotes, {r.spreadPercent}% apart</span>
+                        <span className="block text-[0.6875rem] text-ink-6">{r.quotes} quotes, {r.spreadPercent}% apart</span>
                       )}
                     </td>
                     <td className="ps-4 text-ink-4">
                       {r.bestVendor || '—'}
                       {r.cheaperAvailable && (
-                        <span className="mt-1 flex items-center gap-1 text-[0.7rem] font-semibold text-good">
+                        <span className="mt-1 flex items-center gap-1 text-[0.6875rem] font-semibold text-good">
                           <TrendingDown size={12} /> {r.savingPercent}% below what you paid
                         </span>
                       )}

@@ -206,28 +206,28 @@ export default function BankImport() {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-2 text-sm font-medium text-ink-3">
                 <Link2 size={15} className="text-ink-5" /> Connect a bank (live)
-                <span className="rounded-full bg-surface-chip px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-ink-5">
+                <span className="rounded-full bg-surface-chip px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-ink-5">
                   {bankSyncEnabled ? bankProviderLabel : 'Setup required'}
                 </span>
               </span>
               <div className="flex gap-2">
-                <Button variant="ghost" onClick={connectLive} loading={linking} disabled={!canWrite} className="px-3 py-1.5 text-[0.65rem]">
+                <Button variant="ghost" onClick={connectLive} loading={linking} disabled={!canWrite} className="px-3 py-1.5 text-[0.625rem]">
                   Connect
                 </Button>
                 {bankSyncEnabled && (
-                  <Button variant="ghost" onClick={syncLive} loading={busy} disabled={!canWrite} className="px-3 py-1.5 text-[0.65rem]">
+                  <Button variant="ghost" onClick={syncLive} loading={busy} disabled={!canWrite} className="px-3 py-1.5 text-[0.625rem]">
                     Sync transactions
                   </Button>
                 )}
               </div>
             </div>
-            <p className="mt-1.5 text-[0.7rem] text-ink-6">
+            <p className="mt-1.5 text-[0.6875rem] text-ink-6">
               Pull transactions straight from your bank — no file needed. Uses Plaid or an Account Aggregator (India).
               {!bankSyncEnabled && ' Not enabled on this deployment.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-wide text-ink-5">
+          <div className="flex items-center gap-2 text-[0.6875rem] uppercase tracking-wide text-ink-5">
             <span className="h-px flex-1 bg-line" /> or import a file <span className="h-px flex-1 bg-line" />
           </div>
 
@@ -295,7 +295,7 @@ export default function BankImport() {
                       field people learn to skip. */}
                   {(!assetFree || properties.length > 0) && (
                     <div>
-                      <span className="mb-1 block text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Add them to asset</span>
+                      <span className="mb-1 block text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Add them to asset</span>
                       <select className="field-input w-full sm:w-auto" aria-label="Assign imported rows to asset" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
                         {assetFree && <option value="">Not booked to an asset</option>}
                         {properties.map((p) => (
@@ -312,7 +312,7 @@ export default function BankImport() {
                     onChange={setSiteId}
                     hint="Every row in this file lands on the same job — split them afterwards if the statement mixes sites."
                   />
-                  <p className="text-[0.7rem] text-ink-6">Categories are guessed from the description — review them on the Expenses page after.</p>
+                  <p className="text-[0.6875rem] text-ink-6">Categories are guessed from the description — review them on the Expenses page after.</p>
                 </div>
               )}
             </div>

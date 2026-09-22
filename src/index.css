@@ -145,7 +145,7 @@ h1, h2, h3 {
      else and a form read as one long shout. Uppercase now marks a section, and
      a field label is just a label. */
   .field-label {
-    @apply mb-1.5 block text-[0.8rem] font-medium text-slate-600;
+    @apply mb-1.5 block text-xs font-medium text-slate-600;
   }
   /* A control someone is meant to type into, rather than a table cell. The
      resting fill is what does most of the work: a white box on a cream page has
@@ -211,7 +211,7 @@ h1, h2, h3 {
      label can get before it stops being read and starts being decoration. */
   .btn {
     @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5
-           text-[0.8rem] font-semibold uppercase tracking-[0.8px] transition-all duration-200
+           text-xs font-semibold uppercase tracking-[0.8px] transition-all duration-200
            active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   }
   /* An icon button you can actually hit.
@@ -257,7 +257,7 @@ h1, h2, h3 {
   }
 
   .badge {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.5px];
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-[0.5px];
     background-color: color-mix(in srgb, var(--badge) 12%, transparent);
     /* Deepened on a light ground for the same reason it is lifted on a dark
        one: the hex was picked to name a status, not to be read at 10px. */
@@ -293,19 +293,19 @@ h1, h2, h3 {
   }
 
   .btn-primary {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-gold bg-gold text-navy shadow-sm hover:bg-gold-dark hover:border-gold-dark;
   }
   .btn-ghost {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-border-light bg-white text-slate-700 hover:border-gold hover:text-gold;
   }
   .btn-danger {
-    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[0.8rem]
+    @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none
            border border-red-600 bg-red-600 text-white hover:bg-red-700 hover:border-red-700;
@@ -326,7 +326,7 @@ h1, h2, h3 {
     @apply border-t border-border-light pt-5 first:border-t-0 first:pt-0;
   }
   .form-section-title {
-    @apply text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-slate-500;
+    @apply text-[0.6875rem] font-semibold uppercase tracking-[1.5px] text-slate-500;
   }
   /* Save stays reachable without scrolling back down a form. Sticky rather than
      fixed so it sits inside the card and cannot cover another page's content. */

@@ -145,7 +145,7 @@ export default function QuickAddExpense({ open, onClose }) {
                 <Plus size={16} /> Add
               </Button>
             </div>
-            <p className="text-center text-[0.7rem] text-ink-6">
+            <p className="text-center text-[0.6875rem] text-ink-6">
               Tip: press <kbd className="rounded bg-surface-chip px-1 font-sans">N</kbd> anywhere to open this.
             </p>
           </form>

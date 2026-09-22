@@ -398,7 +398,7 @@ export default function Inventory({ data, eid, actor, canWrite, bump, toast, com
                       <td className="text-end tabular text-ink-2">
                         {l.qty} {l.item.unit}
                         {l.sites > 0 && (
-                          <span className="block text-[0.7rem] font-normal text-ink-6">
+                          <span className="block text-[0.6875rem] font-normal text-ink-6">
                             {l.central.qty} in the yard · {l.onSites} on {l.sites} {l.sites === 1 ? 'site' : 'sites'}
                           </span>
                         )}

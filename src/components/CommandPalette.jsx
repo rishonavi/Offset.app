@@ -261,7 +261,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
             className="w-full bg-transparent py-3.5 text-sm text-ink-1 outline-none placeholder:text-hint"
             aria-label="Command palette search"
           />
-          <kbd className="hidden shrink-0 rounded bg-surface-chip px-1.5 py-0.5 text-[0.65rem] font-sans text-ink-6 sm:block">Esc</kbd>
+          <kbd className="hidden shrink-0 rounded bg-surface-chip px-1.5 py-0.5 text-[0.625rem] font-sans text-ink-6 sm:block">Esc</kbd>
         </div>
 
         <div ref={listRef} className="max-h-[52vh] overflow-y-auto py-2">
@@ -275,7 +275,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
                 return (
                   <Fragment key={i}>
                     {showHeader && (
-                      <li className="px-4 pb-1 pt-3 text-[0.6rem] font-semibold uppercase tracking-[1.5px] text-ink-6">
+                      <li className="px-4 pb-1 pt-3 text-[0.625rem] font-semibold uppercase tracking-[1.5px] text-ink-6">
                         {it.group}
                       </li>
                     )}
@@ -303,7 +303,7 @@ export default function CommandPalette({ open, onClose, onQuickAdd, onHelp, onRe
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-border-light px-4 py-2 text-[0.65rem] text-ink-6">
+        <div className="flex items-center justify-between border-t border-border-light px-4 py-2 text-[0.625rem] text-ink-6">
           <span>↑↓ to navigate · ↵ to open</span>
           <span>Search assets, income, expenses &amp; docs</span>
         </div>

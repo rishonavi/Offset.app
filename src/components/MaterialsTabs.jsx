@@ -45,7 +45,7 @@ export default function Materials(shared) {
             onClick={() => setView(v.id)}
             aria-selected={view === v.id}
             className={cx(
-              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-[0.78rem] font-semibold transition',
+              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition',
               view === v.id
                 ? 'border-brand bg-brand/15 text-ink-1'
                 : 'border-line text-ink-5 hover:border-line-strong hover:text-ink-2',

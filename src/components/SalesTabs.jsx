@@ -53,7 +53,7 @@ export default function Sales(shared) {
             onClick={() => setView(v.id)}
             aria-selected={view === v.id}
             className={cx(
-              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-[0.78rem] font-semibold transition',
+              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition',
               view === v.id
                 ? 'border-brand bg-brand/15 text-ink-1'
                 : 'border-line text-ink-5 hover:border-line-strong hover:text-ink-2',
@@ -240,7 +240,7 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
                   <tr key={l.unit.id}>
                     <td className="py-2 text-ink-2">
                       {l.unit.name}
-                      <span className="block text-[0.7rem] text-ink-6">
+                      <span className="block text-[0.6875rem] text-ink-6">
                         {l.unit.tower && `${l.unit.tower} · `}
                         {l.unit.floor !== null && `floor ${l.unit.floor} · `}
                         {l.unit.configuration}
@@ -564,7 +564,7 @@ function Bar({ label, percent, tone }) {
 function Cell({ label, value, tone }) {
   return (
     <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
       <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-2')}>{value}</p>
     </div>
   )
@@ -573,7 +573,7 @@ function Cell({ label, value, tone }) {
 function Stat({ label, value, tone }) {
   return (
     <Card className="p-4">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
       <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-1')}>{value}</p>
     </Card>
   )

@@ -30,7 +30,7 @@ export default function SyncStatus({ compact = false }) {
       <button
         onClick={sync.run}
         aria-label="Sync status"
-        className={cx('inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[0.7rem] font-semibold',
+        className={cx('inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[0.6875rem] font-semibold',
           bad ? 'text-warn' : waiting ? 'text-ink-4' : 'text-good')}
       >
         {running ? <RefreshCw size={12} className="animate-spin" />
@@ -54,7 +54,7 @@ export default function SyncStatus({ compact = false }) {
           </h2>
           <p className="mt-1 text-xs text-ink-5">{state.why}</p>
           {state.lastSyncedAt && (
-            <p className="mt-0.5 text-[0.7rem] text-ink-6">Last reconciled {formatDate(state.lastSyncedAt)}</p>
+            <p className="mt-0.5 text-[0.6875rem] text-ink-6">Last reconciled {formatDate(state.lastSyncedAt)}</p>
           )}
         </div>
         <Button variant="ghost" onClick={sync.run} disabled={running || !state.online}>
@@ -133,7 +133,7 @@ function Doubled({ doubled = [], count = 0 }) {
           <li key={`${d.kind}-${d.keep.id}`} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
             <span className="text-ink-2">
               {d.keep.date || d.keep.name || d.keep.id}
-              <span className="block text-[0.7rem] text-ink-6">{d.kind} · {d.count} copies</span>
+              <span className="block text-[0.6875rem] text-ink-6">{d.kind} · {d.count} copies</span>
             </span>
             <Badge color="#d97706">{d.count}×</Badge>
           </li>

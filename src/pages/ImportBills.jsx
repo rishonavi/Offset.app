@@ -381,7 +381,7 @@ export default function ImportBills() {
             expenses, Receipt and Sales become income, each matched to the asset named in the voucher. Duplicates are
             skipped, so re-importing the same file is safe.
           </p>
-          <p className="mt-2 text-[0.7rem] text-ink-6">
+          <p className="mt-2 text-[0.6875rem] text-ink-6">
             In TallyPrime: Gateway of Tally → Display More Reports → Day Book → Export.
           </p>
           <input
@@ -486,26 +486,26 @@ export default function ImportBills() {
 
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                   <label className="flex flex-col gap-1">
-                    <span className="text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Date</span>
+                    <span className="text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Date</span>
                     <input type="date" className="field-input min-w-0" value={r.date} onChange={upd(r.key, 'date')} max={todayISO()} />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Amount</span>
+                    <span className="text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Amount</span>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-ink-5">{currencySymbol}</span>
                       <input type="number" inputMode="decimal" className="field-input min-w-0 pl-6" value={r.amount} onChange={upd(r.key, 'amount')} placeholder="0" />
                     </div>
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Category</span>
+                    <span className="text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Category</span>
                     <input list="import-categories" className="field-input min-w-0" value={r.category} onChange={upd(r.key, 'category')} placeholder="Category" />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Vendor</span>
+                    <span className="text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Vendor</span>
                     <input className="field-input min-w-0" value={r.vendor} onChange={upd(r.key, 'vendor')} placeholder="Vendor" />
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-[0.65rem] font-semibold uppercase tracking-wide text-ink-6">Asset</span>
+                    <span className="text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Asset</span>
                     <select className="field-input min-w-0" value={r.property_id} onChange={upd(r.key, 'property_id')}>
                       {properties.map((p) => (
                         <option key={p.id} value={p.id}>

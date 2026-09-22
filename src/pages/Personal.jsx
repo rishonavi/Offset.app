@@ -30,7 +30,7 @@ function Stat({ icon: Icon, label, value, accent }) {
           <Icon size={20} />
         </span>
         <div className="min-w-0">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+          <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
           <div className="truncate font-serif text-lg font-bold text-ink-1 sm:text-xl">{value}</div>
         </div>
       </div>

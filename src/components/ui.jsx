@@ -209,7 +209,7 @@ export function MoreDetails({ open, onToggle, label = 'More details', summary, c
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl px-1 text-[0.8rem] font-medium text-ink-4 transition hover:text-ink-1 dark:hover:text-white"
+        className="inline-flex min-h-[2.75rem] items-center gap-2 rounded-xl px-1 text-xs font-medium text-ink-4 transition hover:text-ink-1 dark:hover:text-white"
       >
         <ChevronRight size={16} className={cx('transition-transform', open && 'rotate-90')} />
         {label}
@@ -289,7 +289,7 @@ export function Certainty({ made, className }) {
   return (
     <span
       title={made.hint}
-      className={cx('inline-flex items-center gap-1 text-[0.62rem] font-semibold uppercase tracking-[1px]', tone, className)}
+      className={cx('inline-flex items-center gap-1 text-[0.625rem] font-semibold uppercase tracking-[1px]', tone, className)}
     >
       {made.label}
       {made.mixed && <span className="font-normal normal-case tracking-normal text-ink-6">· mixed</span>}

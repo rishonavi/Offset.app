@@ -309,15 +309,15 @@ export default function Reports() {
 
         <div className="mt-4 grid grid-cols-3 gap-3">
           <div className="border-s-2 border-emerald-500 pl-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Tax collected</div>
+            <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Tax collected</div>
             <div className="font-serif text-xl font-bold text-emerald-700">{formatCurrency(taxCollected)}</div>
           </div>
           <div className="border-s-2 border-gold pl-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Tax paid</div>
+            <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Tax paid</div>
             <div className="font-serif text-xl font-bold text-ink-1">{formatCurrency(taxPaid)}</div>
           </div>
           <div className="border-s-2 border-navy pl-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Net tax</div>
+            <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Net tax</div>
             <div className="font-serif text-xl font-bold" style={{ color: netTax >= 0 ? '#2F8F6B' : '#C0492F' }}>
               {formatCurrency(netTax)}
             </div>

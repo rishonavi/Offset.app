@@ -57,7 +57,7 @@ export default function Reconcile2B() {
           <ShieldAlert size={16} className="text-ink-5" />
           <h2 className="text-sm font-semibold text-ink-3">Input credit against GSTR-2B</h2>
         </div>
-        <span className="text-[0.7rem] text-ink-6">Read here, never stored</span>
+        <span className="text-[0.6875rem] text-ink-6">Read here, never stored</span>
       </div>
       <p className="mt-1 text-xs text-ink-5">
         You pay the tax on a purchase and get it back as input credit — but only if the vendor files. When he does
@@ -69,7 +69,7 @@ export default function Reconcile2B() {
         <Field label="Month">
           <Input aria-label="Reconciliation month" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
         </Field>
-        <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-line px-4 text-[0.78rem] font-semibold text-ink-3 hover:border-line-strong">
+        <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-line px-4 text-xs font-semibold text-ink-3 hover:border-line-strong">
           <FileUp size={15} /> Load 2B
           <input
             type="file"
@@ -119,7 +119,7 @@ export default function Reconcile2B() {
               figure, because that is what an expense here carries. Enough to
               find the vendor who filed nothing; not enough to settle an argument
               about one invoice. */}
-          <p className="mt-3 border-t border-line-soft pt-2 text-[0.68rem] text-ink-6">
+          <p className="mt-3 border-t border-line-soft pt-2 text-[0.6875rem] text-ink-6">
             Matched on the supplier’s name and the tax amount — an entry here carries no GSTIN or invoice number. That
             finds a vendor who has filed nothing, which is what costs money. It will not settle an argument about one
             invoice.
@@ -133,7 +133,7 @@ export default function Reconcile2B() {
 function Cell({ label, value, tone }) {
   return (
     <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
       <p className={cx('mt-0.5 text-sm font-semibold tabular',
         tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink-2')}>{value}</p>
     </div>

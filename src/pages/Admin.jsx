@@ -32,7 +32,7 @@ function Stat({ icon: Icon, label, value, accent = '#C5A059' }) {
           <Icon size={18} />
         </span>
         <div className="min-w-0">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+          <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
           <div className="font-serif text-xl font-bold text-ink-1">{value}</div>
         </div>
       </div>
@@ -246,11 +246,11 @@ export default function Admin() {
             </a>
           </div>
           <div className="mb-3">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Est. MRR</div>
+            <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Est. MRR</div>
             <div className="font-serif text-2xl font-bold text-ink-1">
               {formatCurrency((overview?.pro_users || 0) * (Number(plans.pro_price) || 0))}
             </div>
-            <div className="text-[0.65rem] text-ink-6">{overview?.pro_users ?? 0} Pro × {formatCurrency(Number(plans.pro_price) || 0)}</div>
+            <div className="text-[0.625rem] text-ink-6">{overview?.pro_users ?? 0} Pro × {formatCurrency(Number(plans.pro_price) || 0)}</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
@@ -260,7 +260,7 @@ export default function Admin() {
             ].map((s) => (
               <div key={s.label} className="rounded-lg bg-surface-sunk py-2">
                 <div className="font-serif text-lg font-bold" style={{ color: s.c }}>{s.v ?? 0}</div>
-                <div className="text-[0.6rem] uppercase tracking-wide text-ink-5">{s.label}</div>
+                <div className="text-[0.625rem] uppercase tracking-wide text-ink-5">{s.label}</div>
               </div>
             ))}
           </div>
@@ -426,7 +426,7 @@ export default function Admin() {
                           <span className="font-mono text-xs font-semibold text-ink-3">{r.reference}</span>
                           <span className="text-xs text-ink-5">{kindLabel(r.kind)}</span>
                           <span
-                            className="px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide"
+                            className="px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide"
                             style={
                               {
                                 new: { background: '#fef3c7', color: '#92400e' },
@@ -438,7 +438,7 @@ export default function Admin() {
                           >
                             {r.status}
                           </span>
-                          <span className="text-[0.65rem] text-ink-6">{formatDate(r.created_at)}</span>
+                          <span className="text-[0.625rem] text-ink-6">{formatDate(r.created_at)}</span>
                         </span>
                         <span className={`mt-0.5 block text-sm text-ink-3 ${expanded ? '' : 'truncate'}`}>{r.message}</span>
                       </button>
@@ -454,7 +454,7 @@ export default function Admin() {
                               <button
                                 key={id}
                                 onClick={() => setReportStatus(r, id)}
-                                className="border border-border-light px-2 py-0.5 text-[0.65rem] font-medium text-ink-5 transition hover:border-gold hover:text-ink-2"
+                                className="border border-border-light px-2 py-0.5 text-[0.625rem] font-medium text-ink-5 transition hover:border-gold hover:text-ink-2"
                               >
                                 {label}
                               </button>
@@ -467,12 +467,12 @@ export default function Admin() {
                       <div className="mt-3 space-y-3 border-s-2 border-gold/40 pl-3">
                         {r.expected && (
                           <div>
-                            <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-6">Expected</div>
+                            <div className="text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Expected</div>
                             <p className="text-sm text-ink-4">{r.expected}</p>
                           </div>
                         )}
                         <div>
-                          <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-6">Reply to</div>
+                          <div className="text-[0.625rem] font-semibold uppercase tracking-wide text-ink-6">Reply to</div>
                           {r.email ? (
                             <a href={`mailto:${r.email}?subject=Offset ${r.reference}`} className="text-sm text-brand-ink hover:underline">
                               {r.email}
@@ -494,7 +494,7 @@ export default function Admin() {
                           <p className="text-xs text-ink-6">No diagnostics — the reporter chose not to attach them.</p>
                         )}
                         {r.diagnostics?.crash?.stack && (
-                          <pre className="overflow-x-auto bg-surface-sunk p-2 text-[0.65rem] leading-relaxed text-ink-4">
+                          <pre className="overflow-x-auto bg-surface-sunk p-2 text-[0.625rem] leading-relaxed text-ink-4">
                             {r.diagnostics.crash.stack}
                           </pre>
                         )}
@@ -531,7 +531,7 @@ export default function Admin() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-line text-start text-[0.65rem] uppercase tracking-wide text-ink-6">
+              <tr className="border-b border-line text-start text-[0.625rem] uppercase tracking-wide text-ink-6">
                 <th className="py-2 pr-3 font-semibold">Email</th>
                 <th className="py-2 pr-3 font-semibold">Joined</th>
                 <th className="py-2 pr-3 font-semibold">Assets</th>
@@ -546,7 +546,7 @@ export default function Admin() {
                   <td className="py-2.5 pr-3">
                     <span className="font-medium text-ink-2">{u.email || u.user_id}</span>
                     {u.is_admin && (
-                      <span className="ml-2 rounded-full bg-navy px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-brand-ink">
+                      <span className="ml-2 rounded-full bg-navy px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-brand-ink">
                         Admin
                       </span>
                     )}
@@ -629,7 +629,7 @@ export default function Admin() {
               <div key={a.user_id} className="flex items-center justify-between gap-3 py-2 text-sm">
                 <span className="min-w-0 truncate text-ink-3">
                   {a.email}
-                  <span className="ml-2 rounded-full bg-surface-chip px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-ink-5">
+                  <span className="ml-2 rounded-full bg-surface-chip px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-ink-5">
                     {a.role}
                   </span>
                 </span>

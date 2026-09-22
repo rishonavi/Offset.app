@@ -360,7 +360,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         </div>
       )}
       <div className="rounded-xl border border-gold/30 bg-gold/[0.07] p-4">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-[1.5px] text-ink-5">
           <Sparkles size={13} className="text-gold" /> {t('entry.quickAdd')}
         </div>
         <div className="flex gap-2">

@@ -95,7 +95,7 @@ export default function Exports() {
               <Calculator size={16} className="text-indigo-600" /> Tally (XML)
             </Button>
           </div>
-          <p className="mt-3 text-[0.7rem] text-ink-6">
+          <p className="mt-3 text-[0.6875rem] text-ink-6">
             Excel includes a separate <strong>Income</strong> sheet. CSV/PDF cover expenses; the year-end PDF below covers income, expenses &amp; tax by year and a deductible breakdown by category.
             <br />
             <strong>Tally</strong> exports the filtered income &amp; expenses as import-ready vouchers — in TallyPrime: Gateway of Tally → Import → Vouchers.

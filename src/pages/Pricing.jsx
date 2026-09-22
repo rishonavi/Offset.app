@@ -55,7 +55,7 @@ export default function Pricing() {
               >
                 <div className="flex items-baseline justify-between">
                   <h2 className="font-serif text-2xl font-bold">{p.name}</h2>
-                  {isPro && <span className="bg-gold px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wide text-navy">Best value</span>}
+                  {isPro && <span className="bg-gold px-2 py-0.5 text-[0.625rem] font-bold uppercase tracking-wide text-navy">Best value</span>}
                 </div>
                 <div className="mt-3 font-serif text-3xl font-bold">
                   {p.price === 0 ? 'Free' : `${formatCurrency(p.price)}`}

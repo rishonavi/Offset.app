@@ -53,7 +53,7 @@ export default function WorkingCapital({ capital, dated }) {
         <Side label="You owe" report={payable} tone="#C0492F" />
         <Side label="Owed to you" report={receivable} tone="#2F8F6B" />
         <div className="border-s-2 border-navy ps-3">
-          <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">If both settled</div>
+          <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">If both settled</div>
           <div className="font-serif text-xl font-bold" style={{ color: net >= 0 ? '#2F8F6B' : '#C0492F' }}>
             {formatCurrency(net)}
           </div>
@@ -76,7 +76,7 @@ export default function WorkingCapital({ capital, dated }) {
 function Side({ label, report, tone }) {
   return (
     <div className="border-s-2 ps-3" style={{ borderColor: tone }}>
-      <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+      <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
       <div className="font-serif text-xl font-bold text-ink-1">{formatCurrency(report.total)}</div>
       <p className="mt-1 text-xs text-ink-6">{describeAgeing(report)}</p>
     </div>

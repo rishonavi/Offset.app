@@ -78,7 +78,7 @@ export default function AskCard() {
           {answer}
         </div>
       )}
-      <p className="mt-3 text-[0.7rem] text-ink-6">
+      <p className="mt-3 text-[0.6875rem] text-ink-6">
         Answers are generated from your data by AI — double-check anything important.
       </p>
     </Card>

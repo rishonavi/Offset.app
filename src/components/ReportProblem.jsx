@@ -209,7 +209,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
           <textarea
             readOnly
             aria-label="Report text"
-            className="field-input mt-2 h-48 w-full resize-y font-mono text-[0.7rem] leading-relaxed"
+            className="field-input mt-2 h-48 w-full resize-y font-mono text-[0.6875rem] leading-relaxed"
             value={formatReportText(saved)}
           />
         </details>

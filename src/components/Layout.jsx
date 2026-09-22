@@ -187,7 +187,7 @@ function NavItems({ onNavigate, isAdmin }) {
       {groups.map((g, i) => (
         <div key={g.group || 'top'} className="flex flex-col gap-0.5">
           {g.group && (
-            <p className="mb-1 px-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-white/55">
+            <p className="mb-1 px-3 text-[0.625rem] font-semibold uppercase tracking-[2px] text-white/55">
               {t(g.group)}
             </p>
           )}
@@ -216,7 +216,7 @@ function NavItems({ onNavigate, isAdmin }) {
                 <span className="min-w-0 flex-1 truncate">{t(key)}</span>
                 {waiting > 0 && (
                   <span
-                    className="shrink-0 rounded-full bg-gold/20 px-1.5 py-0.5 text-[0.65rem] font-semibold tabular text-gold"
+                    className="shrink-0 rounded-full bg-gold/20 px-1.5 py-0.5 text-[0.625rem] font-semibold tabular text-gold"
                     title={t('nav.waiting', { count: waiting })}
                   >
                     {waiting > 99 ? '99+' : waiting}
@@ -276,7 +276,7 @@ function ReportLink({ onClick }) {
   return (
     <button
       onClick={onClick}
-      className="mt-2 flex w-full items-center gap-3 px-3 py-2 text-[0.7rem] font-medium uppercase tracking-[1px] text-white/55 transition hover:text-gold"
+      className="mt-2 flex w-full items-center gap-3 px-3 py-2 text-[0.6875rem] font-medium uppercase tracking-[1px] text-white/55 transition hover:text-gold"
     >
       <Bug size={15} />
       {t('chrome.reportProblem')}
@@ -378,7 +378,7 @@ export default function Layout() {
         >
           <Search size={14} />
           <span className="flex-1 text-start">{t('chrome.search')}</span>
-          <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem] text-white/75">⌘K</kbd>
+          <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.625rem] text-white/75">⌘K</kbd>
         </button>
         <NavScroller>
           <NavItems isAdmin={isAdmin} />

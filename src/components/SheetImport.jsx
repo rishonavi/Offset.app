@@ -135,7 +135,7 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
             </Select>
           </Field>
         )}
-        <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-line px-4 text-[0.78rem] font-semibold text-ink-3 hover:border-line-strong">
+        <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-line px-4 text-xs font-semibold text-ink-3 hover:border-line-strong">
           <FileSpreadsheet size={15} /> {busy ? 'Reading…' : 'Choose a file'}
           <input
             type="file"
@@ -147,7 +147,7 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
         </label>
       </div>
 
-      <p className="mt-2 text-[0.7rem] text-ink-6">
+      <p className="mt-2 text-[0.6875rem] text-ink-6">
         A spreadsheet with columns like: {spec.example}. Or one document — a salary slip, a quotation, an allotment
         letter — as a PDF or a photograph.
       </p>
@@ -179,7 +179,7 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
             <>
               <ul className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
                 {Object.entries(readFields(paper)).map(([label, value]) => (
-                  <li key={label} className="flex items-center justify-between gap-2 text-[0.7rem]">
+                  <li key={label} className="flex items-center justify-between gap-2 text-[0.6875rem]">
                     <span className="text-ink-5">{label}</span>
                     <span className="truncate font-medium text-ink-2">{value}</span>
                   </li>
@@ -190,14 +190,14 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
                   nothing about medical, and a zero would make the reader's
                   silence into the document's statement. */}
               {paper.missing?.length > 0 && (
-                <p className="mt-2 text-[0.7rem] text-ink-6">
+                <p className="mt-2 text-[0.6875rem] text-ink-6">
                   Nothing in it about: {paper.missing.join(', ')}. Those are left at nothing rather than guessed.
                 </p>
               )}
 
               {/* The document's own totals are checked, not trusted. */}
               {paper.problems?.length > 0 && (
-                <p className="mt-2 text-[0.7rem] text-warn">
+                <p className="mt-2 text-[0.6875rem] text-warn">
                   {paper.problems.join('; ')}.
                 </p>
               )}
@@ -227,7 +227,7 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
 
           <ul className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
             {Object.entries(plan.match.columns).map(([field, header]) => (
-              <li key={field} className="flex items-center gap-2 text-[0.7rem] text-ink-5">
+              <li key={field} className="flex items-center gap-2 text-[0.6875rem] text-ink-5">
                 <span className="truncate text-ink-3">{header}</span>
                 <ArrowRight size={11} className="shrink-0 text-ink-6" />
                 <span className="truncate">{field}</span>
@@ -238,12 +238,12 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
           {/* Your columns that nothing was done with. A "Parking" column that
               vanished is a question worth asking before four hundred rows. */}
           {plan.match.ignored.length > 0 && (
-            <p className="mt-2 text-[0.7rem] text-warn">
+            <p className="mt-2 text-[0.6875rem] text-warn">
               Ignored: {plan.match.ignored.join(', ')}
             </p>
           )}
           {plan.match.ambiguous.length > 0 && (
-            <p className="mt-2 text-[0.7rem] text-warn">
+            <p className="mt-2 text-[0.6875rem] text-warn">
               {plan.match.ambiguous.map((a) => `${a.headers.join(' and ')} both look like ${a.field}`).join('; ')}.
             </p>
           )}
@@ -252,15 +252,15 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
               finds out in March that the penthouse is missing. */}
           {plan.skipped.length > 0 && (
             <div className="mt-2">
-              <p className="text-[0.7rem] font-semibold text-ink-4">
+              <p className="text-[0.6875rem] font-semibold text-ink-4">
                 {plan.skipped.length} {plan.skipped.length === 1 ? 'row' : 'rows'} will be skipped
               </p>
               <ul className="mt-1 space-y-0.5">
                 {plan.skipped.slice(0, 5).map((s) => (
-                  <li key={s.line} className="text-[0.68rem] text-ink-6">Line {s.line} — {s.why}</li>
+                  <li key={s.line} className="text-[0.6875rem] text-ink-6">Line {s.line} — {s.why}</li>
                 ))}
                 {plan.skipped.length > 5 && (
-                  <li className="text-[0.68rem] text-ink-6">and {plan.skipped.length - 5} more</li>
+                  <li className="text-[0.6875rem] text-ink-6">and {plan.skipped.length - 5} more</li>
                 )}
               </ul>
             </div>

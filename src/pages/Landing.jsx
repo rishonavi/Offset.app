@@ -36,7 +36,7 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="mx-auto max-w-3xl px-4 pt-16 pb-12 text-center">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-[3px] text-gold/80">Income &amp; expenses for every asset</p>
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-[3px] text-gold/80">Income &amp; expenses for every asset</p>
         <h1 className="mt-4 font-serif text-4xl font-bold leading-tight sm:text-6xl">
           Track what every asset <span className="text-brand-ink">earns and costs.</span>
         </h1>

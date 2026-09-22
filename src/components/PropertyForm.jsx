@@ -69,7 +69,7 @@ function TypePicker({ value, onChange }) {
       <div className="mt-2 space-y-2.5">
         {ASSET_GROUPS.map((group) => (
           <div key={group.label}>
-            <p className="mb-1 text-[0.6rem] font-semibold uppercase tracking-[1.5px] text-ink-6">{group.label}</p>
+            <p className="mb-1 text-[0.625rem] font-semibold uppercase tracking-[1.5px] text-ink-6">{group.label}</p>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
               {group.types.map((type) => {
                 const Icon = iconForAssetType(type)
@@ -367,7 +367,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
           of metal rather than a single thing with a price. */}
       {isMetal && (
         <div className="border-t border-border-light pt-5">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">The metal itself</p>
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-[1.5px] text-ink-5">The metal itself</p>
           <p className="mt-1 text-xs text-ink-6">
             Weight and purity, so the value follows the market instead of being retyped. A rate buys fine metal, so a
             22K piece is worth 91.6% of it.

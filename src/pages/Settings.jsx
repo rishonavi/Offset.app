@@ -247,7 +247,7 @@ export default function Settings() {
               <Crown size={20} />
             </span>
             <div>
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Current plan</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Current plan</div>
               <div className="font-serif text-xl font-bold text-ink-1">
                 {info.name}
                 {info.price > 0 && <span className="ml-2 text-sm font-normal text-ink-6">{formatCurrency(info.price)}/mo</span>}
@@ -345,7 +345,7 @@ export default function Settings() {
               <div className="flex items-center gap-2">
                 <PiggyBank size={16} className="text-ink-4" />
                 <h3 className="text-sm font-medium text-ink-2">Personal</h3>
-                <span className="ms-auto inline-flex items-center gap-1 text-[0.65rem] font-semibold uppercase tracking-[1px] text-emerald-700 dark:text-emerald-400">
+                <span className="ms-auto inline-flex items-center gap-1 text-[0.625rem] font-semibold uppercase tracking-[1px] text-emerald-700 dark:text-emerald-400">
                   <Check size={12} /> Active
                 </span>
               </div>
@@ -401,13 +401,13 @@ export default function Settings() {
 
           {team.sharedByMe.length > 0 && (
             <div className="mt-4">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">People with access</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">People with access</div>
               <div className="mt-1 divide-y divide-line-soft">
                 {team.sharedByMe.map((m) => (
                   <div key={m.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                     <span className="min-w-0 truncate text-ink-3">
                       {m.member_email || m.member_id}
-                      <span className="ml-2 rounded-full bg-surface-chip px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-ink-5">
+                      <span className="ml-2 rounded-full bg-surface-chip px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-ink-5">
                         {m.role === 'editor' ? 'Editor' : 'Viewer'}
                       </span>
                     </span>
@@ -446,7 +446,7 @@ export default function Settings() {
 
         {reports.length > 0 && (
           <div className="mt-4">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">
+            <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">
               Reports you’ve filed
             </div>
             <div className="mt-1 divide-y divide-border-subtle">
@@ -457,7 +457,7 @@ export default function Settings() {
                       <span className="font-mono text-xs font-semibold text-ink-3">{r.reference}</span>
                       <span className="text-xs text-ink-5">{kindLabel(r.kind)}</span>
                       {r.status === 'sent' && (
-                        <span className="bg-emerald-50 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-emerald-700">
+                        <span className="bg-emerald-50 px-1.5 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-emerald-700">
                           {{ email: 'Emailed', copied: 'Copied' }[r.sent_how] || 'Sent'}
                         </span>
                       )}

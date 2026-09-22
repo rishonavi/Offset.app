@@ -217,7 +217,7 @@ export default function DaySheet() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-ink-2">{l.label}</p>
-                  {l.recorded && <p className="text-[0.7rem] text-ink-6">Already on the sheet</p>}
+                  {l.recorded && <p className="text-[0.6875rem] text-ink-6">Already on the sheet</p>}
                 </div>
                 <Stepper label={`${l.label} headcount`} value={l.headcount}
                   onChange={(v) => setLine(l.trade, { headcount: v })} />
@@ -274,7 +274,7 @@ export default function DaySheet() {
                   <p className="truncate text-sm font-medium text-ink-2">
                     {m.label}{m.registration ? ` · ${m.registration}` : ''}
                   </p>
-                  {m.recorded && <p className="text-[0.7rem] text-ink-6">Already on the sheet</p>}
+                  {m.recorded && <p className="text-[0.6875rem] text-ink-6">Already on the sheet</p>}
                   <div className="mt-3 space-y-3">
                     {[['workingHours', 'Worked'], ['idleHours', 'Idle'], ['breakdownHours', 'Broken down']].map(([field, label]) => (
                       <div key={field} className="flex items-center justify-between gap-3">

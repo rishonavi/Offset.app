@@ -179,7 +179,7 @@ export default function Operations() {
             onClick={() => setTab(t.id)}
             aria-pressed={tab === t.id}
             className={cx(
-              'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-[0.8rem] font-semibold transition',
+              'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition',
               tab === t.id ? 'bg-brand text-navy' : 'text-ink-5 hover:text-ink-2',
             )}
           >

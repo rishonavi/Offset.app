@@ -86,7 +86,7 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   return (
     <Card className="card-hover p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+        <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
         <div
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
           style={{ background: `${accent}1a`, color: accent }}
@@ -402,7 +402,7 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="eyebrow">{greeting()}</p>
-            <p className="mt-4 text-[0.7rem] font-semibold uppercase tracking-[2px] text-white/50">
+            <p className="mt-4 text-[0.6875rem] font-semibold uppercase tracking-[2px] text-white/50">
               Net position · {properties.length} {properties.length === 1 ? 'asset' : 'assets'}
             </p>
             <div className="tabular mt-1 font-serif text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">{formatCurrency(netAllTime)}</div>
@@ -417,7 +417,7 @@ export default function Dashboard() {
             )}
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur sm:min-w-56">
-            <div className="text-[0.65rem] font-semibold uppercase tracking-[1.5px] text-white/50">Spent this month</div>
+            <div className="text-[0.625rem] font-semibold uppercase tracking-[1.5px] text-white/50">Spent this month</div>
             <div className="tabular mt-1 font-serif text-2xl font-bold">{formatCurrency(thisMonth)}</div>
             <div className="mt-2">
               <DeltaChip delta={delta} />
@@ -457,14 +457,14 @@ export default function Dashboard() {
               },
             ].map((m) => (
               <div key={m.label}>
-                <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
+                <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{m.label}</div>
                 <div
                   className={`font-serif text-xl font-bold ${m.tone == null ? 'text-ink-1' : ''}`}
                   style={m.tone == null ? undefined : { color: m.tone >= 0 ? '#2F8F6B' : '#C0492F' }}
                 >
                   {m.value}
                 </div>
-                <div className="text-[0.65rem] text-ink-6">{m.hint}</div>
+                <div className="text-[0.625rem] text-ink-6">{m.hint}</div>
               </div>
             ))}
           </div>
@@ -635,11 +635,11 @@ export default function Dashboard() {
           <h2 className="mb-4 text-sm font-semibold text-ink-3">Payments due</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="border-s-2 border-gold pl-3">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">You owe · unpaid expenses</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">You owe · unpaid expenses</div>
               <div className="font-serif text-2xl font-bold text-ink-1">{formatCurrency(payables)}</div>
             </div>
             <div className="border-s-2 border-emerald-500 pl-3">
-              <div className="text-[0.65rem] font-semibold uppercase tracking-[1px] text-ink-5">Owed to you · pending income</div>
+              <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">Owed to you · pending income</div>
               <div className="font-serif text-2xl font-bold text-emerald-700">{formatCurrency(receivables)}</div>
             </div>
           </div>

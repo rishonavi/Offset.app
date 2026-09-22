@@ -23,7 +23,7 @@ function Row({ label, value, hint, tone }) {
     <div className="flex items-baseline justify-between gap-3 py-1.5">
       <span className="min-w-0 text-xs text-ink-5">
         {label}
-        {hint && <span className="block text-[0.68rem] text-ink-6">{hint}</span>}
+        {hint && <span className="block text-[0.6875rem] text-ink-6">{hint}</span>}
       </span>
       <span className={cx('shrink-0 tabular text-sm font-semibold',
         tone === 'bad' ? 'text-bad' : tone === 'good' ? 'text-good' : 'text-ink-2')}>
@@ -69,7 +69,7 @@ export default function Commitments() {
 
       <div className="mt-3 grid grid-cols-1 gap-x-6 sm:grid-cols-3">
         <div className="sm:border-e sm:border-line-soft sm:pe-6">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">Agreed, not yet spent</p>
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-[1px] text-ink-5">Agreed, not yet spent</p>
           <p className="mt-0.5 text-lg font-semibold tabular text-ink-2">{formatCurrency(c.committed)}</p>
           {/* A contract is not a payment and not a forecast. Saying which it is
               keeps somebody from reading this column as money in the bank. */}
@@ -81,7 +81,7 @@ export default function Commitments() {
             // A rate contract commits a real amount nobody wrote down. Saying
             // the total is a floor beats printing it as though it were the
             // answer.
-            <p className="mt-1 text-[0.68rem] text-warn">
+            <p className="mt-1 text-[0.6875rem] text-warn">
               {c.subcontract.unvalued + c.client.unvalued} {c.subcontract.unvalued + c.client.unvalued === 1 ? 'contract carries' : 'contracts carry'} no
               value, so this is a floor.
             </p>
@@ -89,7 +89,7 @@ export default function Commitments() {
         </div>
 
         <div className="mt-3 sm:mt-0 sm:border-e sm:border-line-soft sm:pe-6">
-          <p className="flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">
+          <p className="flex items-center gap-1 text-[0.6875rem] font-semibold uppercase tracking-[1px] text-ink-5">
             <ArrowUpRight size={11} /> Owed now
           </p>
           <p className="mt-0.5 text-lg font-semibold tabular text-ink-2">{formatCurrency(c.dueOut)}</p>
@@ -101,7 +101,7 @@ export default function Commitments() {
         </div>
 
         <div className="mt-3 sm:mt-0">
-          <p className="flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">
+          <p className="flex items-center gap-1 text-[0.6875rem] font-semibold uppercase tracking-[1px] text-ink-5">
             <ArrowDownLeft size={11} /> Due in
           </p>
           <p className="mt-0.5 text-lg font-semibold tabular text-ink-2">{formatCurrency(c.dueIn)}</p>
@@ -117,7 +117,7 @@ export default function Commitments() {
           If everything due came in and everything owed went out
           {/* The three are never added into one figure, and this says why:
               agreed money plus recorded money is agreed money. */}
-          <span className="block text-[0.68rem] text-ink-6">{describeCertainty(c.certainty.committedAndDue)}</span>
+          <span className="block text-[0.6875rem] text-ink-6">{describeCertainty(c.certainty.committedAndDue)}</span>
         </span>
         <span className={cx('tabular text-base font-semibold', c.gap < 0 ? 'text-bad' : 'text-good')}>
           {c.gap < 0 ? '−' : '+'}{formatCurrency(Math.abs(c.gap))}

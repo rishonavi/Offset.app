@@ -341,7 +341,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
                     {!st.answered && !st.mustRegister && <Badge color="#d97706">not answered</Badge>}
                   </span>
                   <span className="mt-0.5 block text-xs text-ink-5">{st.why}</span>
-                  <span className="mt-0.5 block text-[0.68rem] text-ink-6">{st.note}</span>
+                  <span className="mt-0.5 block text-[0.6875rem] text-ink-6">{st.note}</span>
                 </span>
                 <span className="flex shrink-0 gap-1" role="group" aria-label={`${st.short} registration`}>
                   {[['Yes', true], ['No', false], ['Not sure', null]].map(([label, value]) => (
@@ -366,7 +366,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
         </ul>
         {/* The per-person half of the ESI rule, which no headcount decides. */}
         {schemes.esi.runs && (
-          <p className="mt-2 text-[0.68rem] text-ink-6">
+          <p className="mt-2 text-[0.6875rem] text-ink-6">
             State insurance covers only those drawing up to {formatCurrency(config.esi.grossCeiling)} gross. Anybody
             above it is left out of it, person by person.
           </p>
@@ -407,7 +407,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
         <p className="mt-2 text-xs text-ink-4">{describeState(ptState)}</p>
         {/* Not a footnote. A slab that moved last April is a wrong payslip every
             month until somebody notices, and the app cannot know that it has. */}
-        <p className="mt-1 text-[0.68rem] text-ink-6">
+        <p className="mt-1 text-[0.6875rem] text-ink-6">
           Slabs as of {formatDate(AS_OF)}. States revise them in their budgets — check yours against its own
           notification before you file.
         </p>
@@ -592,7 +592,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
             the same as having taken all their leave.
           </p>
         )}
-        <p className="mt-2 text-[0.68rem] text-ink-6">
+        <p className="mt-2 text-[0.6875rem] text-ink-6">
           {leave.policy.act}. A day is worth basic and dearness allowance divided by {leave.policy.divisor}.
         </p>
       </Card>
@@ -635,7 +635,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
               allowed. It is a separate duty with a separate threshold.
             </p>
           )}
-          <p className="mt-2 text-[0.68rem] text-ink-6">
+          <p className="mt-2 text-[0.6875rem] text-ink-6">
             She must have worked {QUALIFYING_DAYS} days in the twelve months before her expected date to qualify at
             all. Nursing breaks run until the child is {NURSING_MONTHS} months old, and every woman must be told of
             these benefits in writing when she is taken on.

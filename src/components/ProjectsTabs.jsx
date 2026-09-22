@@ -88,7 +88,7 @@ export default function Projects(shared) {
             onClick={() => setView(v.id)}
             aria-selected={view === v.id}
             className={cx(
-              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-[0.78rem] font-semibold transition',
+              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition',
               view === v.id
                 ? 'border-brand bg-brand/15 text-ink-1'
                 : 'border-line text-ink-5 hover:border-line-strong hover:text-ink-2',
@@ -537,7 +537,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
                     <li key={l.order.id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
                       <span className="text-ink-2">
                         {l.order.contractor}
-                        <span className="block text-[0.7rem] text-ink-6">
+                        <span className="block text-[0.6875rem] text-ink-6">
                           {formatCurrency(l.certified)} certified · {formatCurrency(l.measured)} measured
                           {' '}across {l.items} {l.items === 1 ? 'item' : 'items'}
                         </span>
@@ -545,7 +545,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
                       <span className={cx('tabular font-semibold',
                         l.ahead ? 'text-bad' : l.behind ? 'text-warn' : 'text-ink-4')}>
                         {l.gap > 0 ? '+' : ''}{formatCurrency(l.gap)}
-                        {l.gapPercent !== null && <span className="ms-1 text-[0.7rem] font-medium">({l.gapPercent > 0 ? '+' : ''}{l.gapPercent}%)</span>}
+                        {l.gapPercent !== null && <span className="ms-1 text-[0.6875rem] font-medium">({l.gapPercent > 0 ? '+' : ''}{l.gapPercent}%)</span>}
                       </span>
                     </li>
                   ))}
@@ -554,7 +554,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
               {checked.unlinkedCount > 0 && (
                 // The reader is told how much of the book this covered. A check
                 // is only as good as the linking behind it.
-                <p className="mt-2 text-[0.7rem] text-ink-6">
+                <p className="mt-2 text-[0.6875rem] text-ink-6">
                   {checked.unlinkedCount} {checked.unlinkedCount === 1 ? 'contract names' : 'contracts name'} no
                   scheduled item, so {checked.unlinkedCount === 1 ? 'it is' : 'they are'} not compared.
                 </p>
@@ -623,7 +623,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
                       <td className="py-2 text-ink-2">
                         {l.item.code && <span className="text-ink-6">{l.item.code} · </span>}
                         {l.item.description}
-                        {l.over && <span className="block text-[0.7rem] text-warn">more built than scheduled</span>}
+                        {l.over && <span className="block text-[0.6875rem] text-warn">more built than scheduled</span>}
                       </td>
                       <td className="text-end tabular text-ink-4">{l.planned} {l.item.unit}</td>
                       <td className="text-end tabular text-ink-3">{l.done}</td>
@@ -856,7 +856,7 @@ function Billing({ data, eid }) {
 function Cell({ label, value, tone }) {
   return (
     <div>
-      <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
       <p className={cx('mt-0.5 text-sm font-semibold tabular',
         tone === 'bad' ? 'text-bad' : tone === 'good' ? 'text-good' : 'text-ink-2')}>{value}</p>
     </div>
@@ -866,7 +866,7 @@ function Cell({ label, value, tone }) {
 function Stat({ label, value, tone }) {
   return (
     <Card className="p-4">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
+      <p className="text-[0.6875rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
       <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-1')}>{value}</p>
     </Card>
   )

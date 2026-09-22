@@ -85,7 +85,7 @@ export default function BooksSwitcher({ variant = 'sidebar', className, onSwitch
       {/* One company needs no dropdown to choose between, but the tab saying
           COMPANY does not say which one. */}
       {!personal && entities.length === 1 && (
-        <p className={cx('mt-1.5 truncate px-1 text-[0.68rem]', tone.caption)} title={entities[0].name}>
+        <p className={cx('mt-1.5 truncate px-1 text-[0.6875rem]', tone.caption)} title={entities[0].name}>
           {entities[0].name}
         </p>
       )}
@@ -102,7 +102,7 @@ function Tab({ tone, selected, onSelect, label, icon: Icon }) {
       onClick={onSelect}
       className={cx(
         'flex min-h-11 flex-1 items-center justify-center gap-1.5 px-2 py-1.5',
-        'text-[0.68rem] font-semibold uppercase tracking-[1px]',
+        'text-[0.6875rem] font-semibold uppercase tracking-[1px]',
         // The same press the rest of the app's buttons have. `transition-all`
         // rather than `transition`, so the scale is animated too.
         'transition-all duration-200 active:scale-[0.97]',

@@ -359,7 +359,7 @@ export default function Companies() {
                     <div key={d.id} className="flex items-center justify-between gap-2 py-2">
                       <span className="min-w-0 truncate text-sm text-ink-3">
                         {departmentLabel(ent.departments, d.id)}
-                        {d.code && <span className="ml-2 bg-surface-chip px-1.5 py-0.5 font-mono text-[0.6rem] text-ink-5">{d.code}</span>}
+                        {d.code && <span className="ml-2 bg-surface-chip px-1.5 py-0.5 font-mono text-[0.625rem] text-ink-5">{d.code}</span>}
                         {d.budget_monthly > 0 && <span className="ml-2 text-xs text-ink-6">{formatCurrency(d.budget_monthly)}/mo</span>}
                       </span>
                       {ent.can('department.manage') && (
@@ -531,7 +531,7 @@ export default function Companies() {
                               <span className="text-ink-2">
                                 {l.row.contractor || l.row.party || l.row.vendor || l.row.category || l.doc.label}
                               </span>
-                              <span className="block text-[0.7rem] text-ink-6">
+                              <span className="block text-[0.6875rem] text-ink-6">
                                 {l.doc.label}
                                 {l.row.number ? ` · RA ${l.row.number}` : ''}
                                 {!l.canSign && l.why ? ` · ${l.why}` : ''}

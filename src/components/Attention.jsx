@@ -128,7 +128,7 @@ export default function Attention({ limit = 6 }) {
         </p>
       )}
       {shown.some((f) => f.level === 'error') && (
-        <p className="mt-2 flex items-center gap-1.5 text-[0.7rem] text-ink-6">
+        <p className="mt-2 flex items-center gap-1.5 text-[0.6875rem] text-ink-6">
           <Badge color={DOT.error}>wrong</Badge>
           comes first whatever it is worth, because every total downstream of a wrong number is also suspect.
         </p>
