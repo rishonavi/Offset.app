@@ -388,7 +388,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
               aria-label="Purchase bill to read"
               onChange={(e) => readBill(e.target.files?.[0])}
             />
-            {billNote?.ok === false && <p role="alert" className="mt-2 text-xs text-red-600">{billNote.text}</p>}
+            {billNote?.ok === false && <p role="alert" className="mt-2 text-xs text-bad">{billNote.text}</p>}
             {billNote?.ok && <BillSummary read={billNote.read} />}
           </div>
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -473,7 +473,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
                   </span>
                   <button
                     type="button"
-                    className="min-h-6 rounded border border-border-light px-2 py-0.5 font-medium text-brand hover:bg-surface-raised"
+                    className="min-h-6 rounded border border-border-light px-2 py-0.5 font-medium text-brand-ink hover:bg-surface-raised"
                     onClick={() => setForm((f) => ({ ...f, value: String(holding.value) }))}
                   >
                     Use as asset value
@@ -485,7 +485,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
               </p>
             </div>
           )}
-          {holding?.error && <p className="mt-2 text-sm text-red-600">{holding.error}</p>}
+          {holding?.error && <p className="mt-2 text-sm text-bad">{holding.error}</p>}
         </div>
       )}
 
@@ -572,7 +572,7 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
         <Textarea rows={3} value={form.notes} onChange={set('notes')} placeholder="Anything worth remembering" aria-label="Notes" />
       </Disclosure>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-bad">{error}</p>}
 
       <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border-light pt-5">
         {/* The sentence that decides whether this reads as a form or as a

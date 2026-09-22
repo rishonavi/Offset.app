@@ -40,7 +40,7 @@ export default function Prices({ data }) {
       {paid.dear > 0 && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <TrendingUp size={16} className="text-amber-600" />
+            <TrendingUp size={16} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">
               {paid.dear} {paid.dear === 1 ? 'delivery came' : 'deliveries came'} in above the going rate
             </h3>
@@ -59,7 +59,7 @@ export default function Prices({ data }) {
                     {r.worst.vendor && ` · ${r.worst.vendor}`}
                   </span>
                 </span>
-                <span className="tabular font-semibold text-amber-600">
+                <span className="tabular font-semibold text-warn">
                   +{formatCurrency(r.worst.value)}
                 </span>
               </li>
@@ -100,7 +100,7 @@ export default function Prices({ data }) {
                       {r.lastRate === null ? '—' : formatCurrency(r.lastRate)}
                       {r.lastPaidOn && <span className="block text-[0.7rem] text-ink-6">{r.lastPaidOn}</span>}
                     </td>
-                    <td className={cx('text-end tabular', (r.driftPercent || 0) > 0 ? 'text-amber-600' : 'text-ink-4')}>
+                    <td className={cx('text-end tabular', (r.driftPercent || 0) > 0 ? 'text-warn' : 'text-ink-4')}>
                       {r.driftPercent === null ? '—' : `${r.driftPercent > 0 ? '+' : ''}${r.driftPercent}%`}
                     </td>
                     {/* What the next lorry ought to cost, on this evidence.
@@ -111,7 +111,7 @@ export default function Prices({ data }) {
                         ? '—'
                         : formatCurrency(byItem[r.item.id].norm)}
                       {byItem[r.item.id]?.dear > 0 && (
-                        <span className="block text-[0.7rem] font-semibold text-amber-600">
+                        <span className="block text-[0.7rem] font-semibold text-warn">
                           {byItem[r.item.id].dear} above it
                         </span>
                       )}
@@ -125,7 +125,7 @@ export default function Prices({ data }) {
                     <td className="ps-4 text-ink-4">
                       {r.bestVendor || '—'}
                       {r.cheaperAvailable && (
-                        <span className="mt-1 flex items-center gap-1 text-[0.7rem] font-semibold text-emerald-600">
+                        <span className="mt-1 flex items-center gap-1 text-[0.7rem] font-semibold text-good">
                           <TrendingDown size={12} /> {r.savingPercent}% below what you paid
                         </span>
                       )}

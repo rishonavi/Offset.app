@@ -29,7 +29,7 @@ const TONE = {
     on: 'rounded-lg bg-gold text-navy shadow-[0_1px_2px_rgba(0,0,0,0.35)]',
     off: 'rounded-lg text-white/50 hover:bg-white/5 hover:text-white/90',
     select: 'field-dark rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/85 transition hover:border-white/25 hover:bg-white/[0.07] focus:border-gold focus:outline-none',
-    caption: 'text-white/45',
+    caption: 'text-white/60',
   },
   card: {
     group: 'rounded-xl border border-line bg-surface-sunk p-1',

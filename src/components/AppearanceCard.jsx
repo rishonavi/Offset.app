@@ -39,7 +39,7 @@ export default function AppearanceCard() {
               <div className="truncate text-sm font-medium text-white">
                 {avatar.name?.trim() || user?.email || 'Local user'}
               </div>
-              <div className="text-[10px] uppercase tracking-[1.5px] text-gold/70">
+              <div className="text-[10px] uppercase tracking-[1.5px] text-gold/90">
                 {accentById(accent).name}
               </div>
             </div>

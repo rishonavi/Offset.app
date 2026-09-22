@@ -67,7 +67,7 @@ export default function AssetFormPage() {
       <PageHeader title={editing ? 'Edit asset' : 'Add asset'} />
       {atAssetLimit ? (
         <Card className="flex max-w-2xl flex-col items-start gap-3 p-6">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/15 text-gold">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/15 text-brand-ink">
             <Crown size={20} />
           </span>
           <div>

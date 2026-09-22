@@ -131,7 +131,7 @@ export default function GettingStarted() {
                       what marks a link anyway. */}
                   <Link
                     to={s.to}
-                    className="inline-flex items-center gap-1 font-medium text-ink-3 underline underline-offset-2 hover:text-brand"
+                    className="inline-flex items-center gap-1 font-medium text-ink-3 underline underline-offset-2 hover:text-brand-ink"
                   >
                     {s.cta} <ArrowRight size={12} />
                   </Link>

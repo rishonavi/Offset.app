@@ -90,7 +90,7 @@ export default function DocumentsCard({ propertyId, documents, canWrite, onAdd, 
                   <button
                     type="button"
                     onClick={() => setViewing(d.file_url)}
-                    className="shrink-0 text-ink-6 hover:text-brand"
+                    className="shrink-0 text-ink-6 hover:text-brand-ink"
                     title="View file"
                   >
                     <ExternalLink size={15} />
@@ -100,7 +100,7 @@ export default function DocumentsCard({ propertyId, documents, canWrite, onAdd, 
                   <button
                     type="button"
                     onClick={() => onDelete(d.id)}
-                    className="shrink-0 text-ink-6 hover:text-red-600"
+                    className="shrink-0 text-ink-6 hover:text-bad"
                     title="Delete document"
                   >
                     <Trash2 size={15} />
@@ -148,7 +148,7 @@ export default function DocumentsCard({ propertyId, documents, canWrite, onAdd, 
               />
             </Field>
           </div>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-2 text-sm text-bad">{error}</p>}
           <div className="mt-3 flex justify-end">
             <Button type="submit" loading={saving}>
               Add document

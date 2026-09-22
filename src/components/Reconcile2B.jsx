@@ -101,7 +101,7 @@ export default function Reconcile2B() {
                   <span className="text-ink-3">{v.vendor || 'Unnamed vendor'}</span>
                   <span className="flex items-center gap-2">
                     {v.matched > 0 && <span className="text-ink-6">{formatCurrency(v.matched)} filed</span>}
-                    {v.atRisk > 0 && <span className="tabular font-semibold text-red-600">{formatCurrency(v.atRisk)} at risk</span>}
+                    {v.atRisk > 0 && <span className="tabular font-semibold text-bad">{formatCurrency(v.atRisk)} at risk</span>}
                     {v.unrecorded > 0 && <Badge color="#d97706">{formatCurrency(v.unrecorded)} not in books</Badge>}
                   </span>
                 </li>
@@ -110,7 +110,7 @@ export default function Reconcile2B() {
           )}
 
           {result.atRisk === 0 && result.unrecordedTax === 0 && (
-            <p className="mt-3 flex items-center gap-2 text-xs text-emerald-600">
+            <p className="mt-3 flex items-center gap-2 text-xs text-good">
               <Check size={14} /> Every purchase on file appears in the 2B.
             </p>
           )}
@@ -135,7 +135,7 @@ function Cell({ label, value, tone }) {
     <div>
       <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
       <p className={cx('mt-0.5 text-sm font-semibold tabular',
-        tone === 'bad' ? 'text-red-600' : tone === 'warn' ? 'text-amber-600' : 'text-ink-2')}>{value}</p>
+        tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink-2')}>{value}</p>
     </div>
   )
 }

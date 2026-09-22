@@ -85,10 +85,18 @@ const DARK_BASE = {
   'border-strong': [0.4400, 0.1083], 'field-line': [0.4032, 0.0889],
   'field-line-hi': [0.4757, 0.0979], 'hint': [0.6611, 0.0420],
 }
+// `ink-6` is prose — it is on 221 elements, most of them a form's hint text —
+// and it was measuring 4.02:1 on a card in the dark theme and 2.62:1 in the
+// light one, against the 4.5:1 WCAG asks of body text. It has been moved to
+// the readable floor in both, and `ink-5` moved with it so the two are still
+// distinguishable rather than collapsing into one step. `ink-7` stays where it
+// is: its five uses are an em-dash and an inactive sort arrow, which are
+// decoration and exempt.
 const DARK_WARM = {
   'ink-1': [0.9402, 0.0235], 'ink-2': [0.9047, 0.0322], 'ink-3': [0.8464, 0.0368],
-  'ink-4': [0.7895, 0.0411], 'ink-5': [0.7040, 0.0383], 'ink-6': [0.5923, 0.0357],
+  'ink-4': [0.7895, 0.0411], 'ink-5': [0.7500, 0.0383], 'ink-6': [0.6350, 0.0357],
   'ink-7': [0.5049, 0.0319],
+  'brand-ink': [0.8000, 0.1100],
 }
 const LIGHT_BASE = {
   'surface-page': [0.9767, 0.0026], 'surface-sunk': [0.9842, 0.0034],
@@ -96,7 +104,7 @@ const LIGHT_BASE = {
   'surface-grab': [0.9288, 0.0126], 'line': [0.9288, 0.0126],
   'line-soft': [0.9683, 0.0069], 'border-strong': [0.8686, 0.0216],
   'ink-1': [0.2084, 0.0417], 'ink-2': [0.2799, 0.0408], 'ink-3': [0.3717, 0.0449],
-  'ink-4': [0.4454, 0.0430], 'ink-5': [0.5542, 0.0460], 'ink-6': [0.7038, 0.0402],
+  'ink-4': [0.4454, 0.0430], 'ink-5': [0.5000, 0.0460], 'ink-6': [0.5480, 0.0402],
   'ink-7': [0.8686, 0.0216], 'hint': [0.5248, 0.0402],
   // Was missing, so in the light theme the border a field grows on hover was
   // the only structural line that ignored the chosen tone.
@@ -105,6 +113,10 @@ const LIGHT_BASE = {
 const LIGHT_WARM = {
   'border-light': [0.8889, 0.0202], 'border-subtle': [0.9360, 0.0149],
   'field-bg': [0.9711, 0.0074], 'field-line': [0.8889, 0.0202],
+  // The accent, deep enough to be read rather than admired. Gold on white is
+  // 2.49:1 as text — the single worst contrast in the app, and it was on every
+  // link. `--color-brand` keeps its own value for fills.
+  'brand-ink': [0.4600, 0.1100],
 }
 
 // Light-theme tokens that are deliberately white or near-white and take no hue

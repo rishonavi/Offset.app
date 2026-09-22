@@ -154,7 +154,7 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
       {note && <p className="mt-2 text-xs text-ink-4">{note}</p>}
 
       {done && (
-        <p className="mt-3 flex items-center gap-2 text-sm text-emerald-600">
+        <p className="mt-3 flex items-center gap-2 text-sm text-good">
           <Check size={15} /> {done.written} of {done.of} added
           {done.repeats > 0 && <span className="text-ink-5">· {done.repeats} were already there</span>}
         </p>
@@ -197,7 +197,7 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
 
               {/* The document's own totals are checked, not trusted. */}
               {paper.problems?.length > 0 && (
-                <p className="mt-2 text-[0.7rem] text-amber-600">
+                <p className="mt-2 text-[0.7rem] text-warn">
                   {paper.problems.join('; ')}.
                 </p>
               )}
@@ -216,7 +216,7 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
       )}
 
       {!paper && plan && plan.refused && (
-        <p className="mt-3 flex items-start gap-2 text-sm text-red-600">
+        <p className="mt-3 flex items-start gap-2 text-sm text-bad">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" /> {plan.refused} Nothing has been written.
         </p>
       )}
@@ -238,12 +238,12 @@ export default function SheetImport({ data, eid, actor, canWrite, bump, toast })
           {/* Your columns that nothing was done with. A "Parking" column that
               vanished is a question worth asking before four hundred rows. */}
           {plan.match.ignored.length > 0 && (
-            <p className="mt-2 text-[0.7rem] text-amber-600">
+            <p className="mt-2 text-[0.7rem] text-warn">
               Ignored: {plan.match.ignored.join(', ')}
             </p>
           )}
           {plan.match.ambiguous.length > 0 && (
-            <p className="mt-2 text-[0.7rem] text-amber-600">
+            <p className="mt-2 text-[0.7rem] text-warn">
               {plan.match.ambiguous.map((a) => `${a.headers.join(' and ')} both look like ${a.field}`).join('; ')}.
             </p>
           )}

@@ -12,7 +12,7 @@ function LegalShell({ title, children }) {
             </span>
             Offset
           </Link>
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-ink-5 hover:text-brand">
+          <Link to="/" className="inline-flex items-center gap-1 text-sm text-ink-5 hover:text-brand-ink">
             <ArrowLeft size={15} /> Back
           </Link>
         </div>
@@ -20,9 +20,9 @@ function LegalShell({ title, children }) {
         <p className="mt-1 text-xs text-ink-6">Last updated {new Date().getFullYear()}</p>
         <div className="prose mt-6 space-y-4 text-sm leading-relaxed text-ink-4">{children}</div>
         <p className="mt-10 text-xs text-ink-6">
-          <Link to="/terms" className="hover:text-brand">Terms</Link> ·{' '}
-          <Link to="/privacy" className="hover:text-brand">Privacy</Link> ·{' '}
-          <Link to="/pricing" className="hover:text-brand">Pricing</Link>
+          <Link to="/terms" className="hover:text-brand-ink">Terms</Link> ·{' '}
+          <Link to="/privacy" className="hover:text-brand-ink">Privacy</Link> ·{' '}
+          <Link to="/pricing" className="hover:text-brand-ink">Pricing</Link>
         </p>
       </div>
     </div>

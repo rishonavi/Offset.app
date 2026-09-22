@@ -212,7 +212,7 @@ export default function Login() {
                 setError(null)
                 setInfo(null)
               }}
-              className="font-semibold text-gold hover:underline"
+              className="font-semibold text-brand-ink hover:underline"
             >
               {mode === 'signin' ? 'Create one' : 'Sign in'}
             </button>

@@ -83,7 +83,7 @@ export default function Verify({ data, eid, actor, canWrite, bump, toast }) {
       {history.unverifiedCount > 0 && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-600" />
+            <AlertTriangle size={16} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">
               {history.neverCounted === history.unverifiedCount
                 ? `${history.unverifiedCount} ${history.unverifiedCount === 1 ? 'store has' : 'stores have'} never been counted`
@@ -157,7 +157,7 @@ export default function Verify({ data, eid, actor, canWrite, bump, toast }) {
                             />
                           </td>
                           <td className={cx('text-end tabular font-medium',
-                            diff === null ? 'text-ink-6' : diff < 0 ? 'text-red-600' : diff > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                            diff === null ? 'text-ink-6' : diff < 0 ? 'text-bad' : diff > 0 ? 'text-warn' : 'text-good')}>
                             {diff === null ? '—' : diff === 0 ? 'square' : `${diff > 0 ? '+' : ''}${diff}`}
                           </td>
                         </tr>
@@ -202,7 +202,7 @@ export default function Verify({ data, eid, actor, canWrite, bump, toast }) {
                     {sh.date} · {sh.count} counted · {sh.short} short, {sh.over} over, {sh.square} square
                   </span>
                 </span>
-                <span className={cx('tabular font-semibold', sh.shortValue > 0 ? 'text-red-600' : 'text-emerald-600')}>
+                <span className={cx('tabular font-semibold', sh.shortValue > 0 ? 'text-bad' : 'text-good')}>
                   {sh.shortValue > 0 ? `−${formatCurrency(sh.shortValue)}` : 'all square'}
                 </span>
               </li>

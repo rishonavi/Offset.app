@@ -315,7 +315,7 @@ export default function Invoices() {
                       {t.name}
                       {t.builtIn && <span className="ml-2 text-xs font-normal text-ink-6">built in</span>}
                       {isDefault && (
-                        <span className="ml-2 bg-brand-light px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-gold">
+                        <span className="ml-2 bg-brand-light px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-brand-ink">
                           Default
                         </span>
                       )}
@@ -336,7 +336,7 @@ export default function Invoices() {
                     <>
                       <button
                         onClick={() => downloadHtml(templateToFile(t), `${t.name}.json`)}
-                        className="icon-btn text-ink-6 hover:text-brand"
+                        className="icon-btn text-ink-6 hover:text-brand-ink"
                         title={`Export “${t.name}”`}
                         aria-label={`Export ${t.name}`}
                       >
@@ -344,7 +344,7 @@ export default function Invoices() {
                       </button>
                       <button
                         onClick={() => removeTemplate(t)}
-                        className="icon-btn text-ink-6 hover:text-red-600"
+                        className="icon-btn text-ink-6 hover:text-bad"
                         title={`Delete “${t.name}”`}
                         aria-label={`Delete ${t.name}`}
                       >
@@ -376,7 +376,7 @@ export default function Invoices() {
 
         <button
           onClick={() => setShowTokens((v) => !v)}
-          className="text-action mt-2 text-xs font-medium text-brand hover:underline"
+          className="text-action mt-2 text-xs font-medium text-brand-ink hover:underline"
           aria-expanded={showTokens}
         >
           <Code size={13} /> {showTokens ? 'Hide' : 'Show'} what you can put in a format
@@ -511,7 +511,7 @@ export default function Invoices() {
                   </div>
                   <button
                     onClick={() => dropLine(i)}
-                    className="text-action mt-2 text-xs font-medium text-ink-5 hover:text-red-600 sm:col-span-1 sm:mt-0 sm:grid sm:min-h-0 sm:place-items-center sm:text-ink-6"
+                    className="text-action mt-2 text-xs font-medium text-ink-5 hover:text-bad sm:col-span-1 sm:mt-0 sm:grid sm:min-h-0 sm:place-items-center sm:text-ink-6"
                     aria-label={`Remove line ${i + 1}`}
                   >
                     <X size={15} /> <span className="sm:hidden">Remove this line</span>
@@ -542,7 +542,7 @@ export default function Invoices() {
           <div className="flex items-center justify-between border-b border-border-light px-4 py-2.5">
             <span className="text-sm font-semibold text-ink-3">Preview</span>
             <span className="flex items-center gap-1 text-xs text-ink-6">
-              <Check size={13} className="text-emerald-600" /> {template.name}
+              <Check size={13} className="text-good" /> {template.name}
             </span>
           </div>
           {/* Sandboxed: a format may have come from someone else, and a preview

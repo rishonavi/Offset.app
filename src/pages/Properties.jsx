@@ -83,7 +83,7 @@ export default function Properties() {
               <Link key={p.id} to={`/properties/${p.id}`} className="card card-hover flex flex-col p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-light text-brand">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-light text-brand-ink">
                       <Icon size={18} />
                     </div>
                     <div className="min-w-0">
@@ -94,14 +94,14 @@ export default function Properties() {
                   <div className="flex gap-1">
                     <button
                       onClick={(e) => onEdit(e, p)}
-                      className="icon-btn text-ink-6 transition hover:bg-surface-hover hover:text-brand"
+                      className="icon-btn text-ink-6 transition hover:bg-surface-hover hover:text-brand-ink"
                       title="Edit"
                     >
                       <Pencil size={15} />
                     </button>
                     <button
                       onClick={(e) => onDelete(e, p)}
-                      className="icon-btn text-ink-6 transition hover:bg-red-50 hover:text-red-600"
+                      className="icon-btn text-ink-6 transition hover:bg-red-50 hover:text-bad"
                       title="Delete"
                     >
                       <Trash2 size={15} />
@@ -135,7 +135,7 @@ export default function Properties() {
                         {p.value ? formatCurrency(p.value) : formatCurrency(totals.sum.get(p.id) || 0)}
                       </div>
                     </div>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand">
+                    <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-ink">
                       Details <ArrowRight size={13} />
                     </span>
                   </div>

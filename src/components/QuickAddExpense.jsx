@@ -136,7 +136,7 @@ export default function QuickAddExpense({ open, onClose }) {
               value={form.project_id}
               onChange={(v) => setForm((f) => ({ ...f, project_id: v }))}
             />
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-bad">{error}</p>}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={onClose}>
                 Cancel

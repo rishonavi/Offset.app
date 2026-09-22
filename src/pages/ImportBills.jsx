@@ -346,7 +346,7 @@ export default function ImportBills() {
             if you already knew it was there. */}
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet size={16} className="text-emerald-600" />
+            <FileSpreadsheet size={16} className="text-good" />
             <h2 className="text-sm font-semibold text-ink-3">From a spreadsheet</h2>
           </div>
           <p className="mt-1 text-xs text-ink-5">
@@ -406,7 +406,7 @@ export default function ImportBills() {
             <h2 className="text-sm font-semibold uppercase tracking-[1px] text-ink-5">Bills from Gmail</h2>
             {plan && plan.billingEnabled && !plan.can('gmailImport') ? (
               <Card className="flex flex-col items-start gap-3 p-6">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/15 text-gold">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/15 text-brand-ink">
                   <Mail size={20} />
                 </span>
                 <div>
@@ -431,7 +431,7 @@ export default function ImportBills() {
               <>
           <Card className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-light text-brand">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-light text-brand-ink">
                 <Mail size={18} />
               </span>
               <div className="text-sm text-ink-4">
@@ -450,7 +450,7 @@ export default function ImportBills() {
             </Button>
           </Card>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-bad">{error}</p>}
 
           {rows.length > 0 && (
             <div className="flex items-center justify-between">
@@ -481,7 +481,7 @@ export default function ImportBills() {
                 </div>
 
                 {!r.read && (
-                  <p className="mt-2 text-xs text-amber-600">Couldn’t auto-read this one — please fill the details in.</p>
+                  <p className="mt-2 text-xs text-warn">Couldn’t auto-read this one — please fill the details in.</p>
                 )}
 
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">

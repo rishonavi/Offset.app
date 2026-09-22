@@ -128,8 +128,8 @@ export default function Bills() {
             return (
               <Card key={g.pid} className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-line px-5 py-3">
-                  <Link to={`/properties/${g.pid}`} className="flex items-center gap-2 font-semibold text-ink-2 hover:text-brand">
-                    <span className="icon-btn bg-brand-light text-brand">
+                  <Link to={`/properties/${g.pid}`} className="flex items-center gap-2 font-semibold text-ink-2 hover:text-brand-ink">
+                    <span className="icon-btn bg-brand-light text-brand-ink">
                       <Icon size={16} />
                     </span>
                     {g.name}
@@ -176,7 +176,7 @@ export default function Bills() {
                             aria-expanded={open}
                             title={cmts.length ? `${cmts.length} comment${cmts.length === 1 ? '' : 's'}` : 'Add a comment'}
                             className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                              open || cmts.length ? 'bg-brand-light text-brand' : 'text-ink-6 hover:bg-surface-hover hover:text-ink-3'
+                              open || cmts.length ? 'bg-brand-light text-brand-ink' : 'text-ink-6 hover:bg-surface-hover hover:text-ink-3'
                             }`}
                           >
                             <MessageSquare size={15} />
@@ -233,7 +233,7 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
         <ul className="space-y-3">
           {comments.map((c) => (
             <li key={c.id} className="flex gap-2.5">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-light text-[0.7rem] font-semibold text-brand">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-light text-[0.7rem] font-semibold text-brand-ink">
                 {(c.author || 'U')[0].toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
@@ -243,7 +243,7 @@ function BillCommentPanel({ comments, canWrite, onAdd, onDelete }) {
                   {canWrite && (
                     <button
                       onClick={() => onDelete(c.id)}
-                      className="ms-auto shrink-0 text-ink-7 transition hover:text-red-600"
+                      className="ms-auto shrink-0 text-ink-7 transition hover:text-bad"
                       title="Delete comment"
                       aria-label="Delete comment"
                     >

@@ -94,7 +94,7 @@ export default function Usage({ data, eid, actor, canWrite, bump, toast }) {
               <tbody className="divide-y divide-line-soft">
                 {usage.map((u) => (
                   <tr key={u.projectId || 'none'}>
-                    <td className={cx('py-2', u.projectId ? 'text-ink-2' : 'text-amber-600')}>
+                    <td className={cx('py-2', u.projectId ? 'text-ink-2' : 'text-warn')}>
                       {u.project?.name || siteName(u.projectId)}
                     </td>
                     <td className="text-end tabular text-ink-4">{u.items}</td>
@@ -136,7 +136,7 @@ export default function Usage({ data, eid, actor, canWrite, bump, toast }) {
                 <span className="min-w-0 text-ink-2">
                   <span className="text-ink-5">{l.movement.date}</span>{' '}
                   {l.kind.label} · {l.item?.name || 'Unknown material'}
-                  {l.movement.reason && <span className="block text-xs text-amber-600">{l.movement.reason}</span>}
+                  {l.movement.reason && <span className="block text-xs text-warn">{l.movement.reason}</span>}
                   <span className="block text-xs text-ink-6">
                     {l.movement.kind === 'transfer'
                       ? `${logStore(l.movement.store_id)} → ${logStore(l.movement.to_store_id)}`

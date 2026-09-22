@@ -300,7 +300,7 @@ export default function Reports() {
             <h2 className="text-sm font-semibold text-ink-3">Tax &amp; year-end summary</h2>
           </div>
           <Button variant="ghost" onClick={downloadYearEndPDF} disabled={byYear.length === 0 && !ops}>
-            <FileText size={16} className="text-red-600" /> Year-end PDF
+            <FileText size={16} className="text-bad" /> Year-end PDF
           </Button>
         </div>
         <p className="mt-1 text-xs text-ink-5">

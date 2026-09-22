@@ -293,7 +293,7 @@ function SiteLine({ line, onEdit }) {
           against. Saying so beats printing 0% and letting it read as healthy. */}
       {line.uncosted ? (
         <p className="mt-3 flex items-center gap-2 text-xs text-ink-5">
-          <AlertTriangle size={13} className="text-amber-600" />
+          <AlertTriangle size={13} className="text-warn" />
           Nothing costed on this site yet, so there is nothing to measure {formatCurrency(line.spent)} of spend against.
         </p>
       ) : (
@@ -318,7 +318,7 @@ function SiteLine({ line, onEdit }) {
               </div>
               <p className="mt-1 text-xs text-ink-5">
                 {line.usedPercent}% of the estimate used
-                {line.overEstimate && <span className="text-amber-600"> · {formatCurrency(line.overrun)} over</span>}
+                {line.overEstimate && <span className="text-warn"> · {formatCurrency(line.overrun)} over</span>}
               </p>
             </div>
           )}
@@ -448,7 +448,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
               <Bar label="Of the budget" percent={against.burnt} tone={against.behind ? 'warn' : 'muted'} />
             </div>
             <p className={cx('mt-3 flex items-center gap-2 text-sm font-medium',
-              against.behind ? 'text-amber-600' : against.ahead ? 'text-emerald-600' : 'text-ink-3')}>
+              against.behind ? 'text-warn' : against.ahead ? 'text-good' : 'text-ink-3')}>
               {against.behind && <AlertTriangle size={15} />}
               {against.why}
             </p>
@@ -543,7 +543,7 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
                         </span>
                       </span>
                       <span className={cx('tabular font-semibold',
-                        l.ahead ? 'text-red-600' : l.behind ? 'text-amber-600' : 'text-ink-4')}>
+                        l.ahead ? 'text-bad' : l.behind ? 'text-warn' : 'text-ink-4')}>
                         {l.gap > 0 ? '+' : ''}{formatCurrency(l.gap)}
                         {l.gapPercent !== null && <span className="ms-1 text-[0.7rem] font-medium">({l.gapPercent > 0 ? '+' : ''}{l.gapPercent}%)</span>}
                       </span>
@@ -623,12 +623,12 @@ function Progress({ data, eid, actor, canWrite, bump, toast, company }) {
                       <td className="py-2 text-ink-2">
                         {l.item.code && <span className="text-ink-6">{l.item.code} · </span>}
                         {l.item.description}
-                        {l.over && <span className="block text-[0.7rem] text-amber-600">more built than scheduled</span>}
+                        {l.over && <span className="block text-[0.7rem] text-warn">more built than scheduled</span>}
                       </td>
                       <td className="text-end tabular text-ink-4">{l.planned} {l.item.unit}</td>
                       <td className="text-end tabular text-ink-3">{l.done}</td>
                       <td className="text-end tabular text-ink-4">{l.remaining}</td>
-                      <td className={cx('text-end tabular', l.complete ? 'text-emerald-600' : 'text-ink-3')}>
+                      <td className={cx('text-end tabular', l.complete ? 'text-good' : 'text-ink-3')}>
                         {l.percent === null ? '—' : `${l.percent}%`}
                       </td>
                       <td className="text-end tabular font-medium">{formatCurrency(l.earned)}</td>
@@ -723,7 +723,7 @@ function Costs({ data, eid }) {
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.subcontractCost)}</td>
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.plantCost)}</td>
                     <td className="text-end tabular font-medium">{formatCurrency(l.spent)}</td>
-                    <td className={cx('text-end tabular', l.overEstimate ? 'text-amber-600' : 'text-ink-4')}>
+                    <td className={cx('text-end tabular', l.overEstimate ? 'text-warn' : 'text-ink-4')}>
                       {l.usedPercent === null ? '—' : `${l.usedPercent}%`}
                     </td>
                   </tr>
@@ -739,7 +739,7 @@ function Costs({ data, eid }) {
       {(loose.count > 0 || looseMaterial) && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-600" />
+            <AlertTriangle size={16} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">Booked to no site</h3>
           </div>
           <p className="mt-1 text-xs text-ink-5">
@@ -812,7 +812,7 @@ function Billing({ data, eid }) {
                     <td className="ps-4 text-ink-4">{l.project.client || '—'}</td>
                     <td className="text-end tabular text-ink-4">{l.contract ? formatCurrency(l.contract) : '—'}</td>
                     <td className="text-end tabular text-ink-4">{formatCurrency(l.billed)}</td>
-                    <td className={cx('text-end tabular', l.outstanding > 0 ? 'text-amber-600' : 'text-ink-4')}>
+                    <td className={cx('text-end tabular', l.outstanding > 0 ? 'text-warn' : 'text-ink-4')}>
                       {formatCurrency(l.outstanding)}
                     </td>
                     <td className="text-end tabular text-ink-3">
@@ -829,7 +829,7 @@ function Billing({ data, eid }) {
       {report.late > 0 && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <CalendarClock size={16} className="text-red-600" />
+            <CalendarClock size={16} className="text-bad" />
             <h3 className="text-sm font-semibold text-ink-3">Past their date</h3>
           </div>
           {/* Said in days rather than as a flag: "four days over" and "eight
@@ -841,7 +841,7 @@ function Billing({ data, eid }) {
               .map((l) => (
                 <li key={l.project.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                   <span className="text-ink-2">{l.project.name}</span>
-                  <span className="tabular text-red-600">
+                  <span className="tabular text-bad">
                     {daysLate(l.project)} days past {l.project.due_on}
                   </span>
                 </li>
@@ -858,7 +858,7 @@ function Cell({ label, value, tone }) {
     <div>
       <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
       <p className={cx('mt-0.5 text-sm font-semibold tabular',
-        tone === 'bad' ? 'text-red-600' : tone === 'good' ? 'text-emerald-600' : 'text-ink-2')}>{value}</p>
+        tone === 'bad' ? 'text-bad' : tone === 'good' ? 'text-good' : 'text-ink-2')}>{value}</p>
     </div>
   )
 }
@@ -867,7 +867,7 @@ function Stat({ label, value, tone }) {
   return (
     <Card className="p-4">
       <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
-      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-amber-600' : 'text-ink-1')}>{value}</p>
+      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-1')}>{value}</p>
     </Card>
   )
 }

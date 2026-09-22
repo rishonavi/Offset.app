@@ -156,7 +156,7 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
             <Bar label="Built" percent={pace.built} tone="muted" />
           </div>
           <p className={cx('mt-3 text-sm font-medium',
-            pace.aheadOfBuild ? 'text-amber-600' : pace.behindBuild ? 'text-amber-600' : 'text-ink-3')}>
+            pace.aheadOfBuild ? 'text-warn' : pace.behindBuild ? 'text-warn' : 'text-ink-3')}>
             {pace.why}
           </p>
         </Card>
@@ -250,7 +250,7 @@ function Inventory({ data, eid, actor, canWrite, bump, toast }) {
                     <td className="text-end tabular text-ink-4">{l.unit.carpet_area || '—'}</td>
                     <td className="text-end tabular text-ink-3">{formatCurrency(l.agreed)}</td>
                     <td className="text-end tabular text-ink-4">{l.sold ? formatCurrency(l.received) : '—'}</td>
-                    <td className={cx('text-end tabular', l.overdue > 0 ? 'text-red-600' : l.dueNow > 0 ? 'text-amber-600' : 'text-ink-4')}>
+                    <td className={cx('text-end tabular', l.overdue > 0 ? 'text-bad' : l.dueNow > 0 ? 'text-warn' : 'text-ink-4')}>
                       {l.sold ? formatCurrency(l.dueNow) : '—'}
                     </td>
                     <td className="ps-3">
@@ -357,7 +357,7 @@ function Collections({ data, eid, actor, canWrite, bump, toast, company }) {
       {(report.untriggered > 0 || report.unitsWithGap > 0) && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-600" />
+            <AlertTriangle size={16} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">Plans that will not collect themselves</h3>
           </div>
           <p className="mt-1 text-xs text-ink-5">
@@ -432,7 +432,7 @@ function Collections({ data, eid, actor, canWrite, bump, toast, company }) {
                   {formatCurrency(l.agreed)} agreed
                   {l.percentReceived !== null && ` · ${l.percentReceived}% received`}
                   {Math.abs(l.planGap) > 1 && (
-                    <span className="text-amber-600"> · plan is {formatCurrency(Math.abs(l.planGap))} {l.planGap > 0 ? 'short of' : 'over'} the price</span>
+                    <span className="text-warn"> · plan is {formatCurrency(Math.abs(l.planGap))} {l.planGap > 0 ? 'short of' : 'over'} the price</span>
                   )}
                 </p>
               </div>
@@ -524,11 +524,11 @@ function Collections({ data, eid, actor, canWrite, bump, toast, company }) {
                         <td className="ps-3 text-ink-5">
                           {r.stage.work_stage
                             ? `${WORK_STAGES[r.stage.work_stage]?.label || r.stage.work_stage}${r.stage.trigger_at < 100 ? ` at ${r.stage.trigger_at}%` : ''}`
-                            : r.stage.due_on || <span className="text-amber-600">nothing — it will never fall due</span>}
+                            : r.stage.due_on || <span className="text-warn">nothing — it will never fall due</span>}
                         </td>
                         <td className="text-end tabular text-ink-3">{formatCurrency(r.amount)}</td>
                         <td className="text-end tabular text-ink-4">{r.due ? formatCurrency(r.received) : '—'}</td>
-                        <td className={cx('text-end tabular', r.due && r.outstanding > 0 ? 'text-amber-600' : 'text-ink-4')}>
+                        <td className={cx('text-end tabular', r.due && r.outstanding > 0 ? 'text-warn' : 'text-ink-4')}>
                           {r.due ? formatCurrency(r.outstanding) : 'not yet due'}
                         </td>
                       </tr>
@@ -565,7 +565,7 @@ function Cell({ label, value, tone }) {
   return (
     <div>
       <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
-      <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-amber-600' : 'text-ink-2')}>{value}</p>
+      <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-2')}>{value}</p>
     </div>
   )
 }
@@ -574,7 +574,7 @@ function Stat({ label, value, tone }) {
   return (
     <Card className="p-4">
       <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
-      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-amber-600' : 'text-ink-1')}>{value}</p>
+      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-1')}>{value}</p>
     </Card>
   )
 }

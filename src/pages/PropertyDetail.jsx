@@ -140,7 +140,7 @@ export default function PropertyDetail() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-brand">
+          <div className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-brand-ink">
             <AssetIcon size={22} />
           </div>
           <div>
@@ -160,7 +160,7 @@ export default function PropertyDetail() {
             <Link to={`/properties/${property.id}/edit`} className="btn-ghost">
               <Pencil size={15} /> Edit
             </Link>
-            <Button variant="ghost" onClick={onDeleteProperty} className="text-red-600 hover:bg-red-50">
+            <Button variant="ghost" onClick={onDeleteProperty} className="text-bad hover:bg-red-50">
               <Trash2 size={15} /> Delete
             </Button>
             <Link to={`/expenses/new?asset=${property.id}`} className="btn-primary">
@@ -178,7 +178,7 @@ export default function PropertyDetail() {
       ) : (
         <Card className="flex items-center justify-between p-4 text-sm">
           <span className="text-ink-5">No monthly budget set for this asset.</span>
-          <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand hover:underline">
+          <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand-ink hover:underline">
             Set a budget
           </Link>
         </Card>
@@ -254,7 +254,7 @@ export default function PropertyDetail() {
       ) : (
         <Card className="flex items-center justify-between p-4 text-sm">
           <span className="text-ink-5">Add an asset value to see ROI &amp; rental yield.</span>
-          <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand hover:underline">
+          <Link to={`/properties/${property.id}/edit`} className="font-medium text-brand-ink hover:underline">
             Set value
           </Link>
         </Card>

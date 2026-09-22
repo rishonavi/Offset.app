@@ -62,7 +62,7 @@ export default function Attention({ limit = 6 }) {
   if (report.clear) {
     return (
       <Card className="flex items-center gap-3 p-5">
-        <Check size={18} className="text-emerald-600" />
+        <Check size={18} className="text-good" />
         <p className="text-sm text-ink-3">
           Nothing needs attention. No short stores, no unclaimed rejections, no job past its costing.
         </p>
@@ -105,7 +105,7 @@ export default function Attention({ limit = 6 }) {
                     <Link
                       to={f.where.to}
                       aria-label={`${f.where.label || 'Open'}: ${f.title}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand underline-offset-4 hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-brand-ink underline-offset-4 hover:underline"
                     >
                       {f.where.label || 'Open'} <ArrowRight size={12} />
                     </Link>

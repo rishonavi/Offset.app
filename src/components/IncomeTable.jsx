@@ -69,7 +69,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
                 <CheckCircle2 size={14} /> Mark {unsettled.length} received
               </button>
             )}
-            <button onClick={bulkDelete} className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline">
+            <button onClick={bulkDelete} className="inline-flex items-center gap-1 text-xs font-semibold text-bad hover:underline">
               <Trash2 size={14} /> Delete {selected.size}
             </button>
           </div>
@@ -128,7 +128,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
                     {onMarkSettled && !isSettled(e, 'income') && (
                       <button
                         onClick={() => onMarkSettled(e)}
-                        className="icon-btn-tight text-ink-6 transition hover:bg-emerald-50 hover:text-emerald-600"
+                        className="icon-btn-tight text-ink-6 transition hover:bg-emerald-50 hover:text-good"
                         title="Mark as received"
                       >
                         <CheckCircle2 size={15} />
@@ -152,7 +152,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
                     </button>
                     <button
                       onClick={() => onDelete(e)}
-                      className="icon-btn-tight text-ink-6 transition hover:bg-red-50 hover:text-red-600"
+                      className="icon-btn-tight text-ink-6 transition hover:bg-red-50 hover:text-bad"
                       title="Delete"
                     >
                       <Trash2 size={15} />
@@ -186,7 +186,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
               <PaymentChip entry={e} kind="income" />
               {e.payer && <span className="text-xs text-ink-5">{e.payer}</span>}
               {e.receipt_url && (
-                <button onClick={() => setViewing(e.receipt_url)} className="inline-flex items-center gap-1 text-xs text-gold">
+                <button onClick={() => setViewing(e.receipt_url)} className="inline-flex items-center gap-1 text-xs text-brand-ink">
                   <Paperclip size={12} /> Proof
                 </button>
               )}
@@ -194,7 +194,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
             {e.description && <p className="mt-2 text-sm text-ink-5">{e.description}</p>}
             <div className={`mt-3 flex-wrap justify-end gap-3 border-t border-line-soft pt-3 ${readOnly ? 'hidden' : 'flex'}`}>
               {onMarkSettled && !isSettled(e, 'income') && (
-                <button onClick={() => onMarkSettled(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-emerald-600">
+                <button onClick={() => onMarkSettled(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-good">
                   <CheckCircle2 size={13} /> Mark received
                 </button>
               )}
@@ -206,7 +206,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
               <button onClick={() => onEdit(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-ink-4">
                 <Pencil size={13} /> Edit
               </button>
-              <button onClick={() => onDelete(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-red-600">
+              <button onClick={() => onDelete(e)} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-bad">
                 <Trash2 size={13} /> Delete
               </button>
             </div>
@@ -221,7 +221,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
           </span>
           <button
             onClick={() => setLimit((l) => l + PAGE * 5)}
-            className="inline-flex items-center gap-1 font-semibold text-brand hover:underline"
+            className="inline-flex items-center gap-1 font-semibold text-brand-ink hover:underline"
           >
             <ChevronDown size={15} /> Show more
           </button>

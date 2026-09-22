@@ -167,7 +167,7 @@ export default function Personal() {
         <p className="-mt-1 text-xs text-ink-5">
           <strong className="tabular font-semibold text-ink-3">{formatCurrency(unbudgetedSpent)}</strong> more went to
           categories with no budget, so the figures above say nothing about it.{' '}
-          <button type="button" onClick={openBudgets} className="font-medium text-brand hover:underline">
+          <button type="button" onClick={openBudgets} className="font-medium text-brand-ink hover:underline">
             Bring it into the plan
           </button>
         </p>
@@ -178,7 +178,7 @@ export default function Personal() {
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink-3">Category budgets</h2>
-            <button onClick={editBudgets ? () => setEditBudgets(false) : openBudgets} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand hover:underline">
+            <button onClick={editBudgets ? () => setEditBudgets(false) : openBudgets} className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand-ink hover:underline">
               {editBudgets ? (<><X size={13} /> Close</>) : (<><SlidersHorizontal size={13} /> Manage</>)}
             </button>
           </div>
@@ -224,7 +224,7 @@ export default function Personal() {
                       <button
                         type="button"
                         onClick={openBudgets}
-                        className="shrink-0 text-xs font-medium text-brand hover:underline"
+                        className="shrink-0 text-xs font-medium text-brand-ink hover:underline"
                       >
                         Set a budget
                       </button>
@@ -303,7 +303,7 @@ export default function Personal() {
                 <Input value={form.note} onChange={set('note')} placeholder="e.g. weekly shop" />
               </Field>
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-bad">{error}</p>}
             <div className="flex justify-end gap-2">
               {editingId && (
                 <Button type="button" variant="ghost" onClick={cancelEdit}>
@@ -335,10 +335,10 @@ export default function Personal() {
                     {e.note && <div className="mt-0.5 truncate text-xs text-ink-5">{e.note}</div>}
                   </div>
                   <span className="shrink-0 text-sm font-semibold text-ink-1">{formatCurrency(e.amount)}</span>
-                  <button onClick={() => startEdit(e)} className="shrink-0 text-ink-6 hover:text-brand" title="Edit">
+                  <button onClick={() => startEdit(e)} className="shrink-0 text-ink-6 hover:text-brand-ink" title="Edit">
                     <Pencil size={15} />
                   </button>
-                  <button onClick={() => removeExpense(e)} className="shrink-0 text-ink-6 hover:text-red-600" title="Delete">
+                  <button onClick={() => removeExpense(e)} className="shrink-0 text-ink-6 hover:text-bad" title="Delete">
                     <Trash2 size={15} />
                   </button>
                 </div>

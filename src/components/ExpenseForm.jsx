@@ -352,7 +352,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
           <span>{t('entry.draftRestored')}</span>
           <button
             type="button"
-            className="shrink-0 font-semibold text-brand underline"
+            className="shrink-0 font-semibold text-brand-ink underline"
             onClick={() => { clearDraft(key); setForm(blank); setDraftNoticed(false); setFilled(claimAll()) }}
           >
             {t('entry.draftDiscard')}
@@ -543,7 +543,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
                       form.status === o.v
                         ? o.v === 'paid'
                           ? 'border-emerald-600 bg-emerald-50 text-emerald-700'
-                          : 'border-gold bg-brand-light text-gold'
+                          : 'border-gold bg-brand-light text-brand-ink'
                         : 'border-border-light text-ink-5 hover:border-border-strong'
                     }`}
                   >
@@ -585,7 +585,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
                 href={receiptPreview || '#'}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 truncate text-sm font-medium text-brand hover:underline"
+                className="flex-1 truncate text-sm font-medium text-brand-ink hover:underline"
               >
                 {file ? file.name : t('entry.viewAttachment')}
               </a>
@@ -635,7 +635,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
         )}
       </Field>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-bad">{error}</p>}
 
       <div className="form-actions">
         <Button type="button" variant="ghost" onClick={() => { settled.current = true; clearDraft(key); onCancel?.() }}>

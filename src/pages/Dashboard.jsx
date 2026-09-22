@@ -411,7 +411,7 @@ export default function Dashboard() {
             </p>
             {portfolioValue > 0 && (
               <p className="mt-1 text-xs text-white/60">
-                Portfolio value · <span className="font-semibold text-gold">{formatCurrency(portfolioValue)}</span>
+                Portfolio value · <span className="font-semibold text-brand-ink">{formatCurrency(portfolioValue)}</span>
                 {' · '}net worth {formatCurrency(portfolioValue + netAllTime)}
               </p>
             )}
@@ -645,7 +645,7 @@ export default function Dashboard() {
           </div>
           {overdue.length > 0 && (
             <div className="mt-4 border-t border-line-soft pt-3">
-              <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-red-600">
+              <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-bad">
                 <AlertTriangle size={13} /> Overdue
               </div>
               <div className="divide-y divide-line-soft">
@@ -732,7 +732,7 @@ export default function Dashboard() {
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-ink-3">Recent activity</h2>
-            <Link to="/expenses" className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand hover:underline">
+            <Link to="/expenses" className="inline-flex min-h-6 items-center gap-1 text-xs font-medium text-brand-ink hover:underline">
               View all <ArrowRight size={13} />
             </Link>
           </div>

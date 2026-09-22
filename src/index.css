@@ -14,6 +14,25 @@
   --color-gold:       #C5A059;
   --color-gold-dark:  #D4AF37;
 
+  /* Good, bad and waiting — as tokens, because no fixed shade reads in both
+     themes.
+     ─────────────────────────────────────────────────────────────────────
+     Measured against a white card and a dark one, every Tailwind shade these
+     were using fails on one side or the other:
+
+       emerald-600   light 3.77:1   dark 4.32:1    fails both
+       emerald-700   light 5.48:1   dark 2.97:1    fails dark badly
+       red-600       light 4.83:1   dark 3.37:1    fails dark
+       amber-600     light 3.19:1   dark 5.11:1    fails light
+
+     That is the thing the dark-mode literature warns about: a colour chosen
+     to pop on white goes muddy on navy, and the fix is not a different fixed
+     shade but a token that changes with the theme, the way every other colour
+     in this file already does. 146 usages, one definition. */
+  --color-good: #047857;
+  --color-bad:  #dc2626;
+  --color-warn: #b45309;
+
   /* `brand` is aliased to gold so existing accent utilities stay on-brand */
   --color-brand:       #C5A059;
   --color-brand-dark:  #B58B3E;
@@ -235,6 +254,27 @@ h1, h2, h3 {
     height: 1.5rem;
     width: 1.5rem;
     flex-shrink: 0;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.5px];
+    background-color: color-mix(in srgb, var(--badge) 12%, transparent);
+    /* Deepened on a light ground for the same reason it is lifted on a dark
+       one: the hex was picked to name a status, not to be read at 10px. */
+    color: color-mix(in srgb, var(--badge) 70%, black);
+  }
+  .badge-dot {
+    @apply h-1.5 w-1.5 rounded-full;
+    background-color: var(--badge);
+  }
+  /* Lifted towards white on a dark ground, and the wash deepened with it so
+     the shape of the badge does not disappear. */
+  .dark .badge {
+    background-color: color-mix(in srgb, var(--badge) 20%, transparent);
+    color: color-mix(in srgb, var(--badge) 48%, white);
+  }
+  .dark .badge-dot {
+    background-color: color-mix(in srgb, var(--badge) 70%, white);
   }
 
   .icon-btn {
@@ -459,6 +499,11 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
    plays, not the shade it happens to be, which is the only way the next person
    can tell which one they want. */
 .dark {
+  /* Lifted for a dark ground: 6.42:1, 5.89:1 and 7.58:1 on a card. */
+  --color-good: #10b981;
+  --color-bad:  #f87171;
+  --color-warn: #f59e0b;
+
   /* A ladder, not a puddle.
      ─────────────────────────────────────────────────────────────────────
      Measured, these five surfaces used to sit inside 1.13:1 of each other —

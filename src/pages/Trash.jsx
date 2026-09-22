@@ -106,7 +106,7 @@ export default function Trash() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader title="Bin" subtitle={`Deleted items are kept for ${RETENTION_DAYS} days, then removed for good.`} />
         {items.length > 0 && (
-          <Button variant="ghost" onClick={emptyAll} loading={busy} className="text-red-600 hover:bg-red-50">
+          <Button variant="ghost" onClick={emptyAll} loading={busy} className="text-bad hover:bg-red-50">
             <Trash2 size={15} /> Empty bin
           </Button>
         )}
@@ -134,11 +134,11 @@ export default function Trash() {
                     {formatCurrency(it.amount)} · {formatDate(it.date)} · deleted {formatDate(it.deleted_at)}
                   </div>
                 </div>
-                <span className="shrink-0 text-xs font-medium text-amber-600">{daysLeft(it.deleted_at)}d left</span>
-                <button onClick={() => restore(it)} disabled={busy} className="shrink-0 text-ink-6 hover:text-emerald-600 disabled:opacity-50" title="Restore" aria-label="Restore this item">
+                <span className="shrink-0 text-xs font-medium text-warn">{daysLeft(it.deleted_at)}d left</span>
+                <button onClick={() => restore(it)} disabled={busy} className="shrink-0 text-ink-6 hover:text-good disabled:opacity-50" title="Restore" aria-label="Restore this item">
                   <RotateCcw size={16} />
                 </button>
-                <button onClick={() => purge(it)} disabled={busy} className="shrink-0 text-ink-6 hover:text-red-600 disabled:opacity-50" title="Delete forever" aria-label="Delete this item for good">
+                <button onClick={() => purge(it)} disabled={busy} className="shrink-0 text-ink-6 hover:text-bad disabled:opacity-50" title="Delete forever" aria-label="Delete this item for good">
                   <Trash2 size={16} />
                 </button>
               </div>

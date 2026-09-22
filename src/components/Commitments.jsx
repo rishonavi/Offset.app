@@ -26,7 +26,7 @@ function Row({ label, value, hint, tone }) {
         {hint && <span className="block text-[0.68rem] text-ink-6">{hint}</span>}
       </span>
       <span className={cx('shrink-0 tabular text-sm font-semibold',
-        tone === 'bad' ? 'text-red-600' : tone === 'good' ? 'text-emerald-600' : 'text-ink-2')}>
+        tone === 'bad' ? 'text-bad' : tone === 'good' ? 'text-good' : 'text-ink-2')}>
         {value}
       </span>
     </div>
@@ -61,7 +61,7 @@ export default function Commitments() {
         <h3 className="flex items-center gap-2 text-sm font-semibold text-ink-3">
           <FileSignature size={15} /> Already promised
         </h3>
-        <Link to="/operations?tab=labour" className="inline-flex items-center gap-1 text-xs font-semibold text-brand underline-offset-4 hover:underline">
+        <Link to="/operations?tab=labour" className="inline-flex items-center gap-1 text-xs font-semibold text-brand-ink underline-offset-4 hover:underline">
           Contracts <ArrowRight size={12} />
         </Link>
       </div>
@@ -81,7 +81,7 @@ export default function Commitments() {
             // A rate contract commits a real amount nobody wrote down. Saying
             // the total is a floor beats printing it as though it were the
             // answer.
-            <p className="mt-1 text-[0.68rem] text-amber-600">
+            <p className="mt-1 text-[0.68rem] text-warn">
               {c.subcontract.unvalued + c.client.unvalued} {c.subcontract.unvalued + c.client.unvalued === 1 ? 'contract carries' : 'contracts carry'} no
               value, so this is a floor.
             </p>
@@ -119,7 +119,7 @@ export default function Commitments() {
               agreed money plus recorded money is agreed money. */}
           <span className="block text-[0.68rem] text-ink-6">{describeCertainty(c.certainty.committedAndDue)}</span>
         </span>
-        <span className={cx('tabular text-base font-semibold', c.gap < 0 ? 'text-red-600' : 'text-emerald-600')}>
+        <span className={cx('tabular text-base font-semibold', c.gap < 0 ? 'text-bad' : 'text-good')}>
           {c.gap < 0 ? '−' : '+'}{formatCurrency(Math.abs(c.gap))}
           {c.cover !== null && <span className="ms-2 text-xs font-medium text-ink-5">{c.cover}× cover</span>}
         </span>

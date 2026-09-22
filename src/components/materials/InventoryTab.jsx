@@ -188,7 +188,7 @@ export default function Inventory({ data, eid, actor, canWrite, bump, toast, com
       {low.length > 0 && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-600" />
+            <AlertTriangle size={16} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">Reorder</h3>
           </div>
           <p className="mt-1 text-xs text-ink-5">Negative stock first — there the books and the shelf disagree.</p>
@@ -351,7 +351,7 @@ export default function Inventory({ data, eid, actor, canWrite, bump, toast, com
               <h3 className="text-sm font-semibold text-ink-3">{g.category.label}</h3>
               <span className="text-xs text-ink-5">
                 {formatCurrency(g.value)}
-                {g.low > 0 && <span className="ms-2 text-amber-600">{g.low} to reorder</span>}
+                {g.low > 0 && <span className="ms-2 text-warn">{g.low} to reorder</span>}
               </span>
             </div>
             <div className="mt-3 overflow-x-auto">
@@ -389,10 +389,10 @@ export default function Inventory({ data, eid, actor, canWrite, bump, toast, com
                       </td>
                       <td className="text-end tabular text-ink-4">{l.received}</td>
                       <td className="text-end tabular text-ink-4">{l.issued}</td>
-                      <td className={cx('text-end tabular', l.wastagePercent > 10 ? 'text-amber-600' : 'text-ink-4')}>
+                      <td className={cx('text-end tabular', l.wastagePercent > 10 ? 'text-warn' : 'text-ink-4')}>
                         {l.wasted}{l.wastagePercent !== null && l.wasted > 0 ? ` (${l.wastagePercent}%)` : ''}
                       </td>
-                      <td className={cx('text-end tabular', l.rejected > 0 ? 'text-amber-600' : 'text-ink-4')}>
+                      <td className={cx('text-end tabular', l.rejected > 0 ? 'text-warn' : 'text-ink-4')}>
                         {l.rejected}{l.rejectionPercent !== null && l.rejected > 0 ? ` (${l.rejectionPercent}%)` : ''}
                       </td>
                       <td className="text-end tabular text-ink-2">
@@ -455,7 +455,7 @@ export default function Inventory({ data, eid, actor, canWrite, bump, toast, com
               </p>
             )}
             {g.rejectedValue > 0 && (
-              <p className="mt-2 flex items-center gap-2 text-xs text-amber-600">
+              <p className="mt-2 flex items-center gap-2 text-xs text-warn">
                 <Undo2 size={13} /> {formatCurrency(g.rejectedValue)} returned to suppliers and claimable.
               </p>
             )}

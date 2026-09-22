@@ -213,7 +213,7 @@ export default function Admin() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader title="Admin" subtitle="Platform overview, users and audit log." />
         {role && (
-          <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gold">
+          <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-ink">
             {role}
           </span>
         )}
@@ -240,7 +240,7 @@ export default function Admin() {
               href="https://dashboard.stripe.com"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-6 items-center text-xs font-medium text-brand hover:underline"
+              className="inline-flex min-h-6 items-center text-xs font-medium text-brand-ink hover:underline"
             >
               Open Stripe ↗
             </a>
@@ -396,7 +396,7 @@ export default function Admin() {
                   key={id || 'all'}
                   onClick={() => { setReportFilter(id); loadReports(id) }}
                   className={`px-2.5 py-1 text-xs font-medium transition ${
-                    reportFilter === id ? 'bg-navy text-gold' : 'bg-surface-chip text-ink-4 hover:bg-surface-grab'
+                    reportFilter === id ? 'bg-navy text-brand-ink' : 'bg-surface-chip text-ink-4 hover:bg-surface-grab'
                   }`}
                 >
                   {label}
@@ -474,7 +474,7 @@ export default function Admin() {
                         <div>
                           <div className="text-[0.6rem] font-semibold uppercase tracking-wide text-ink-6">Reply to</div>
                           {r.email ? (
-                            <a href={`mailto:${r.email}?subject=Offset ${r.reference}`} className="text-sm text-brand hover:underline">
+                            <a href={`mailto:${r.email}?subject=Offset ${r.reference}`} className="text-sm text-brand-ink hover:underline">
                               {r.email}
                             </a>
                           ) : (
@@ -546,7 +546,7 @@ export default function Admin() {
                   <td className="py-2.5 pr-3">
                     <span className="font-medium text-ink-2">{u.email || u.user_id}</span>
                     {u.is_admin && (
-                      <span className="ml-2 rounded-full bg-navy px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-gold">
+                      <span className="ml-2 rounded-full bg-navy px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-brand-ink">
                         Admin
                       </span>
                     )}
@@ -577,7 +577,7 @@ export default function Admin() {
                       <button
                         onClick={() => setPlan(u, 'pro')}
                         disabled={busyId === u.user_id}
-                        className="inline-flex min-h-6 items-center text-xs font-medium text-brand hover:underline disabled:opacity-50"
+                        className="inline-flex min-h-6 items-center text-xs font-medium text-brand-ink hover:underline disabled:opacity-50"
                       >
                         Grant Pro
                       </button>
@@ -633,7 +633,7 @@ export default function Admin() {
                     {a.role}
                   </span>
                 </span>
-                <button onClick={() => removeAdmin(a.user_id)} className="shrink-0 text-ink-6 hover:text-red-600" title="Remove admin">
+                <button onClick={() => removeAdmin(a.user_id)} className="shrink-0 text-ink-6 hover:text-bad" title="Remove admin">
                   <Trash2 size={15} />
                 </button>
               </div>

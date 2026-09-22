@@ -113,7 +113,7 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
       {(report.unloggedDays > 0 || report.neverLogged > 0) && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-600" />
+            <AlertTriangle size={16} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">Billing with nothing written down</h3>
           </div>
           {/* The quietest cost there is: the machine billed and nobody recorded
@@ -300,12 +300,12 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
                 </p>
               )}
               {l.paidNotWorked > 0 && (
-                <p className="mt-1 text-xs text-amber-600">
+                <p className="mt-1 text-xs text-warn">
                   {l.paidNotWorked} hours paid for and not worked, on the daily minimum.
                 </p>
               )}
               {l.unloggedDays > 0 && (
-                <p className="mt-1 text-xs text-amber-600">
+                <p className="mt-1 text-xs text-warn">
                   {l.unloggedDays} {l.unloggedDays === 1 ? 'day' : 'days'} on hire with no log sheet
                   {l.unloggedCost > 0 && <>, worth {formatCurrency(l.unloggedCost)}</>}.
                 </p>
@@ -323,7 +323,7 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
                   </Field>
                   {verdict.known && (
                     <p className={cx('flex items-center gap-2 pb-2 text-xs font-medium',
-                      verdict.cheaperToHire ? 'text-amber-600' : 'text-emerald-600')}>
+                      verdict.cheaperToHire ? 'text-warn' : 'text-good')}>
                       <Gauge size={13} /> {verdict.why}
                     </p>
                   )}
@@ -465,10 +465,10 @@ function Logs({ data, eid, actor, canWrite, bump, toast }) {
                     <td className="py-2 text-ink-4">{l.date}</td>
                     <td className="ps-3 text-ink-2">{plantName(l.plant_id)}</td>
                     <td className="text-end tabular text-ink-3">{l.working_hours}</td>
-                    <td className={cx('text-end tabular', l.idle_hours > 0 ? 'text-amber-600' : 'text-ink-4')}>{l.idle_hours}</td>
-                    <td className={cx('text-end tabular', l.breakdown_hours > 0 ? 'text-red-600' : 'text-ink-4')}>{l.breakdown_hours}</td>
+                    <td className={cx('text-end tabular', l.idle_hours > 0 ? 'text-warn' : 'text-ink-4')}>{l.idle_hours}</td>
+                    <td className={cx('text-end tabular', l.breakdown_hours > 0 ? 'text-bad' : 'text-ink-4')}>{l.breakdown_hours}</td>
                     <td className="text-end tabular text-ink-4">{l.fuel_cost ? formatCurrency(l.fuel_cost) : '—'}</td>
-                    <td className={cx('ps-3', l.project_id ? 'text-ink-4' : 'text-amber-600')}>{siteName(l.project_id)}</td>
+                    <td className={cx('ps-3', l.project_id ? 'text-ink-4' : 'text-warn')}>{siteName(l.project_id)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -484,7 +484,7 @@ function Cell({ label, value, tone }) {
   return (
     <div>
       <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
-      <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-amber-600' : 'text-ink-2')}>{value}</p>
+      <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-2')}>{value}</p>
     </div>
   )
 }
@@ -493,7 +493,7 @@ function Stat({ label, value, tone }) {
   return (
     <Card className="p-4">
       <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
-      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-amber-600' : 'text-ink-1')}>{value}</p>
+      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-1')}>{value}</p>
     </Card>
   )
 }

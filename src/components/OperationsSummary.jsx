@@ -129,7 +129,7 @@ export default function OperationsSummary({ summary }) {
               never became part of the job, and charging it to the period would
               overstate what the work cost by exactly the supplier's mistake. */}
           {stock.rejectedValue > 0 && (
-            <p className="mt-1 text-xs text-amber-600">
+            <p className="mt-1 text-xs text-warn">
               {formatCurrency(stock.rejectedValue)} went back to suppliers as rejected and is not counted as used up.
             </p>
           )}

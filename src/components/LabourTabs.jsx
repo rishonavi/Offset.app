@@ -245,7 +245,7 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
             <ul className="mt-3 divide-y divide-line-soft">
               {report.bySite.map((s) => (
                 <li key={s.projectId || 'none'} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className={cx('min-w-0 truncate', s.projectId ? 'text-ink-2' : 'text-amber-600')}>
+                  <span className={cx('min-w-0 truncate', s.projectId ? 'text-ink-2' : 'text-warn')}>
                     {siteName(s.projectId)}
                   </span>
                   <span className="tabular text-ink-4">
@@ -318,7 +318,7 @@ function Muster({ data, eid, actor, canWrite, bump, toast, company }) {
                       <td className="text-end tabular text-ink-4">{formatCurrency(m.rate)}</td>
                       <td className="text-end tabular text-ink-4">{c.overtime ? formatCurrency(c.overtime) : '—'}</td>
                       <td className="text-end tabular font-medium">{formatCurrency(c.total)}</td>
-                      <td className={cx('ps-3', m.project_id ? 'text-ink-4' : 'text-amber-600')}>{siteName(m.project_id)}</td>
+                      <td className={cx('ps-3', m.project_id ? 'text-ink-4' : 'text-warn')}>{siteName(m.project_id)}</td>
                     </tr>
                   )
                 })}
@@ -558,7 +558,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
       {report.problems > 0 && (
         <Card className="p-5">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-600" />
+            <AlertTriangle size={16} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">
               {report.problems} {report.problems === 1 ? 'bill needs' : 'bills need'} a second look
             </h3>
@@ -603,8 +603,8 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                   <span className="flex items-center gap-2">
                     {l.panConflict && <Badge color="#dc2626">two PANs</Badge>}
                     {!l.pan && <Badge color="#d97706">no PAN — 20%</Badge>}
-                    {l.short && <span className="tabular font-semibold text-red-600">short {formatCurrency(l.shortfall)}</span>}
-                    {l.over && <span className="tabular font-semibold text-amber-600">over {formatCurrency(l.excess)}</span>}
+                    {l.short && <span className="tabular font-semibold text-bad">short {formatCurrency(l.shortfall)}</span>}
+                    {l.over && <span className="tabular font-semibold text-warn">over {formatCurrency(l.excess)}</span>}
                   </span>
                 </li>
               ))}
@@ -789,7 +789,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                   </label>
                 </div>
                 {schedules[l.order.id].overReleased > 0 && (
-                  <p className="mt-2 text-[0.7rem] font-semibold text-red-600">
+                  <p className="mt-2 text-[0.7rem] font-semibold text-bad">
                     {formatCurrency(schedules[l.order.id].overReleased)} more has been released than was ever held.
                   </p>
                 )}
@@ -800,7 +800,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                         {t.label}
                         {t.dueOn
                           ? <span className="text-ink-6"> · due {t.dueOn}</span>
-                          : <span className="text-amber-600"> · no date until the work is marked finished</span>}
+                          : <span className="text-warn"> · no date until the work is marked finished</span>}
                       </span>
                       <span className="flex items-center gap-2">
                         <span className="tabular font-semibold text-ink-2">{formatCurrency(t.outstanding || t.amount)}</span>
@@ -818,7 +818,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                   ))}
                 </ul>
                 {side === 'client' && schedules[l.order.id].due > 0 && (
-                  <p className="mt-2 text-[0.7rem] text-amber-600">
+                  <p className="mt-2 text-[0.7rem] text-warn">
                     {formatCurrency(schedules[l.order.id].due)} of this stopped being security and became a debt. Nobody
                     sends an invoice for retention, which is why it sits.
                   </p>
@@ -846,17 +846,17 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                         <td className="py-2 text-ink-2">
                           RA {r.bill.number}
                           <span className="block text-[0.7rem] text-ink-6">{r.bill.date}</span>
-                          {r.bill.approval_status === 'pending' && <span className="block text-[0.7rem] text-amber-600">waiting for approval</span>}
-                          {r.overClaimed && <span className="block text-[0.7rem] text-red-600">certified above the claim</span>}
+                          {r.bill.approval_status === 'pending' && <span className="block text-[0.7rem] text-warn">waiting for approval</span>}
+                          {r.overClaimed && <span className="block text-[0.7rem] text-bad">certified above the claim</span>}
                           <button
                             type="button"
                             aria-label={`Payment certificate for RA ${r.bill.number}`}
                             onClick={() => certify(l.order, r.bill)}
-                            className="mt-1 inline-flex items-center gap-1 text-[0.7rem] font-semibold text-brand underline-offset-4 hover:underline"
+                            className="mt-1 inline-flex items-center gap-1 text-[0.7rem] font-semibold text-brand-ink underline-offset-4 hover:underline"
                           >
                             <Printer size={11} /> Certificate
                           </button>
-                          {r.negative && <span className="block text-[0.7rem] text-amber-600">certifies less than the last</span>}
+                          {r.negative && <span className="block text-[0.7rem] text-warn">certifies less than the last</span>}
                           {canWrite && (
                             <button type="button" aria-label={`Edit RA ${r.bill.number} for ${l.order.contractor}`}
                               className="mt-1 ms-3 inline-flex text-[0.7rem] text-ink-5 underline-offset-2 hover:text-ink-2 hover:underline"
@@ -870,7 +870,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
                         <td className="text-end tabular text-ink-4">{formatCurrency(r.retention)}</td>
                         <td className="text-end tabular text-ink-4">{formatCurrency(r.tds)}</td>
                         <td className="text-end tabular text-ink-4">{r.recovered ? formatCurrency(r.recovered) : '—'}</td>
-                        <td className={cx('text-end tabular font-medium', r.net < 0 ? 'text-red-600' : 'text-ink-2')}>
+                        <td className={cx('text-end tabular font-medium', r.net < 0 ? 'text-bad' : 'text-ink-2')}>
                           {formatCurrency(r.net)}
                         </td>
                       </tr>
@@ -934,7 +934,7 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
               </div>
             )}
             {l.unCertified > 0 && (
-              <p className="mt-2 flex items-center gap-2 text-xs text-amber-600">
+              <p className="mt-2 flex items-center gap-2 text-xs text-warn">
                 <Clock size={13} /> {formatCurrency(l.unCertified)} claimed and not yet certified.
               </p>
             )}
@@ -949,7 +949,7 @@ function Cell({ label, value, tone }) {
   return (
     <div>
       <p className="text-[0.68rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</p>
-      <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-amber-600' : 'text-ink-2')}>{value}</p>
+      <p className={cx('mt-0.5 text-sm font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-2')}>{value}</p>
     </div>
   )
 }
@@ -958,7 +958,7 @@ function Stat({ label, value, tone }) {
   return (
     <Card className="p-4">
       <p className="text-[0.7rem] font-semibold uppercase tracking-[1.5px] text-ink-5">{label}</p>
-      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-amber-600' : 'text-ink-1')}>{value}</p>
+      <p className={cx('mt-1 text-xl font-semibold tabular', tone === 'warn' ? 'text-warn' : 'text-ink-1')}>{value}</p>
     </Card>
   )
 }

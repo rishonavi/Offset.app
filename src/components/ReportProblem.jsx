@@ -148,7 +148,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
     return (
       <Shell dialogRef={dialogRef} onClose={onClose} title="Thanks — that helps">
         <div className="flex items-start gap-3 border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/40">
-          <Check size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+          <Check size={18} className="mt-0.5 shrink-0 text-good" />
           <div className="text-sm text-emerald-900 dark:text-emerald-200">
             <p className="font-semibold">Report {saved.reference} filed.</p>
             <p className="mt-1">
@@ -164,7 +164,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
         {sending && <p className="mt-4 text-sm text-ink-5">Sending it to the developer…</p>}
         {delivery?.ok && (
           <p className="mt-4 flex items-start gap-2 text-sm text-ink-4">
-            <Send size={15} className="mt-0.5 shrink-0 text-emerald-600" />
+            <Send size={15} className="mt-0.5 shrink-0 text-good" />
             {/* Which destination took it, because "sent" covering two routes
                 and meaning one of them is the same overclaim this block exists
                 to avoid. */}
@@ -268,7 +268,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
             aria-describedby={errors.message ? 'report-message-error' : undefined}
           />
           {errors.message && (
-            <span id="report-message-error" className="mt-1 block text-xs text-red-600">
+            <span id="report-message-error" className="mt-1 block text-xs text-bad">
               {errors.message}
             </span>
           )}
@@ -296,7 +296,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
             aria-describedby={errors.email ? 'report-email-error' : undefined}
           />
           {errors.email && (
-            <span id="report-email-error" className="mt-1 block text-xs text-red-600">
+            <span id="report-email-error" className="mt-1 block text-xs text-bad">
               {errors.email}
             </span>
           )}
@@ -318,7 +318,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
           <button
             type="button"
             onClick={() => setShowDetail((v) => !v)}
-            className="text-action mt-1 text-xs font-medium text-brand hover:underline"
+            className="text-action mt-1 text-xs font-medium text-brand-ink hover:underline"
             aria-expanded={showDetail}
           >
             <ChevronDown size={13} className={showDetail ? 'rotate-180 transition' : 'transition'} />
@@ -336,7 +336,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
           )}
         </div>
 
-        {saveError && <p className="mt-3 text-sm text-red-600">{saveError}</p>}
+        {saveError && <p className="mt-3 text-sm text-bad">{saveError}</p>}
 
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-ghost">

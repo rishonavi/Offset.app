@@ -38,7 +38,7 @@ export default function Landing() {
       <section className="mx-auto max-w-3xl px-4 pt-16 pb-12 text-center">
         <p className="text-[0.7rem] font-semibold uppercase tracking-[3px] text-gold/80">Income &amp; expenses for every asset</p>
         <h1 className="mt-4 font-serif text-4xl font-bold leading-tight sm:text-6xl">
-          Track what every asset <span className="text-gold">earns and costs.</span>
+          Track what every asset <span className="text-brand-ink">earns and costs.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-white/70">
           Properties, vehicles, jewellery, stocks and more — log income and expenses, scan receipts with AI, and see
@@ -59,7 +59,7 @@ export default function Landing() {
       <section className="mx-auto grid max-w-4xl gap-4 px-4 pb-14 sm:grid-cols-2">
         {FEATURES.map((f) => (
           <div key={f.title} className="border border-white/10 bg-white/5 p-5 backdrop-blur">
-            <span className="grid h-10 w-10 place-items-center bg-gold/15 text-gold">
+            <span className="grid h-10 w-10 place-items-center bg-gold/15 text-brand-ink">
               <f.icon size={18} />
             </span>
             <h2 className="mt-3 font-semibold">{f.title}</h2>

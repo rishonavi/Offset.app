@@ -169,7 +169,7 @@ export default function Quotations({ data, eid, actor, canWrite, bump, toast }) 
                 {comparison.spreadPercent}% between the cheapest and the dearest.
               </p>
               {comparison.acceptedNotCheapest && (
-                <p className="mt-2 flex items-center gap-2 text-xs text-amber-600">
+                <p className="mt-2 flex items-center gap-2 text-xs text-warn">
                   <AlertTriangle size={13} /> The accepted quote is not the cheapest on the table.
                 </p>
               )}

@@ -31,7 +31,7 @@ export default function SyncStatus({ compact = false }) {
         onClick={sync.run}
         aria-label="Sync status"
         className={cx('inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[0.7rem] font-semibold',
-          bad ? 'text-amber-600' : waiting ? 'text-ink-4' : 'text-emerald-600')}
+          bad ? 'text-warn' : waiting ? 'text-ink-4' : 'text-good')}
       >
         {running ? <RefreshCw size={12} className="animate-spin" />
           : !state.online ? <CloudOff size={12} />
@@ -48,7 +48,7 @@ export default function SyncStatus({ compact = false }) {
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-ink-3">
             {!state.online ? <CloudOff size={16} className="text-ink-5" />
-              : state.settled ? <Check size={16} className="text-emerald-600" />
+              : state.settled ? <Check size={16} className="text-good" />
                 : <RefreshCw size={16} className={cx('text-ink-5', running && 'animate-spin')} />}
             Sync
           </h2>
@@ -69,7 +69,7 @@ export default function SyncStatus({ compact = false }) {
       {conflicts.length > 0 && (
         <div className="mt-4">
           <div className="flex items-center gap-2">
-            <AlertTriangle size={15} className="text-amber-600" />
+            <AlertTriangle size={15} className="text-warn" />
             <h3 className="text-sm font-semibold text-ink-3">
               {conflicts.length === 1 ? 'One change did not go through' : `${conflicts.length} changes did not go through`}
             </h3>
@@ -95,7 +95,7 @@ export default function SyncStatus({ compact = false }) {
                     {c.fields.map((f) => (
                       <tr key={f.field}>
                         <td className="py-0.5 pe-3">{f.field.replace(/_/g, ' ')}</td>
-                        <td className="py-0.5 pe-3 text-amber-600">{String(f.mine ?? '—')}</td>
+                        <td className="py-0.5 pe-3 text-warn">{String(f.mine ?? '—')}</td>
                         <td className="py-0.5 text-ink-2">{String(f.theirs ?? '—')}</td>
                       </tr>
                     ))}
@@ -119,7 +119,7 @@ function Doubled({ doubled = [], count = 0 }) {
   return (
     <>
       <div className="flex items-center gap-2">
-        <Copy size={15} className="text-amber-600" />
+        <Copy size={15} className="text-warn" />
         <h3 className="text-sm font-semibold text-ink-3">
           {count === 1 ? 'One entry looks like a repeat' : `${count} entries look like repeats`}
         </h3>

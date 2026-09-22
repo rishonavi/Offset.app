@@ -92,13 +92,19 @@ export function Select({ className, children, ...props }) {
   )
 }
 
+// A status word in the colour of the thing it describes.
+//
+// The colour arrives as a hex chosen for a white page — "on site" slate,
+// "under" amber — and was used for the text at full strength on a 10% wash of
+// itself. On a dark card that measured 2.87:1 and 3.08:1 against the 4.5 body
+// text needs, because a mid-tone picked to read on white does not read on
+// navy. The hex goes in as a custom property and the stylesheet lifts it for
+// the dark theme, so every one of the ninety-odd badges in the app is fixed
+// where it is defined rather than at each call site.
 export function Badge({ color = '#64748b', children }) {
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.5px]"
-      style={{ backgroundColor: `${color}1a`, color }}
-    >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+    <span className="badge" style={{ '--badge': color }}>
+      <span className="badge-dot" />
       {children}
     </span>
   )
@@ -150,7 +156,7 @@ export function EmptyState({ icon: Icon, title, subtitle, action }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border-strong bg-white/60 px-6 py-16 text-center">
       {Icon && (
-        <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-light text-brand">
+        <div className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-light text-brand-ink">
           <Icon size={26} />
         </div>
       )}
@@ -276,9 +282,9 @@ export function attempt(fn, toast) {
 // is a property of the arithmetic.
 export function Certainty({ made, className }) {
   if (!made) return null
-  const tone = made.id === 'recorded' ? 'text-emerald-600'
+  const tone = made.id === 'recorded' ? 'text-good'
     : made.id === 'agreed' ? 'text-ink-4'
-    : made.id === 'estimated' ? 'text-amber-600'
+    : made.id === 'estimated' ? 'text-warn'
     : 'text-ink-5'
   return (
     <span

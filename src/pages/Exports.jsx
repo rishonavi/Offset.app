@@ -83,13 +83,13 @@ export default function Exports() {
           <p className="mt-1 text-xs text-ink-5">{subtitle}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="ghost" onClick={() => doExport('xlsx')} disabled={filtered.length === 0}>
-              <FileSpreadsheet size={16} className="text-emerald-600" /> Excel (.xlsx)
+              <FileSpreadsheet size={16} className="text-good" /> Excel (.xlsx)
             </Button>
             <Button variant="ghost" onClick={() => doExport('csv')} disabled={filtered.length === 0}>
               <FileType size={16} className="text-sky-600" /> CSV
             </Button>
             <Button variant="ghost" onClick={() => doExport('pdf')} disabled={filtered.length === 0}>
-              <FileText size={16} className="text-red-600" /> PDF
+              <FileText size={16} className="text-bad" /> PDF
             </Button>
             <Button variant="ghost" onClick={exportTally} disabled={filtered.length === 0 && incomeFiltered.length === 0}>
               <Calculator size={16} className="text-indigo-600" /> Tally (XML)
@@ -132,7 +132,7 @@ export default function Exports() {
                 ))}
               </select>
               <Button variant="ghost" onClick={backup.cloudBackup} loading={backup.busy}>
-                {!backup.busy && <UploadCloud size={16} className="text-emerald-600" />} Back up to cloud
+                {!backup.busy && <UploadCloud size={16} className="text-good" />} Back up to cloud
               </Button>
             </>
           )}

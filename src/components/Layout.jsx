@@ -187,7 +187,7 @@ function NavItems({ onNavigate, isAdmin }) {
       {groups.map((g, i) => (
         <div key={g.group || 'top'} className="flex flex-col gap-0.5">
           {g.group && (
-            <p className="mb-1 px-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-white/35">
+            <p className="mb-1 px-3 text-[0.6rem] font-semibold uppercase tracking-[2px] text-white/55">
               {t(g.group)}
             </p>
           )}
@@ -268,15 +268,6 @@ function ThemeToggle({ className = '' }) {
   )
 }
 
-function QuickAdd({ onClick }) {
-  const t = useT()
-  return (
-    <button onClick={onClick} className="btn-primary mt-6 w-full">
-      <Plus size={15} /> {t('chrome.addExpense')}
-    </button>
-  )
-}
-
 // Sits under the nav in both the sidebar and the drawer. Quiet enough not to
 // compete with the destinations above it, present enough that nobody has to go
 // hunting through Settings at the exact moment the app has annoyed them.
@@ -285,7 +276,7 @@ function ReportLink({ onClick }) {
   return (
     <button
       onClick={onClick}
-      className="mt-2 flex w-full items-center gap-3 px-3 py-2 text-[0.7rem] font-medium uppercase tracking-[1px] text-white/45 transition hover:text-gold"
+      className="mt-2 flex w-full items-center gap-3 px-3 py-2 text-[0.7rem] font-medium uppercase tracking-[1px] text-white/55 transition hover:text-gold"
     >
       <Bug size={15} />
       {t('chrome.reportProblem')}
@@ -381,14 +372,13 @@ export default function Layout() {
       <aside className="inset-safe ps-safe [--safe-pad-x:1rem] [--safe-pad:1.25rem] sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 lg:flex">
         <Brand />
         <WorkspaceSwitcher />
-        {canWrite && <QuickAdd onClick={() => setQuickAdd(true)} />}
         <button
           onClick={() => setCmdOpen(true)}
           className="mt-3 flex w-full items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/50 transition hover:border-gold/40 hover:text-white/80"
         >
           <Search size={14} />
           <span className="flex-1 text-start">{t('chrome.search')}</span>
-          <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem]">⌘K</kbd>
+          <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-[0.6rem] text-white/75">⌘K</kbd>
         </button>
         <NavScroller>
           <NavItems isAdmin={isAdmin} />
@@ -435,7 +425,6 @@ export default function Layout() {
               </button>
             </div>
             <WorkspaceSwitcher />
-            {canWrite && <QuickAdd onClick={() => { setMobileOpen(false); setQuickAdd(true) }} />}
             <NavScroller>
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
               <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
@@ -519,7 +508,7 @@ function UserFooter({ user, isCloud, onSignOut, onNavigate }) {
           <div className="truncate text-sm font-medium text-white">
             {avatar?.name?.trim() || user?.email || t('chrome.localUser')}
           </div>
-          <div className="text-[10px] uppercase tracking-[1.5px] text-gold/60">{isCloud ? t('chrome.signedIn') : t('chrome.demoMode')}</div>
+          <div className="text-[10px] uppercase tracking-[1.5px] text-gold/85">{isCloud ? t('chrome.signedIn') : t('chrome.demoMode')}</div>
         </div>
         <ThemeToggle />
         {isCloud && (

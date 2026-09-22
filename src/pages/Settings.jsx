@@ -193,7 +193,7 @@ export default function Settings() {
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-gold">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-light text-brand-ink">
               <Languages size={20} />
             </span>
             <div className="min-w-0">
@@ -243,7 +243,7 @@ export default function Settings() {
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className={`grid h-11 w-11 place-items-center rounded-xl ${isPro ? 'bg-gold/15 text-gold' : 'bg-surface-chip text-ink-5'}`}>
+            <span className={`grid h-11 w-11 place-items-center rounded-xl ${isPro ? 'bg-gold/15 text-brand-ink' : 'bg-surface-chip text-ink-5'}`}>
               <Crown size={20} />
             </span>
             <div>
@@ -272,7 +272,7 @@ export default function Settings() {
         <ul className="mt-4 grid gap-2 sm:grid-cols-2">
           {info.features.map((f) => (
             <li key={f} className="flex items-start gap-2 text-sm text-ink-4">
-              <Check size={15} className="mt-0.5 shrink-0 text-emerald-600" /> {f}
+              <Check size={15} className="mt-0.5 shrink-0 text-good" /> {f}
             </li>
           ))}
         </ul>
@@ -411,7 +411,7 @@ export default function Settings() {
                         {m.role === 'editor' ? 'Editor' : 'Viewer'}
                       </span>
                     </span>
-                    <button onClick={() => unshare(m.id)} className="shrink-0 text-xs font-medium text-red-600 hover:underline">
+                    <button onClick={() => unshare(m.id)} className="shrink-0 text-xs font-medium text-bad hover:underline">
                       Remove
                     </button>
                   </div>
@@ -468,7 +468,7 @@ export default function Settings() {
                     {SUPPORT_EMAIL && (
                       <a
                         href={mailtoLink(r)}
-                        className="icon-btn text-ink-6 hover:text-brand"
+                        className="icon-btn text-ink-6 hover:text-brand-ink"
                         title={`Email report ${r.reference}`}
                         aria-label={`Email report ${r.reference}`}
                       >
@@ -477,7 +477,7 @@ export default function Settings() {
                     )}
                     <button
                       onClick={() => copyReport(r)}
-                      className="icon-btn text-ink-6 hover:text-brand"
+                      className="icon-btn text-ink-6 hover:text-brand-ink"
                       title={`Copy report ${r.reference}`}
                       aria-label={`Copy report ${r.reference}`}
                     >
@@ -485,7 +485,7 @@ export default function Settings() {
                     </button>
                     <button
                       onClick={() => removeReport(r)}
-                      className="icon-btn text-ink-6 hover:text-red-600"
+                      className="icon-btn text-ink-6 hover:text-bad"
                       title={`Delete report ${r.reference}`}
                       aria-label={`Delete report ${r.reference}`}
                     >
@@ -514,7 +514,7 @@ export default function Settings() {
               <Sparkles size={16} /> Remove sample data
             </Button>
           )}
-          <Button variant="ghost" onClick={deleteAll} loading={busy} className="text-red-600 hover:bg-red-50">
+          <Button variant="ghost" onClick={deleteAll} loading={busy} className="text-bad hover:bg-red-50">
             <Trash2 size={16} /> Delete all my data
           </Button>
         </div>

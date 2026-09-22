@@ -211,7 +211,7 @@ export default function AuditLog({ events }) {
       {filtered.length > shown && (
         <button
           onClick={() => setShown((n) => n + PAGE)}
-          className={cx('mt-3 text-xs font-medium text-brand hover:underline')}
+          className={cx('mt-3 text-xs font-medium text-brand-ink hover:underline')}
         >
           Show {Math.min(PAGE, filtered.length - shown)} more
         </button>
