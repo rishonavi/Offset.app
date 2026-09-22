@@ -308,7 +308,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="On payroll" value={String(run.headcount)} />
         <Stat label="Gross" value={formatCurrency(run.gross)} />
         <Stat label="Take home" value={formatCurrency(run.net)} />
@@ -494,7 +494,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
         </div>
         {gratuity.applies && (
           <>
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {/* Owed today against a bet on people staying. Adding the two
                   together would make one number that is true of neither. */}
               <Stat label="Owed if everyone left today" value={formatCurrency(gratuity.vestedTotal)} />
@@ -558,7 +558,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
             </label>
           )}
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat label="Standing, in cash" value={formatCurrency(leave.value)} />
           <Stat label="Days standing" value={String(leave.days)} />
           <Stat
@@ -604,7 +604,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
           <p className="mt-1 text-xs text-ink-5">
             Twenty-six weeks for a first or second child, twelve for a third. {mothers.why}
           </p>
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Stat label="Women on the payroll" value={String(mothers.women)} />
             {/* The distinction the card exists for. */}
             <Stat label="ESIC would pay for" value={String(mothers.esicPays)} />
@@ -673,7 +673,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
         </div>
         {bonus.applies && (
           <>
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Stat label={`At ${bonus.rate}%`} value={formatCurrency(bonus.total)} />
               <Stat label={`At the ${MAX_RATE}% maximum`} value={formatCurrency(bonus.atMaximum)} />
               <Stat label="People it is owed to" value={`${bonus.eligible} of ${bonus.people}`} />

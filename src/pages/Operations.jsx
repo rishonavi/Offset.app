@@ -175,14 +175,28 @@ export default function Operations() {
         </Card>
       )}
 
-      <div className="flex flex-wrap gap-1 rounded-xl border border-line bg-surface-raised p-1">
+      {/* Eight tabs in a wrapping row, each told to take an equal share of the
+          space — which is an equal share *of its own row*. On a phone that
+          came out 3/3/2, every cell a different width, Payroll and Import
+          stranded in the middle of a line of their own. A tab bar that changes
+          shape depending on how many tabs happen to fit is the "uneven and
+          ugly" complaint in one control.
+
+          One row that scrolls instead. `grow shrink-0` rather than `flex-1`:
+          grow from the natural width so the eight of them still fill the bar
+          on a wide screen exactly as before, but never shrink below it, so on
+          a narrow one the row runs off the end and is swiped instead of
+          re-flowed. Same markup, same look on a desktop, one consistent height
+          everywhere. */}
+      <div className="scroll-row flex gap-1 rounded-xl border border-line bg-surface-raised p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
+            ref={(el) => { if (el && tab === t.id) el.scrollIntoView({ block: 'nearest', inline: 'nearest' }) }}
             onClick={() => setTab(t.id)}
             aria-pressed={tab === t.id}
             className={cx(
-              'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition',
+              'inline-flex min-h-11 shrink-0 grow items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-xs font-semibold transition',
               tab === t.id ? 'bg-brand text-navy' : 'text-ink-5 hover:text-ink-2',
             )}
           >

@@ -683,6 +683,23 @@ tbody tr:hover {
 }
 main:has([data-page-action]) ~ [data-fab] { display: none; }
 
+/* A row of tabs that runs off the side rather than re-flowing.
+ *
+ * The gold scrollbar above is 9px tall and drawn permanently, which under a
+ * 44px tab bar is a stripe of chrome doing nothing — this is swiped, not
+ * dragged. Hidden here and only here; every table in the app still gets the
+ * scrollbar, because a table that can be scrolled sideways gives no other
+ * sign that it can. `-webkit-overflow-scrolling` for momentum on iOS, and
+ * `overscroll-behavior-x: contain` so swiping past the last tab does not
+ * trigger the browser's back gesture. */
+.scroll-row {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-row::-webkit-scrollbar { display: none; }
+
 /* ─── Accessibility ──────────────────────────────────────────────── */
 /* Visible focus ring for keyboard users on interactive, non-field elements.
    (Form fields already show a gold glow via the input:focus rule above.) */

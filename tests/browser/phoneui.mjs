@@ -180,6 +180,57 @@ for (const r of ROUTES) {
   }
 }
 
+// The Operations tab bar: one row, whatever the screen.
+//
+// Eight tabs in a wrapping row, each `flex-1`, means each takes an equal share
+// *of its own row* — so on a phone it came out 3/3/2 with every cell a
+// different width and the last two stranded in the middle of a line. It scrolls
+// now instead. A tab bar that changes shape with the viewport is the whole
+// "uneven" complaint in one control, so the shape is the assertion.
+{
+  await p.goto(B + '/operations?tab=projects', { waitUntil: 'networkidle' })
+  await p.waitForTimeout(600)
+  const bar = await p.evaluate(() => {
+    // Found through the tabs, not through the class that makes it scroll —
+    // otherwise renaming the class reports "null" and reads like the bug
+    // rather than like a moved selector.
+    const first = document.querySelector('#main-content [aria-pressed]')
+    const el = first?.parentElement
+    if (!el) return null
+    const kids = [...el.children].map((k) => k.getBoundingClientRect())
+    return { n: kids.length, rows: new Set(kids.map((r) => Math.round(r.top))).size,
+      scrolls: el.scrollWidth > el.clientWidth + 1 }
+  })
+  ok('/operations — the tab bar is one row that scrolls, not a ragged grid',
+    Boolean(bar) && bar.n >= 6 && bar.rows === 1 && bar.scrolls, JSON.stringify(bar))
+}
+
+// Stat cards two to a row. One number per full-width card turns four figures
+// into four screens of scrolling, and every other stat row in the app — the
+// dashboard's, the asset page's, materials', sites', plant's — is already two
+// up. Payroll and advances were the two written after the convention and the
+// only two that missed it.
+{
+  for (const route of ['/operations?tab=payroll', '/operations?tab=advances']) {
+    await p.goto(B + route, { waitUntil: 'networkidle' })
+    await p.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 12000 }).catch(() => {})
+    await p.waitForTimeout(500)
+    const stacked = await p.evaluate(() => {
+      const bad = []
+      for (const g of document.querySelectorAll('[class*="grid-cols"]')) {
+        const kids = [...g.children].filter((k) => k.getBoundingClientRect().width > 4)
+        if (kids.length < 3) continue
+        // A stat card holds a small-caps label and a figure, nothing else.
+        if (!kids.every((k) => k.querySelector('.tabular, [class*="text-2xl"], [class*="text-xl"]') || /^[^a-z]*$/.test(k.textContent.slice(0, 12)))) continue
+        const rows = new Set(kids.map((k) => Math.round(k.getBoundingClientRect().top))).size
+        if (rows === kids.length) bad.push(kids.length + ' cards, ' + rows + ' rows: ' + kids[0].textContent.trim().slice(0, 24))
+      }
+      return bad
+    })
+    ok(`${route} — figures share a row rather than one per screen`, stacked.length === 0, stacked.join(' | '))
+  }
+}
+
 // The day sheet's muster: one list, one layout. Each row is a label and a
 // counter; if the counter drops below the label on the longer trade names the
 // rows are different heights and the list reads as broken.

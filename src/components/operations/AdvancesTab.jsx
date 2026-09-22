@@ -114,7 +114,7 @@ export default function Advances({ data, eid, actor, canWrite, bump, toast, gate
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Stat label="Outstanding" value={formatCurrency(out.total)} />
         <Stat label="Overdue" value={formatCurrency(out.overdueTotal)} tone={out.overdueTotal ? 'warn' : undefined} />
         <Stat label="Open advances" value={String(out.count)} />
