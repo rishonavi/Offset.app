@@ -351,7 +351,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
                       disabled={!canWrite}
                       aria-label={`${st.short} registered: ${label}`}
                       onClick={() => answer(id, value)}
-                      className={cx('rounded-lg border px-3 py-1.5 text-xs font-semibold transition',
+                      className={cx('inline-flex min-h-11 items-center rounded-lg border px-3.5 text-xs font-semibold transition',
                         st.registered === value
                           ? 'border-brand bg-brand/15 text-ink-1'
                           : 'border-line text-ink-5 hover:border-line-strong hover:text-ink-2')}
@@ -482,7 +482,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
             <label className="flex shrink-0 items-center gap-2 text-xs text-ink-5">
               <input
                 type="checkbox"
-                className="h-4 w-4 accent-brand"
+                className="accent-brand"
                 aria-label="This company pays gratuity anyway"
                 checked={Boolean(entity?.gratuity_voluntary)}
                 onChange={(e) => setCompany({ gratuity_voluntary: e.target.checked },
@@ -661,7 +661,7 @@ export default function Payroll({ data, eid, actor, canWrite, bump, toast, entit
             <label className="flex shrink-0 items-center gap-2 text-xs text-ink-5">
               <input
                 type="checkbox"
-                className="h-4 w-4 accent-brand"
+                className="accent-brand"
                 aria-label="This company pays a bonus anyway"
                 checked={Boolean(entity?.bonus_voluntary)}
                 onChange={(e) => setCompany({ bonus_voluntary: e.target.checked },

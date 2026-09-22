@@ -468,7 +468,7 @@ export default function Settings() {
                     {SUPPORT_EMAIL && (
                       <a
                         href={mailtoLink(r)}
-                        className="grid h-8 w-8 place-items-center text-ink-6 hover:text-brand"
+                        className="icon-btn text-ink-6 hover:text-brand"
                         title={`Email report ${r.reference}`}
                         aria-label={`Email report ${r.reference}`}
                       >
@@ -477,7 +477,7 @@ export default function Settings() {
                     )}
                     <button
                       onClick={() => copyReport(r)}
-                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-brand"
+                      className="icon-btn text-ink-6 hover:text-brand"
                       title={`Copy report ${r.reference}`}
                       aria-label={`Copy report ${r.reference}`}
                     >
@@ -485,7 +485,7 @@ export default function Settings() {
                     </button>
                     <button
                       onClick={() => removeReport(r)}
-                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
+                      className="icon-btn text-ink-6 hover:text-red-600"
                       title={`Delete report ${r.reference}`}
                       aria-label={`Delete report ${r.reference}`}
                     >

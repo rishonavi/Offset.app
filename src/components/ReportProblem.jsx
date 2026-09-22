@@ -318,7 +318,7 @@ export default function ReportProblem({ open, onClose, prefill = null, route = '
           <button
             type="button"
             onClick={() => setShowDetail((v) => !v)}
-            className="mt-2 flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+            className="text-action mt-1 text-xs font-medium text-brand hover:underline"
             aria-expanded={showDetail}
           >
             <ChevronDown size={13} className={showDetail ? 'rotate-180 transition' : 'transition'} />
@@ -365,7 +365,7 @@ function Shell({ dialogRef, onClose, title, children }) {
           <h3 className="flex items-center gap-2 font-serif text-lg font-bold text-ink-1">
             <Bug size={18} className="text-gold" /> {title}
           </h3>
-          <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 hover:bg-surface-hover">
+          <button onClick={onClose} aria-label="Close" className="icon-btn text-ink-6 hover:bg-surface-hover">
             <X size={18} />
           </button>
         </div>

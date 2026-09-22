@@ -128,12 +128,17 @@ export function Spinner({ label = 'Loading…', className = 'py-16' }) {
 // the row keeps one height and reads like its neighbours at every size.
 export function DateFilter({ label, value, onChange, className = '' }) {
   return (
-    <label className={cx('field-input flex min-w-0 items-center gap-2', className)}>
+    // The label carries the border and the ground; the input fills it edge to
+    // edge. Giving the input a height *on top of* the label's own vertical
+    // padding is what made this control 66px and stretched every grid row it
+    // sat in to match — the search box beside it stayed 44 because it is
+    // wrapped in a div, so the row looked like two different controls.
+    <label className={cx('field-input flex min-w-0 items-center gap-2 !py-0', className)}>
       <span className="shrink-0 text-xs font-medium text-ink-5">{label}</span>
       <input
         type="date"
         aria-label={`${label} date`}
-        className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-ink-1 outline-none"
+        className="h-11 min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-ink-1 outline-none"
         value={value}
         onChange={onChange}
       />

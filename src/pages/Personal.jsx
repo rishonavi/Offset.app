@@ -132,7 +132,7 @@ export default function Personal() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader title="Personal" subtitle="Everyday budgeting & spending — separate from your assets." />
         <div className="flex items-center gap-1 rounded-xl border border-line bg-surface-raised p-1">
-          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} aria-label="Previous month" className="grid h-8 w-8 place-items-center rounded-lg text-ink-5 hover:bg-surface-hover">
+          <button onClick={() => setMonth((m) => shiftMonth(m, -1))} aria-label="Previous month" className="icon-btn text-ink-5 hover:bg-surface-hover">
             <ChevronLeft size={16} />
           </button>
           <span className="min-w-36 text-center text-sm font-medium text-ink-3">{monthLabel(month)}</span>
@@ -140,7 +140,7 @@ export default function Personal() {
             onClick={() => setMonth((m) => shiftMonth(m, 1))}
             disabled={month >= monthKey()}
             aria-label="Next month"
-            className="grid h-8 w-8 place-items-center rounded-lg text-ink-5 hover:bg-surface-hover disabled:opacity-30"
+            className="icon-btn text-ink-5 hover:bg-surface-hover disabled:opacity-30"
           >
             <ChevronRight size={16} />
           </button>

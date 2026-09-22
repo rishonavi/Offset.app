@@ -166,7 +166,7 @@ export default function Operations() {
             , holding {formatCurrency(waiting.total)}.
             {waiting.mine > 0 && ` ${waiting.mine} you can sign.`}
           </p>
-          <Link to="/companies" className="text-sm font-semibold text-brand underline-offset-4 hover:underline">
+          <Link to="/companies" className="text-action text-sm font-semibold text-brand underline-offset-4 hover:underline">
             Review them
           </Link>
         </Card>

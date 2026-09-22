@@ -60,7 +60,7 @@ export default function ReceiptViewer({ stored, onClose }) {
                 href={url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-medium text-white/70 hover:text-white"
+                className="text-action text-xs font-medium text-white/70 hover:text-white"
               >
                 <ExternalLink size={14} /> Open in new tab
               </a>

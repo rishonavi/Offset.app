@@ -140,6 +140,18 @@ h1, h2, h3 {
     color: var(--color-ink-1);
     min-height: 2.75rem;
   }
+  /* `min-height` is a floor, and different control types land on different
+     numbers above it: a text input settled at 44px while a <select> beside it
+     came out 46, because a select's intrinsic line box is taller than the one
+     a bare input draws. Two pixels is not visible on its own and a row of
+     controls that do not agree on a height is, so single-line controls get a
+     height rather than a minimum. Textareas keep the floor — they are supposed
+     to grow. */
+  input.field-input,
+  select.field-input,
+  label.field-input {
+    height: 2.75rem;
+  }
   .field-input:hover { border-color: var(--color-field-line-hi); }
   /* After :hover, deliberately. The pointer is usually still over a field at
      the moment it is clicked, so with these the other way round focusing a
@@ -183,6 +195,63 @@ h1, h2, h3 {
            text-[0.8rem] font-semibold uppercase tracking-[0.8px] transition-all duration-200
            active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   }
+  /* An icon button you can actually hit.
+     ─────────────────────────────────────────────────────────────────────
+     Twenty-eight of these were `h-8 w-8` — 32px. That clears WCAG 2.2's AA
+     minimum of 24px, and it is nowhere near the 44px of 2.5.5 Target Size
+     (Enhanced), which is the bar that matters for an app somebody uses on a
+     site with one thumb, in the sun, sometimes wearing a glove.
+     The icon inside stays the size it was: the criterion is about the area
+     that answers a tap, not about drawing something bigger. */
+  /* A text action that is not inside a sentence.
+     ─────────────────────────────────────────────────────────────────────
+     "Clear filters", "Show 40 more", "Open the log", "Manage" — these look
+     like links and behave like buttons, and they were painting 16 to 26px
+     tall. WCAG exempts a link sitting inside a paragraph, because the
+     sentence around it is the target; none of these are in a sentence. They
+     get a real height without becoming buttons: the text is unchanged, the
+     room around it is not.
+     `-mx-1 px-1` keeps the optical left edge lined up with the text above it
+     while still widening what answers a tap. */
+  .text-action {
+    @apply -mx-1 inline-flex items-center gap-1 rounded-md px-1 transition;
+    min-height: 2.75rem;
+  }
+  /* Inside a dense row — a table cell, a list item already 44px tall — the
+     full height would double the row. AA's 24px floor with the spacing the
+     row already provides is the right call there. */
+  .text-action-tight {
+    @apply -mx-1 inline-flex items-center gap-1 rounded-md px-1 transition;
+    min-height: 1.75rem;
+  }
+
+  /* A native checkbox paints at 13px, which is under WCAG 2.2's 24px floor
+     before you even ask about gloves. `accent-color` already makes it follow
+     the theme; this makes it big enough to hit. The label beside one is part
+     of the target too, so most of these are comfortably reachable — this is
+     for the ones standing alone in a table header or a row. */
+  input[type='checkbox'],
+  input[type='radio'] {
+    height: 1.5rem;
+    width: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    @apply grid place-items-center rounded-lg transition;
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+  /* Where a row of them would otherwise run off a narrow screen — table
+     actions, mostly — they may shrink to the AA minimum, which is allowed
+     precisely because the spacing around them is what makes the target
+     reachable. Still comfortably above the 24px floor. */
+  .icon-btn-tight {
+    @apply grid place-items-center rounded-lg transition;
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
   .btn-primary {
     @apply inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[0.8rem]
            font-semibold uppercase tracking-[0.8px] transition-all duration-200 active:scale-[0.98]

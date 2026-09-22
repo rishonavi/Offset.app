@@ -58,7 +58,7 @@ export default function FilterBar({ properties, value, onChange, categories = CA
       {hasActiveFilters(value) && (
         <button
           onClick={() => onChange(emptyFilters)}
-          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2"
+          className="text-action mt-1 text-xs font-medium text-ink-5 hover:text-ink-2"
         >
           <X size={13} /> Clear filters
         </button>

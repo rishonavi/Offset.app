@@ -128,7 +128,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
                     {onMarkSettled && !isSettled(e, 'income') && (
                       <button
                         onClick={() => onMarkSettled(e)}
-                        className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-emerald-50 hover:text-emerald-600"
+                        className="icon-btn-tight text-ink-6 transition hover:bg-emerald-50 hover:text-emerald-600"
                         title="Mark as received"
                       >
                         <CheckCircle2 size={15} />
@@ -137,7 +137,7 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
                     {onDuplicate && (
                       <button
                         onClick={() => onDuplicate(e)}
-                        className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-surface-hover hover:text-gold"
+                        className="icon-btn-tight text-ink-6 transition hover:bg-surface-hover hover:text-gold"
                         title="Duplicate"
                       >
                         <Copy size={15} />
@@ -145,14 +145,14 @@ export default function IncomeTable({ income, placeName, onEdit, onDelete, onMar
                     )}
                     <button
                       onClick={() => onEdit(e)}
-                      className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-surface-hover hover:text-gold"
+                      className="icon-btn-tight text-ink-6 transition hover:bg-surface-hover hover:text-gold"
                       title="Edit"
                     >
                       <Pencil size={15} />
                     </button>
                     <button
                       onClick={() => onDelete(e)}
-                      className="grid h-8 w-8 place-items-center text-ink-6 transition hover:bg-red-50 hover:text-red-600"
+                      className="icon-btn-tight text-ink-6 transition hover:bg-red-50 hover:text-red-600"
                       title="Delete"
                     >
                       <Trash2 size={15} />

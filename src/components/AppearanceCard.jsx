@@ -270,7 +270,7 @@ export default function AppearanceCard() {
                 onClick={() => setAvatar({ hue: null })}
                 aria-pressed={chosenHue === null}
                 className={cx(
-                  'min-h-[2.25rem] rounded-lg border px-3 py-1.5 text-xs font-medium transition',
+                  'inline-flex min-h-11 items-center rounded-lg border px-3.5 text-xs font-medium transition',
                   chosenHue === null
                     ? 'border-ink-1 text-ink-1 dark:text-white'
                     : 'border-border-light text-ink-5 hover:border-border-strong',
@@ -286,7 +286,7 @@ export default function AppearanceCard() {
                   aria-pressed={chosenHue === a.hue}
                   title={a.name}
                   className={cx(
-                    'grid h-9 w-9 place-items-center rounded-lg border-2 transition',
+                    'grid h-11 w-11 place-items-center rounded-lg border-2 transition',
                     chosenHue === a.hue ? 'border-ink-1' : 'border-transparent hover:border-border-strong',
                   )}
                 >
@@ -299,7 +299,7 @@ export default function AppearanceCard() {
             <button
               type="button"
               onClick={resetAvatar}
-              className="mt-3 inline-flex min-h-[2.25rem] items-center gap-1.5 text-xs font-medium text-ink-5 underline-offset-2 hover:underline"
+              className="text-action mt-2 text-xs font-medium text-ink-5 underline-offset-2 hover:underline"
             >
               <RotateCcw size={13} /> Reset avatar
             </button>

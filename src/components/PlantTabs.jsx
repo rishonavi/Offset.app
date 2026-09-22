@@ -203,7 +203,7 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
                       <input
                         type="checkbox"
                         aria-label="Fuel included in the hire"
-                        className="h-4 w-4 accent-brand"
+                        className="accent-brand"
                         checked={form.fuelIncluded}
                         onChange={(e) => setForm({ ...form, fuelIncluded: e.target.checked })}
                       />
@@ -213,7 +213,7 @@ function Yard({ data, eid, actor, canWrite, bump, toast }) {
                       <input
                         type="checkbox"
                         aria-label="Operator included in the hire"
-                        className="h-4 w-4 accent-brand"
+                        className="accent-brand"
                         checked={form.operatorIncluded}
                         onChange={(e) => setForm({ ...form, operatorIncluded: e.target.checked })}
                       />

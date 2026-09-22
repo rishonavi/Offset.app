@@ -31,7 +31,7 @@ export default function ShortcutsHelp({ open, onClose }) {
       <div className="card w-full max-w-md animate-fade-in p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-serif text-lg font-bold text-ink-1">Keyboard shortcuts</h2>
-          <button onClick={onClose} aria-label="Close" className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 hover:bg-surface-hover">
+          <button onClick={onClose} aria-label="Close" className="icon-btn text-ink-6 hover:bg-surface-hover">
             <X size={18} />
           </button>
         </div>

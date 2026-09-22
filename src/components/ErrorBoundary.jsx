@@ -52,7 +52,7 @@ export default class ErrorBoundary extends Component {
           {this.props.onReport && (
             <button
               onClick={() => this.props.onReport(this.state.error)}
-              className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
+              className="text-action mt-3 text-xs font-medium text-brand hover:underline"
             >
               <Bug size={13} /> Tell the developer what happened
             </button>

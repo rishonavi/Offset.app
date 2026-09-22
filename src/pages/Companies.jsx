@@ -237,7 +237,7 @@ export default function Companies() {
                   {ent.can('entity.manage') && (
                     <button
                       onClick={() => (editing === e.id ? setEditing(null) : startEdit(e))}
-                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-ink-2"
+                      className="icon-btn text-ink-6 hover:text-ink-2"
                       aria-label={`Edit ${e.name}`}
                       title={`Edit ${e.name}`}
                     >
@@ -250,7 +250,7 @@ export default function Companies() {
                         if (!window.confirm(`Archive ${e.name}? Its books stay, but it stops appearing in the switcher. Nothing is deleted.`)) return
                         act(() => store.archiveEntity(e.id, ent.actor), `${e.name} archived.`)
                       }}
-                      className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
+                      className="icon-btn text-ink-6 hover:text-red-600"
                       aria-label={`Archive ${e.name}`}
                       title={`Archive ${e.name}`}
                     >
@@ -319,7 +319,7 @@ export default function Companies() {
                         {ent.can('member.manage') && (
                           <button
                             onClick={() => act(() => store.removeMember(ent.activeId, m.id, ent.actor), 'Removed.')}
-                            className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
+                            className="icon-btn text-ink-6 hover:text-red-600"
                             aria-label={`Remove ${m.email || m.user_id}`}
                             title="Remove"
                           >
@@ -568,7 +568,7 @@ export default function Companies() {
                         : `${audit.length} ${audit.length === 1 ? 'change' : 'changes'} recorded — who changed what, and what it was before.`}
                     </p>
                   </div>
-                  <Link to="/activity" className="text-sm font-semibold text-brand underline-offset-4 hover:underline">
+                  <Link to="/activity" className="text-action text-sm font-semibold text-brand underline-offset-4 hover:underline">
                     Open the log
                   </Link>
                 </Card>

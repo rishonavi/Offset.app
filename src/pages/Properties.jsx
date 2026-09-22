@@ -94,14 +94,14 @@ export default function Properties() {
                   <div className="flex gap-1">
                     <button
                       onClick={(e) => onEdit(e, p)}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 transition hover:bg-surface-hover hover:text-brand"
+                      className="icon-btn text-ink-6 transition hover:bg-surface-hover hover:text-brand"
                       title="Edit"
                     >
                       <Pencil size={15} />
                     </button>
                     <button
                       onClick={(e) => onDelete(e, p)}
-                      className="grid h-8 w-8 place-items-center rounded-lg text-ink-6 transition hover:bg-red-50 hover:text-red-600"
+                      className="icon-btn text-ink-6 transition hover:bg-red-50 hover:text-red-600"
                       title="Delete"
                     >
                       <Trash2 size={15} />

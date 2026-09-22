@@ -19,7 +19,7 @@ export default function Landing() {
       {/* Nav */}
       <header className="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
         <div className="flex items-center gap-2 font-serif text-lg font-bold">
-          <span className="grid h-8 w-8 place-items-center bg-gold text-navy">
+          <span className="icon-btn bg-gold text-navy">
             <Wallet size={16} />
           </span>
           Offset

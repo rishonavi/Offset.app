@@ -155,7 +155,7 @@ export default function AuditLog({ events }) {
         {active && (
           <button
             onClick={() => { setF(BLANK); setShown(PAGE) }}
-            className="inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2"
+            className="text-action text-xs font-medium text-ink-5 hover:text-ink-2"
           >
             <X size={13} /> Clear filters
           </button>

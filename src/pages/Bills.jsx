@@ -103,7 +103,7 @@ export default function Bills() {
               setAssetId('')
               setQ('')
             }}
-            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2"
+            className="text-action mt-1 text-xs font-medium text-ink-5 hover:text-ink-2"
           >
             <X size={13} /> Clear filters
           </button>
@@ -129,7 +129,7 @@ export default function Bills() {
               <Card key={g.pid} className="overflow-hidden">
                 <div className="flex items-center justify-between border-b border-line px-5 py-3">
                   <Link to={`/properties/${g.pid}`} className="flex items-center gap-2 font-semibold text-ink-2 hover:text-brand">
-                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-light text-brand">
+                    <span className="icon-btn bg-brand-light text-brand">
                       <Icon size={16} />
                     </span>
                     {g.name}

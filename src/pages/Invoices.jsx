@@ -326,7 +326,7 @@ export default function Invoices() {
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     onClick={() => makeDefault(t)}
-                    className="grid h-8 w-8 place-items-center text-ink-6 hover:text-gold"
+                    className="icon-btn text-ink-6 hover:text-gold"
                     title={`Make “${t.name}” the default`}
                     aria-label={`Make ${t.name} the default format`}
                   >
@@ -336,7 +336,7 @@ export default function Invoices() {
                     <>
                       <button
                         onClick={() => downloadHtml(templateToFile(t), `${t.name}.json`)}
-                        className="grid h-8 w-8 place-items-center text-ink-6 hover:text-brand"
+                        className="icon-btn text-ink-6 hover:text-brand"
                         title={`Export “${t.name}”`}
                         aria-label={`Export ${t.name}`}
                       >
@@ -344,7 +344,7 @@ export default function Invoices() {
                       </button>
                       <button
                         onClick={() => removeTemplate(t)}
-                        className="grid h-8 w-8 place-items-center text-ink-6 hover:text-red-600"
+                        className="icon-btn text-ink-6 hover:text-red-600"
                         title={`Delete “${t.name}”`}
                         aria-label={`Delete ${t.name}`}
                       >
@@ -376,7 +376,7 @@ export default function Invoices() {
 
         <button
           onClick={() => setShowTokens((v) => !v)}
-          className="mt-3 flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
+          className="text-action mt-2 text-xs font-medium text-brand hover:underline"
           aria-expanded={showTokens}
         >
           <Code size={13} /> {showTokens ? 'Hide' : 'Show'} what you can put in a format
@@ -465,45 +465,56 @@ export default function Invoices() {
             />
             <div className="mt-3 space-y-2">
               {lines.map((l, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2">
+                /* Five controls across twelve columns is a desk layout. On a
+                   390px phone it gave the quantity 30px and the remove button
+                   19 — narrower than the finger meant to hit it. So the line
+                   stacks: the description gets its own row, the three short
+                   fields share one, and removing the line becomes a labelled
+                   action rather than an x nobody can land on. The twelve-column
+                   row comes back at `sm`, where there is room for it. */
+                <div key={i} className="rounded-xl border border-line-soft p-2 sm:grid sm:grid-cols-12 sm:gap-2 sm:rounded-none sm:border-0 sm:p-0">
                   <input
-                    className="field-input col-span-6"
+                    className="field-input sm:col-span-6"
                     placeholder="Description"
                     aria-label={`Line ${i + 1} description`}
                     value={l.description}
                     onChange={(e) => setLine(i, { description: e.target.value })}
                   />
-                  <input
-                    className="field-input col-span-2"
-                    placeholder="HSN"
-                    aria-label={`Line ${i + 1} HSN code`}
-                    value={l.hsn}
-                    onChange={(e) => setLine(i, { hsn: e.target.value })}
-                  />
-                  <input
-                    className="field-input col-span-1"
-                    type="number"
-                    min="0"
-                    placeholder="Qty"
-                    aria-label={`Line ${i + 1} quantity`}
-                    value={l.qty}
-                    onChange={(e) => setLine(i, { qty: e.target.value })}
-                  />
-                  <input
-                    className="field-input col-span-2"
-                    type="number"
-                    min="0"
-                    placeholder="Rate"
-                    aria-label={`Line ${i + 1} rate`}
-                    value={l.rate}
-                    onChange={(e) => setLine(i, { rate: e.target.value })}
-                  />
+                  <div className="mt-2 grid grid-cols-3 gap-2 sm:col-span-5 sm:mt-0 sm:grid-cols-6">
+                    <input
+                      className="field-input sm:col-span-2"
+                      placeholder="HSN"
+                      aria-label={`Line ${i + 1} HSN code`}
+                      value={l.hsn}
+                      onChange={(e) => setLine(i, { hsn: e.target.value })}
+                    />
+                    <input
+                      className="field-input sm:col-span-2"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      placeholder="Qty"
+                      aria-label={`Line ${i + 1} quantity`}
+                      value={l.qty}
+                      onChange={(e) => setLine(i, { qty: e.target.value })}
+                    />
+                    <input
+                      className="field-input sm:col-span-2"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      placeholder="Rate"
+                      aria-label={`Line ${i + 1} rate`}
+                      value={l.rate}
+                      onChange={(e) => setLine(i, { rate: e.target.value })}
+                    />
+                  </div>
                   <button
                     onClick={() => dropLine(i)}
-                    className="col-span-1 grid place-items-center text-ink-6 hover:text-red-600"
+                    className="text-action mt-2 text-xs font-medium text-ink-5 hover:text-red-600 sm:col-span-1 sm:mt-0 sm:grid sm:min-h-0 sm:place-items-center sm:text-ink-6"
                     aria-label={`Remove line ${i + 1}`}
                   >
-                    <X size={15} />
+                    <X size={15} /> <span className="sm:hidden">Remove this line</span>
                   </button>
                 </div>
               ))}

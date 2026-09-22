@@ -7,7 +7,7 @@ function LegalShell({ title, children }) {
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 font-serif text-lg font-bold text-navy">
-            <span className="grid h-8 w-8 place-items-center bg-gold text-navy">
+            <span className="icon-btn bg-gold text-navy">
               <Wallet size={16} />
             </span>
             Offset

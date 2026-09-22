@@ -141,7 +141,7 @@ export default function Income() {
               <DateFilter label="To" className="lg:col-span-3" value={filters.to} onChange={set('to')} />
             </div>
             {active && (
-              <button onClick={() => setFilters(EMPTY)} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-ink-5 hover:text-ink-2">
+              <button onClick={() => setFilters(EMPTY)} className="text-action mt-1 text-xs font-medium text-ink-5 hover:text-ink-2">
                 <X size={13} /> Clear filters
               </button>
             )}

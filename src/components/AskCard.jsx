@@ -65,7 +65,7 @@ export default function AskCard() {
             key={s}
             type="button"
             onClick={() => ask(s)}
-            className="rounded-full border border-border-light px-2.5 py-1 text-xs text-ink-5 transition hover:border-gold hover:text-gold"
+            className="inline-flex min-h-11 items-center rounded-full border border-border-light px-3.5 text-start text-xs text-ink-5 transition hover:border-gold hover:text-gold"
           >
             {s}
           </button>
