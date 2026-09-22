@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { ScrollText } from 'lucide-react'
 import { useEntity } from '../context/EntityContext'
 import * as store from '../lib/storage/corporate'
@@ -34,6 +35,7 @@ export default function Activity() {
           icon={ScrollText}
           title="Nothing to keep track of yet"
           subtitle="The trail records who changed what once there is a company with people in it. Your own books are yours alone, so nothing is logged against them."
+          action={<Link to="/companies" className="btn-ghost">Add a company</Link>}
         />
       </div>
     )

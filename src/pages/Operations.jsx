@@ -120,10 +120,13 @@ export default function Operations() {
     return (
       <div className="animate-fade-in space-y-6">
         <PageHeader title="Operations" subtitle="Sites, materials, labour, plant, sales and payroll." />
+        {/* It told you where to go and left you to find it. An empty screen
+            that names the next step should also be the way to take it. */}
         <EmptyState
           icon={Boxes}
           title="Add a company first"
-          subtitle="Sites, materials, labour, plant, sales and payroll belong to a company. Create one under Companies and this fills in."
+          subtitle="Sites, materials, labour, plant, sales and payroll belong to a company. Create one and this fills in."
+          action={<Link to="/companies" className="btn-primary">Add a company</Link>}
         />
       </div>
     )

@@ -53,8 +53,21 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Register the PWA service worker (production only; safe to fail).
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+//
+// `'serviceWorker' in navigator` answers yes whenever the property is declared,
+// and *reading* it throws a SecurityError where the browser has turned service
+// workers off — a private window, an insecure origin, site data blocked by
+// policy. `.catch()` only catches the promise; the getter throws before there
+// is a promise to catch, so this was an uncaught exception at boot for anybody
+// in one of those states. Nothing depended on it, which is why it went
+// unnoticed: the app works fine without a service worker, and now it says so
+// quietly instead of throwing.
+if (import.meta.env.PROD) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
+    try {
+      navigator.serviceWorker?.register('/sw.js').catch(() => {})
+    } catch {
+      /* offline caching is a bonus, not a requirement */
+    }
   })
 }
