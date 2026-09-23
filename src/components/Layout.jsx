@@ -29,9 +29,11 @@ import {
   Bug,
   FileSpreadsheet,
   CalendarDays,
+  Accessibility,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme, useAppearance } from '../context/ThemeContext'
+import { useA11y } from '../context/A11yContext'
 import { useData } from '../context/DataContext'
 import { isSettled } from '../lib/payments'
 import { useWorkspace } from '../context/WorkspaceContext'
@@ -42,6 +44,7 @@ import { useEntity } from '../context/EntityContext'
 import BooksSwitcher from './BooksSwitcher'
 import ErrorBoundary from './ErrorBoundary'
 import QuickAddExpense from './QuickAddExpense'
+import AccessibilityPanel from './AccessibilityPanel'
 import CommandPalette from './CommandPalette'
 import ShortcutsHelp from './ShortcutsHelp'
 import { checkIsAdmin } from '../lib/admin'
@@ -237,12 +240,19 @@ function NavItems({ onNavigate, isAdmin }) {
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5 px-1">
+    // `min-w-0` so the wordmark can give way. Everything in this app is sized
+    // in rem, which is what makes the accessibility panel's text-size control
+    // work at all — but it also grows the four buttons in the mobile top bar,
+    // and at 150% on a 390px phone they stopped fitting beside a mark that
+    // refused to shrink. The whole page then scrolled sideways, on every
+    // route. A truncated wordmark is a worse logo; a header that has pushed
+    // the menu button off the screen is a worse app.
+    <div className="flex min-w-0 items-center gap-2.5 px-1">
       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gold text-navy shadow-[0_2px_10px_-2px_var(--color-gold)]">
         <Wallet size={18} />
       </div>
-      <div className="leading-tight">
-        <div className="font-serif text-[1.05rem] font-bold tracking-wide text-white">Offset</div>
+      <div className="min-w-0 leading-tight">
+        <div className="truncate font-serif text-[1.05rem] font-bold tracking-wide text-white">Offset</div>
         {/* The same gold rule that sits under every page heading. It is a small
             thing, but it is what ties the mark to the pages rather than leaving
             it a logo parked above them. */}
@@ -264,6 +274,34 @@ function ThemeToggle({ className = '' }) {
       aria-label={t('chrome.toggleTheme')}
     >
       {dark ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  )
+}
+
+// Beside the theme toggle rather than floating in a corner of its own.
+//
+// Every accessibility widget on the web is a round button pinned to the bottom
+// of the viewport, and this app already has one thing pinned there — the
+// quick-add — on the same side, which is a collision it took a whole pass to
+// get rid of once. It belongs with the other control that changes how the app
+// looks, which is where somebody would look for it anyway.
+//
+// The dot is not decoration. Somebody who inverted the colours on a phone last
+// week and cannot work out why the app looks wrong today needs to be told from
+// the outside that something is on; the count is read out by the panel itself.
+function A11yButton({ onClick, count }) {
+  const t = useT()
+  return (
+    <button
+      onClick={onClick}
+      className="relative grid h-11 w-11 place-items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-gold"
+      title={t('a11y.open')}
+      aria-label={t('a11y.open')}
+    >
+      <Accessibility size={18} />
+      {count > 0 && (
+        <span aria-hidden="true" className="absolute end-1.5 top-1.5 h-2 w-2 rounded-full bg-gold ring-2 ring-navy" />
+      )}
     </button>
   )
 }
@@ -319,6 +357,8 @@ export default function Layout() {
   const [quickAdd, setQuickAdd] = useState(false)
   const [cmdOpen, setCmdOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [a11yOpen, setA11yOpen] = useState(false)
+  const { count: a11yCount } = useA11y()
   const [isAdmin, setIsAdmin] = useState(false)
   const location = useLocation()
   const showFab = canWrite && !ON_ADD_EDIT_FORM.test(location.pathname)
@@ -384,13 +424,13 @@ export default function Layout() {
           <NavItems isAdmin={isAdmin} />
           <ReportLink onClick={() => openReport({})} />
         </NavScroller>
-        <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} />
+        <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} a11yCount={a11yCount} onA11y={() => setA11yOpen(true)} />
       </aside>
 
       {/* Mobile top bar */}
       <header className="pt-safe ps-safe [--safe-pad-x:1rem] [--safe-pad:0.75rem] sticky top-0 z-30 flex items-center justify-between border-b border-navy-dark bg-navy px-4 pb-3 lg:hidden">
         <Brand />
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={() => setCmdOpen(true)}
             className="grid h-11 w-11 place-items-center rounded-lg text-white/70 hover:text-gold"
@@ -398,6 +438,7 @@ export default function Layout() {
           >
             <Search size={20} />
           </button>
+          <A11yButton onClick={() => setA11yOpen(true)} count={a11yCount} />
           <ThemeToggle />
           <button
             onClick={() => setMobileOpen(true)}
@@ -429,7 +470,8 @@ export default function Layout() {
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
               <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
             </NavScroller>
-            <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} onNavigate={() => setMobileOpen(false)} />
+            <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} onNavigate={() => setMobileOpen(false)}
+              a11yCount={a11yCount} onA11y={() => { setMobileOpen(false); setA11yOpen(true) }} />
           </div>
         </div>
       )}
@@ -503,11 +545,12 @@ export default function Layout() {
         onReport={() => openReport({})}
       />
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <AccessibilityPanel open={a11yOpen} onClose={() => setA11yOpen(false)} />
     </div>
   )
 }
 
-function UserFooter({ user, isCloud, onSignOut, onNavigate }) {
+function UserFooter({ user, isCloud, onSignOut, onNavigate, onA11y, a11yCount }) {
   const t = useT()
   const { avatar } = useAppearance()
   return (
@@ -520,6 +563,7 @@ function UserFooter({ user, isCloud, onSignOut, onNavigate }) {
           </div>
           <div className="text-[10px] uppercase tracking-[1.5px] text-gold/85">{isCloud ? t('chrome.signedIn') : t('chrome.demoMode')}</div>
         </div>
+        {onA11y && <A11yButton onClick={onA11y} count={a11yCount} />}
         <ThemeToggle />
         {isCloud && (
           <button

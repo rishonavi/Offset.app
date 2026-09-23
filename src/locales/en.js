@@ -173,4 +173,30 @@ export default {
 
   'entry.draftRestored': 'Picked up what you had already typed here.',
   'entry.draftDiscard': 'Start fresh',
+
+  // ── Accessibility tools ──
+  // Not decoration. Each of these is somebody's way into the app.
+  'a11y.open': 'Accessibility tools',
+  'a11y.title': 'Accessibility',
+  'a11y.subtitle': 'Adjust how Offset looks and reads. Saved on this device.',
+  'a11y.reset': 'Reset all settings',
+  'a11y.stepOff': 'Off',
+  'a11y.noneOn': 'Nothing adjusted.',
+  'a11y.someOn_one': '{count} adjustment on.',
+  'a11y.someOn_other': '{count} adjustments on.',
+  'a11y.invert': 'Invert colours',
+  'a11y.grayscale': 'Grayscale',
+  'a11y.saturation': 'Low saturation',
+  'a11y.links': 'Highlight links',
+  'a11y.fontSize': 'Text size',
+  'a11y.lineHeight': 'Line height',
+  'a11y.letterSpacing': 'Letter spacing',
+  'a11y.textAlign': 'Text align',
+  'a11y.contrast': 'Contrast',
+  'a11y.dyslexia': 'Dyslexia friendly',
+  'a11y.cursor': 'Bigger cursor',
+  'a11y.motion': 'Reduce motion',
+  'a11y.alignStart': 'Start',
+  'a11y.alignCenter': 'Centre',
+  'a11y.alignEnd': 'End',
 }

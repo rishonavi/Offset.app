@@ -41,7 +41,8 @@
                       forest: [158, 0.95], plum: [320, 0.85], clay: [40, 0.9] };
         var a = localStorage.getItem('pl_accent');
         var h = a && hues[a] !== undefined ? hues[a] : (a && !isNaN(Number(a)) ? Number(a) : null);
-        var s = document.documentElement.style;
+        var d = document.documentElement;
+        var s = d.style;
         if (h !== null) {
           s.setProperty('--color-gold', 'oklch(0.7245 0.0998 ' + h + ')');
           s.setProperty('--color-gold-dark', 'oklch(0.7665 0.1387 ' + h + ')');
@@ -66,6 +67,37 @@
           s.setProperty('--color-surface-page',
             'oklch(' + lc[0] + ' ' + (lc[1] * t[1]).toFixed(4) + ' ' + t[0] + ')');
         }
+
+        // Accessibility adjustments, before paint. This is lib/a11y.js's
+        // applyA11y in twenty lines of ES5, duplicated for the same reason the
+        // accent above is: it has to run before any module loads.
+        //
+        // It matters more here than it does for a colour. Somebody who
+        // inverted the page or turned the contrast up did it because the
+        // normal one is painful to look at, and applying it after the first
+        // paint means showing them exactly the thing they turned off, once per
+        // navigation. A frame of the wrong accent is a blemish; a frame of
+        // full-brightness white is what this setting exists to prevent.
+        var a11y = JSON.parse(localStorage.getItem('pl_a11y') || '{}');
+        var fs = [1, 1.15, 1.3, 1.5][a11y.fontSize | 0];
+        var lh = [0, 1.6, 1.9, 2.2][a11y.lineHeight | 0];
+        var ls = [0, '0.02em', '0.06em', '0.12em'][a11y.letterSpacing | 0];
+        var al = [0, 'start', 'center', 'end'][a11y.align | 0];
+        var f = [];
+        if (a11y.invert) f.push('invert(1) hue-rotate(180deg)');
+        if (a11y.grayscale) f.push('grayscale(1)');
+        if (a11y.saturation && !a11y.grayscale) f.push('saturate(0.45)');
+        if (a11y.contrast) f.push('contrast(' + [0, 1.25, 1.6][a11y.contrast | 0] + ')');
+        if (f.length) s.filter = f.join(' ');
+        if (fs !== 1) s.setProperty('--a11y-font-scale', String(fs));
+        if (lh) { s.setProperty('--a11y-line-height', String(lh)); d.setAttribute('data-a11y-lh', ''); }
+        if (ls) { s.setProperty('--a11y-letter-spacing', ls); d.setAttribute('data-a11y-ls', ''); }
+        if (al) { s.setProperty('--a11y-align', al); d.setAttribute('data-a11y-align', ''); }
+        if (a11y.invert) d.setAttribute('data-a11y-invert', '');
+        if (a11y.links) d.setAttribute('data-a11y-links', '');
+        if (a11y.dyslexia) d.setAttribute('data-a11y-dyslexia', '');
+        if (a11y.cursor) d.setAttribute('data-a11y-cursor', '');
+        if (a11y.motion) d.setAttribute('data-a11y-motion', '');
       } catch (e) {}
     </script>
   </head>

@@ -808,3 +808,131 @@ button:focus-visible,
 .dark .recharts-cartesian-grid line {
   stroke: var(--color-border-light);
 }
+
+/* ─── Accessibility adjustments ──────────────────────────────────────
+ *
+ * Driven entirely by attributes and custom properties on the root element,
+ * written by lib/a11y.js. Nothing here reads a setting; each rule asks about
+ * one flag, so a rule cannot disagree with the model about what a setting
+ * means.
+ *
+ * The `filter` itself is set inline on <html> rather than declared here,
+ * because it composes from up to four controls and the last declaration would
+ * otherwise win. See applyA11y for why it goes on the root and not on <body>.
+ */
+
+/* An invert turns every photograph into a negative, which is not what anyone
+ * asked for — they asked for the page to stop glaring. Media is inverted back,
+ * with the same hue rotation, so it comes out as itself on a dark page. */
+html[data-a11y-invert] :where(img, video, canvas, [data-keep-colour]) {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Everything in this app is sized in rem, so the root font size moves type,
+ * padding and control heights together. That is the point: somebody asking for
+ * larger text does not want 24px words in a 32px button. */
+html {
+  font-size: calc(100% * var(--a11y-font-scale, 1));
+}
+
+/* Tailwind's type scale sets a line-height on the element itself — `text-sm`
+ * is font-size *and* line-height — so inheritance from body cannot reach it
+ * and these have to name elements. `:where()` contributes nothing to the
+ * specificity, so what carries these is `html[data-a11y-lh]` on the left:
+ * an element plus an attribute is (0,1,1), which beats a utility class at
+ * (0,1,0) without an `!important` anywhere.
+ *
+ * There was one here briefly, added on the theory that Tailwind was winning.
+ * It was not — the probe measuring the page had been looking for a <p> inside
+ * #main-content on a route that has none, finding nothing, and comparing two
+ * empty strings. Deleting the rule outright is what the test actually catches.
+ *
+ * The two flags are separate and that part is load-bearing: one flag for both
+ * would leave this rule live whenever only letter spacing was on, and
+ * `var(--a11y-line-height)` with the variable unset is invalid at computed-
+ * value time, which for an inherited property means `inherit` — every
+ * line-height in the app quietly replaced for a setting nobody touched. */
+html[data-a11y-lh] :where(p, li, dd, dt, h1, h2, h3, h4, h5, h6, span, a, label, td, th, button, input, select, textarea, div) {
+  line-height: var(--a11y-line-height);
+}
+html[data-a11y-ls] :where(p, li, dd, dt, h1, h2, h3, h4, h5, h6, span, a, label, td, th, button, input, select, textarea, div) {
+  letter-spacing: var(--a11y-letter-spacing);
+}
+
+/* Text alignment is asked about separately from the other typographic
+ * controls, and only reaches things that are prose. Aligning every div would
+ * move the numbers out of the right-hand column of every table in the app. */
+html[data-a11y-align] :where(p, li, dd, dt, h1, h2, h3, h4, h5, h6, blockquote) {
+  text-align: var(--a11y-align, inherit);
+}
+
+/* A link marked as a link by something other than its colour, which is the
+ * whole of WCAG 1.4.1. Underlined and weighted rather than outlined: an
+ * outline on an inline element that wraps across two lines is drawn as two
+ * broken boxes, and the tab rows in Operations would clip it. */
+html[data-a11y-links] :where(a) {
+  text-decoration: underline !important;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  background: color-mix(in oklab, var(--color-gold) 18%, transparent);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+/* A face with wider apertures and more distinct letterforms.
+ *
+ * OpenDyslexic is named first and is not shipped — it is a 200KB webfont for a
+ * setting most people never turn on, and naming it means somebody who has
+ * installed it system-wide gets it. Everyone else gets the fallbacks, which
+ * are the faces that actually hold up in the reading research: humanist
+ * sans-serifs with open counters and unambiguous l/I/1. The evidence that a
+ * dyslexia-specific face beats a well-chosen ordinary one is thin; the
+ * evidence for plain, wide, evenly-spaced type is not.
+ *
+ * It has to beat the serif on headings too, or the page ends up half converted. */
+html[data-a11y-dyslexia] :where(body, h1, h2, h3, h4, h5, h6, p, li, span, a, label, button, input, select, textarea, td, th, div) {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', Verdana, Tahoma, 'Trebuchet MS', sans-serif;
+  letter-spacing: var(--a11y-letter-spacing, 0.015em);
+}
+
+/* A pointer somebody can find. Two cursors, because a hand over a link is
+ * information and replacing it with an arrow takes that away. Drawn as SVG so
+ * they scale on a high-density screen and cost no request. */
+html[data-a11y-cursor],
+html[data-a11y-cursor] :where(*) {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M5 2l14 10-6 1 3.2 6.4-2.6 1.3L10.4 14 5 18z' fill='%23fff' stroke='%23000' stroke-width='1.4' stroke-linejoin='round'/%3E%3C/svg%3E") 4 2, auto !important;
+}
+html[data-a11y-cursor] :where(a, button, [role='button'], select, summary, label, input[type='checkbox'], input[type='radio']) {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath d='M9 11V4.5a1.5 1.5 0 013 0V11V6.5a1.5 1.5 0 013 0V11V8.5a1.5 1.5 0 013 0V15a6 6 0 01-6 6h-1a6 6 0 01-6-6v-2.5a1.5 1.5 0 013 0z' fill='%23fff' stroke='%23000' stroke-width='1.3' stroke-linejoin='round'/%3E%3C/svg%3E") 8 2, pointer !important;
+}
+
+/* Motion stilled. Not removed — a transition of zero still fires its events,
+ * so anything waiting on transitionend still runs. `0.001ms` rather than `0s`
+ * for exactly that reason. */
+html[data-a11y-motion] *,
+html[data-a11y-motion] *::before,
+html[data-a11y-motion] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* The panel itself must stay readable while it is being used to make the rest
+ * readable — somebody turning letter-spacing up to its widest should not find
+ * the tile labels have wrapped into columns underneath them. */
+.a11y-panel :where(*) {
+  letter-spacing: normal;
+}
+
+/* And it must be opaque. `.card` is frosted glass — 75% white over a blur —
+ * which reads as white on a light page and as grey the moment there is
+ * something dark behind it. Every other dialog in the app is small and lands
+ * over the page; this one is full height on a phone, so it sits over the navy
+ * top bar and the dimming overlay, and the whole panel came out washed out and
+ * low contrast. A control for legibility is the last thing that should be hard
+ * to read. */
+.a11y-panel > .card {
+  background-color: var(--color-surface-raised);
+}

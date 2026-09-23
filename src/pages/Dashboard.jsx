@@ -87,7 +87,11 @@ function StatCard({ icon: Icon, label, value, accent = '#C5A059' }) {
   return (
     <Card className="card-hover p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
+        {/* `min-w-0`, or the label will not shrink below its longest word and
+            shoves the shrink-0 icon out through the side of the card. Invisible
+            at the default type size and obvious at 150%, where "EXPENSE
+            ENTRIES" in tracked-out caps is wider than half a phone. */}
+        <div className="min-w-0 text-[0.625rem] font-semibold uppercase tracking-[1px] text-ink-5">{label}</div>
         <div
           className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
           style={{ background: `${accent}1a`, color: accent }}

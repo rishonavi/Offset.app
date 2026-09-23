@@ -6,6 +6,7 @@ import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { A11yProvider } from './context/A11yContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
 import { installErrorLog } from './lib/errorLog.js'
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <LanguageProvider>
       <ThemeProvider>
+        <A11yProvider>
         <ToastProvider>
           <ConfigProvider>
             <BrowserRouter>
@@ -46,6 +48,7 @@ createRoot(document.getElementById('root')).render(
             </BrowserRouter>
           </ConfigProvider>
         </ToastProvider>
+        </A11yProvider>
       </ThemeProvider>
       </LanguageProvider>
     </ErrorBoundary>
