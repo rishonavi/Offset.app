@@ -6,7 +6,7 @@
 import {
   ASSET_TYPES, ADDRESSABLE_ASSET_TYPES, hasAddress,
   FINANCEABLE_ASSET_TYPES, canBeFinanced, LEASABLE_ASSET_TYPES, canBeLeased,
-  ASSET_GROUPS, shortTypeLabel, exampleNameFor,
+  ASSET_GROUPS, shortTypeLabel, exampleNameFor, isCustomAssetType,
 } from '../../src/lib/constants.js'
 import { METAL_ASSET_TYPES, holdsMetal } from '../../src/lib/metals.js'
 import { iconForAssetType } from '../../src/lib/assetIcon.js'
@@ -43,9 +43,17 @@ const both = ASSET_TYPES.filter((t) => hasAddress(t) && holdsMetal(t))
 ok('nothing is both a place and a quantity of metal', both.length === 0, both.join(', '))
 
 console.log('\n── AND NOTHING IS AMBIGUOUS ──')
-ok('an unrecognised type has no address', !hasAddress('Spaceship'))
-ok('nor does an empty one', !hasAddress(''))
+// This used to assert that an unrecognised type had no address, and it was
+// right while the only way to get one was bad data. Now it is the way somebody
+// says what their asset is: "Other" is on the addressable list on purpose —
+// the unknown case should still be able to record where it is — and a type
+// with a name typed on it is the same unknown case, named. Falling through to
+// the deny side would mean that calling your warehouse "Warehouse" took its
+// address field away.
+ok('a typed-in type is addressable, exactly as Other is', hasAddress('Spaceship'))
+ok('an empty one is not', !hasAddress(''))
 ok('nor undefined', !hasAddress(undefined))
+ok('nor whitespace', !hasAddress('   '))
 ok('every shipped type gives a straight yes or no',
   ASSET_TYPES.every((t) => typeof hasAddress(t) === 'boolean'))
 
@@ -137,6 +145,39 @@ ok('a plot is not a building', icons.get('Land / Plot') !== icons.get('Real Esta
 ok('an aircraft is not a piece of art', icons.get('Aircraft') !== icons.get('Art / Collectibles'))
 ok('an unknown type still gets an icon rather than nothing', Boolean(iconForAssetType('Racehorse')))
 ok('and a blank one does too', Boolean(iconForAssetType()))
+
+console.log('\n── A TYPE SOMEBODY TYPED THEMSELVES ──')
+//
+// "Other" is a bin, and everything in it comes out indistinguishable. Storing
+// what the thing actually is only works if the rest of the type system treats
+// an unfamiliar string the way it already treats "Other" — otherwise a
+// telescope acquires a mortgage field, or an address.
+for (const listed of ASSET_TYPES) {
+  ok(`${listed} is not a custom type`, !isCustomAssetType(listed))
+}
+for (const blank of [undefined, null, '', '   ']) {
+  ok(`${JSON.stringify(blank)} is not a custom type either`, !isCustomAssetType(blank))
+}
+ok('but Racehorse is', isCustomAssetType('Racehorse'))
+ok('and surrounding space does not make a listed type custom', !isCustomAssetType('  Aircraft  '))
+
+// Every predicate is an allow-list, so this holds by construction — which is
+// exactly why it is worth asserting: the day one of them becomes a deny-list,
+// every custom type silently grows a field that makes no sense for it.
+for (const custom of ['Racehorse', 'Telescope', 'Patent', 'Share of a fishing boat']) {
+  ok(`${custom} has no address, as Other has none`, hasAddress(custom) === hasAddress('Other'))
+  ok(`  no loan block`, canBeFinanced(custom) === canBeFinanced('Other'))
+  ok(`  no lease block`, canBeLeased(custom) === canBeLeased('Other'))
+  ok(`  and no metal fields`, holdsMetal(custom) === holdsMetal('Other'))
+  ok(`  it keeps its own label`, shortTypeLabel(custom) === custom, shortTypeLabel(custom))
+  ok(`  and still gets an icon`, Boolean(iconForAssetType(custom)))
+}
+// The keyword matcher earns its keep here: a typed-in type that says what it
+// is gets the right picture without anybody adding it to a list.
+ok('a typed-in "Warehouse unit" picks up the building icon',
+  iconForAssetType('Warehouse unit') === iconForAssetType('Real Estate — Commercial'))
+ok('and "Vintage car" picks up the car',
+  iconForAssetType('Vintage car') === iconForAssetType('Vehicle / Car'))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) process.exitCode = 1

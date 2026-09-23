@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Sparkles, Loader2, ChevronDown } from 'lucide-react'
 import {
-  ASSET_TYPES, ASSET_GROUPS, shortTypeLabel, exampleNameFor,
+  ASSET_TYPES, ASSET_GROUPS, shortTypeLabel, exampleNameFor, isCustomAssetType,
   hasAddress, canBeFinanced, canBeLeased, ATTACHMENT_ACCEPT,
 } from '../lib/constants'
 import { iconForAssetType } from '../lib/assetIcon'
@@ -63,6 +63,22 @@ function BillSummary({ read }) {
 // form semantics all come for free, and the visible focus ring is put back on
 // the label because the input itself is hidden.
 function TypePicker({ value, onChange }) {
+  // "Other" covers a telescope, a racehorse, a patent and a share of a fishing
+  // boat, and files all four under one word — on the asset page, in the Type
+  // column, in every report grouped by type. The box below lets you say which
+  // it is, and what you type is stored as the type itself rather than beside
+  // it: the column is free text, and every predicate that asks about a type is
+  // an allow-list that now counts a typed-in one as the unknown case it is.
+  const custom = isCustomAssetType(value)
+  const box = useRef(null)
+  // Focused when you choose Other, because choosing Other is how you say the
+  // list does not have your thing — you already mean to type. Not focused on
+  // mount, or opening an asset for editing would yank the cursor out of the
+  // name field and past everything above it.
+  const chose = (type) => {
+    onChange(type)
+    if (type === 'Other') requestAnimationFrame(() => box.current?.focus())
+  }
   return (
     <fieldset>
       <legend className="text-sm font-medium text-ink-3">Type</legend>
@@ -73,7 +89,9 @@ function TypePicker({ value, onChange }) {
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
               {group.types.map((type) => {
                 const Icon = iconForAssetType(type)
-                const on = value === type
+                // The Other tile stays lit for a type somebody typed, or
+                // reopening a telescope would show nothing selected at all.
+                const on = value === type || (type === 'Other' && custom)
                 return (
                   <label
                     key={type}
@@ -92,7 +110,7 @@ function TypePicker({ value, onChange }) {
                       name="asset-type"
                       value={type}
                       checked={on}
-                      onChange={() => onChange(type)}
+                      onChange={() => chose(type)}
                       // Stretched over the whole tile rather than hidden in a
                       // corner of it: sr-only leaves the input a one-pixel
                       // sliver that the icon sits on top of, so the thing being
@@ -106,6 +124,27 @@ function TypePicker({ value, onChange }) {
                 )
               })}
             </div>
+            {group.types.includes('Other') && (value === 'Other' || custom) && (
+              <div className="mt-2">
+                <Field
+                  label="What is it?"
+                  hint="Optional. Whatever you type here is what the asset is called in tables, charts and reports — leave it blank and it stays “Other”."
+                >
+                  <Input
+                    ref={box}
+                    value={custom ? value : ''}
+                    // Empty goes back to the word "Other" rather than to
+                    // nothing: a type is not allowed to be blank, and a
+                    // half-deleted one should leave the asset where it was
+                    // rather than in a state the rest of the app has to guess
+                    // about.
+                    onChange={(e) => onChange(e.target.value === '' ? 'Other' : e.target.value)}
+                    placeholder="e.g. Racehorse, telescope, a share of a fishing boat"
+                    maxLength={60}
+                  />
+                </Field>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -313,6 +352,10 @@ export default function PropertyForm({ initial, history = [], onSubmit, onCancel
         metal_fineness: isMetal ? num(fineness) : null,
         metal_rate: isMetal ? num(form.metal_rate) : null,
         name: form.name.trim(),
+        // A typed-in type is stored as the type. Trimmed here rather than on
+        // every keystroke, so typing a space between two words does not snap
+        // the field back to "Other" underneath the cursor.
+        type: String(form.type ?? '').trim() || 'Other',
         value: num(form.value),
         monthly_budget: num(form.monthly_budget),
         // Same split as the address and the metal fields: kept while editing so

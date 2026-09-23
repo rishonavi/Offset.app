@@ -56,6 +56,24 @@ export const ASSET_GROUPS = [
   { label: 'Anything else', types: ['Other'] },
 ]
 
+// A type somebody typed in themselves.
+//
+// "Other" is a bin. A telescope, a racehorse, a patent and a share of a
+// fishing boat all land in it and come out indistinguishable — on the asset
+// page, in the table's Type column, in every report grouped by type. So the
+// picker lets you say what the thing is, and the answer is stored in `type`
+// like any other: the column is free text with no constraint, nothing in the
+// app matches against the list exhaustively, and every predicate that asks
+// about a type — address, finance, lease, metal — is an allow-list, so an
+// unrecognised one behaves exactly as "Other" already did.
+//
+// The one thing that has to know is the picker, which would otherwise show
+// nothing selected when you reopen an asset you typed a type for.
+export const isCustomAssetType = (type) => {
+  const t = String(type ?? '').trim()
+  return t !== '' && t !== 'Other' && !ASSET_TYPES.includes(t)
+}
+
 // "Real Estate — Apartment / Flat" reads as "Apartment / Flat" once it is sitting
 // under a heading that says Property. The stored value never changes.
 export const shortTypeLabel = (type = '') => {
@@ -102,7 +120,13 @@ export const ADDRESSABLE_ASSET_TYPES = [
   'Other',
 ]
 
-export const hasAddress = (type) => ADDRESSABLE_ASSET_TYPES.includes(type)
+// A type somebody typed in is still the unknown case — it has a name on it,
+// that is all. So it keeps whatever "Other" gets: the lists below put "Other"
+// on them deliberately, because somebody filing a warehouse or a leased plot
+// there should still be able to record where it is and what is owed on it.
+// Falling through to the deny side would mean that naming your warehouse
+// "Warehouse" took its address field away, which is the opposite of the point.
+export const hasAddress = (type) => ADDRESSABLE_ASSET_TYPES.includes(type) || isCustomAssetType(type)
 
 // A loan block asks for a principal, a rate, a tenure and a start date, and
 // puts an EMI and a payoff date on the asset page. That shape fits anything
@@ -130,7 +154,7 @@ export const FINANCEABLE_ASSET_TYPES = [
   'Other',
 ]
 
-export const canBeFinanced = (type) => FINANCEABLE_ASSET_TYPES.includes(type)
+export const canBeFinanced = (type) => FINANCEABLE_ASSET_TYPES.includes(type) || isCustomAssetType(type)
 
 // Tenancy is narrower than finance. The fields are a tenant, a deposit held and
 // a lease running between two dates — the shape of letting something out for
@@ -153,7 +177,7 @@ export const LEASABLE_ASSET_TYPES = [
   'Other',
 ]
 
-export const canBeLeased = (type) => LEASABLE_ASSET_TYPES.includes(type)
+export const canBeLeased = (type) => LEASABLE_ASSET_TYPES.includes(type) || isCustomAssetType(type)
 
 export const CATEGORIES = [
   'Materials',
