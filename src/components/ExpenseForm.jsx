@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Paperclip, X, Loader2, Sparkles, Camera, Upload, Wand2 } from 'lucide-react'
+import { Paperclip, X, Loader2, Sparkles, Camera, Upload, Wand2, Mail } from 'lucide-react'
 import { CATEGORIES, PAYMENT_METHODS, ATTACHMENT_ACCEPT, isScannable } from '../lib/constants'
 import { useT } from '../context/LanguageContext'
 import { draftKey, readDraft, writeDraft, clearDraft, draftDiffers } from '../lib/draft'
@@ -15,6 +15,8 @@ import { mark, claim, claimAll, pending } from '../lib/filled'
 import { db } from '../lib/storage'
 import { usePlan } from '../context/PlanContext'
 import { Field, FormSection, Input, Select, Textarea, Button, MoreDetails } from './ui'
+import CloudBillPicker from './CloudBillPicker'
+import { gmailConfigured } from '../lib/gmail'
 import SiteField from './SiteField'
 import DepartmentField from './DepartmentField'
 
@@ -100,6 +102,7 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
   const [file, setFile] = useState(null)
   const [existingReceipt, setExistingReceipt] = useState(initial?.receipt_url || null)
   const [receiptPreview, setReceiptPreview] = useState(null)
+  const [cloudOpen, setCloudOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [scanning, setScanning] = useState(false)
@@ -226,11 +229,16 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
     }
   }, [existingReceipt, file])
 
-  const onPickFile = (e) => {
-    const f = e.target.files?.[0] || null
-    setFile(f)
+  // Split from the input handler so a file that did not come from an <input>
+  // can take the same path. An attachment pulled out of an inbox is the same
+  // File as one chosen from the disk, and it should land in the same state,
+  // get the same preview, and be scannable by the same button.
+  const takeFile = (f) => {
+    setFile(f || null)
     if (f) setReceiptPreview(URL.createObjectURL(f))
   }
+
+  const onPickFile = (e) => takeFile(e.target.files?.[0] || null)
 
   const clearReceipt = () => {
     setFile(null)
@@ -619,13 +627,21 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
           </div>
         ) : (
           <div className="space-y-2">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => cameraRef.current?.click()} className="btn-ghost flex-1">
                 <Camera size={15} /> {t('entry.takePhoto')}
               </button>
               <button type="button" onClick={() => fileRef.current?.click()} className="btn-ghost flex-1">
                 <Upload size={15} /> {t('entry.chooseFile')}
               </button>
+              {/* Only where a Google client id is configured. A button that
+                  opens a dialog whose one action cannot work is worse than no
+                  button: it reads as broken rather than as unavailable. */}
+              {gmailConfigured && (
+                <button type="button" onClick={() => setCloudOpen(true)} className="btn-ghost flex-1 basis-full">
+                  <Mail size={15} /> {t('entry.fromEmail')}
+                </button>
+              )}
             </div>
             <input ref={cameraRef} type="file"
               aria-label="Photograph a receipt" accept="image/*" capture="environment" onChange={onPickFile} className="hidden" />
@@ -634,6 +650,14 @@ export default function ExpenseForm({ initial, properties, vendors = [], history
           </div>
         )}
       </Field>
+      {/* Outside the Field, not inside it.
+          
+          It began inside the branch that shows the two file buttons — which is
+          the branch that disappears the moment a file is attached. Picking a
+          bill set the state and unmounted the picker in the same update, and
+          the attachment showed for one render before reverting to nothing.
+          A dialog must not live inside the thing its own action removes. */}
+      <CloudBillPicker open={cloudOpen} onClose={() => setCloudOpen(false)} onPick={takeFile} />
 
       {error && <p role="alert" className="text-sm text-bad">{error}</p>}
 

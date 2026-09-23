@@ -199,4 +199,15 @@ export default {
   'a11y.alignStart': 'Start',
   'a11y.alignCenter': 'Centre',
   'a11y.alignEnd': 'End',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'From email',
+  'cloudbill.title': 'Bills in your email',
+  'cloudbill.subtitle': 'Recent mail with an attachment that looks like a bill.',
+  'cloudbill.connect': 'Connect Gmail',
+  'cloudbill.connectBody': 'Offset will look through the last four months of mail for attachments that look like bills. Read-only, and nothing is kept.',
+  'cloudbill.searching': 'Looking through recent mail…',
+  'cloudbill.none': 'No bills with an attachment in the last four months.',
+  'cloudbill.failed': 'Could not read your mail.',
+  'cloudbill.retry': 'Try again',
 }

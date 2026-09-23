@@ -97,7 +97,12 @@ function findAttachments(payload) {
 // Find recent bill-like emails, read the first attachment of each and parse it
 // with Gemini. onProgress(done, total) drives the UI. Returns candidates with a
 // `parsed` field ({amount,tax,date,vendor,category}) — empty if unreadable.
-export async function fetchBillCandidates({ max = 15, onProgress } = {}) {
+// `parse` is off for the picker on the expense form. There, somebody is
+// attaching one bill they already have in mind, and the form has its own Scan
+// button for reading it — running Gemini over fifteen attachments to fill in
+// figures nobody asked for would be slow and would spend a scan from their
+// monthly allowance for each one.
+export async function fetchBillCandidates({ max = 15, parse = true, onProgress } = {}) {
   const q = encodeURIComponent('has:attachment newer_than:120d (invoice OR bill OR receipt OR statement OR "tax invoice" OR payment)')
   const list = await gmail(`messages?q=${q}&maxResults=${max}`)
   const ids = (list.messages || []).map((m) => m.id)
@@ -112,7 +117,7 @@ export async function fetchBillCandidates({ max = 15, onProgress } = {}) {
         const a = await gmail(`messages/${id}/attachments/${att.attachmentId}`)
         const data = b64urlToB64(a.data || '')
         let parsed = {}
-        if (data && data.length <= MAX_ATT_B64) {
+        if (parse && data && data.length <= MAX_ATT_B64) {
           parsed =
             (await fetch('/api/scan-receipt', {
               method: 'POST',
@@ -139,6 +144,33 @@ export async function fetchBillCandidates({ max = 15, onProgress } = {}) {
     onProgress?.(done, ids.length)
   }
   return out
+}
+
+// The same listing without the reading: what is attached to recent bill-like
+// mail, so somebody can pick one. Named rather than left as an option on the
+// call above, because the two uses are different jobs and the difference is
+// worth reading at the call site.
+export const fetchBillAttachments = (opts = {}) => fetchBillCandidates({ ...opts, parse: false })
+
+// One row for the picker. Gmail's From header is "Name <addr@host>" and the
+// name is the useful half; a subject can be a hundred characters of reference
+// number, and a filename is often just "invoice.pdf". Between the three there
+// is usually one line worth showing.
+export function billSummary(candidate) {
+  // `= {}` only covers undefined, and null comes back from plenty of places
+  // that "have no candidate". Caught by the test, which passed on undefined
+  // and threw on null.
+  const cand = candidate || {}
+  const from = String(cand.from || '')
+  const name = (from.match(/^\s*"?([^"<]+?)"?\s*</) || [])[1] || from.replace(/[<>]/g, '') || ''
+  return {
+    file: cand.filename || 'Attachment',
+    who: name.trim(),
+    subject: String(cand.subject || '').trim(),
+    // Bytes, from base64's 4:3 ratio, minus the padding. Shown so nobody picks
+    // a 30MB scan on a site connection without knowing.
+    bytes: cand.data ? Math.round((cand.data.length * 3) / 4) - (cand.data.endsWith('==') ? 2 : cand.data.endsWith('=') ? 1 : 0) : 0,
+  }
 }
 
 // Rebuild a File from a candidate's base64 attachment, for uploadReceipt().

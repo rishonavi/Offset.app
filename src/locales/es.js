@@ -185,4 +185,15 @@ export default {
   'a11y.alignStart': 'Inicio',
   'a11y.alignCenter': 'Centro',
   'a11y.alignEnd': 'Final',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'Desde el correo',
+  'cloudbill.title': 'Facturas en tu correo',
+  'cloudbill.subtitle': 'Correos recientes con un adjunto que parece una factura.',
+  'cloudbill.connect': 'Conectar Gmail',
+  'cloudbill.connectBody': 'Offset buscará adjuntos con aspecto de factura en los últimos cuatro meses de correo. Solo lectura, y no se guarda nada.',
+  'cloudbill.searching': 'Revisando el correo reciente…',
+  'cloudbill.none': 'No hay facturas con adjunto en los últimos cuatro meses.',
+  'cloudbill.failed': 'No se pudo leer tu correo.',
+  'cloudbill.retry': 'Reintentar',
 }

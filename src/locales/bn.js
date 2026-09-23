@@ -181,4 +181,15 @@ export default {
   'a11y.alignStart': 'শুরু',
   'a11y.alignCenter': 'মাঝ',
   'a11y.alignEnd': 'শেষ',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'ইমেল থেকে',
+  'cloudbill.title': 'আপনার ইমেলের বিল',
+  'cloudbill.subtitle': 'বিলের মতো সংযুক্তিসহ সাম্প্রতিক মেল।',
+  'cloudbill.connect': 'Gmail যুক্ত করুন',
+  'cloudbill.connectBody': 'Offset গত চার মাসের মেলে বিলের মতো সংযুক্তি খুঁজবে। শুধু পড়ার জন্য, কিছুই রাখা হয় না।',
+  'cloudbill.searching': 'সাম্প্রতিক মেল দেখা হচ্ছে…',
+  'cloudbill.none': 'গত চার মাসে সংযুক্তিসহ কোনো বিল নেই।',
+  'cloudbill.failed': 'আপনার মেল পড়া গেল না।',
+  'cloudbill.retry': 'আবার চেষ্টা করুন',
 }

@@ -28,8 +28,11 @@ const TONE = {
     group: 'rounded-xl border border-white/10 bg-black/20 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]',
     on: 'rounded-lg bg-gold text-navy shadow-[0_1px_2px_rgba(0,0,0,0.35)]',
     off: 'rounded-lg text-white/50 hover:bg-white/5 hover:text-white/90',
-    select: 'field-dark rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/85 transition hover:border-white/25 hover:bg-white/[0.07] focus:border-gold focus:outline-none',
-    caption: 'text-white/60',
+    // Bold, and a step up in size. It is the answer to "whose money am I
+    // looking at", which every figure on every screen below depends on, and it
+    // was set in the same quiet 12px as a form hint.
+    select: 'field-dark rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/[0.07] focus:border-gold focus:outline-none',
+    caption: 'font-semibold text-white/85',
   },
   card: {
     group: 'rounded-xl border border-line bg-surface-sunk p-1',
@@ -85,7 +88,7 @@ export default function BooksSwitcher({ variant = 'sidebar', className, onSwitch
       {/* One company needs no dropdown to choose between, but the tab saying
           COMPANY does not say which one. */}
       {!personal && entities.length === 1 && (
-        <p className={cx('mt-1.5 truncate px-1 text-[0.6875rem]', tone.caption)} title={entities[0].name}>
+        <p className={cx('mt-1.5 truncate px-1 text-sm', tone.caption)} title={entities[0].name}>
           {entities[0].name}
         </p>
       )}

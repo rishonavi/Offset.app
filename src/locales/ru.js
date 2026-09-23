@@ -191,4 +191,15 @@ export default {
   'a11y.alignStart': 'Начало',
   'a11y.alignCenter': 'По центру',
   'a11y.alignEnd': 'Конец',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'Из почты',
+  'cloudbill.title': 'Счета в вашей почте',
+  'cloudbill.subtitle': 'Недавние письма с вложением, похожим на счёт.',
+  'cloudbill.connect': 'Подключить Gmail',
+  'cloudbill.connectBody': 'Offset просмотрит почту за последние четыре месяца в поисках вложений, похожих на счета. Только чтение, ничего не сохраняется.',
+  'cloudbill.searching': 'Просматриваем недавнюю почту…',
+  'cloudbill.none': 'За последние четыре месяца счетов с вложением нет.',
+  'cloudbill.failed': 'Не удалось прочитать почту.',
+  'cloudbill.retry': 'Повторить',
 }

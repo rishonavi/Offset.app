@@ -181,4 +181,15 @@ export default {
   'a11y.alignStart': 'தொடக்கம்',
   'a11y.alignCenter': 'நடு',
   'a11y.alignEnd': 'முடிவு',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'மின்னஞ்சலிலிருந்து',
+  'cloudbill.title': 'உங்கள் மின்னஞ்சலில் உள்ள கட்டணச் சீட்டுகள்',
+  'cloudbill.subtitle': 'கட்டணச் சீட்டு போன்ற இணைப்புடன் சமீபத்திய அஞ்சல்.',
+  'cloudbill.connect': 'Gmail இணைக்கவும்',
+  'cloudbill.connectBody': 'கடந்த நான்கு மாத அஞ்சலில் கட்டணச் சீட்டு போன்ற இணைப்புகளை Offset தேடும். படிக்க மட்டும், எதுவும் சேமிக்கப்படாது.',
+  'cloudbill.searching': 'சமீபத்திய அஞ்சல் பார்க்கப்படுகிறது…',
+  'cloudbill.none': 'கடந்த நான்கு மாதங்களில் இணைப்புடன் கட்டணச் சீட்டு இல்லை.',
+  'cloudbill.failed': 'உங்கள் அஞ்சலைப் படிக்க முடியவில்லை.',
+  'cloudbill.retry': 'மீண்டும் முயற்சிக்கவும்',
 }

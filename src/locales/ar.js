@@ -198,4 +198,15 @@ export default {
   'a11y.alignStart': 'البداية',
   'a11y.alignCenter': 'الوسط',
   'a11y.alignEnd': 'النهاية',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'من البريد',
+  'cloudbill.title': 'الفواتير في بريدك',
+  'cloudbill.subtitle': 'رسائل حديثة بمرفق يشبه الفاتورة.',
+  'cloudbill.connect': 'ربط Gmail',
+  'cloudbill.connectBody': 'سيبحث Offset في بريد آخر أربعة أشهر عن مرفقات تشبه الفواتير. للقراءة فقط، ولا يُحفظ شيء.',
+  'cloudbill.searching': 'جارٍ فحص البريد الحديث…',
+  'cloudbill.none': 'لا توجد فواتير بمرفق في آخر أربعة أشهر.',
+  'cloudbill.failed': 'تعذّرت قراءة بريدك.',
+  'cloudbill.retry': 'حاول مرة أخرى',
 }

@@ -412,6 +412,15 @@ export default function Layout() {
       <aside className="inset-safe ps-safe [--safe-pad-x:1rem] [--safe-pad:1.25rem] sticky top-0 hidden h-screen flex-col border-e border-navy-dark bg-navy px-4 lg:flex">
         <Brand />
         <WorkspaceSwitcher />
+        {/* Which books you are in, at the top.
+            
+            It sat at the bottom, on the reasoning that it is the same kind of
+            question as who you are signed in as. That was wrong about how it
+            gets used: your identity is settled and you read it once, while the
+            company is what everything on every screen below is about, and it
+            changes during the day. Reading down the column you met sixteen
+            destinations before being told whose books they were counting. */}
+        <BooksSwitcher variant="sidebar" className="mt-3" />
         <button
           onClick={() => setCmdOpen(true)}
           className="mt-3 flex w-full items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/50 transition hover:border-gold/40 hover:text-white/80"
@@ -466,11 +475,12 @@ export default function Layout() {
               </button>
             </div>
             <WorkspaceSwitcher />
+            <BooksSwitcher variant="sidebar" className="mt-3" onSwitch={() => setMobileOpen(false)} />
             <NavScroller>
               <NavItems onNavigate={() => setMobileOpen(false)} isAdmin={isAdmin} />
               <ReportLink onClick={() => { setMobileOpen(false); openReport({}) }} />
             </NavScroller>
-            <UserFooter user={user} isCloud={isCloud} onSignOut={signOut} onNavigate={() => setMobileOpen(false)}
+            <UserFooter user={user} isCloud={isCloud} onSignOut={signOut}
               a11yCount={a11yCount} onA11y={() => { setMobileOpen(false); setA11yOpen(true) }} />
           </div>
         </div>
@@ -550,7 +560,7 @@ export default function Layout() {
   )
 }
 
-function UserFooter({ user, isCloud, onSignOut, onNavigate, onA11y, a11yCount }) {
+function UserFooter({ user, isCloud, onSignOut, onA11y, a11yCount }) {
   const t = useT()
   const { avatar } = useAppearance()
   return (
@@ -592,10 +602,6 @@ function UserFooter({ user, isCloud, onSignOut, onNavigate, onA11y, a11yCount })
           </button>
         )}
       </div>
-      {/* Which books you are in is the same kind of question as who you are
-          signed in as, so it sits with it rather than competing with the brand
-          at the top of the column. Absent entirely until a company exists. */}
-      <BooksSwitcher variant="sidebar" className="mt-3" onSwitch={onNavigate} />
     </div>
   )
 }

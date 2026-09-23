@@ -182,4 +182,15 @@ export default {
   'a11y.alignStart': 'आरंभ',
   'a11y.alignCenter': 'मध्य',
   'a11y.alignEnd': 'अंत',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'ईमेल से',
+  'cloudbill.title': 'आपके ईमेल के बिल',
+  'cloudbill.subtitle': 'हाल की मेल जिनमें बिल जैसा अटैचमेंट है।',
+  'cloudbill.connect': 'Gmail जोड़ें',
+  'cloudbill.connectBody': 'Offset पिछले चार महीनों की मेल में बिल जैसे अटैचमेंट खोजेगा। केवल पढ़ने के लिए, कुछ भी सहेजा नहीं जाता।',
+  'cloudbill.searching': 'हाल की मेल देखी जा रही है…',
+  'cloudbill.none': 'पिछले चार महीनों में अटैचमेंट वाला कोई बिल नहीं मिला।',
+  'cloudbill.failed': 'आपकी मेल पढ़ी नहीं जा सकी।',
+  'cloudbill.retry': 'फिर कोशिश करें',
 }

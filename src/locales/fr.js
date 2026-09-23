@@ -184,4 +184,15 @@ export default {
   'a11y.alignStart': 'Début',
   'a11y.alignCenter': 'Centré',
   'a11y.alignEnd': 'Fin',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': 'Depuis la messagerie',
+  'cloudbill.title': 'Factures dans votre messagerie',
+  'cloudbill.subtitle': 'Courriers récents avec une pièce jointe qui ressemble à une facture.',
+  'cloudbill.connect': 'Connecter Gmail',
+  'cloudbill.connectBody': 'Offset parcourra les quatre derniers mois de courrier à la recherche de pièces jointes ressemblant à des factures. Lecture seule, rien n’est conservé.',
+  'cloudbill.searching': 'Lecture des courriers récents…',
+  'cloudbill.none': 'Aucune facture avec pièce jointe ces quatre derniers mois.',
+  'cloudbill.failed': 'Impossible de lire votre messagerie.',
+  'cloudbill.retry': 'Réessayer',
 }

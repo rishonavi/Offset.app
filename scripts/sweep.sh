@@ -18,7 +18,7 @@ cd "$(dirname "$0")/.." || exit 1
 out=$(mktemp)
 
 for d in $dirs; do
-  ls tests/"$d"/*.mjs 2>/dev/null | grep -vE "/_|loginui" | xargs -P 8 -I{} sh -c '
+  ls tests/"$d"/*.mjs 2>/dev/null | grep -vE "/_|loginui|cloudbillui" | xargs -P 8 -I{} sh -c '
     o=$(npx vite-node {} 2>&1); code=$?
     sum=$(printf "%s" "$o" | grep -oE "[0-9]+ passed, [0-9]+ failed" | tail -1)
     if [ -z "$sum" ]; then

@@ -181,4 +181,15 @@ export default {
   'a11y.alignStart': '起始',
   'a11y.alignCenter': '居中',
   'a11y.alignEnd': '末尾',
+
+  // ── Attaching a bill from an inbox ──
+  'entry.fromEmail': '从邮件导入',
+  'cloudbill.title': '邮件中的账单',
+  'cloudbill.subtitle': '最近带有账单类附件的邮件。',
+  'cloudbill.connect': '连接 Gmail',
+  'cloudbill.connectBody': 'Offset 将在最近四个月的邮件中查找类似账单的附件。仅读取，不保存任何内容。',
+  'cloudbill.searching': '正在查看最近的邮件…',
+  'cloudbill.none': '最近四个月没有带附件的账单。',
+  'cloudbill.failed': '无法读取你的邮件。',
+  'cloudbill.retry': '重试',
 }
