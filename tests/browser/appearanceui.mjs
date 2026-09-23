@@ -44,6 +44,28 @@ console.log('── CHOOSING A COLOUR ──')
   await p.locator('button[title="Gold"]').first().click()
   await p.waitForTimeout(300)
   ok('going back to gold stores nothing', (await p.evaluate(() => localStorage.getItem('pl_accent'))) === null)
+
+  // And the colour on screen actually goes back.
+  //
+  // This assertion was missing, and the bug it would have caught lived in the
+  // gap: the reload two lines above is what breaks it. index.html writes the
+  // stored accent *inline* on <html> so the colour is right before any module
+  // loads; an inline declaration beats a rule in a stylesheet, and the
+  // stylesheet is the entire output of applyAppearance. So the first choice in
+  // a fresh browser worked, and every choice after a reload updated the style
+  // tag underneath an inline value that still won. The new colour was stored,
+  // correct, and invisible until you reloaded again.
+  //
+  // Checking localStorage proved the choice was recorded. Nobody asked the
+  // document what colour it was.
+  ok('and the document goes back with it', (await accentVar(p)).includes('82.35'), await accentVar(p))
+  await p.locator('button[title="Emerald"]').first().click()
+  await p.waitForTimeout(300)
+  ok('a second change after a reload still lands, without another one',
+    (await accentVar(p)).includes('155'), await accentVar(p))
+  ok('  and leaves nothing inline for the next one to fight',
+    (await p.evaluate(() => document.documentElement.style.getPropertyValue('--color-gold'))) === '',
+    await p.evaluate(() => document.documentElement.style.getPropertyValue('--color-gold')))
   await ctx.close()
 }
 

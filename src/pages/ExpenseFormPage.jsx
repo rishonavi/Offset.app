@@ -95,12 +95,12 @@ export default function ExpenseFormPage() {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in mx-auto max-w-3xl space-y-6">
       <Link to="/expenses" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-ink-5 hover:text-ink-2">
         <ArrowLeft size={15} /> {t('entry.backToExpenses')}
       </Link>
       <PageHeader title={editing ? t('entry.editExpense') : t('expense.add')} />
-      <Card className="max-w-2xl p-5 sm:p-7">
+      <Card className="p-5 sm:p-7">
         <ExpenseForm
           initial={editing}
           properties={properties}

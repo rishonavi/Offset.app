@@ -59,14 +59,25 @@ export default function AssetFormPage() {
     goBack()
   }
 
+  // Narrow the page, not the card.
+  //
+  // A form wants a short measure — 672px of it, which is right — but the card
+  // carried that width while the heading and the back link kept the full
+  // column. The result was a page whose content all sat left of centre with
+  // 540px of nothing beside it on a 1600px screen: a layout reading as failed
+  // rather than as a deliberately short form.
+  //
+  // Capping the whole block and letting the card fill it keeps the measure,
+  // lines the heading up with the card, and leaves the spare width as even
+  // margin on both sides.
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in mx-auto max-w-3xl space-y-6">
       <Link to="/properties" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-ink-5 hover:text-ink-2">
         <ArrowLeft size={15} /> Back to assets
       </Link>
       <PageHeader title={editing ? 'Edit asset' : 'Add asset'} />
       {atAssetLimit ? (
-        <Card className="flex max-w-2xl flex-col items-start gap-3 p-6">
+        <Card className="flex flex-col items-start gap-3 p-6">
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-gold/15 text-brand-ink">
             <Crown size={20} />
           </span>
@@ -79,7 +90,7 @@ export default function AssetFormPage() {
           </Link>
         </Card>
       ) : (
-        <Card className="max-w-2xl p-5 sm:p-7">
+        <Card className="p-5 sm:p-7">
           <PropertyForm initial={editing} history={properties} onSubmit={onSubmit} onCancel={goBack} />
         </Card>
       )}

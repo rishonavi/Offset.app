@@ -267,6 +267,25 @@ export const chromeColour = (tone = DEFAULT_TONE) => {
 
 export const STYLE_ID = 'offset-scheme'
 
+// What the boot script in index.html writes *inline* on <html> to have the
+// colour right before any module loads. It has to be cleared here, because an
+// inline declaration beats a rule in a stylesheet no matter how the rule is
+// written — and this function's whole output is a stylesheet.
+//
+// That is why changing the accent appeared to stop working after the first
+// time. A fresh browser has nothing stored, so boot writes nothing inline and
+// the first choice takes effect at once; storing that choice means the next
+// load writes it inline, and from then on every further choice updated the
+// <style> tag underneath an inline value that still won. The new colour was
+// real, correct and stored, and you had to reload to see it.
+//
+// The boot script covers the gap before modules load. Once this runs, the
+// stylesheet is the source of truth and the stopgap gets out of the way.
+const BOOT_INLINE = [
+  '--color-gold', '--color-gold-dark', '--color-brand', '--color-brand-dark',
+  '--color-brand-light', '--color-surface-page',
+]
+
 export function applyAppearance({ accent = DEFAULT_ACCENT, tone = DEFAULT_TONE } = {}) {
   if (typeof document === 'undefined') return
   let el = document.getElementById(STYLE_ID)
@@ -276,6 +295,7 @@ export function applyAppearance({ accent = DEFAULT_ACCENT, tone = DEFAULT_TONE }
     document.head.append(el)
   }
   el.textContent = schemeStyle({ accent, tone })
+  for (const name of BOOT_INLINE) document.documentElement.style.removeProperty(name)
 
   // Two of these ship in index.html so the colour is right before any script
   // runs; this keeps them in step once someone changes the tone.

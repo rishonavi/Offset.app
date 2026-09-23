@@ -95,12 +95,12 @@ export default function IncomeFormPage() {
   }
 
   return (
-    <div className="animate-fade-in space-y-6">
+    <div className="animate-fade-in mx-auto max-w-3xl space-y-6">
       <Link to="/income" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-ink-5 hover:text-ink-2">
         <ArrowLeft size={15} /> {t('entry.backToIncome')}
       </Link>
       <PageHeader title={editing ? t('entry.editIncome') : t('income.add')} />
-      <Card className="max-w-2xl p-5 sm:p-7">
+      <Card className="p-5 sm:p-7">
         <IncomeForm
           initial={editing}
           properties={properties}

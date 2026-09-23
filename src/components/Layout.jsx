@@ -269,7 +269,7 @@ function ThemeToggle({ className = '' }) {
   return (
     <button
       onClick={toggle}
-      className={`grid h-11 w-11 place-items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-gold ${className}`}
+      className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-gold ${className}`}
       title={dark ? t('chrome.switchToLight') : t('chrome.switchToDark')}
       aria-label={t('chrome.toggleTheme')}
     >
@@ -294,7 +294,7 @@ function A11yButton({ onClick, count }) {
   return (
     <button
       onClick={onClick}
-      className="relative grid h-11 w-11 place-items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-gold"
+      className="relative grid h-11 w-11 shrink-0 place-items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-gold"
       title={t('a11y.open')}
       aria-label={t('a11y.open')}
     >
@@ -555,20 +555,37 @@ function UserFooter({ user, isCloud, onSignOut, onNavigate, onA11y, a11yCount })
   const { avatar } = useAppearance()
   return (
     <div className="mt-4 border-t border-white/10 pt-4">
+      {/* Who you are, then what you can do — two rows, not one.
+          
+          This column is 288px wide and loses 32 to its own padding. A 36px
+          avatar and three 44px buttons take 168 of the remaining 256, and the
+          gaps take 24, which left about fifty pixels for a name. It showed a
+          single letter and wrapped "SIGNED IN" onto two lines. Worse, none of
+          the buttons was `shrink-0`, so rather than pushing the name out they
+          squashed themselves below their own icons — and an 18px glyph in a
+          12px box is drawn over whatever is beside it. The accessibility icon
+          ended up sitting on top of the word "SIGNED".
+
+          Two buttons fitted, barely, which is why this only came apart when a
+          third arrived. Splitting the row gives the name the full width and
+          the controls their full 44px targets, and it cannot come apart again
+          when something else is added. */}
       <div className="flex items-center gap-3 px-1">
         <Avatar avatar={avatar} email={user?.email} size={36} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium text-white">
             {avatar?.name?.trim() || user?.email || t('chrome.localUser')}
           </div>
-          <div className="text-[10px] uppercase tracking-[1.5px] text-gold/85">{isCloud ? t('chrome.signedIn') : t('chrome.demoMode')}</div>
+          <div className="truncate text-[10px] uppercase tracking-[1.5px] text-gold/85">{isCloud ? t('chrome.signedIn') : t('chrome.demoMode')}</div>
         </div>
+      </div>
+      <div className="mt-1 flex items-center gap-1">
         {onA11y && <A11yButton onClick={onA11y} count={a11yCount} />}
         <ThemeToggle />
         {isCloud && (
           <button
             onClick={onSignOut}
-            className="grid h-11 w-11 place-items-center rounded-lg text-white/50 transition hover:bg-red-500/15 hover:text-red-400"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-white/50 transition hover:bg-red-500/15 hover:text-red-400"
             title={t('chrome.signOut')}
           >
             <LogOut size={17} />
