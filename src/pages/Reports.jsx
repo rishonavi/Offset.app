@@ -8,6 +8,8 @@ import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { FileText, Landmark, FileUp } from 'lucide-react'
 import { useData } from '../context/DataContext'
+import { useEntity } from '../context/EntityContext'
+import { placeHeading } from '../lib/place'
 import { applyFilters, sumAmount } from '../lib/filters'
 import { useFilterParams } from '../lib/useFilterParams'
 import { formatCurrency, formatDate } from '../lib/format'
@@ -46,6 +48,7 @@ function ladderRows({ payable, receivable }) {
 // which shares this page's filter through the URL.
 export default function Reports() {
   const { expenses, income, properties, propertyNameById, placeName } = useData()
+  const ent = useEntity()
   const [filters, setFilters] = useFilterParams()
   const { search } = useLocation()
   // Left behind when this page was split from Export: downloadYearEndPDF still
@@ -419,7 +422,11 @@ export default function Reports() {
               <thead>
                 <tr className="border-b border-line bg-surface-sunk text-start text-xs uppercase tracking-wide text-ink-5">
                   <th className="px-5 py-2.5 font-semibold">Date</th>
-                  <th className="px-5 py-2.5 font-semibold">Property</th>
+                  {/* Every other cost table asks what to call this column,
+                      because "Property" is a category error for a builder
+                      whose costs sit against jobs they will never own. This
+                      one hard-coded it. */}
+                  <th className="px-5 py-2.5 font-semibold">{placeHeading(ent?.corporate)}</th>
                   <th className="px-5 py-2.5 font-semibold">Category</th>
                   <th className="px-5 py-2.5 font-semibold">Vendor</th>
                   <th className="px-5 py-2.5 text-end font-semibold">Amount</th>

@@ -22,11 +22,16 @@ export default function PageHeader({ title, subtitle, actions, eyebrow, icon: Ic
           <div className="min-w-0">
             {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
             <h1 className="font-serif text-2xl font-bold tracking-tight text-ink-1 sm:text-3xl">{title}</h1>
+            {/* Under the title, not under the row. The row stacks on a phone,
+                so a rule placed after it had the page's buttons in between and
+                ended up underlining "Download PDF" — on every screen with an
+                action, which is most of them. It is the title's underline; it
+                belongs to the title. */}
+            <span className="mt-3 block h-[2px] w-12 bg-gold" />
           </div>
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2 sm:shrink-0">{actions}</div>}
       </div>
-      <span className="mt-3 block h-[2px] w-12 bg-gold" />
       {/* Capped, because a line of explanatory text running the full width of a
           wide monitor is measurably harder to read than one that doesn't. */}
       {subtitle && <div className="mt-3 max-w-2xl text-sm text-ink-5">{subtitle}</div>}

@@ -25,8 +25,15 @@ export default function FilterBar({ properties, value, onChange, categories = CA
           />
         </div>
 
+        {/* "All properties" under an aria-label reading "Filter by asset": the
+            control said one word on screen and a different one to a screen
+            reader. The app settled on "asset" everywhere — the page is titled
+            Assets, so is the nav, so is the dashboard's own copy of this
+            filter — and this leftover rides along on /expenses, /reports and
+            /exports, which is three of the screens where the two words sit a
+            few inches apart. */}
         <select className="field-input lg:col-span-2" aria-label="Filter by asset" value={value.propertyId} onChange={set('propertyId')}>
-          <option value="">All properties</option>
+          <option value="">All assets</option>
           {properties.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}

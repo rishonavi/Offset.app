@@ -45,7 +45,11 @@ export default function Labour(shared) {
   const [view, setView] = useState('muster')
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1" role="tablist" aria-label="Labour">
+      {/* One scrolling row, like the bar above it. These wrapped 3/2 on a
+          phone — a second tab idiom, in a second shape, directly under the
+          first. `shrink-0` so the pills keep their size and the row runs off
+          the end instead of squeezing. */}
+      <div className="scroll-row flex gap-1" role="tablist" aria-label="Labour">
         {VIEWS.map((v) => (
           <button
             key={v.id}
@@ -53,7 +57,7 @@ export default function Labour(shared) {
             onClick={() => setView(v.id)}
             aria-selected={view === v.id}
             className={cx(
-              'inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-xs font-semibold transition',
+              'inline-flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-xs font-semibold transition',
               view === v.id
                 ? 'border-brand bg-brand/15 text-ink-1'
                 : 'border-line text-ink-5 hover:border-line-strong hover:text-ink-2',

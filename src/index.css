@@ -697,6 +697,16 @@ main:has([data-page-action]) ~ [data-fab] { display: none; }
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  /* Room for the focus ring, which is the catch in making anything scroll.
+     Setting overflow-x to auto forces overflow-y to auto as well — the spec
+     resolves a `visible` on one axis to `auto` when the other is not — so this
+     becomes a clipping box on both axes, and the ring is 2px of outline at 2px
+     of offset, drawn entirely outside the border box. Without this it is
+     sliced off the top and bottom of every tab in the app, which is a keyboard
+     user losing their place, invisibly, in exchange for a tidier phone
+     layout. The bars that already had p-1 give up their vertical half of it,
+     so nothing gets taller. */
+  padding-block: 5px;
 }
 .scroll-row::-webkit-scrollbar { display: none; }
 

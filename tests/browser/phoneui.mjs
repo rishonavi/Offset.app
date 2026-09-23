@@ -205,6 +205,48 @@ for (const r of ROUTES) {
     Boolean(bar) && bar.n >= 6 && bar.rows === 1 && bar.scrolls, JSON.stringify(bar))
 }
 
+// And the catch in making anything scroll: the focus ring.
+//
+// Setting overflow-x to auto forces overflow-y to auto too — the spec resolves
+// `visible` on one axis to `auto` when the other is not — so a scrolling row
+// clips on both axes, and this app's focus ring is 2px of outline at 2px of
+// offset, drawn wholly outside the border box. A row sized exactly to its tabs
+// slices that ring off top and bottom: a keyboard user loses their place, and
+// nothing on screen looks wrong, which is how it would have shipped.
+//
+// Overflow clips at the padding box, so the row's vertical padding is the
+// room the ring gets. Measured rather than assumed.
+{
+  const RING = 4
+  for (const route of ['/operations?tab=projects', '/operations?tab=materials', '/operations?tab=labour']) {
+    await p.goto(B + route, { waitUntil: 'networkidle' })
+    await p.waitForFunction(() => !document.querySelector('#main-content [role="status"]'), null, { timeout: 12000 }).catch(() => {})
+    await p.waitForTimeout(400)
+    const tight = await p.evaluate((ring) => {
+      const bad = []
+      for (const row of document.querySelectorAll('.scroll-row')) {
+        const r = row.getBoundingClientRect()
+        const cs = getComputedStyle(row)
+        // The clipping boundary is the padding box: the border box less its
+        // own borders.
+        const top = r.top + parseFloat(cs.borderTopWidth)
+        const bottom = r.bottom - parseFloat(cs.borderBottomWidth)
+        for (const kid of row.children) {
+          const k = kid.getBoundingClientRect()
+          if (k.height < 4) continue
+          const over = Math.max(top - (k.top - ring), (k.bottom + ring) - bottom)
+          if (over > 0.5) {
+            bad.push(`"${kid.textContent.trim().slice(0, 18)}" ring clipped by ${over.toFixed(1)}px`)
+            break
+          }
+        }
+      }
+      return bad
+    }, RING)
+    ok(`${route} — a scrolling row leaves room for the focus ring`, tight.length === 0, tight.join(' | '))
+  }
+}
+
 // Stat cards two to a row. One number per full-width card turns four figures
 // into four screens of scrolling, and every other stat row in the app — the
 // dashboard's, the asset page's, materials', sites', plant's — is already two

@@ -188,7 +188,7 @@ export default function Operations() {
           a narrow one the row runs off the end and is swiped instead of
           re-flowed. Same markup, same look on a desktop, one consistent height
           everywhere. */}
-      <div className="scroll-row flex gap-1 rounded-xl border border-line bg-surface-raised p-1">
+      <div className="scroll-row flex gap-1 rounded-xl border border-line bg-surface-raised px-1">
         {TABS.map((t) => (
           <button
             key={t.id}

@@ -195,7 +195,17 @@ export default function Companies() {
     <div className="animate-fade-in space-y-5">
       <PageHeader
         title="Companies"
-        subtitle={ent.personal ? 'You are in your personal books.' : ent.consolidated ? 'Viewing all companies together.' : ent.entity?.name || ''}
+        subtitle={
+          // The other two branches say what you are looking at; this one said
+          // the company's name and nothing else — a name already printed in
+          // the switcher above it and again in the card below it, standing
+          // where the sentence explaining the page should be.
+          ent.personal
+            ? 'You are in your personal books.'
+            : ent.consolidated
+              ? 'Viewing all companies together.'
+              : `People, departments, approvals and the closed-period lock for ${ent.entity?.name || 'this company'}.`
+        }
         actions={ent.can('entity.manage') || !ent.corporate ? (
           <Button variant="ghost" onClick={() => setCreating((v) => !v)}>
             <Plus size={16} /> Add a company
