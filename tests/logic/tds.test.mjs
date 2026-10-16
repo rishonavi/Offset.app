@@ -21,6 +21,7 @@ import {
 } from '../../src/lib/tds.js'
 import { makeWorkOrder, makeRaBill } from '../../src/lib/subcontract.js'
 import { buildSample } from '../../src/lib/sampleSite.js'
+import { freezeClock } from './_clock.mjs'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
@@ -212,14 +213,30 @@ console.log('\n── AND THE SAMPLE MAKES THE MISTAKE ──')
 // Deducting the individual rate from a partnership firm. It is the commonest
 // way this goes wrong, every order looks right on its own screen, and until
 // there was something to compare against, nothing in the app could disagree.
+//
+// On a fixed day, because the sample books are dated relative to now and the
+// financial year is not. This asked the module what the return said *today* and
+// hard-coded an answer from the day it was written, so it was green for five
+// months and then went red on 1 October without a line of code changing: the
+// sample's first RA bill sits at `day(180)`, which crossed back over 1 April as
+// the calendar moved and brought ₹50,00,000 into the year with it.
+//
+// 1 October is the day the rest of this file already stands on, and from there
+// the window on the RCC order holds all three of its bills — ₹1,46,00,000
+// certified to date, one per cent deducted where a firm owes two.
+const thaw = freezeClock('2026-10-01T00:00:00Z')
 const sample = tdsLedger(buildSample(E).workOrders, buildSample(E).raBills, { entityId: E })
+thaw()
 eq('four contractors were paid this year', sample.count, 4)
 eq('one of them had too little deducted', sample.short, 1)
 eq('and it is the firm', sample.lines[0].party, 'Ganesh Construction Co.')
 eq('which is not an individual', sample.lines[0].status, 'other')
 eq('so two per cent was required', sample.lines[0].rate, 2)
-eq('where one was deducted', sample.lines[0].deducted, 96000)
-eq('leaving this much short', sample.shortfall, 96000)
+eq('where one was deducted', sample.lines[0].deducted, 146000)
+eq('leaving this much short', sample.shortfall, 146000)
+// Half of what was due, which is what one per cent instead of two comes to —
+// stated as a relationship so it cannot drift away from the rate above.
+eq('which is exactly the half that was missed', sample.shortfall, sample.lines[0].deducted)
 // The control beside it: the three individuals are at the right rate, so the
 // finding is the rate and not the module disliking everybody.
 eq('nobody else is short', sample.lines.filter((l) => l.short).length, 1)

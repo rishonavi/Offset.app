@@ -108,15 +108,27 @@ console.log('\n── THE FIELDS THAT COULD NEVER BE FILLED IN ──')
 // Gratuity is fifteen days' wages for every year since the joining date, and
 // that date was not on the form at all — so the liability was nil for everybody
 // and nothing said why.
+// Eight years and a few months back from whenever this runs, rather than a
+// fixed April 2018. Gratuity is counted from the joining date to today, so a
+// fixed date carries a figure that is only right for a while: this asserted
+// eight years and ₹83,077 and went red the day the gap reached eight years and
+// six months, because the Act rounds a remainder over six months up and the
+// liability stepped to nine years' worth. Dating the input from today keeps the
+// remainder at two or three months, which is never near the boundary.
+const back = new Date()
+const joinedOn = new Date(back.getFullYear() - 8, back.getMonth() - 3, 15)
+const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const JOINED = `${joinedOn.getFullYear()}-${String(joinedOn.getMonth() + 1).padStart(2, '0')}-15`
+const JOINED_SHOWN = `15 ${MONTH[joinedOn.getMonth()]} ${joinedOn.getFullYear()}`
 await p.locator('#main-content button[aria-label="Edit Avi Shah"]').click()
 await p.waitForTimeout(500)
-await field('Joined on').fill('2018-04-01')
+await field('Joined on').fill(JOINED)
 await field('Dearness allowance').fill('3000')
 await field('Leave standing').fill('41')
 await saveIn('Editing Avi Shah').click()
 await p.waitForTimeout(900)
 const avi = await who('Avi Shah')
-ok('the joining date is kept', avi?.joined_on === '2018-04-01', JSON.stringify(avi?.joined_on))
+ok('the joining date is kept', avi?.joined_on === JOINED, JSON.stringify(avi?.joined_on))
 ok('the dearness allowance too', avi?.pay?.da === 3000, JSON.stringify(avi?.pay))
 ok('and the leave standing', Number(avi?.leave_balance) === 41, String(avi?.leave_balance))
 t = await main()
@@ -129,7 +141,8 @@ await p.locator('#main-content input[aria-label="This company pays gratuity anyw
 await p.waitForTimeout(900)
 t = await main()
 // Which is the point of filling the joining date in at all: the liability stops
-// being nil. Eight years since April 2018, fifteen days of ₹18,000 for each.
+// being nil. Eight years, fifteen days of ₹18,000 for each — ₹18,000 × 15/26 ×
+// 8, which comes to ₹83,077.
 ok('and once they say they pay it, gratuity is no longer nil',
   /OWED IF EVERYONE LEFT TODAY\s*\n\s*₹[1-9]/i.test(t), t.slice(0, 3500).replace(/\n/g, ' | '))
 ok('with the years counted from the date just entered', /crossing 5 years|8 years/i.test(t) || /₹83,077/.test(t),
@@ -137,7 +150,8 @@ ok('with the years counted from the date just entered', /crossing 5 years|8 year
 ok('and the leave is worth something', /STANDING, IN CASH\s*\n\s*₹[1-9]/i.test(t),
   t.slice(0, 3500).replace(/\n/g, ' | '))
 ok('with the days over the cap called out', /about to lapse/i.test(t), t.slice(0, 3500).replace(/\n/g, ' | '))
-ok('the list shows the joining date back', /joined 01 Apr 2018/.test(t), t.slice(0, 2500).replace(/\n/g, ' | '))
+ok('the list shows the joining date back', t.includes(`Joined ${JOINED_SHOWN}`) || t.includes(`joined ${JOINED_SHOWN}`),
+  `wanted "joined ${JOINED_SHOWN}" in ${t.slice(0, 2500).replace(/\n/g, ' | ')}`)
 
 console.log('\n── A RECORDED MONTH DOES NOT MOVE ──')
 // The half that matters more than the editing: a month already run carries the
