@@ -57,6 +57,8 @@ export default {
   'banner.loadFailed': 'آپ کے کھاتے لوڑ نہیں ہو سکے',
   'banner.loadFailedBody': '— نیچے کے اعداد نامکمل ہو سکتے ہیں۔ کچھ ضائع نہیں ہوا۔',
   'banner.retry': 'دوبارہ کوشش کریں',
+  'banner.unreadable': 'محفوظ شدہ بعض اندراجات پڑھے نہیں جا سکے',
+  'banner.unreadableBody': '— جو دکھ رہا ہے وہ باقی ہے۔ ناقابلِ مطالعہ حصہ جوں کا توں الگ رکھ دیا گیا ہے، تاکہ کچھ مٹ نہ جائے۔',
 
   'common.loading': 'لوڈ ہو رہا ہے…',
   'common.save': 'محفوظ کریں',

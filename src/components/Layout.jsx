@@ -354,7 +354,7 @@ export default function Layout() {
   // answered the sign-in and then failed the queries rendered empty lists —
   // a ledger that looks like an empty one is worse than an error, because
   // somebody acts on it.
-  const { canWrite, error: loadError, refresh } = useData()
+  const { canWrite, error: loadError, damaged, refresh } = useData()
   const { announcement, maintenance } = useConfig()
   const { openReport } = useReport()
   const t = useT()
@@ -506,6 +506,18 @@ export default function Layout() {
             <button type="button" onClick={refresh} className="shrink-0 font-semibold underline underline-offset-2">
               {t('banner.retry')}
             </button>
+          </div>
+        )}
+        {damaged?.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-gold/30 bg-amber-50 px-4 py-2 text-xs text-amber-800 lg:px-8">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span className="min-w-0">
+              <strong>{t('banner.unreadable')}</strong> {t('banner.unreadableBody')}{' '}
+              {/* Which keys, dim and last. Nobody needs it until they are
+                  trying to get the entries back by hand, and then it is the
+                  only thing on the screen that helps. */}
+              <span className="text-amber-800/70">{damaged.join(', ')}</span>
+            </span>
           </div>
         )}
         {maintenance?.active && (

@@ -62,6 +62,8 @@ export default {
   'banner.loadFailed': 'تعذّر تحميل دفاترك',
   'banner.loadFailedBody': '— قد تكون الأرقام أدناه غير كاملة. لم يُفقد شيء.',
   'banner.retry': 'أعد المحاولة',
+  'banner.unreadable': 'بعض القيود المحفوظة لم يمكن قراءتها',
+  'banner.unreadableBody': '— المعروض هو الباقي. وقد حُفِظ الجزء غير المقروء جانبًا كما هو، حتى لا يُكتب فوقه شيء.',
 
   'common.loading': 'جارٍ التحميل…',
   'common.save': 'حفظ',

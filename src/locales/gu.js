@@ -57,6 +57,8 @@ export default {
   'banner.loadFailed': 'તમારા ચોપડા લોડ થઈ શક્યા નથી',
   'banner.loadFailedBody': '— નીચેના આંકડા અધૂરા હોઈ શકે છે. કંઈ ખોવાયું નથી.',
   'banner.retry': 'ફરી પ્રયાસ કરો',
+  'banner.unreadable': 'સાજવેલી કેટલીક નોંધ વાંચી શકાઈ નથી',
+  'banner.unreadableBody': '— જે દેખાય છે તે બાકીનું છે. ન વાંચી શકાય એવો ભાગ જેમ છે તેમ અલગ રાખ્યો છે, જેથી કંઈ મિટે નહિં.',
 
   'common.loading': 'લોડ થઈ રહ્યું છે…',
   'common.save': 'સાચવો',

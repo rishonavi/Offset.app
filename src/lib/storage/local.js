@@ -10,6 +10,7 @@ const PBUD_KEY = 'pl_personal_budgets'
 const COMMENT_KEY = 'pl_comments'
 
 import { putBlob, getBlob, deleteBlob, isBlobToken, pruneBlobs } from './blobs'
+import { readRows } from './salvage'
 
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
@@ -21,13 +22,13 @@ const uid = () =>
     ? crypto.randomUUID()
     : 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36)
 
-const read = (key) => {
-  try {
-    return JSON.parse(localStorage.getItem(key)) || []
-  } catch {
-    return []
-  }
-}
+// Rows come back through `readRows`, which answers a key it cannot read with an
+// empty array *and* remembers that it could not read it, having first copied the
+// raw text aside so the next write cannot destroy it. This used to be
+// `JSON.parse(...) || []`, which lost the fact silently and handed back whatever
+// it parsed — a stored object came through as an object and `[...rows].sort()`
+// threw on something that is not iterable.
+const read = (key) => readRows(key)
 // localStorage is capped at about 5MB per origin, and attachments live in it as
 // data URLs, so this is a limit real use reaches — a few photographed bills is
 // enough. setItem throws rather than truncating, which means the previous value

@@ -58,6 +58,8 @@ export default {
   'banner.loadFailed': 'आपकी बहियाँ लोड नहीं हो सकीं',
   'banner.loadFailedBody': '— नीचे के आंकड़े अधूरे हो सकते हैं। कुछ मिटा नहीं है।',
   'banner.retry': 'पुनः प्रयास करें',
+  'banner.unreadable': 'कुछ सहेजी गई प्रविष्टियाँ पढ़ी नहीं जा सकीं',
+  'banner.unreadableBody': '— जो दिख रहा है वह शेष है। अपठनीय हिस्सा ज्यों का त्यों अलग रख दिया गया है, ताकि कुछ मिटे नहीं।',
 
   'common.loading': 'लोड हो रहा है…',
   'common.save': 'सहेजें',

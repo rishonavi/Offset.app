@@ -58,6 +58,8 @@ export default {
   'banner.loadFailed': 'Não foi possível carregar os seus livros',
   'banner.loadFailedBody': '— os valores abaixo podem estar incompletos. Nada foi perdido.',
   'banner.retry': 'Tentar de novo',
+  'banner.unreadable': 'Alguns lançamentos guardados não puderam ser lidos',
+  'banner.unreadableBody': '— o que aparece é o restante. A parte ilegível foi guardada à parte, intacta, para que nada seja sobrescrito.',
 
   'common.loading': 'Carregando…',
   'common.save': 'Salvar',

@@ -57,6 +57,8 @@ export default {
   'banner.loadFailed': 'আপনার খাতা লোড করা যায়নি',
   'banner.loadFailedBody': '— নিচের হিসাব অসম্পূর্ণ হতে পারে। কিছুই হারায়নি।',
   'banner.retry': 'আবার চেষ্টা করুন',
+  'banner.unreadable': 'সংরক্ষিত কিছু ভুক্তি পড়া যায়নি',
+  'banner.unreadableBody': '— যা দেখানো হেয়েছে তাই বাকি। পড়া যায়নি যে অংশ, তা অবিকৃত রেখে দেওয়া হয়েছে, যেন কিছু মুছে না যায়।',
 
   'common.loading': 'লোড হচ্ছে…',
   'common.save': 'সংরক্ষণ করুন',

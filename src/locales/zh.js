@@ -60,6 +60,8 @@ export default {
   'banner.loadFailed': '无法加载您的账簿',
   'banner.loadFailedBody': '— 下方的数字可能不完整。数据并未丢失。',
   'banner.retry': '重试',
+  'banner.unreadable': '部分已保存的记录无法读取',
+  'banner.unreadableBody': '— 显示的是其余部分。无法读取的部分已原样单独保存，不会被覆盖。',
 
   'common.loading': '加载中…',
   'common.save': '保存',

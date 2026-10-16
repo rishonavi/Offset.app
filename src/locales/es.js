@@ -61,6 +61,8 @@ export default {
   'banner.loadFailed': 'No se pudieron cargar tus libros',
   'banner.loadFailedBody': '— las cifras de abajo pueden estar incompletas. No se ha perdido nada.',
   'banner.retry': 'Reintentar',
+  'banner.unreadable': 'Algunas entradas guardadas no se pudieron leer',
+  'banner.unreadableBody': '— lo que se muestra es el resto. La parte ilegible se ha guardado aparte, intacta, para que nada se sobrescriba.',
 
   'common.loading': 'Cargando…',
   'common.save': 'Guardar',

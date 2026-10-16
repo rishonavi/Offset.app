@@ -17,6 +17,7 @@ import {
 import { touch } from '../sync'
 import { checkPeriod } from '../periods'
 import { findRepeat } from '../idempotent'
+import { readRows } from './salvage'
 
 const KEYS = {
   entities: 'pl_corp_entities',
@@ -46,14 +47,10 @@ const KEYS = {
   receipts: 'pl_corp_receipts',
 }
 
-const read = (key) => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(key))
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
-}
+// Same read as the personal backend, in one place: an unreadable key is copied
+// aside before anything can write over it, and remembered so the app can say so
+// rather than showing an empty stock book.
+const read = (key) => readRows(key)
 
 const write = (key, value) => {
   try {

@@ -64,6 +64,8 @@ export default {
   'banner.loadFailed': 'Couldn’t load your books',
   'banner.loadFailedBody': '— the figures below may be incomplete. Nothing has been lost.',
   'banner.retry': 'Try again',
+  'banner.unreadable': 'Some saved entries could not be read',
+  'banner.unreadableBody': '— what is shown is the rest. The unreadable part has been kept aside, untouched, so nothing is overwritten.',
 
   // ── Shared wording ──
   'common.loading': 'Loading…',

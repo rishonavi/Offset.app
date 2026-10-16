@@ -7,6 +7,7 @@ import { checkPeriod } from '../lib/periods'
 import { cleanMoney } from '../lib/money'
 import * as corporate from '../lib/storage/corporate'
 import { placeOf } from '../lib/place'
+import { unreadable } from '../lib/storage/salvage'
 
 const DataContext = createContext(null)
 
@@ -24,6 +25,10 @@ export function DataProvider({ children }) {
   const [income, setIncome] = useState([])
   const [documents, setDocuments] = useState([])
   const [comments, setComments] = useState([])
+  // Keys the browser held but could not be read. Separate from `error`, which
+  // is a load that failed: this one succeeded and came back short, and the two
+  // say different things to the person reading the screen.
+  const [damaged, setDamaged] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -77,6 +82,10 @@ export function DataProvider({ children }) {
     } catch (err) {
       setError(err?.message || String(err))
     } finally {
+      // After the reads, not before: `readRows` only knows a key is unreadable
+      // once it has tried. Set on every refresh so a key that reads correctly
+      // later clears the warning instead of leaving it up for the session.
+      setDamaged(unreadable())
       setLoading(false)
     }
   }, [])
@@ -274,6 +283,7 @@ export function DataProvider({ children }) {
       comments: scopedComments,
       loading,
       error,
+      damaged,
       canWrite,
       refresh,
       propertyNameById,
@@ -296,7 +306,7 @@ export function DataProvider({ children }) {
       deleteComment,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scopedProperties, scopedExpenses, scopedIncome, scopedDocuments, scopedComments, loading, error, canWrite, refresh, propertyNameById, placeName, placeOfRow],
+    [scopedProperties, scopedExpenses, scopedIncome, scopedDocuments, scopedComments, loading, error, damaged, canWrite, refresh, propertyNameById, placeName, placeOfRow],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

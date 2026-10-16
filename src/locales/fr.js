@@ -60,6 +60,8 @@ export default {
   'banner.loadFailed': 'Impossible de charger vos livres',
   'banner.loadFailedBody': '— les chiffres ci-dessous peuvent être incomplets. Rien n’est perdu.',
   'banner.retry': 'Réessayer',
+  'banner.unreadable': 'Certaines écritures enregistrées n’ont pas pu être lues',
+  'banner.unreadableBody': '— ce qui s’affiche est le reste. La partie illisible a été mise de côté, intacte, pour que rien ne soit écrasé.',
 
   'common.loading': 'Chargement…',
   'common.save': 'Enregistrer',
