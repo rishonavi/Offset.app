@@ -34,10 +34,18 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [redirectError] = useState(REDIRECT_ERROR)
+  // Why we could not find out who is signed in, when that is the answer.
+  // `loading` used to be cleared in one place only — inside a callback that a
+  // failed request never reached — so a cloud that did not answer left this
+  // provider loading for the life of the page and the app on a spinner.
+  const [cloudError, setCloudError] = useState(null)
 
   useEffect(() => {
-    const unsubscribe = db.onAuthStateChange((u) => {
+    const unsubscribe = db.onAuthStateChange((u, error) => {
       setUser(u)
+      // A user arriving clears it: the storage layer leaves the request running
+      // after it has stopped waiting, so a slow answer still counts.
+      setCloudError(u ? null : (error ?? null))
       setLoading(false)
     })
     return unsubscribe
@@ -49,6 +57,9 @@ export function AuthProvider({ children }) {
     isCloud,
     // Whatever the provider said on the way back, if it said anything.
     redirectError,
+    // Set when the cloud could not be asked at all, which is a different
+    // screen from being signed out.
+    cloudError,
     signIn: (creds) => db.signIn(creds),
     signUp: (creds) => db.signUp(creds),
     signInWithProvider: (provider) => db.signInWithProvider(provider),

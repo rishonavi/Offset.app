@@ -55,6 +55,9 @@ export default {
   'banner.demoStrong': 'Modo de demonstração',
   'banner.demoBody': '— os dados são salvos apenas neste navegador. Adicione suas chaves do Supabase no .env para sincronização na nuvem, login e armazenamento de recibos.',
   'banner.maintenance': 'O Offset está passando por uma breve manutenção.',
+  'banner.loadFailed': 'Não foi possível carregar os seus livros',
+  'banner.loadFailedBody': '— os valores abaixo podem estar incompletos. Nada foi perdido.',
+  'banner.retry': 'Tentar de novo',
 
   'common.loading': 'Carregando…',
   'common.save': 'Salvar',

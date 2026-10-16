@@ -54,6 +54,9 @@ export default {
   'banner.demoStrong': 'ڈیمو موڈ',
   'banner.demoBody': '— ڈیٹا صرف اسی براؤزر میں محفوظ ہوتا ہے۔ کلاؤڈ سنک، لاگ اِن اور رسیدوں کے لیے .env میں اپنی Supabase کیز شامل کریں۔',
   'banner.maintenance': 'Offset مختصر دیکھ بھال سے گزر رہا ہے۔',
+  'banner.loadFailed': 'آپ کے کھاتے لوڑ نہیں ہو سکے',
+  'banner.loadFailedBody': '— نیچے کے اعداد نامکمل ہو سکتے ہیں۔ کچھ ضائع نہیں ہوا۔',
+  'banner.retry': 'دوبارہ کوشش کریں',
 
   'common.loading': 'لوڈ ہو رہا ہے…',
   'common.save': 'محفوظ کریں',

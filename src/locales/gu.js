@@ -54,6 +54,9 @@ export default {
   'banner.demoStrong': 'ડેમો મોડ',
   'banner.demoBody': '— માહિતી ફક્ત આ જ બ્રાઉઝરમાં સાચવાય છે. ક્લાઉડ સિંક, લોગિન અને રસીદ સંગ્રહ માટે .env માં તમારી Supabase કી ઉમેરો.',
   'banner.maintenance': 'Offset માં થોડા સમય માટે જાળવણી ચાલી રહી છે.',
+  'banner.loadFailed': 'તમારા ચોપડા લોડ થઈ શક્યા નથી',
+  'banner.loadFailedBody': '— નીચેના આંકડા અધૂરા હોઈ શકે છે. કંઈ ખોવાયું નથી.',
+  'banner.retry': 'ફરી પ્રયાસ કરો',
 
   'common.loading': 'લોડ થઈ રહ્યું છે…',
   'common.save': 'સાચવો',

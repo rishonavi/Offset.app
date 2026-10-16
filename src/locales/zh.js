@@ -57,6 +57,9 @@ export default {
   'banner.demoStrong': '演示模式',
   'banner.demoBody': '— 数据仅保存在此浏览器中。在 .env 中填入您的 Supabase 密钥即可启用云同步、登录和票据存储。',
   'banner.maintenance': 'Offset 正在进行短暂维护。',
+  'banner.loadFailed': '无法加载您的账簿',
+  'banner.loadFailedBody': '— 下方的数字可能不完整。数据并未丢失。',
+  'banner.retry': '重试',
 
   'common.loading': '加载中…',
   'common.save': '保存',

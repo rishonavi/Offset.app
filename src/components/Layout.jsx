@@ -30,6 +30,7 @@ import {
   FileSpreadsheet,
   CalendarDays,
   Accessibility,
+  AlertTriangle,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme, useAppearance } from '../context/ThemeContext'
@@ -349,7 +350,11 @@ const ON_ADD_EDIT_FORM = /^\/(properties|expenses|income)\/(new|[^/]+\/edit)$/
 
 export default function Layout() {
   const { user, signOut, isCloud } = useAuth()
-  const { canWrite } = useData()
+  // `error` was set on every failed load and read by nothing, so a cloud that
+  // answered the sign-in and then failed the queries rendered empty lists —
+  // a ledger that looks like an empty one is worse than an error, because
+  // somebody acts on it.
+  const { canWrite, error: loadError, refresh } = useData()
   const { announcement, maintenance } = useConfig()
   const { openReport } = useReport()
   const t = useT()
@@ -488,6 +493,21 @@ export default function Layout() {
 
       {/* Main content */}
       <main id="main-content" className="min-w-0">
+        {loadError && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700 lg:px-8">
+            <AlertTriangle size={14} className="shrink-0" />
+            <span className="min-w-0">
+              <strong>{t('banner.loadFailed')}</strong> {t('banner.loadFailedBody')}{' '}
+              {/* The backend's own words, last and dimmer. Useless to most
+                  people and the only useful thing here to anybody reporting
+                  it — the same bargain the unreachable screen makes. */}
+              <span className="text-red-700/70">{loadError}</span>
+            </span>
+            <button type="button" onClick={refresh} className="shrink-0 font-semibold underline underline-offset-2">
+              {t('banner.retry')}
+            </button>
+          </div>
+        )}
         {maintenance?.active && (
           <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-4 py-2 text-xs font-medium text-red-700 lg:px-8">
             <Info size={14} className="shrink-0" />

@@ -55,6 +55,9 @@ export default {
   'banner.demoStrong': 'डेमो मोड',
   'banner.demoBody': '— डेटा केवल इसी ब्राउज़र में सहेजा जाता है। क्लाउड सिंक, लॉगिन और रसीद संग्रह के लिए .env में अपनी Supabase कुंजियाँ जोड़ें।',
   'banner.maintenance': 'Offset में थोड़ी देर के लिए रखरखाव चल रहा है।',
+  'banner.loadFailed': 'आपकी बहियाँ लोड नहीं हो सकीं',
+  'banner.loadFailedBody': '— नीचे के आंकड़े अधूरे हो सकते हैं। कुछ मिटा नहीं है।',
+  'banner.retry': 'पुनः प्रयास करें',
 
   'common.loading': 'लोड हो रहा है…',
   'common.save': 'सहेजें',

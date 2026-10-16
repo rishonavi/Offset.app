@@ -54,6 +54,9 @@ export default {
   'banner.demoStrong': 'डेमो मोड',
   'banner.demoBody': '— डेटा फक्त याच ब्राउझरमध्ये जतन होतो. क्लाउड सिंक, लॉगिन व पावती संग्रहासाठी .env मध्ये तुमच्या Supabase किल्ल्या जोडा.',
   'banner.maintenance': 'Offset ची थोड्या वेळासाठी देखभाल सुरू आहे.',
+  'banner.loadFailed': 'तुमच्या वह्या लोड होऊ शकल्या नाहीत',
+  'banner.loadFailedBody': '— खालील आकडे अपूर्ण असू शकतात. काहीही हरवलेले नाही.',
+  'banner.retry': 'पुन्हा प्रयत्न करा',
 
   'common.loading': 'लोड होत आहे…',
   'common.save': 'जतन करा',

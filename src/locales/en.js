@@ -61,6 +61,9 @@ export default {
   'banner.demoStrong': 'Demo mode',
   'banner.demoBody': '— data is saved only in this browser. Add your Supabase keys in .env for cloud sync, login & receipt storage.',
   'banner.maintenance': 'Offset is undergoing brief maintenance.',
+  'banner.loadFailed': 'Couldn’t load your books',
+  'banner.loadFailedBody': '— the figures below may be incomplete. Nothing has been lost.',
+  'banner.retry': 'Try again',
 
   // ── Shared wording ──
   'common.loading': 'Loading…',

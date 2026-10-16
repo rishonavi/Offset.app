@@ -58,6 +58,9 @@ export default {
   'banner.demoStrong': 'Демо-режим',
   'banner.demoBody': '— данные сохраняются только в этом браузере. Добавьте ключи Supabase в .env для облачной синхронизации, входа и хранения чеков.',
   'banner.maintenance': 'Offset ненадолго остановлен на техническое обслуживание.',
+  'banner.loadFailed': 'Не удалось загрузить ваши книги',
+  'banner.loadFailedBody': '— цифры ниже могут быть неполными. Ничего не потеряно.',
+  'banner.retry': 'Повторить',
 
   'common.loading': 'Загрузка…',
   'common.save': 'Сохранить',

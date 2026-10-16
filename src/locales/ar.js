@@ -59,6 +59,9 @@ export default {
   'banner.demoStrong': 'الوضع التجريبي',
   'banner.demoBody': '— تُحفظ البيانات في هذا المتصفح فقط. أضف مفاتيح Supabase في ملف .env للمزامنة السحابية وتسجيل الدخول وحفظ الإيصالات.',
   'banner.maintenance': 'يخضع Offset لصيانة قصيرة.',
+  'banner.loadFailed': 'تعذّر تحميل دفاترك',
+  'banner.loadFailedBody': '— قد تكون الأرقام أدناه غير كاملة. لم يُفقد شيء.',
+  'banner.retry': 'أعد المحاولة',
 
   'common.loading': 'جارٍ التحميل…',
   'common.save': 'حفظ',

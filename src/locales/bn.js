@@ -54,6 +54,9 @@ export default {
   'banner.demoStrong': 'ডেমো মোড',
   'banner.demoBody': '— তথ্য শুধু এই ব্রাউজারেই সংরক্ষিত হয়। ক্লাউড সিঙ্ক, লগইন ও রসিদ সংরক্ষণের জন্য .env-এ আপনার Supabase কী যোগ করুন।',
   'banner.maintenance': 'Offset-এ অল্প সময়ের জন্য রক্ষণাবেক্ষণ চলছে।',
+  'banner.loadFailed': 'আপনার খাতা লোড করা যায়নি',
+  'banner.loadFailedBody': '— নিচের হিসাব অসম্পূর্ণ হতে পারে। কিছুই হারায়নি।',
+  'banner.retry': 'আবার চেষ্টা করুন',
 
   'common.loading': 'লোড হচ্ছে…',
   'common.save': 'সংরক্ষণ করুন',

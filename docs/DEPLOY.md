@@ -36,7 +36,15 @@ failing — an unconfigured feature says it is unconfigured.
 
 ## 2. Supabase — login, sync and receipt storage
 
-1. **supabase.com → New project.** Any region; the free tier is enough.
+1. **supabase.com → New project.** Any region; the free tier is enough — with
+   one thing to know about it. A free project **pauses itself after about a
+   week with no queries**, and a paused project does not refuse connections:
+   it accepts them and does not answer. So the app comes up, cannot find out
+   who is signed in, and now says so on a screen with a *Try again* on it.
+   Before that screen existed this read as the app being broken, which is
+   what it looks like from the outside. Un-pause it from the project
+   dashboard; nothing is lost while it sleeps. A project that is used every
+   day never pauses, and a paid one never does.
 2. **SQL Editor**, then run the files in `supabase/` in this order:
    `schema.sql`, then `corporate.sql` if you want entities and approvals.
    Both are written to be re-runnable.

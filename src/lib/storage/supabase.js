@@ -32,31 +32,94 @@ export async function getCurrentUser() {
   } = await supabase.auth.getUser()
   return user
 }
+// How long to wait for the cloud to name the signed-in user before telling
+// somebody that it is not answering.
+//
+// `getSession()` is not one request. With a stored session whose access token
+// has expired it refreshes the token first, and gotrue retries that several
+// times before giving up. Measured against a host that refuses the connection,
+// the promise settled after about 35 seconds; against one that accepts the
+// connection and never replies, it does not settle at all. Both are what a
+// paused or deleted Supabase project looks like from a browser, and both left
+// this app sitting on "Starting up…" with nothing to read and nothing to click.
+//
+// Eight seconds is longer than a cold token refresh on a slow mobile connection
+// and far shorter than either of those. It bounds the wait and not the request:
+// the attempt is left running, and if it succeeds afterwards the listener
+// reports the user and the app carries on as though nothing had happened.
+const SESSION_WAIT_MS = 8000
+
 // The one that cannot simply become async: callers expect an unsubscribe back
 // immediately, and a Promise is not one. So the client is fetched in the
 // background and the returned function covers both cases — unsubscribing if the
 // subscription has arrived, and making sure it never subscribes if the caller
 // has already gone. Without that second half, a component that mounts and
 // unmounts faster than the library downloads leaks a listener that outlives it.
-export function onAuthStateChange(cb) {
+//
+// It answers `cb(user, error)`, and the second argument is not the same fact as
+// the first being null: no user means nobody is signed in, an error means we
+// could not find out. Told apart because they need opposite things from the
+// person reading the screen — sign in again, or wait and try again — and
+// because reporting the second as the first logs somebody out of books that are
+// still there.
+//
+// `getClient` is a parameter so the three ways this fails can be tested without
+// a browser or a Supabase project.
+export function watchAuth(getClient, cb, waitMs = SESSION_WAIT_MS) {
   let subscription = null
+  let timer = null
   let stopped = false
-  client().then((supabase) => {
-    if (stopped || !supabase) return
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!stopped) cb(session?.user ?? null)
+  let reported = false
+  const report = (user, error = null) => {
+    if (stopped) return
+    reported = true
+    cb(user, error)
+  }
+
+  getClient()
+    .then((supabase) => {
+      if (stopped) return
+      // No cloud in this build: nobody is signed in, and that is an answer
+      // rather than a failure.
+      if (!supabase) return report(null)
+
+      timer = setTimeout(() => {
+        // Only if nothing has been said yet. The listener below can answer
+        // first, and a timer firing after it would sign out somebody who is
+        // sitting there signed in.
+        if (!reported) report(null, new Error('The cloud did not answer.'))
+      }, waitMs)
+
+      supabase.auth
+        .getSession()
+        .then(({ data, error }) => {
+          if (error) throw error
+          report(data?.session?.user ?? null)
+        })
+        .catch((error) => report(null, error))
+        .finally(() => clearTimeout(timer))
+
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        report(session?.user ?? null)
+      })
+      subscription = data.subscription
+      if (stopped) subscription.unsubscribe()
     })
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!stopped) cb(session?.user ?? null)
-    })
-    subscription = data.subscription
-    if (stopped) subscription.unsubscribe()
-  })
+    // The library failing to arrive at all: a chunk that 404s because a deploy
+    // replaced it, or a browser with no network. This was the worst of the
+    // three, because the import rejects in milliseconds and the spinner still
+    // ran for the life of the page.
+    .catch((error) => report(null, error))
+
   return () => {
     stopped = true
+    clearTimeout(timer)
     subscription?.unsubscribe()
   }
 }
+
+export const onAuthStateChange = (cb) => watchAuth(client, cb)
+
 export async function signIn({ email, password }) {
   const supabase = await client()
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
