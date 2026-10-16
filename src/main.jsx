@@ -13,10 +13,17 @@ import { installErrorLog } from './lib/errorLog.js'
 import { pruneDrafts } from './lib/draft.js'
 import { isCloud } from './lib/storage/index.js'
 import { sweepOrphanedBlobs } from './lib/storage/local.js'
+import { armStaleRecovery } from './lib/stale.js'
 
 // Before the first render, so an error thrown on the way up is still caught and
 // available to a bug report.
 installErrorLog()
+
+// And before the first lazy route is asked for. Every page in this app is a
+// dynamic import and every deploy renames the chunks, so a tab that was open
+// across one — an installed app on a phone is open for days — asks for files that
+// are gone and loses every page at once. See lib/stale.js.
+armStaleRecovery()
 
 // Two sweeps that were written and never called, so neither ever ran.
 //

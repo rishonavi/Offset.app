@@ -1,6 +1,7 @@
 import { Component } from 'react'
-import { AlertTriangle, RotateCcw, Bug } from 'lucide-react'
+import { AlertTriangle, RotateCcw, Bug, Download } from 'lucide-react'
 import { recordError } from '../lib/errorLog'
+import { isStaleChunkError } from '../lib/stale'
 
 // Catches render/runtime errors in its subtree so one broken component can't
 // blank the entire app. When `resetKey` changes (e.g. the route path), a
@@ -27,6 +28,35 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (!this.state.error) return this.props.children
+
+    // A page that cannot be downloaded is not a page that crashed, and saying
+    // "something went wrong" about it sends somebody looking for a bug in their
+    // own books. It means a new version shipped while this tab was open and the
+    // file this route lives in has been replaced. lib/stale.js reloads for this
+    // on its own; the boundary is what is left when that reload has already
+    // happened once in the last couple of minutes, so the message has to carry
+    // the fix rather than imply there isn't one.
+    if (isStaleChunkError(this.state.error)) {
+      return (
+        <div className="grid min-h-[60vh] place-items-center px-4">
+          <div className="w-full max-w-md border border-border-light bg-surface-raised p-8 text-center shadow-sm">
+            <span className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-brand-light text-brand-ink">
+              <Download size={24} />
+            </span>
+            <h2 className="mt-4 font-serif text-xl font-bold text-ink-1">A new version of Offset is ready</h2>
+            <p className="mt-2 text-sm text-ink-5">
+              This page was updated while you had Offset open, so it has to be fetched again. Nothing has
+              been lost — reloading takes a second and picks up where you were.
+            </p>
+            <div className="mt-6">
+              <button onClick={() => window.location.reload()} className="btn-primary">
+                <RotateCcw size={16} /> Reload Offset
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="grid min-h-[60vh] place-items-center px-4">

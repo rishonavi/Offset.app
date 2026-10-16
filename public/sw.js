@@ -41,9 +41,21 @@ async function trim(cache) {
 
 // Only what is worth having offline. Caching every 200 also meant caching
 // things with no offline value and unbounded variety.
-function worthCaching(url, request) {
+function worthCaching(url, request, response) {
   if (request.mode === 'navigate') return true
-  return /^\/(assets|icon|manifest|favicon)/.test(url.pathname) || url.pathname === '/'
+  const wanted = /^\/(assets|icon|manifest|favicon)/.test(url.pathname) || url.pathname === '/'
+  if (!wanted) return false
+  // Not an HTML body under an /assets/ path, whatever the status says. A
+  // catch-all SPA rewrite answers a deleted chunk with index.html and a 200,
+  // and caching that poisons the entry for as long as the installation lasts:
+  // every later visit is served a page where a script tag is a web page.
+  // `vercel.json` no longer rewrites /assets/, and this makes sure a host that
+  // does cannot leave it behind either.
+  if (url.pathname.startsWith('/assets/')) {
+    const type = response.headers.get('content-type') || ''
+    if (type.includes('text/html')) return false
+  }
+  return true
 }
 
 self.addEventListener('fetch', (event) => {
@@ -56,7 +68,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(req)
       .then((res) => {
-        if (res && res.status === 200 && worthCaching(url, req)) {
+        if (res && res.status === 200 && worthCaching(url, req, res)) {
           const copy = res.clone()
           caches
             .open(CACHE)
