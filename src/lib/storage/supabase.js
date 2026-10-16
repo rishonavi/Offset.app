@@ -112,6 +112,7 @@ export async function getProperties() {
   return data
 }
 export async function addProperty(payload) {
+  const supabase = await client()
   const user_id = await ownerForWrite()
   const { data, error } = await supabase
     .from('properties')
@@ -122,6 +123,7 @@ export async function addProperty(payload) {
   return data
 }
 export async function updateProperty(id, payload) {
+  const supabase = await client()
   const { data, error } = await supabase
     .from('properties')
     .update(payload)
@@ -139,6 +141,7 @@ export async function deleteProperty(id) {
 
 // ── Expenses ───────────────────────────────────────────────────────
 export async function getExpenses() {
+  const supabase = await client()
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
@@ -148,6 +151,7 @@ export async function getExpenses() {
   return data
 }
 export async function addExpense(payload) {
+  const supabase = await client()
   const user_id = await ownerForWrite()
   const { data, error } = await supabase
     .from('expenses')
@@ -158,6 +162,7 @@ export async function addExpense(payload) {
   return data
 }
 export async function updateExpense(id, payload) {
+  const supabase = await client()
   const { data, error } = await supabase
     .from('expenses')
     .update(payload)
@@ -276,6 +281,7 @@ export async function getPersonalBudgets() {
   return data
 }
 export async function setPersonalBudget(category, monthly_limit) {
+  const supabase = await client()
   const user_id = await requireUserId()
   const { data, error } = await supabase
     .from('personal_budgets')
