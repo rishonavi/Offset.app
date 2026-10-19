@@ -34,9 +34,29 @@ import { madeOf } from './certainty'
 import { todayISO } from './today'
 
 // The sections this covers, with the limits as they stand.
+//
+// Keyed and labelled by the old numbers, because that is what every builder,
+// every accountant and every existing row in these books calls them — and
+// renumbering the key would orphan the stored ones. But the Income-tax Act,
+// 2025 replaced the 1961 Act from 1 April 2026 and the 194-series moved into
+// section 393, so a return filed for this year wants the new number: quoting
+// 194C on a challan for a post-April-2026 payment is what makes a return
+// defective. Both travel together for that reason.
+//
+// Rates and thresholds are unchanged by the renumbering — ₹30,000 single and
+// ₹1,00,000 aggregate at 1%/2% under 194C, ₹50,00,000 at 0.1% under 194Q —
+// which is the part this file computes, and it was already right.
+//
+// `act2025` is from the consistent reading of several secondary summaries
+// rather than from the Act itself; the table serial is theirs too. The payment
+// code is deliberately *not* carried here, because the sources disagree about
+// it and a wrong code on a challan is worse than no code at all. Check both
+// against the Act or a CBDT notification before filing.
 export const SECTIONS = {
   '194C': {
     id: '194C',
+    act2025: '393(1)',
+    act2025Entry: 'Table Sl. 6(i)',
     label: 'Payments to contractors',
     // A single credit at or above this attracts deduction on its own.
     singleLimit: 30000,
@@ -47,6 +67,8 @@ export const SECTIONS = {
   },
   '194Q': {
     id: '194Q',
+    act2025: '393(1)',
+    act2025Entry: 'Sl. 8(ii)',
     label: 'Purchase of goods',
     singleLimit: null,
     annualLimit: 5000000,
@@ -59,6 +81,15 @@ export const SECTIONS = {
   },
 }
 export const SECTION_IDS = Object.keys(SECTIONS)
+
+// How to name a section on screen: the number people say, and the number the
+// return wants. An unknown id comes back as itself rather than as nothing, so a
+// stored row from some future section still prints something true.
+export function citeSection(id) {
+  const rule = SECTIONS[id]
+  if (!rule?.act2025) return String(id || '')
+  return `${rule.id} · s.${rule.act2025} ${rule.act2025Entry}`
+}
 
 // Who is being paid. It decides the rate and nothing else.
 export const DEDUCTEE = {

@@ -17,7 +17,7 @@ import {
   SIDE_IDS,
   round2,
 } from '../lib/subcontract'
-import { tdsLedger, DEDUCTEE, DEDUCTEE_IDS } from '../lib/tds'
+import { tdsLedger, DEDUCTEE, DEDUCTEE_IDS, citeSection } from '../lib/tds'
 import { paymentCertificate, musterSheet } from '../lib/siteDocs'
 import { documentToPDF } from '../lib/siteDocsPdf'
 import { formatCurrency } from '../lib/format'
@@ -578,7 +578,9 @@ function Contractors({ data, eid, actor, canWrite, bump, toast, gate, company, f
         <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold text-ink-3">Tax deducted at source — {tax.fy.label}</h3>
-            <span className="text-[0.6875rem] text-ink-6">194C · {tax.from} to {tax.to}</span>
+            {/* Both numbers, because a challan for this year wants the new
+                one and everybody still says the old one. */}
+            <span className="text-[0.6875rem] text-ink-6">{citeSection('194C')} · {tax.from} to {tax.to}</span>
           </div>
           <p className="mt-1 text-xs text-ink-5">
             Counted per contractor across the year, not per order. The payment that takes a contractor past

@@ -17,7 +17,7 @@
 // exist, and the probe printed it before any test was written.
 import {
   required, tdsLedger, fyOf, fyRange, quarterOf, hasPan, deducteeOf,
-  SECTIONS, SECTION_IDS, DEDUCTEE_IDS, PAN,
+  SECTIONS, SECTION_IDS, DEDUCTEE_IDS, PAN, citeSection,
 } from '../../src/lib/tds.js'
 import { makeWorkOrder, makeRaBill } from '../../src/lib/subcontract.js'
 import { buildSample } from '../../src/lib/sampleSite.js'
@@ -243,6 +243,37 @@ eq('nobody else is short', sample.lines.filter((l) => l.short).length, 1)
 eq('and nobody had too much taken', sample.excess, 0)
 eq('every contractor has a PAN', sample.noPan, 0)
 eq('and none is on file twice', sample.conflicts, 0)
+
+console.log('\n\u2500\u2500 AND THE NUMBER A RETURN FOR THIS YEAR WANTS \u2500\u2500')
+// The Income-tax Act, 2025 replaced the 1961 Act from 1 April 2026 and the
+// 194-series moved into section 393. Quoting 194C on a challan for a payment
+// made after that is what makes a return defective — and this app printed
+// "194C" and nothing else, which is the string somebody copies.
+//
+// The limits and rates did not move with the number, which is the part this
+// file computes and which was already right. So both travel together: the
+// number people say, and the number the return wants.
+eq('the contractor section still answers to 194C', SECTIONS['194C'].id, '194C')
+eq('and knows where it now lives', SECTIONS['194C'].act2025, '393(1)')
+eq('down to the entry', SECTIONS['194C'].act2025Entry, 'Table Sl. 6(i)')
+eq('goods too', SECTIONS['194Q'].act2025, '393(1)')
+eq('at its own entry', SECTIONS['194Q'].act2025Entry, 'Sl. 8(ii)')
+eq('and it is cited with both', citeSection('194C'), '194C \u00b7 s.393(1) Table Sl. 6(i)')
+eq('as is the other', citeSection('194Q'), '194Q \u00b7 s.393(1) Sl. 8(ii)')
+// The limits are the thing this file computes, and renumbering did not touch
+// them. Stated here so a future edit to the citation cannot quietly move one.
+eq('a single contractor credit is still thirty thousand', SECTIONS['194C'].singleLimit, 30000)
+eq('and the year still one lakh', SECTIONS['194C'].annualLimit, 100000)
+eq('an individual is still one per cent', SECTIONS['194C'].rates.individual, 1)
+eq('a firm still two', SECTIONS['194C'].rates.other, 2)
+eq('and no PAN still twenty', SECTIONS['194C'].noPanRate, 20)
+eq('goods still fifty lakh', SECTIONS['194Q'].annualLimit, 5000000)
+eq('at a tenth of a per cent', SECTIONS['194Q'].rates.other, 0.1)
+// A stored row naming something this file does not carry prints itself rather
+// than nothing — the control, since a citation helper that returned '' for the
+// unknown case would read as fine on both sections above.
+eq('an unknown section prints as itself', citeSection('194J'), '194J')
+eq('and nothing prints as nothing', citeSection(null), '')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
