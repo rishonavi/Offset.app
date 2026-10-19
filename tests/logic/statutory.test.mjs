@@ -188,5 +188,53 @@ const without = runPayroll(four, { period: '2026-06', config: configForEntity(ma
 eq('a registered company costs the employer share', withPf.employerCost - without.employerCost, 4 * 1440)
 eq('and an unanswered one costs exactly the wage bill', without.employerCost, without.gross)
 
+console.log('\n\u2500\u2500 COVERED ON THE WAGE, CONTRIBUTING ON WHAT WAS EARNED \u2500\u2500')
+// Two different quantities, and `payslipFor` used to pass one for both. Whether
+// somebody is insured is decided by what they are paid a month; what is
+// contributed is a percentage of what they actually earned. Handing the
+// loss-of-pay figure to the ceiling test let a month of unpaid leave decide
+// whether a person is in the scheme at all.
+{
+  const cfg = {
+    ...DEFAULT_PAYROLL_CONFIG,
+    esi: { ...DEFAULT_PAYROLL_CONFIG.esi, registered: true },
+    pf: { ...DEFAULT_PAYROLL_CONFIG.pf, registered: false },
+    professionalTax: { ...DEFAULT_PAYROLL_CONFIG.professionalTax, state: null, slabs: null },
+  }
+  // \u20b925,000 a month, which is above the \u20b921,000 ceiling: not an insured person.
+  const above = { id: 'e1', name: 'R. Yadav', pay: { basic: 15000, da: 0, hra: 7000, special: 3000 } }
+  const slip = (lopDays) => payslipFor(above, { period: '2026-07', config: cfg, lopDays, monthDays: 30 })
+
+  eq('a full month above the ceiling is outside the scheme', slip(0).esiApplicable, false)
+  eq('and five days off does not bring them in', slip(5).esiApplicable, false)
+  eq('nor deduct anything', slip(5).deductions.esi, 0)
+  eq('nor cost the company anything', slip(5).employer.esi, 0)
+  // It was \u20b9157 and \u20b9678 at five days, and more as the month emptied.
+  eq('nor does most of a month off', slip(20).esiApplicable, false)
+  eq('still nothing deducted', slip(20).deductions.esi, 0)
+
+  // The control: somebody genuinely inside the scheme is still inside it, and
+  // their contribution *does* follow what they earned.
+  const inside = { id: 'e2', name: 'S. More', pay: { basic: 12000, da: 0, hra: 4000, special: 2000 } }
+  const low = (lopDays) => payslipFor(inside, { period: '2026-07', config: cfg, lopDays, monthDays: 30 })
+  eq('somebody under the ceiling is covered', low(0).esiApplicable, true)
+  eq('contributing on the whole month', low(0).deductions.esi, Math.ceil((18000 * 0.75) / 100))
+  eq('and still covered after losing days', low(15).esiApplicable, true)
+  eq('but contributing on what they earned', low(15).deductions.esi, Math.ceil((9000 * 0.75) / 100))
+  ok('which is less than the full month', low(15).deductions.esi < low(0).deductions.esi,
+    `${low(15).deductions.esi} vs ${low(0).deductions.esi}`)
+}
+{
+  // Asked directly with one figure, it answers about that figure — the shape
+  // every other caller in the app and in these tests uses.
+  const esi = { ...DEFAULT_PAYROLL_CONFIG.esi, registered: true }
+  eq('one argument still means one wage', stateInsurance(25000, esi).applicable, false)
+  eq('and under the ceiling still applies', stateInsurance(18000, esi).applicable, true)
+  // And the ceiling is read against the wage given, not the amount earned.
+  eq('earned less, paid more: not covered', stateInsurance(12500, esi, 25000).applicable, false)
+  eq('earned less, paid under: covered', stateInsurance(9000, esi, 18000).applicable, true)
+  eq('and contributing on what was earned', stateInsurance(9000, esi, 18000).employee, 68)
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

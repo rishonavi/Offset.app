@@ -291,8 +291,25 @@ export function providentFund(basic, config = DEFAULT_PAYROLL_CONFIG.pf) {
   }
 }
 
-export function stateInsurance(gross, config = DEFAULT_PAYROLL_CONFIG.esi) {
-  if (!schemeOn(config) || (Number(gross) || 0) > config.grossCeiling) {
+// Two different quantities, and this used to use one for both.
+//
+// Whether somebody is covered is decided by what they are *paid a month* — the
+// wage rate. What is contributed is a percentage of what they actually earned,
+// which a month with loss of pay reduces. Passing the reduced figure to the
+// ceiling test made a month of unpaid leave decide whether a person is insured:
+// an employee on ₹25,000 is outside the scheme, and five days off brought
+// them in at ₹157 from their payslip and ₹678 of employer cost. Twenty days
+// brought them further in. Nothing about them had changed.
+//
+// The reverse case is why the rule reads this way at all. Coverage follows the
+// wage and not the month, which is also why somebody who crosses the ceiling
+// mid-period stays insured until the period ends.
+//
+// `wageRate` defaults to `gross` so a caller with only one figure — somebody
+// asking what a given wage attracts — gets the obvious answer.
+export function stateInsurance(gross, config = DEFAULT_PAYROLL_CONFIG.esi, wageRate = null) {
+  const covered = Number(wageRate == null ? gross : wageRate) || 0
+  if (!schemeOn(config) || covered > config.grossCeiling) {
     return { employee: 0, employer: 0, applicable: false }
   }
   return {
@@ -351,7 +368,10 @@ export function payslipFor(employee, { period, config = DEFAULT_PAYROLL_CONFIG, 
   const basic = round2((Number(employee.pay?.basic) || 0) * workedRatio)
 
   const pf = providentFund(basic, config.pf)
-  const esi = stateInsurance(gross, config.esi)
+  // Covered on the wage rate, contributing on what was earned. Professional
+  // tax is deliberately not the same: its slabs are read against the salary
+  // actually earned in the month, which is how the states levy it.
+  const esi = stateInsurance(gross, config.esi, full)
   const pt = professionalTaxFor(employee, { period, gross, config })
 
   const deductions = {
