@@ -45,9 +45,25 @@ failing — an unconfigured feature says it is unconfigured.
    what it looks like from the outside. Un-pause it from the project
    dashboard; nothing is lost while it sleeps. A project that is used every
    day never pauses, and a paid one never does.
-2. **SQL Editor**, then run the files in `supabase/` in this order:
-   `schema.sql`, then `corporate.sql` if you want entities and approvals.
-   Both are written to be re-runnable.
+2. **SQL Editor**, then run every file in `supabase/`, starting with
+   `schema.sql`. The other five depend only on it, so after that the order does
+   not matter. All of them are written to be re-runnable.
+
+   | File | What stops working without it |
+   |---|---|
+   | `schema.sql` | everything — assets, costs, income, documents, comments |
+   | `corporate.sql` | the whole construction side: sites, stock, labour, plant, sales, payroll, and all of its syncing |
+   | `teams.sql` | shared workspaces (`memberships`) |
+   | `admin.sql` | `app_config`, which every page load reads for the maintenance and announcement banners |
+   | `limits.sql` | `scan_usage`, so receipt scanning cannot count the monthly allowance |
+   | `reports.sql` | *Report a problem*, which is a link in the sidebar of every page |
+
+   This list used to name only the first two, "if you want entities and
+   approvals". That undersold `corporate.sql`, which is the construction
+   product rather than an extra, and left out four files holding tables the app
+   queries — each one a 404 from PostgREST on a deployment that looked
+   correctly configured. `tests/logic/schemawire.test.mjs` now fails if a file
+   in `supabase/` is missing from this table.
 3. **Settings → API** gives you two values. In Vercel, under
    **Settings → Environment Variables**, add:
 

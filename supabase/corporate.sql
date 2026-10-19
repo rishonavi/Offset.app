@@ -1072,6 +1072,14 @@ alter table public.inventory_movements enable row level security;
 alter table public.advances            enable row level security;
 alter table public.advance_adjustments enable row level security;
 alter table public.employees           enable row level security;
+-- payroll_runs was written into the policy loop below and left out of this
+-- list, and a table with RLS disabled ignores its policies entirely. Postgres
+-- does not warn, the policies read as present in the dashboard, and PostgREST
+-- exposes every table in `public` to anyone holding the anon key — which ships
+-- in the browser bundle by design. So every pay run of every company on the
+-- deployment was readable and writable by any signed-in user: gross, net, PF,
+-- ESI and professional tax, per person, per period.
+alter table public.payroll_runs        enable row level security;
 alter table public.material_quotes     enable row level security;
 alter table public.material_quote_lines enable row level security;
 alter table public.labour_muster       enable row level security;

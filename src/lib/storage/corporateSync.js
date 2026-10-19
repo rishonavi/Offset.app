@@ -45,6 +45,21 @@ export const TABLES = {
 }
 export const SYNCED = Object.keys(TABLES)
 
+// Which column scopes a table to a company.
+//
+// Every synced table carries `entity_id` except the one that *is* the company.
+// `entities` is scoped by its own id and has no `entity_id` column at all, so
+// filtering on one asked Postgres for a column that does not exist: the pull
+// came back 400 and `entities` — the first collection in the order — failed on
+// every sync, while the twenty-two tables that point at it went through. A
+// second device ended up with a yard, a muster roll and a payroll whose company
+// was not there.
+//
+// Written out for the same reason `TABLES` is: a guessed name that is nearly
+// right fails at run time on somebody else's phone.
+const SCOPE = { entities: 'id' }
+export const scopeColumn = (kind) => SCOPE[kind] || 'entity_id'
+
 // A quotation is one row here and two tables there: the quote and its lines.
 // Kept inline locally because every screen reads a quote whole and a join on a
 // phone with no signal is a join that does not happen.
@@ -79,7 +94,7 @@ export async function syncCollection(client, kind, localRows, { entityIds = null
   if (since) query = query.gt('updated_at', since)
   // Row-level security already limits this to companies the person belongs to.
   // The filter is a courtesy to the network, not the control.
-  if (entityIds?.length) query = query.in('entity_id', entityIds)
+  if (entityIds?.length) query = query.in(scopeColumn(kind), entityIds)
 
   const { data: remote, error } = await query
   if (error) throw error
