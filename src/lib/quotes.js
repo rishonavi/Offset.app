@@ -34,11 +34,28 @@ export const QUOTE_STATUS = {
 }
 export const QUOTE_STATUS_IDS = Object.keys(QUOTE_STATUS)
 
-// GST as the trade charges it. Cement at 28% and sand at 5% are not a rounding
+// GST as the trade charges it. Cement at 18% and sand at 5% are not a rounding
 // difference on a ₹2 crore job, and a comparison that ignores tax can rank the
 // dearer quote first.
-export const GST_RATES = [0, 5, 12, 18, 28]
+//
+// The slabs as they stand. India moved to 0/5/18 with a 40% demerit rate on
+// 22 September 2025, withdrawing 12% and 28% for most goods — cement, which
+// this comment used to cite at 28%, is 18% now. Until this was corrected the
+// form offered two rates that no longer exist and had no way to enter the one
+// that does: 40% fell through the validator below and came out as 18%, which
+// understates the tax on that line and ranks the vendor charging it cheaper
+// than they are. Which is the failure the paragraph above is about.
+export const GST_RATES = [0, 5, 18, 40]
 export const DEFAULT_GST = 18
+
+// What a line may *hold*, which is a longer list than what the form offers.
+//
+// A quotation or a purchase bill dated before the change carries 12% or 28%
+// legitimately, and the check below is a validator rather than a filter: a rate
+// it does not recognise is silently replaced by the default. Rewriting a bill's
+// stated tax because the slab has since been withdrawn is a worse answer than
+// holding a rate nobody can pick any more.
+export const ACCEPTED_GST_RATES = [0, 5, 12, 18, 28, 40]
 
 // Accepts both shapes: what a form hands in (`itemId`, `gstPercent`) and what a
 // stored quote reads back as (`item_id`, `gst_percent`). Without that, re-making
@@ -60,7 +77,7 @@ export function makeQuoteLine(input = {}) {
     qty: Math.max(0, round2(qty)),
     rate: Math.max(0, round2(rate)),
     unit: UNITS.includes(unit) ? unit : 'pcs',
-    gst_percent: GST_RATES.includes(Number(gstPercent)) ? Number(gstPercent) : DEFAULT_GST,
+    gst_percent: ACCEPTED_GST_RATES.includes(Number(gstPercent)) ? Number(gstPercent) : DEFAULT_GST,
     note: String(note).trim().slice(0, 160),
   }
 }

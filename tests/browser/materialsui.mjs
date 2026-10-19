@@ -216,14 +216,20 @@ const quote = async (vendor, rate, gst) => {
   await p.locator('button', { hasText: 'Save quotation' }).click()
   await p.waitForTimeout(500)
 }
-// ₹380 at 28% lands at ₹486.40; ₹400 at 18% lands at ₹472. Read the rate column
+// A regular dealer charges 18%; a composition-scheme supplier charges none at
+// all, and quotes a higher rate because he is carrying the tax himself. ₹380 at
+// 18% lands at ₹448.40; ₹420 with no GST lands at ₹420. Read the rate column
 // alone — which is how it is usually done — and you pick the dearer vendor.
-await quote('Shree Traders', 380, 28)
-await quote('Konkan Cement', 400, 18)
+//
+// This used to be cement at 28% against cement at 18%, which was the right
+// lesson told with a fact that expired: the September 2025 slabs put cement at
+// 18% for everybody, so no two vendors can differ that way on it any more.
+await quote('Shree Traders', 380, 18)
+await quote('Konkan Cement', 420, 0)
 const quotes = await ls('pl_corp_quotes')
 ok('both quotations are stored', quotes.length === 2, String(quotes.length))
 ok('each keeps its own tax rate',
-  quotes.map((q) => q.lines[0]?.gst_percent).sort().join(',') === '18,28',
+  quotes.map((q) => q.lines[0]?.gst_percent).sort().join(',') === '0,18',
   JSON.stringify(quotes.map((q) => q.lines[0]?.gst_percent)))
 ok('and the material it is for', quotes.every((q) => q.lines[0]?.item_id))
 
@@ -233,8 +239,8 @@ const cmp = await main()
 ok('the comparison ranks by the landed price, not the rate',
   cmp.indexOf('Konkan Cement') < cmp.indexOf('Shree Traders'),
   cmp.slice(cmp.indexOf('Compare on one material'), cmp.indexOf('Compare on one material') + 400))
-ok('and says so with both figures', /472/.test(cmp) && /486/.test(cmp))
-ok('the spread is spelled out', /3% between the cheapest and the dearest/.test(cmp), cmp.slice(0, 600))
+ok('and says so with both figures', /420/.test(cmp) && /448/.test(cmp))
+ok('the spread is spelled out', /6\.3% between the cheapest and the dearest/.test(cmp), cmp.slice(0, 600))
 
 // Accepting is a decision, not a delivery. Booking the stock here would put a
 // hundred bags of cement on the shelf the moment somebody agreed a price.

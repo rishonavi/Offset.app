@@ -1,6 +1,6 @@
 // The input credit a vendor has not filed for.
 //
-// A builder pays 18% on steel and 28% on cement and gets it back as input
+// A builder pays 18% on steel and 18% on cement and gets it back as input
 // credit — but only if the vendor actually files. When he does not, the money
 // is simply gone, and there is nothing in the books to say so: the purchase is
 // recorded, the tax is recorded, and the credit that never arrived leaves no

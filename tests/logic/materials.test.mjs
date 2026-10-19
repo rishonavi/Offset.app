@@ -377,7 +377,28 @@ eq('and a total', t1.total, 48640)
 eq('an empty quote is zero, not a crash', quoteTotals({}).total, 0)
 eq('a vendor with no name still has one', makeQuote({}).vendor, 'Unnamed vendor')
 eq('a nonsense GST rate falls back', makeQuoteLine({ gstPercent: 37 }).gst_percent, 18)
-ok('and every offered rate is one the tax law has', GST_RATES.every((r) => Number.isFinite(r)))
+// The slabs as they stand, not as they were. India moved to 0/5/18 with a 40%
+// demerit rate on 22 September 2025, withdrawing 12% and 28% for most goods.
+// The form offered the two that had gone and had no way to enter the one that
+// had arrived: 40% fell through the validator and came out as 18%, which
+// understates that line's tax and ranks the vendor charging it cheaper than
+// they are.
+eq('the rates offered are the current slabs', GST_RATES.join(','), '0,5,18,40')
+eq('and the demerit rate can actually be entered', makeQuoteLine({ gstPercent: 40 }).gst_percent, 40)
+eq('as can the ordinary one', makeQuoteLine({ gstPercent: 18 }).gst_percent, 18)
+eq('and sand at five', makeQuoteLine({ gstPercent: 5 }).gst_percent, 5)
+eq('and an exempt line', makeQuoteLine({ gstPercent: 0 }).gst_percent, 0)
+// A bill dated before the change carries a withdrawn rate legitimately, and the
+// check is a validator rather than a filter — an unrecognised rate is replaced
+// by the default. Rewriting a bill's stated tax because the slab has since gone
+// is worse than holding a rate nobody can pick any more.
+eq('a bill from before the change keeps its 28%', makeQuoteLine({ gstPercent: 28 }).gst_percent, 28)
+eq('and its 12%', makeQuoteLine({ gstPercent: 12 }).gst_percent, 12)
+ok('though neither is offered any more', !GST_RATES.includes(28) && !GST_RATES.includes(12), GST_RATES.join(','))
+// The control beside all of it: the validator still validates.
+eq('and a rate the law has never had still falls back', makeQuoteLine({ gstPercent: 37 }).gst_percent, 18)
+eq('as does a negative one', makeQuoteLine({ gstPercent: -5 }).gst_percent, 18)
+eq('and a word', makeQuoteLine({ gstPercent: 'eighteen' }).gst_percent, 18)
 ok('every status has a label', QUOTE_STATUS_IDS.every((k) => k))
 // A saved quote is read back as `item_id` and `gst_percent`, not as the names
 // the form used. Re-making one must not quietly drop the material and reset the
