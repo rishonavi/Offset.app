@@ -11,6 +11,8 @@ import bankLink from '../../api/bank/link.js'
 import bankTransactions from '../../api/bank/transactions.js'
 import checkout from '../../api/stripe/checkout.js'
 import portal from '../../api/stripe/portal.js'
+import scanReceipt from '../../api/scan-receipt.js'
+import report from '../../api/report.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
@@ -156,6 +158,83 @@ for (const [name, handler] of [['stripe/checkout', checkout], ['stripe/portal', 
     eq(`${name}: asks who is calling before it asks Stripe`, out.status, 501)
     eq(`${name}: and it is auth that is missing, not billing`, out.body?.error, 'auth_not_configured')
   }
+}
+restore()
+
+console.log('\n\u2500\u2500 AND THE ONE THAT SPENDS THE MOST \u2500\u2500')
+// /api/scan-receipt sends a whole image or PDF to Gemini, which makes it the
+// most expensive of the three AI endpoints — and it was the one with nothing in
+// front of it. `ask` and `parse-entry` were given a token check and a ceiling;
+// this was missed.
+//
+// Its plan gate was never a substitute. `ENFORCE_PLAN_LIMITS` is opt-in, so
+// unset — the default — the gate returns `allow: true` without looking at a
+// token, and the handler wraps it in a catch that allows the scan when the
+// check itself fails. Right for a limit, wrong for an identity.
+{
+  restore()
+  const out = await call(scanReceipt, { method: 'PUT' })
+  eq('scan-receipt: refuses a method it does not serve', out.status, 405)
+}
+{
+  restore()
+  clearEnv('GEMINI_API_KEY')
+  const out = await call(scanReceipt, { body: { media_type: 'image/jpeg', data: 'x' } })
+  eq('scan-receipt: says so when AI is unconfigured', out.status, 501)
+  eq('scan-receipt: so the client can fall back to on-device OCR', out.body?.error, 'ai_not_configured')
+}
+{
+  // Configured AI, configured accounts, no token, and plan limits off — which
+  // is the default and was the open door.
+  restore()
+  process.env.GEMINI_API_KEY = 'gem-x'
+  process.env.SUPABASE_URL = 'https://example.supabase.co'
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-x'
+  clearEnv('ENFORCE_PLAN_LIMITS')
+  const out = await call(scanReceipt, { body: { media_type: 'image/jpeg', data: 'x'.repeat(2048) } })
+  eq('scan-receipt: refuses an anonymous caller', out.status, 401)
+  eq('scan-receipt: and names why', out.body?.error, 'unauthorized')
+  ok('scan-receipt: and parses nothing', !out.body?.vendor && !out.body?.amount, JSON.stringify(out.body))
+}
+{
+  // The control: a demo deployment has nobody to sign in as, and on-device OCR
+  // is not the only thing those installs should get. With no accounts
+  // configured the caller is anonymous by design and the scan proceeds to the
+  // body check rather than being turned away as unauthorized.
+  restore()
+  process.env.GEMINI_API_KEY = 'gem-x'
+  clearEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ENFORCE_PLAN_LIMITS')
+  const out = await call(scanReceipt, { body: {} })
+  eq('scan-receipt: a deployment with no accounts still scans', out.status, 400)
+  eq('scan-receipt: reaching the image check, not the door', out.body?.error, 'missing_image')
+}
+
+console.log('\n\u2500\u2500 AND THE ONE THAT SENDS MAIL \u2500\u2500')
+{
+  restore()
+  const out = await call(report, { method: 'GET' })
+  eq('report: answers a health check', out.status, 200)
+}
+{
+  restore()
+  const out = await call(report, { method: 'DELETE' })
+  eq('report: refuses a method it does not serve', out.status, 405)
+}
+{
+  restore()
+  process.env.SUPABASE_URL = 'https://example.supabase.co'
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-x'
+  process.env.REPORTS_EMAIL = 'ops@example.invalid'
+  process.env.RESEND_API_KEY = 'resend-x'
+  const out = await call(report, { body: { text: 'it broke' } })
+  eq('report: will not send mail for an anonymous caller', out.status, 401)
+}
+{
+  restore()
+  clearEnv('REPORTS_EMAIL', 'RESEND_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY')
+  const out = await call(report, { body: { text: 'it broke' } })
+  eq('report: and says when email is not set up here', out.status, 501)
+  eq('report: which the dialog shows as delivery being off', out.body?.error, 'email_not_configured')
 }
 restore()
 

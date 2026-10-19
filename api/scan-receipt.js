@@ -14,7 +14,8 @@
 //   GEMINI_API_KEY  (required for AI scanning — free key from aistudio.google.com)
 //   SCAN_MODEL      (optional; defaults to gemini-2.0-flash)
 
-import { requireUser } from './_auth.js'
+import { requireUserIfConfigured } from './_auth.js'
+import { rateLimited } from './_rate.js'
 
 export const config = { maxDuration: 30 }
 
@@ -160,17 +161,18 @@ const FREE_SCAN_LIMIT = 10
 // Decide whether this scan is allowed under the caller's plan. Returns
 // { allow, uid?, admin?, month?, reason? }. A no-op (allow:true) when plan
 // enforcement is off or Supabase isn't configured — so free/OCR keeps working.
-async function scanGate(req) {
+async function scanGate(caller) {
   const enforce = String(process.env.ENFORCE_PLAN_LIMITS || '').toLowerCase() === 'true'
   const url = process.env.SUPABASE_URL
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!enforce || !url || !serviceRole) return { allow: true }
 
-  // The token check is the shared one in _auth.js — this used to be a third
-  // hand-written copy of it, and copies drift.
-  const identified = await requireUser(req)
-  if (!identified.ok) return { allow: false, reason: identified.error }
-  const user = identified.user
+  // The caller was identified by the handler, which asks for a token whether
+  // or not limits are being enforced. This used to verify the token a second
+  // time here — a second round trip to Supabase per scan, and the only identity
+  // check the endpoint had.
+  if (!caller) return { allow: false, reason: 'unauthorized' }
+  const user = caller
 
   const { createClient } = await import('@supabase/supabase-js')
   const admin = createClient(url, serviceRole)
@@ -286,6 +288,28 @@ export default async function handler(req, res) {
     return
   }
 
+  // Every call past here spends the operator's Gemini quota on a whole image or
+  // PDF, which makes this the most expensive of the three AI endpoints — and it
+  // was the one with nothing in front of it. `ask.js` and `parse-entry.js` were
+  // given this guard and this was missed.
+  //
+  // The plan gate below is not a substitute and never was. It is opt-in, so
+  // with ENFORCE_PLAN_LIMITS unset — the default — it returns `allow: true`
+  // without looking at a token at all; and the handler wraps it in a catch that
+  // allows the scan when the check itself fails, which is right for a limit and
+  // wrong for an identity.
+  //
+  // Before the body, so an anonymous caller cannot make this buffer a
+  // megabyte of photograph before being turned away.
+  const auth = await requireUserIfConfigured(req)
+  if (!auth.ok) {
+    res.status(auth.status).json({ error: auth.error })
+    return
+  }
+  // Higher than ask's sixty: a site engineer photographing a morning's
+  // delivery notes is a real person doing ordinary work.
+  if (rateLimited(req, res, auth.user, { max: 120 })) return
+
   let body
   try {
     body = await readBody(req)
@@ -303,7 +327,7 @@ export default async function handler(req, res) {
   // Plan-limit gate (opt-in; no-op unless ENFORCE_PLAN_LIMITS=true).
   let gate
   try {
-    gate = await scanGate(req)
+    gate = await scanGate(auth.user)
   } catch {
     gate = { allow: true } // never block scanning on a limit-check failure
   }
