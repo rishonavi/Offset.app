@@ -1,11 +1,17 @@
 // Client helpers for Stripe checkout + billing portal. They call the serverless
-// functions in /api/stripe/*. We pass the Supabase user id + email so the
-// webhook can map the subscription back to the right account.
+// functions in /api/stripe/*.
+//
+// The signed-in user used to be sent in the body for the webhook to map the
+// subscription back to an account. The endpoints read it from the token now —
+// a body saying whose billing this is was a body anyone could write — so the
+// header is the part that matters here.
+
+import { authHeaders } from './authHeader'
 
 async function postJson(path, body) {
   const r = await fetch(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders(),
     body: JSON.stringify(body || {}),
   })
   const data = await r.json().catch(() => ({}))

@@ -6,6 +6,8 @@
 
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '../_auth.js'
+import { rateLimited } from '../_rate.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -17,15 +19,25 @@ export default async function handler(req, res) {
     res.status(501).json({ error: 'Billing is not configured.' })
     return
   }
+  // Whose billing this is comes from the token, and only from the token.
+  //
+  // It used to be `body.userId`, on an endpoint with no authentication, looked
+  // up with the service-role key so row-level security could not stop it. Post
+  // somebody else's user id and Stripe handed back a live billing-portal link
+  // to their subscription: their invoices, their card, and a button that
+  // cancels it. User ids are not secret — a shared workspace shows them in its
+  // own membership rows.
+  const auth = await requireUser(req)
+  if (!auth.ok) {
+    res.status(auth.status).json({ error: auth.error })
+    return
+  }
+  if (rateLimited(req, res, auth.user, { max: 20 })) return
+
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {}
-    const { userId } = body
-    if (!userId) {
-      res.status(400).json({ error: 'missing_user' })
-      return
-    }
     const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-    const { data } = await admin.from('profiles').select('stripe_customer_id').eq('user_id', userId).maybeSingle()
+    const { data } = await admin
+      .from('profiles').select('stripe_customer_id').eq('user_id', auth.user.id).maybeSingle()
     if (!data?.stripe_customer_id) {
       res.status(400).json({ error: 'No billing account yet — subscribe first.' })
       return

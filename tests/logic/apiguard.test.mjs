@@ -9,6 +9,8 @@ import ask from '../../api/ask.js'
 import parseEntry from '../../api/parse-entry.js'
 import bankLink from '../../api/bank/link.js'
 import bankTransactions from '../../api/bank/transactions.js'
+import checkout from '../../api/stripe/checkout.js'
+import portal from '../../api/stripe/portal.js'
 
 let pass = 0, fail = 0
 const ok = (n, c, e = '') => { c ? pass++ : fail++; console.log(`${c ? 'PASS' : '**FAIL**'}  ${n}${c ? '' : '  — ' + e}`) }
@@ -97,6 +99,63 @@ for (const [name, handler] of [['bank/link', bankLink], ['bank/transactions', ba
   ok(`${name}: a configured provider refuses an anonymous caller`, anon.status === 401 || anon.status === 501,
      `${anon.status} ${JSON.stringify(anon.body)}`)
   ok(`${name}: and does not answer 200`, anon.status !== 200, String(anon.status))
+}
+restore()
+
+console.log('\n\u2500\u2500 AND WHOSE BILLING IT IS ──'.replace('──', '\u2500\u2500'))
+// Both of these had no authentication at all and read the account from the
+// request body.
+//
+// `portal` looked the customer up with the service-role key, which row-level
+// security cannot stop, and handed back a Stripe billing-portal link: post
+// somebody else's user id and you got their invoices, their card and the button
+// that cancels their subscription. User ids are not secret — a shared workspace
+// lists them in its own membership rows.
+//
+// `checkout` put `body.userId` in `client_reference_id`, which is the exact
+// field the webhook writes `plan: 'pro'` against, so a checkout could be made
+// to credit another account; and with nothing to stop it, anyone could create
+// Stripe sessions on the operator's account all day.
+for (const [name, handler] of [['stripe/checkout', checkout], ['stripe/portal', portal]]) {
+  restore()
+  {
+    const out = await call(handler, { method: 'GET' })
+    eq(`${name}: refuses a GET`, out.status, 405)
+  }
+  {
+    restore()
+    clearEnv('STRIPE_SECRET_KEY', 'STRIPE_PRICE_ID')
+    const out = await call(handler)
+    eq(`${name}: says so when billing is unconfigured`, out.status, 501)
+  }
+  {
+    // Configured billing, configured accounts, no token: the answer is 401 and
+    // not a Stripe session. This is the whole fix.
+    restore()
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x'
+    process.env.STRIPE_PRICE_ID = 'price_x'
+    process.env.SUPABASE_URL = 'https://example.supabase.co'
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-x'
+    const out = await call(handler, { body: { userId: 'somebody-elses-id', email: 'victim@example.com' } })
+    eq(`${name}: refuses an anonymous caller`, out.status, 401)
+    eq(`${name}: and names why`, out.body?.error, 'unauthorized')
+    ok(`${name}: and hands back no url`, !out.body?.url, JSON.stringify(out.body))
+  }
+  {
+    // The control, and the ordering that makes it a control: billing is
+    // configured and accounts are not, so the answer is the *auth* layer's 501
+    // and not the billing one's. The identity is looked for before Stripe is
+    // touched, whatever the body claims. Checked without a network, because a
+    // test that depends on a DNS lookup failing is a test that passes for a
+    // reason of its own.
+    restore()
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x'
+    process.env.STRIPE_PRICE_ID = 'price_x'
+    clearEnv('SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY')
+    const out = await call(handler, { body: { userId: 'somebody-elses-id' } })
+    eq(`${name}: asks who is calling before it asks Stripe`, out.status, 501)
+    eq(`${name}: and it is auth that is missing, not billing`, out.body?.error, 'auth_not_configured')
+  }
 }
 restore()
 
