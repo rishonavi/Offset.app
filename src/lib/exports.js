@@ -133,7 +133,78 @@ function pick(row, ...names) {
   return ''
 }
 
-// Map a parsed spreadsheet row to our expense field shape.
+// What a number looks like on a ledger line somebody else wrote.
+//
+// This used to be `Number(String(raw).replace(/[^0-9.-]/g, '')) || 0`, which
+// keeps digits, dots and minus signs and throws the rest away. Measured against
+// the shapes a real export actually contains:
+//
+//   "1,234"          -> 1234      correct
+//   "₹1,23,456.78"   -> 123456.78 correct
+//   "Rs. 1,234/-"    -> 0         .1234- is not a number, and this is how half
+//                                 of Indian ledgers write money
+//   "(1,234)"        -> 1234      a parenthesised credit, imported as a debit
+//   "1e3"            -> 13        the e is stripped and 1000 becomes 13
+//   "1.234,56"       -> 1.23456   a European decimal, out by a thousand
+//
+// And every one of those failures was silent: `ImportBills` keeps rows with
+// `amount > 0`, so an unreadable figure did not import as ₹0, it vanished. Two
+// hundred rows in, a hundred and ninety-five out, nothing said.
+//
+// So the noise is removed deliberately rather than by subtraction, the sign is
+// read before it is discarded, and anything still not a plain decimal comes
+// back as null — which is a thing the caller can report, unlike a zero.
+const CURRENCY_NOISE = /(?:₹|rs\.?|inr|dr\.?|cr\.?|\/-)/gi
+
+export function parseAmount(raw) {
+  if (raw == null) return null
+  let text = String(raw).trim()
+  if (!text) return null
+
+  // An accounting negative is written in brackets, and dropping them turned a
+  // credit into a debit.
+  let sign = 1
+  if (/^\(.*\)$/.test(text)) {
+    sign = -1
+    text = text.slice(1, -1).trim()
+  }
+  text = text.replace(CURRENCY_NOISE, '').trim()
+  if (text.startsWith('-')) {
+    sign = -sign
+    text = text.slice(1).trim()
+  }
+  // Every kind of space, including the non-breaking and thin ones a
+  // spreadsheet exports.
+  text = text.replace(/[\s\u00a0\u202f\u2009]/g, '')
+
+  // Whichever separator comes last is the decimal one: that reads both
+  // "1,234.56" and "1.234,56" correctly without having to know the locale.
+  const lastComma = text.lastIndexOf(',')
+  const lastDot = text.lastIndexOf('.')
+  if (lastComma >= 0 && lastDot >= 0) {
+    const decimal = lastComma > lastDot ? ',' : '.'
+    const thousands = decimal === ',' ? '.' : ','
+    text = text.split(thousands).join('')
+    text = text.replace(decimal, '.')
+  } else if (lastComma >= 0) {
+    // Commas alone are read as thousands, which is the Indian convention and
+    // the one this app is for. "1,23" is genuinely ambiguous and goes the same
+    // way; a European sheet with no decimal part reads a little large rather
+    // than silently vanishing.
+    text = text.split(',').join('')
+  }
+
+  // Strict, because this is the point of the whole function: what is left must
+  // be a number and nothing else. "1.2.3", "--5" and "1e3" are not, and saying
+  // so is more use than guessing.
+  if (!/^\d+(?:\.\d+)?$/.test(text)) return null
+  const value = Number(text)
+  return Number.isFinite(value) ? sign * value : null
+}
+
+// Map a parsed spreadsheet row to our expense field shape. `amount` is null
+// where the figure could not be read, which the caller reports rather than
+// dropping in silence.
 export function rowToExpenseInput(row) {
   const amountRaw = pick(row, 'Amount', 'Cost', 'Value', 'Total')
   return {
@@ -143,6 +214,7 @@ export function rowToExpenseInput(row) {
     vendor: String(pick(row, 'Vendor', 'Payee', 'Supplier') || '').trim(),
     payment_method: String(pick(row, 'Payment Method', 'Payment', 'Mode') || '').trim(),
     description: String(pick(row, 'Description', 'Notes', 'Note', 'Details') || '').trim(),
-    amount: Number(String(amountRaw).replace(/[^0-9.-]/g, '')) || 0,
+    amount: parseAmount(amountRaw),
+    amount_text: String(amountRaw ?? '').trim(),
   }
 }

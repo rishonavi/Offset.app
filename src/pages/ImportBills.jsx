@@ -66,9 +66,23 @@ export default function ImportBills() {
     setImportMsg(null)
     try {
       const raw = await parseSpreadsheet(file)
-      const parsed = raw.map(rowToExpenseInput).filter((r) => r.amount > 0 && r.date)
+      const read = raw.map(rowToExpenseInput)
+      const parsed = read.filter((r) => r.amount > 0 && r.date)
+      // Rows that were in the file and are not in the ledger, counted so they
+      // can be named. `amount` is null where the figure could not be read at
+      // all, and this filter used to drop those in silence: two hundred rows
+      // in, a hundred and ninety-five out, nothing said about the five.
+      const unreadable = read.filter((r) => r.amount == null && r.amount_text)
+      const noDate = read.filter((r) => r.amount != null && !r.date)
+      const negative = read.filter((r) => r.amount != null && r.amount <= 0)
       if (parsed.length === 0) {
-        setImportMsg({ source: 'sheet', ok: false, text: 'No valid rows found. Expected columns: Date, Property, Category, Amount.' })
+        setImportMsg({
+          source: 'sheet',
+          ok: false,
+          text: unreadable.length
+            ? `No rows could be imported. ${unreadable.length} amount${unreadable.length === 1 ? '' : 's'} could not be read — the first is "${unreadable[0].amount_text}".`
+            : 'No valid rows found. Expected columns: Date, Property, Category, Amount.',
+        })
         return
       }
       const nameToId = new Map(properties.map((p) => [p.name.trim().toLowerCase(), p.id]))
@@ -109,7 +123,13 @@ export default function ImportBills() {
         ok: true,
         text: `Imported ${added} expense${added === 1 ? '' : 's'}${
           createdProps ? `, created ${createdProps} new propert${createdProps === 1 ? 'y' : 'ies'}` : ''
-        }${skippedNote(skipped)}.`,
+        }${skippedNote(skipped)}.${
+          unreadable.length
+            ? ` ${unreadable.length} row${unreadable.length === 1 ? '' : 's'} left out — the amount could not be read, starting with "${unreadable[0].amount_text}".`
+            : ''
+        }${noDate.length ? ` ${noDate.length} had no date.` : ''}${
+          negative.length ? ` ${negative.length} were zero or a credit.` : ''
+        }`,
       })
     } catch (err) {
       setImportMsg({ source: 'sheet', ok: false, text: `Import failed: ${err?.message || err}` })
