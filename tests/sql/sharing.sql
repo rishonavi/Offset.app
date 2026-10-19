@@ -117,6 +117,85 @@ select t.check('after which the member sees nothing',
   (select count(*) from public.properties where id = 'eeeeeeee-0000-0000-0000-000000000001') = 0);
 
 \echo ''
+\echo '── AN EDITOR MAY WRITE, A VIEWER MAY NOT ──'
+-- `can_write_workspace` and thirteen policies hang off `role = 'editor'`, and
+-- none of it had ever been run. The app gives an editor the full write UI
+-- (`canWriteActive = isOwnWorkspace || activeRole === 'editor'`) and stamps
+-- their rows with the *owner's* id, so if the policies did not match, every
+-- edit would be filtered out and vanish without a word.
+set role postgres;
+update public.memberships set role = 'editor'
+ where owner_id = '11111111-1111-1111-1111-111111111111'
+   and member_id = '33333333-3333-3333-3333-333333333333';
+insert into public.memberships (owner_id, member_id, owner_email, member_email, role)
+values ('11111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333',
+        'alice@test.invalid', 'carol@test.invalid', 'editor')
+on conflict (owner_id, member_id) do update set role = 'editor';
+insert into public.properties (id, user_id, name)
+values ('eeeeeeee-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'Alice Shop')
+on conflict (id) do nothing;
+set role offset_app;
+
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- carol, editor on alice's books
+select t.check('an editor reads the owner''s asset',
+  (select count(*) from public.properties where id = 'eeeeeeee-0000-0000-0000-000000000002') = 1);
+select t.allows('and may change it',
+  $$update public.properties set name = 'Alice Shop 2'
+     where id = 'eeeeeeee-0000-0000-0000-000000000002'$$);
+select t.check('which took effect',
+  (select name from public.properties where id = 'eeeeeeee-0000-0000-0000-000000000002') = 'Alice Shop 2');
+-- Stamped with the owner's id, not the editor's, which is what `ownerForWrite`
+-- does and what the policy has to accept.
+select t.allows('and may add a cost to the owner''s books',
+  $$insert into public.expenses (id, user_id, property_id, date, amount, category)
+    values ('eeeeeeee-0000-0000-0000-00000000001e','11111111-1111-1111-1111-111111111111',
+            'eeeeeeee-0000-0000-0000-000000000002', current_date, 2500, 'Repairs')$$);
+select t.allows('and income',
+  $$insert into public.income (id, user_id, property_id, date, amount, source)
+    values ('eeeeeeee-0000-0000-0000-00000000001f','11111111-1111-1111-1111-111111111111',
+            'eeeeeeee-0000-0000-0000-000000000002', current_date, 9000, 'Rent')$$);
+select t.allows('and a document',
+  $$insert into public.documents (id, user_id, property_id, title, file_url)
+    values ('eeeeeeee-0000-0000-0000-00000000002d','11111111-1111-1111-1111-111111111111',
+            'eeeeeeee-0000-0000-0000-000000000002', 'Lease', '11111111-1111-1111-1111-111111111111/lease.pdf')$$);
+-- A comment is the fifth thing the app writes through `ownerForWrite`, and
+-- `teams.sql` gave shared policies to four tables and missed this one. Without
+-- them an editor cannot comment at all and a viewer cannot read a comment
+-- anybody has left, on anybody's entry.
+select t.allows('and a comment, which is the fifth thing the app writes here',
+  $$insert into public.comments (id, user_id, kind, entry_id, body)
+    values ('eeeeeeee-0000-0000-0000-00000000003c','11111111-1111-1111-1111-111111111111',
+            'expense','eeeeeeee-0000-0000-0000-00000000001e','Checked against the bill.')$$);
+select t.check('and can read it back',
+  (select body from public.comments where id = 'eeeeeeee-0000-0000-0000-00000000003c')
+    = 'Checked against the bill.');
+select t.allows('and remove it again',
+  $$delete from public.comments where id = 'eeeeeeee-0000-0000-0000-00000000003c'$$);
+
+-- The control beside all of that: the viewer still cannot, so what is being
+-- tested is the role and not the sharing.
+set role postgres;
+insert into public.memberships (owner_id, member_id, owner_email, member_email, role)
+values ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222',
+        'alice@test.invalid', 'bob@test.invalid', 'viewer')
+on conflict (owner_id, member_id) do update set role = 'viewer';
+insert into public.comments (id, user_id, kind, entry_id, body)
+values ('eeeeeeee-0000-0000-0000-00000000004c', '11111111-1111-1111-1111-111111111111',
+        'expense', 'eeeeeeee-0000-0000-0000-00000000001e', 'Owner''s own note.')
+on conflict (id) do nothing;
+set role offset_app;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';  -- bob, viewer again
+select t.check('a viewer reads the comment',
+  (select count(*) from public.comments where id = 'eeeeeeee-0000-0000-0000-00000000004c') = 1);
+select t.touches_nothing('but changes nothing on the owner''s asset',
+  $$update public.properties set name = 'Bob Took This'
+     where id = 'eeeeeeee-0000-0000-0000-000000000002'$$);
+select t.refuses('and cannot leave one of their own',
+  $$insert into public.comments (user_id, kind, entry_id, body)
+    values ('11111111-1111-1111-1111-111111111111','expense',
+            'eeeeeeee-0000-0000-0000-00000000001e','Bob was here.')$$);
+
+\echo ''
 \echo '── AND THE TABLES THE OTHER FILES ADD ──'
 -- Never applied here before, so never checked. Each is readable by anyone
 -- holding the anon key unless a policy says otherwise.

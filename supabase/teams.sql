@@ -142,6 +142,34 @@ drop policy if exists "delete shared documents" on public.documents;
 create policy "delete shared documents" on public.documents
   for delete using (public.can_write_workspace(user_id));
 
+-- comments: the fifth thing the app writes through `ownerForWrite`, and the one
+-- this file forgot. `properties`, `expenses`, `income` and `documents` each got
+-- the full set above; `comments` got none, so the base `own comments` policy
+-- (`auth.uid() = user_id`) was all there was. Two things followed from that and
+-- both are visible on screen.
+--
+-- A shared viewer saw no comments at all — not their own, which they cannot
+-- leave, but the owner's, on every entry. `DataContext` fetches them on every
+-- load and simply got an empty list.
+--
+-- And an editor could not leave one. `addComment` stamps the row with the
+-- *owner's* id, exactly as it does for the other four, so the insert was
+-- refused outright rather than filtered: `new row violates row-level security
+-- policy for table "comments"`. Both found by the first test ever written for
+-- the editor role.
+drop policy if exists "read shared comments" on public.comments;
+create policy "read shared comments" on public.comments
+  for select using (public.can_read_workspace(user_id));
+drop policy if exists "write shared comments" on public.comments;
+create policy "write shared comments" on public.comments
+  for insert with check (public.can_write_workspace(user_id));
+drop policy if exists "update shared comments" on public.comments;
+create policy "update shared comments" on public.comments
+  for update using (public.can_write_workspace(user_id)) with check (public.can_write_workspace(user_id));
+drop policy if exists "delete shared comments" on public.comments;
+create policy "delete shared comments" on public.comments
+  for delete using (public.can_write_workspace(user_id));
+
 -- Receipt / document files live under <owner_uid>/<name>. Let members read and
 -- editors write files in workspaces they can access (owners already can, via
 -- the per-uid policies in schema.sql).
