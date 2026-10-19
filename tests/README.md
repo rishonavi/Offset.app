@@ -207,7 +207,22 @@ nothing else.
 
 | Suite | Assertions | Covers |
 |---|---|---|
-| `corporate.sql` | 200 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched; that a company may book a cost to no asset, which the books it grew out of require; and that every column the client sends is really there, asked of the database rather than of a regular expression; and that one month cannot be run twice; which way an order's money goes, when its retention is released, the tape measure a certified figure came from, who is being deducted from, and a stores ledger somebody has actually checked against a shelf |
+| `corporate.sql` | 196 | schema applies and re-applies; who may see and change what; the two invariants; founding; an asset carrying its books; sites, materials and quotations, including the movement kinds an earlier schema could not express; the muster roll, work orders and cumulative running-account bills, the schedule of work and its measurements; plant and its log sheets, with idle and breakdown kept apart; a yard and a store on every site; a server-kept version on every synced table; flats and shops with construction-linked payment plans; that a personal install is untouched; that a company may book a cost to no asset, which the books it grew out of require; and that every column the client sends is really there, asked of the database rather than of a regular expression; and that one month cannot be run twice; which way an order's money goes, when its retention is released, the tape measure a certified figure came from, who is being deducted from, and a stores ledger somebody has actually checked against a shelf |
+| `sharing.sql` | 25 | read-only sharing, which is a claim about row-level security and so could only ever be settled by the database: that a shared member reads the owner's assets, costs and income and changes none of them, that a stranger sees none of it and cannot write themselves a share of somebody else's books, that the owner keeps every right including taking the share back, and that the tables the other four files add — `bug_reports`, `admins`, `scan_usage` — are closed to a stranger while `app_config` is deliberately open, because the maintenance banner is read on the sign-in screen before anybody is signed in |
+
+All six files in `supabase/` are applied, in the order `DEPLOY.md` gives, and
+then applied again — every one of them claims to be safe to re-run. It used to
+apply `schema.sql` and `corporate.sql` alone, so `memberships`, `app_config`,
+`scan_usage` and `bug_reports` were not tables in this database and nothing
+could check them. The other four stopped at their first `grant` with `role
+"authenticated" does not exist`, which is a gap in the stand-ins below rather
+than in the shipped SQL.
+
+Output is read with stderr folded into stdout. psql sends `\echo` to one and
+`raise notice` to the other, and this suite keeps its section headings in the
+first and every PASS/FAIL in the second — read separately, it printed all 196
+results in a block and then all 16 headings after them, each assertion detached
+from the heading that says what it is for.
 
 The runner stands up `auth.uid()`, `auth.users` and the storage schema, because
 Supabase provides them and a bare PostgreSQL does not — the shipped `.sql`

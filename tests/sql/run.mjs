@@ -26,8 +26,18 @@ if (!conn) {
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..', '..')
+// stderr folded into stdout, in order.
+//
+// psql sends `\echo` to stdout and `raise notice` to stderr. This suite puts
+// its section headings in the first and every single PASS/FAIL in the second,
+// and the reader below concatenated the two streams — so it printed all 193
+// results in one block and then all 16 headings after them, every assertion
+// detached from the heading that says what it is about. A heading with nothing
+// under it is also exactly what a whole section silently failing to run looks
+// like, which is why this was worth more than tidiness.
 const psql = (args, opts = {}) =>
-  spawnSync('psql', [conn, '-v', 'ON_ERROR_STOP=1', ...args], { encoding: 'utf8', ...opts })
+  spawnSync('sh', ['-c', 'exec psql "$0" -v ON_ERROR_STOP=1 "$@" 2>&1', conn, ...args],
+    { encoding: 'utf8', ...opts })
 
 // Supabase supplies auth.uid(), auth.users and a storage schema. A plain
 // Postgres has none of them, so they are stood up here rather than being
@@ -54,6 +64,22 @@ do $$ begin
     create role offset_app nologin nobypassrls;
   end if;
 end $$;
+-- And the three roles Supabase itself provides, which the shipped files grant
+-- to by name. Without them \`teams.sql\`, \`admin.sql\` and \`reports.sql\` stop at
+-- their first grant with \`role "authenticated" does not exist\` — so four of
+-- the six files were never applied here, and the tables they hold were never
+-- in the database for anything to check. The shipped SQL is right; the
+-- stand-in was short.
+do $$
+declare r text;
+begin
+  foreach r in array array['anon', 'authenticated', 'service_role']
+  loop
+    if not exists (select 1 from pg_roles where rolname = r) then
+      execute format('create role %I nologin nobypassrls', r);
+    end if;
+  end loop;
+end $$;
 `)
 
 // Emptied before anything is applied, because a suite that runs on top of the
@@ -63,35 +89,45 @@ end $$;
 const reset = psql(['-q', '-c', 'drop schema if exists public cascade; create schema public;'
   + ' drop schema if exists auth cascade; drop schema if exists storage cascade;'])
 if (reset.status !== 0) {
-  console.log(`**FAIL**  could not empty the database\n${(reset.stderr || '').trim()}`)
+  console.log(`**FAIL**  could not empty the database\n${(reset.stdout || reset.stderr || '').trim()}`)
   process.exit(1)
 }
 
+// All six, in the order DEPLOY.md gives: `schema.sql` first, and the other
+// five depend only on it. It used to be these two alone, so four of the files
+// this deployment needs were never applied here at all — and the tables they
+// hold (`memberships`, `app_config`, `scan_usage`, `bug_reports`) were never
+// in the database for any assertion to reach. That is the same gap the deploy
+// guide had, which named two files and left four for people to discover as
+// 404s from PostgREST.
+const SQL_FILES = ['schema.sql', 'corporate.sql', 'teams.sql', 'admin.sql', 'limits.sql', 'reports.sql']
+const sqlPath = (f) => join(repo, 'supabase', f)
 const steps = [
   ['Supabase stand-ins', stub],
-  ['schema.sql', join(repo, 'supabase', 'schema.sql')],
-  ['corporate.sql', join(repo, 'supabase', 'corporate.sql')],
-  // Applied twice on purpose: both files claim to be safe to re-run, and that
-  // claim is what someone relies on after pulling a change.
-  ['schema.sql again', join(repo, 'supabase', 'schema.sql')],
-  ['corporate.sql again', join(repo, 'supabase', 'corporate.sql')],
+  ...SQL_FILES.map((f) => [f, sqlPath(f)]),
+  // Applied twice on purpose: every one of them claims to be safe to re-run,
+  // and that claim is what somebody relies on after pulling a change.
+  ...SQL_FILES.map((f) => [`${f} again`, sqlPath(f)]),
 ]
 
 let pass = 0, fail = 0
 for (const [label, file] of steps) {
   const r = psql(['-q', '-f', file])
   if (r.status === 0) { pass++; console.log(`PASS  ${label} applies cleanly`) }
-  else { fail++; console.log(`**FAIL**  ${label}\n${(r.stderr || '').trim().split('\n').slice(0, 6).join('\n')}`) }
+  else { fail++; console.log(`**FAIL**  ${label}\n${(r.stdout || r.stderr || '').trim().split('\n').slice(0, 6).join('\n')}`) }
 }
 
-const run = psql(['-f', join(here, 'corporate.sql')])
-const lines = (run.stderr + run.stdout).split('\n')
-for (const line of lines) {
-  const text = line.replace(/^psql:[^ ]* NOTICE:\s{2}/, '').trimEnd()
-  if (/^\*\*FAIL\*\*/.test(text)) { fail++; console.log(text) }
-  else if (/^PASS/.test(text)) { pass++; console.log(text) }
-  else if (/^──/.test(text)) console.log('\n' + text)
-  else if (/^psql:.*ERROR/.test(line)) { fail++; console.log(line.trim()) }
+// In order, in one database: `corporate.sql` defines the `t.*` helpers and the
+// users, and `sharing.sql` uses them.
+for (const file of ['corporate.sql', 'sharing.sql']) {
+  const run = psql(['-f', join(here, file)])
+  for (const line of (run.stdout + run.stderr).split('\n')) {
+    const text = line.replace(/^psql:[^ ]* NOTICE:\s{2}/, '').trimEnd()
+    if (/^\*\*FAIL\*\*/.test(text)) { fail++; console.log(text) }
+    else if (/^PASS/.test(text)) { pass++; console.log(text) }
+    else if (/^──/.test(text)) console.log('\n' + text)
+    else if (/^psql:.*ERROR/.test(line)) { fail++; console.log(line.trim()) }
+  }
 }
 
 console.log(`\n${pass} passed, ${fail} failed`)

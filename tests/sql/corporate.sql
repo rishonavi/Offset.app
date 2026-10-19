@@ -717,9 +717,24 @@ select t.refuses('the same month cannot be run twice',
   $$insert into public.payroll_runs (entity_id, period, status)
     values ('aaaaaaaa-0000-0000-0000-000000000001','2026-03','draft')$$);
 -- The control: it is one run per month per company, not one run per month.
+--
+-- Run as that company's own owner, which is what "another company runs its own
+-- March" always meant. It used to be inserted as carol, who is finance *here*
+-- and nothing at all over there — and it passed, because `payroll_runs` was the
+-- one table in the schema with row-level security switched off, so its
+-- policies were inert and any member of any company could write anybody's pay
+-- run. Enabling it turned this control red, which is the only reason anyone
+-- would have looked: a test that leans on a hole holds the hole open.
+set request.jwt.claim.sub = '99999999-9999-9999-9999-999999999999';  -- mallory, owner of the other company
 select t.allows('but another company runs its own March',
   $$insert into public.payroll_runs (entity_id, period, status)
     values ('aaaaaaaa-0000-0000-0000-000000000002','2026-03','draft')$$);
+-- And she may not reach into this one, which is the other half of the same
+-- claim and was passing for the wrong reason too.
+select t.refuses('and may not run this one''s',
+  $$insert into public.payroll_runs (entity_id, period, status)
+    values ('aaaaaaaa-0000-0000-0000-000000000001','2026-09','draft')$$);
+set request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';  -- back to carol
 select t.allows('and the next month is a different month',
   $$insert into public.payroll_runs (entity_id, period, status)
     values ('aaaaaaaa-0000-0000-0000-000000000001','2026-04','draft')$$);
