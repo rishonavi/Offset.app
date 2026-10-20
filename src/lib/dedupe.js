@@ -37,3 +37,30 @@ export const seenIndex = (rows = [], kind = 'expense') =>
 // because a silent skip and a silent double are equally hard to notice.
 export const skippedNote = (n) =>
   n > 0 ? `, skipped ${n} duplicate${n === 1 ? '' : 's'} already in your books` : ''
+
+// The rows to add, and how many were already in the books.
+//
+// Every importer does this same dance — build the row, key it, skip it if the
+// key is known, remember the key so a file that repeats a row inside itself
+// imports it once — and writing it out by hand at each door is how the bank door
+// came to be missing it entirely. `seen` is seeded from the ledger and added to
+// as we go, which is what makes the within-one-import case work.
+//
+// Pure: it decides nothing about storage and writes nothing. The caller still
+// does the adding, because only the caller knows which `add*` to call and in
+// which order.
+export function dropKnown(rows = [], existing = [], kind = 'expense') {
+  const seen = seenIndex(existing, kind)
+  const fresh = []
+  let skipped = 0
+  for (const row of rows) {
+    const key = entryKey(row, kind)
+    if (seen.has(key)) {
+      skipped += 1
+      continue
+    }
+    seen.add(key)
+    fresh.push(row)
+  }
+  return { rows: fresh, skipped }
+}

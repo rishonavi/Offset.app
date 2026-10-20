@@ -4,7 +4,8 @@ import { useData } from '../context/DataContext'
 import { parseSpreadsheet } from '../lib/exports'
 import { parseStatement, reconcile, parseCSV } from '../lib/statement'
 import { buildVendorIndex, suggestCategory } from '../lib/categorize'
-import { bankSyncEnabled, bankProviderLabel, startBankLink, fetchLiveTransactions } from '../lib/bankSync'
+import { bankSyncEnabled, bankProviderLabel, startBankLink, fetchLiveTransactions, leftOutNote } from '../lib/bankSync'
+import { dropKnown, skippedNote } from '../lib/dedupe'
 import { formatCurrency, formatDate } from '../lib/format'
 import { Card, Button } from './ui'
 import SiteField from './SiteField'
@@ -43,14 +44,22 @@ export default function BankImport() {
 
   // Shared by file import and live sync: reconcile a set of transactions and
   // show the preview.
-  const loadTransactions = (transactions, sourceName) => {
+  //
+  // `note` is what the source sent and could not be used — rows in another
+  // currency, rows with no date. It matters most in the empty case: "no
+  // transactions found" over eight rows the sync threw away is a wrong answer,
+  // not a quiet one.
+  const loadTransactions = (transactions, sourceName, note = '') => {
     if (!transactions || transactions.length === 0) {
-      setMsg({ ok: false, text: 'No transactions found in that source.' })
+      setMsg({ ok: false, text: `No transactions found in that source.${note}` })
       setPlan(null)
       return
     }
     setPlan(reconcile(transactions, expenses, income))
-    setMeta({ name: sourceName, count: transactions.length })
+    // The note belongs beside the count, not in the status banner: the banner is
+    // green for success and red for failure, and "we read 40 of your 48 rows" is
+    // neither.
+    setMeta({ name: sourceName, count: transactions.length, note: note.trim() })
     if (!assetFree) setAssetId((id) => id || properties[0]?.id || '')
   }
 
@@ -105,7 +114,8 @@ export default function BankImport() {
     setMsg(null)
     setBusy(true)
     try {
-      loadTransactions(await fetchLiveTransactions({}), `your bank (${bankProviderLabel})`)
+      const { transactions, skipped } = await fetchLiveTransactions({})
+      loadTransactions(transactions, `your bank (${bankProviderLabel})`, leftOutNote(skipped))
     } catch (e) {
       setMsg({ ok: false, text: e?.code === 'not_configured' ? NOT_SET_UP : e?.message || 'Could not sync transactions.' })
     } finally {
@@ -128,37 +138,59 @@ export default function BankImport() {
         received++
       }
       let added = 0
+      let dupes = 0
       if (addNew && (assetFree || assetId)) {
         const index = buildVendorIndex(expenses)
-        for (const t of plan.newExpenses) {
-          const guess = suggestCategory(t.description, index)
-          await addExpense({
-            property_id: assetId || null,
-            project_id: siteId || null,
-            date: t.date,
-            amount: t.amount,
-            category: guess?.category || 'Other',
-            vendor: '',
-            payment_method: 'Bank Transfer',
-            status: 'paid',
-            description: t.description,
-            receipt_url: null,
-          })
+        // Re-importing is the ordinary mistake, not the exotic one — and on this
+        // door it was certain rather than likely: reconcile() only matches
+        // *unpaid* bills, so a transaction imported last week is already paid,
+        // matches nothing, and lands in `newExpenses` again. The server asks the
+        // provider for the whole history every time (`start_date: since ||
+        // '2020-01-01'`, count 500) and the client sends no `since`, so pressing
+        // Sync twice re-added up to five hundred rows with nothing on screen
+        // saying so.
+        //
+        // The spreadsheet and Tally doors already ask this question, in this way
+        // (src/pages/ImportBills.jsx:91) — the bank door was simply never
+        // brought in line. Both sets are added to as the loops run, so one
+        // statement that repeats a row inside itself imports it once.
+        //
+        // The category is settled before the key is taken, because the key
+        // includes it: two identical amounts on one day that guess to different
+        // categories are two entries, not a repeat.
+        const expRows = plan.newExpenses.map((t) => ({
+          property_id: assetId || null,
+          project_id: siteId || null,
+          date: t.date,
+          amount: t.amount,
+          category: suggestCategory(t.description, index)?.category || 'Other',
+          vendor: '',
+          payment_method: 'Bank Transfer',
+          status: 'paid',
+          description: t.description,
+          receipt_url: null,
+        }))
+        const incRows = plan.newIncome.map((t) => ({
+          property_id: assetId || null,
+          project_id: siteId || null,
+          date: t.date,
+          amount: t.amount,
+          source: 'Other',
+          payer: '',
+          payment_method: 'Bank Transfer',
+          status: 'received',
+          description: t.description,
+          receipt_url: null,
+        }))
+        const freshExp = dropKnown(expRows, expenses, 'expense')
+        const freshInc = dropKnown(incRows, income, 'income')
+        dupes = freshExp.skipped + freshInc.skipped
+        for (const row of freshExp.rows) {
+          await addExpense(row)
           added++
         }
-        for (const t of plan.newIncome) {
-          await addIncome({
-            property_id: assetId || null,
-            project_id: siteId || null,
-            date: t.date,
-            amount: t.amount,
-            source: 'Other',
-            payer: '',
-            payment_method: 'Bank Transfer',
-            status: 'received',
-            description: t.description,
-            receipt_url: null,
-          })
+        for (const row of freshInc.rows) {
+          await addIncome(row)
           added++
         }
       }
@@ -167,7 +199,7 @@ export default function BankImport() {
         ok: true,
         text: `Reconciled: ${paid} expense${paid === 1 ? '' : 's'} marked paid, ${received} income marked received${
           added ? `, ${added} new transaction${added === 1 ? '' : 's'} added` : ''
-        }.`,
+        }${skippedNote(dupes)}.`,
       })
     } catch (err) {
       setMsg({ ok: false, text: `Import failed: ${err?.message || err}` })
@@ -241,6 +273,7 @@ export default function BankImport() {
         <div className="mt-4 space-y-4">
           <div className="text-xs text-ink-5">
             Read <strong>{meta?.count}</strong> transactions from <span className="font-medium text-ink-3">{meta?.name}</span>.
+            {meta?.note && <span className="ms-1 text-amber-700 dark:text-amber-400">{meta.note}</span>}
           </div>
 
           {matchedCount > 0 ? (

@@ -47,7 +47,7 @@ async function plaidLinkToken(userId) {
       client_name: 'Offset',
       language: 'en',
       country_codes: (process.env.PLAID_COUNTRIES || 'US').split(','),
-      user: { client_user_id: userId || 'offset-user' },
+      user: { client_user_id: userId },
       products: ['transactions'],
     }),
   })
@@ -71,7 +71,7 @@ async function setuConsent(userId) {
     body: JSON.stringify({
       // Consent detail per the Account Aggregator spec; the exact template is
       // configured on your Setu product. `vua` is the user's VPA/handle.
-      vua: userId || '',
+      vua: userId,
       redirectUrl: process.env.BANK_REDIRECT_URL || '',
       context: [],
     }),
@@ -105,15 +105,26 @@ export default async function handler(req, res) {
     res.status(auth.status).json({ error: auth.error })
     return
   }
-  let body = {}
+  // Nothing in the body is used any more — see below — but a malformed one is
+  // still worth a 400 rather than a link token: it means the caller is sending
+  // something this endpoint does not understand, and a silent success there is
+  // how a client ends up believing it passed a parameter that was ignored.
   try {
-    body = await readBody(req)
+    await readBody(req)
   } catch {
     res.status(400).json({ error: 'bad_json' })
     return
   }
   try {
-    const out = provider() === 'setu' ? await setuConsent(body.userId) : await plaidLinkToken(body.userId)
+    // Who this link is for comes from the token, not the body.
+    //
+    // It was `body.userId`, which the client never sends — so Plaid received
+    // `client_user_id: 'offset-user'`, the same identity for every user of the
+    // deployment, and Setu received `vua: ''`, which is not a valid consent
+    // request on its face. `auth.user.id` was already in hand and unused, and
+    // `src/lib/authHeader.js` states the rule this broke: the server takes the
+    // caller's identity from the token and never from the request body.
+    const out = provider() === 'setu' ? await setuConsent(auth.user.id) : await plaidLinkToken(auth.user.id)
     res.status(200).json(out)
   } catch (err) {
     res.status(502).json({ error: err?.message || 'link_failed' })
