@@ -84,6 +84,51 @@ console.log('\n── AN EMPTY LEDGER DOES NOT MEAN AN EMPTY STORE ──')
   await ctx.close()
 }
 
+console.log('\n── AND A LEDGER IT COULD NOT READ MEANS IT SWEEPS NOTHING ──')
+// The one that destroyed things. `readRows` answers a key it cannot parse with
+// an empty array — which is indistinguishable from "no rows" — and pruneBlobs
+// deletes everything it is not handed. So a truncated `pl_expenses` made the
+// boot sweep delete every attachment in the store, before the banner that would
+// have mentioned the damaged key had even rendered.
+//
+// Measured before the fix: two receipts in, nothing left. That is the exact
+// outcome `salvage.js` exists to prevent, and this turned "unreadable" into
+// "unreferenced" — and unlike a key, a deleted photograph has no copy aside.
+for (const [label, stored] of [
+  ['a truncated ledger', '[{"id":"e1","receipt_url":"idb:mine#a.png","amo'],
+  ['one holding an object where a list belongs', '{"id":"e1"}'],
+  ['and one holding nothing but a word', 'null'],
+]) {
+  const { ctx, p } = await open()
+  await p.goto(B, { waitUntil: 'networkidle' })
+  await seedBlobs(p, ['mine', 'also-mine'])
+  await p.evaluate((v) => localStorage.setItem('pl_expenses', v), stored)
+  await p.goto(B + '/expenses', { waitUntil: 'networkidle' })
+  await p.waitForTimeout(1200)
+  const after = await blobIds(p)
+  ok(`${label} sweeps nothing`, after.includes('mine') && after.includes('also-mine'), after.join(','))
+  await ctx.close()
+}
+// The control, and it is the whole reason the guard has to be narrow: a ledger
+// that reads perfectly still has its orphans swept. A guard that simply stopped
+// sweeping would pass every assertion above.
+{
+  const { ctx, p } = await open()
+  await p.goto(B, { waitUntil: 'networkidle' })
+  await seedBlobs(p, ['mine', 'orphan'])
+  await p.evaluate(() => {
+    const now = new Date().toISOString()
+    localStorage.setItem('pl_expenses', JSON.stringify([
+      { id: 'e1', property_id: 'a1', date: '2026-01-01', amount: 100, receipt_url: 'idb:mine#a.png', created_at: now }]))
+  })
+  await p.goto(B + '/expenses', { waitUntil: 'networkidle' })
+  await p.waitForTimeout(1200)
+  const after = await blobIds(p)
+  ok('while a readable one still sweeps its orphan', !after.includes('orphan'), after.join(','))
+  ok('and keeps what it refers to', after.includes('mine'), after.join(','))
+  await ctx.close()
+}
+
 console.log('\n── EXPIRED DRAFTS ARE SWEPT, LIVE ONES ARE NOT ──')
 {
   const { ctx, p } = await open()

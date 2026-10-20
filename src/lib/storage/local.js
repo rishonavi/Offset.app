@@ -10,7 +10,7 @@ const PBUD_KEY = 'pl_personal_budgets'
 const COMMENT_KEY = 'pl_comments'
 
 import { putBlob, getBlob, deleteBlob, isBlobToken, pruneBlobs } from './blobs'
-import { readRows } from './salvage'
+import { readRows, unreadable } from './salvage'
 
 const DEMO_USER = { id: 'local-user', email: 'demo@local' }
 
@@ -169,7 +169,41 @@ export async function getReceiptUrl(stored) {
 // attachment the user has. Soft-deleted rows count as reachable — their file
 // has to still be there when someone restores them from the bin.
 export async function sweepOrphanedBlobs() {
+  const keys = [EXP_KEY, INC_KEY, DOC_KEY]
+
+  // Positive evidence that the ledger can be read at all, before anything is
+  // deleted on the strength of what it says.
+  //
+  // A browser that refuses storage — a private window with site data blocked —
+  // throws on `getItem`, and `readRows` answers that with an empty array,
+  // correctly, because nothing is stored and nothing is lost. But IndexedDB can
+  // still be working, so the ledger reads as empty while the attachments are
+  // all there, and a sweep on that basis deletes every one of them.
+  try {
+    for (const key of keys) localStorage.getItem(key)
+  } catch {
+    return 0
+  }
+
   const rows = [...read(EXP_KEY), ...read(INC_KEY), ...read(DOC_KEY)]
+
+  // And the same hazard from the other direction, which is the one that
+  // actually destroyed things. `readRows` answers a key it cannot parse with an
+  // empty array too — and an empty array is indistinguishable from "no rows"
+  // while `pruneBlobs` deletes everything it is not handed. So a truncated
+  // `pl_expenses`, or one holding an object where a list should be, made this
+  // delete every attachment in the store. Measured in a browser: two receipts
+  // in, nothing left, at boot, before the banner that would have mentioned the
+  // damaged key had even rendered.
+  //
+  // That is the exact outcome `salvage.js` exists to prevent — it copies an
+  // unreadable key aside rather than let it be written over — and this turned
+  // "unreadable" into "unreferenced" and threw the photographs away, with no
+  // copy of those. `unreadable()` is populated by the reads just above, so it
+  // has to be asked afterwards.
+  const damaged = unreadable()
+  if (keys.some((key) => damaged.includes(key))) return 0
+
   return pruneBlobs(rows.flatMap((r) => [r?.receipt_url, r?.file_url]).filter(Boolean))
 }
 

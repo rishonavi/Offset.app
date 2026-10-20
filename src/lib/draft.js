@@ -38,7 +38,21 @@ const scalarsOnly = (value) => {
 export function writeDraft(key, value) {
   try {
     const fields = scalarsOnly(value)
-    if (!Object.keys(fields).length) return
+    // Nothing worth keeping means nothing kept, including anything kept
+    // earlier: this used to `return` and leave the old key sitting there.
+    //
+    // Narrower than it looks, and deliberately so. `scalarsOnly` keeps an empty
+    // string, so a form the user blanked still has fields and still writes —
+    // and the forms do not call this on a blanked form anyway, because
+    // `worthKeeping` (ExpenseForm.jsx) suppresses it. That guard is there to
+    // stop "start fresh" immediately writing back the draft it just removed,
+    // which is a real bug and not one to trade away. What this branch catches
+    // is the case where every field is null or undefined, where the old key
+    // used to survive for a day having been superseded by nothing.
+    if (!Object.keys(fields).length) {
+      clearDraft(key)
+      return
+    }
     localStorage.setItem(key, JSON.stringify({ at: Date.now(), fields }))
   } catch {
     // A draft is a convenience. If storage is full or blocked, the form must
@@ -49,14 +63,37 @@ export function writeDraft(key, value) {
 
 export function readDraft(key) {
   try {
-    const parsed = JSON.parse(localStorage.getItem(key))
-    if (!parsed?.fields) return null
-    if (!parsed.at || Date.now() - parsed.at > MAX_AGE_MS) {
+    const raw = localStorage.getItem(key)
+    if (raw == null) return null
+    const parsed = JSON.parse(raw)
+    // A draft is an object of scalars or it is not a draft. This checked only
+    // that `fields` was truthy, so a stored array came back as an array and the
+    // form spread it into its state as `{0: 'x', 1: 'y'}` — and a number or a
+    // string came back and was swallowed by the spread without a trace.
+    const fields = parsed?.fields
+    const usable = fields && typeof fields === 'object' && !Array.isArray(fields)
+    if (!usable) {
+      // Cleared rather than merely refused, which is the whole point of the
+      // sweep below: this branch and the `catch` both used to return null and
+      // leave the key behind, so the only entries `pruneDrafts` could never
+      // collect were the malformed ones it most needed to.
       clearDraft(key)
       return null
     }
-    return parsed.fields
+    // A draft stamped in the future is not fresh, it is wrong — a phone before
+    // its clock synced, or a clock somebody corrected. `now - at` is negative
+    // there, so it compared as newer than new and the draft became immortal:
+    // never expiring, and never collectable either.
+    const age = Date.now() - parsed.at
+    if (!parsed.at || age < 0 || age > MAX_AGE_MS) {
+      clearDraft(key)
+      return null
+    }
+    return fields
   } catch {
+    // Unparseable. Same reasoning as above — it can never become readable, and
+    // leaving it is the leak.
+    clearDraft(key)
     return null
   }
 }
@@ -79,6 +116,12 @@ export function draftDiffers(draft, base) {
 
 // Drafts are per-form and expire, but a browser that never finishes an entry
 // would still accumulate one key per asset edited. Cheap to sweep on startup.
+//
+// It collects malformed entries as well as stale ones. It did not: `readDraft`
+// cleared only on the expiry branch, so a key holding broken JSON, `null`, `{}`
+// or a timestamp with no fields survived every sweep for the life of the
+// installation — which is exactly the leak this exists to stop, kept alive for
+// the entries with the least claim to be kept.
 export function pruneDrafts() {
   try {
     for (const key of Object.keys(localStorage)) {
