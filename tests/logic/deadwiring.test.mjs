@@ -83,8 +83,6 @@ const UNCALLED = {
     'the form offers the two bases inline; this is the list they came from',
   'src/lib/payroll.js :: RUN_STATUS_IDS':
     'the screen walks RUN_STATUS_LABEL; the id list is what the schema check reads',
-  'src/lib/reportsCloud.js :: cloudReportsAvailable':
-    'the report screen asks `wasDelivered` after the fact rather than asking in advance',
   'src/lib/storage/blobs.js :: nameFrom':
     'attachment names come off the File object directly',
 }
@@ -103,6 +101,12 @@ for (const [file, text] of src) {
     // `String.match` without the flag returns one hit and makes everything look
     // dead — which is exactly what the first version of this scan reported.
     if ((text.match(new RegExp(`\\b${name}\\b`, 'g')) || []).length > 1) continue
+    // A name a test mentions counts as called — a name somebody wrote an
+    // assertion about is a name somebody is looking after. The cost is worth
+    // knowing: *mentioning* a listed dead export in a test, even in a comment,
+    // takes it off this list and retires the note that said what to do about
+    // it. If a suite needs to talk about one, it should do so without writing
+    // the identifier.
     if (word.test(testText)) continue
     uncalled.push(`${file} :: ${name}`)
   }

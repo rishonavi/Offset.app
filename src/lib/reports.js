@@ -12,6 +12,7 @@
 // addresses, tenants, documents — the ledger itself. Only counts of it.
 
 import { recentErrors } from './errorLog'
+import { readRows } from './storage/salvage'
 
 export const REPORT_KINDS = [
   { id: 'broken', label: 'Something is broken', hint: 'It crashed, or refused to do what it says it does' },
@@ -98,13 +99,37 @@ export function collectDiagnostics({
     // The crash the user is reporting, when the report was opened from the
     // error screen — plus anything else this tab logged.
     crash: error ? { message: String(error.message || error).slice(0, 400), stack: String(error.stack || '').split('\n').slice(0, 4).join('\n').slice(0, 600) } : null,
-    errors: recentErrors(),
+    // The ring without its stacks, and that is the whole change.
+    //
+    // `recentErrors()` carries a `stack` on every entry — up to eight of them
+    // at 600 characters each. Nothing showed it: not the row list below, not
+    // `formatReportText`, not the admin inbox, which renders
+    // `diagnostics.crash.stack` and nothing else. But `submitReportToCloud`
+    // sends `report.diagnostics` whole, so those stacks were stored in the
+    // browser and transmitted to the inbox, where no human ever saw them.
+    // Measured: 3,364 bytes of diagnostics against the 976 the report actually
+    // carries.
+    //
+    // This file's own header says what to do about that — "If it isn't in here,
+    // it isn't attached" — and the cheapest way to keep a promise like that is
+    // not to collect the thing in the first place.
+    errors: recentErrors().map(({ at, source, message, count }) => ({ at, source, message, count })),
   }
 }
 
 // The literal list the dialog shows. If it isn't in here, it isn't attached.
 export function describeDiagnostics(d) {
   if (!d) return []
+  // `counts` is read optionally, like `crash` and `errors` beside it. It was
+  // the one field dereferenced outright, and this is called on objects nobody
+  // in this session built: `Admin.jsx` passes a `diagnostics` column straight
+  // out of Postgres, and `formatReportText` passes one out of localStorage. A
+  // row saved by any other version of this shape threw
+  // `Cannot read properties of undefined (reading 'assets')` — taking out the
+  // admin inbox, which is the one page that must survive a bad report.
+  const c = d.counts || {}
+  const assets = Number(c.assets) || 0
+  const entries = (Number(c.expenses) || 0) + (Number(c.income) || 0)
   const rows = [
     ['Page', d.route],
     ['Offset version', d.builtAt ? `${d.version} (built ${d.builtAt.slice(0, 10)})` : d.version],
@@ -113,9 +138,18 @@ export function describeDiagnostics(d) {
     ['Appearance', [d.theme, d.textSize && `${d.textSize} text`].filter(Boolean).join(', ')],
     ['Storage', d.backend === 'cloud' ? 'Cloud sync' : 'This browser only'],
     ['Plan', d.plan],
-    ['Portfolio size', `${d.counts.assets} assets, ${d.counts.expenses + d.counts.income} entries`],
+    ['Portfolio size', `${assets} assets, ${entries} entries`],
   ]
   if (d.crash) rows.push(['Error on screen', d.crash.message])
+  // The stack goes out under its own heading in `formatReportText` and the
+  // admin inbox renders it, but this list — the one shown before anything is
+  // sent — never mentioned it existed. Named rather than printed: four lines of
+  // bundled frames in a consent list is a wall nobody reads, and what somebody
+  // needs to decide is that it is there and roughly how much of it.
+  if (d.crash?.stack) {
+    const lines = d.crash.stack.split('\n').filter((l) => l.trim()).length
+    rows.push(['Technical detail', `${lines} line${lines === 1 ? '' : 's'} of stack trace`])
+  }
   if (d.errors?.length) rows.push([`Recent errors (${d.errors.length})`, d.errors.map((e) => e.message).join(' · ').slice(0, 160)])
   return rows.filter(([, v]) => v !== '' && v != null).map(([label, value]) => ({ label, value: String(value) }))
 }
@@ -169,10 +203,39 @@ export function formatReportText(report) {
 
 export const SUPPORT_EMAIL = String(import.meta.env?.VITE_SUPPORT_EMAIL || '').trim()
 
+// How long a `mailto:` may be before the mail client starts deciding for
+// itself. Outlook on Windows cuts around 2,048 characters and several clients do
+// it without saying so, which is the failure that matters: somebody presses
+// "email it", a window opens, they send what is in it, and the half of the
+// report that explained the bug was dropped on the way. A measured report with a
+// crash and a full error ring already runs to about 1,460.
+export const MAILTO_LIMIT = 1900
+
 export function mailtoLink(report, to = SUPPORT_EMAIL) {
-  if (!to) return ''
+  // Trimmed, because a whitespace-only address is not an address. `SUPPORT_EMAIL`
+  // is trimmed where it is read, so the default could not be blank — but this is
+  // an exported function with a `to` parameter, and `!to` let "   " through and
+  // built `mailto:   ?subject=…`, which opens a compose window addressed to
+  // nothing.
+  const addr = String(to || '').trim()
+  if (!addr) return ''
   const subject = `Offset ${report.reference} — ${kindLabel(report.kind)}`
-  return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(formatReportText(report))}`
+  const head = `mailto:${addr}?subject=${encodeURIComponent(subject)}&body=`
+  const text = formatReportText(report)
+  const full = head + encodeURIComponent(text)
+  if (full.length <= MAILTO_LIMIT) return full
+  // Cut it here, visibly, rather than let the mail client cut it silently. The
+  // sections most worth keeping are first — what happened, then what was
+  // expected, then diagnostics, then the stack — so this loses the right end,
+  // and the marker tells both the reporter and whoever reads it that there is
+  // more. The whole thing is still in Settings → Reports, ready to paste.
+  const note = '\n\n[Cut short to fit an email. The full report is in Settings → Reports — paste it instead.]'
+  const room = MAILTO_LIMIT - head.length - encodeURIComponent(note).length
+  let keep = text.length
+  while (keep > 0 && encodeURIComponent(text.slice(0, keep)).length > room) {
+    keep -= Math.max(1, Math.ceil((encodeURIComponent(text.slice(0, keep)).length - room) / 3))
+  }
+  return head + encodeURIComponent(text.slice(0, Math.max(0, keep)) + note)
 }
 
 // ── Outbox ─────────────────────────────────────────────────────────
@@ -183,13 +246,18 @@ export function mailtoLink(report, to = SUPPORT_EMAIL) {
 const KEY = 'pl_reports'
 const MAX_KEPT = 50
 
+// Read through `storage/salvage.js`, for the reason that file exists: a key that
+// will not parse answered `[]` here, which is indistinguishable from an empty
+// outbox — and the next `saveReport` wrote `[theOneNewReport]` straight over it.
+// Half-written text can be picked over by hand; overwritten text is gone.
+//
+// This module's own reason for existing is that "someone reporting a bug has
+// already had one thing fail on them", so quietly destroying the reports they
+// filed earlier is not a defensible second. `readRows` copies the raw value
+// aside before anything can write over it and notes the key, which is what puts
+// it in the banner that names damaged keys.
 export function listReports() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(KEY))
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+  return readRows(KEY)
 }
 
 function persist(list) {

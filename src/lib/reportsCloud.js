@@ -15,7 +15,14 @@ import { client } from './supabaseClient'
 import { authHeaders } from './authHeader'
 import { formatReportText, kindLabel } from './reports'
 
-export const cloudReportsAvailable = () => Boolean(supabase)
+// `cloudReportsAvailable = () => Boolean(supabase)` stood here, and there is no
+// `supabase` in this module — every function below fetches one with
+// `await client()`. Calling it threw `ReferenceError: supabase is not defined`,
+// the same fault as the six storage functions and the auth header fixed earlier:
+// a lazy-client refactor that left a module-scope reference behind. Nothing
+// called it, and nothing needs it — `deliverReport` already reports which
+// destinations took the report, which is the question this was trying to answer
+// in advance — so it is gone rather than corrected into more dead code.
 
 // The reporter's identity is taken from their token inside submit_report(), not
 // from anything sent here — the email below is only "where to reply".
