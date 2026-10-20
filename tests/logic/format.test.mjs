@@ -58,10 +58,10 @@ eq('compact is guarded the same way', formatCompact(Infinity), '0')
 // not simply zeroing everything.
 eq('while a real figure is untouched', formatCurrency(4321), '₹4,321')
 
-console.log('\n── COMPACT, FOR A CARD ──')
+console.log('\n── COMPACT, FOR A CHART AXIS ──')
 // Pinned rather than chosen: these are ICU's en-IN compact forms, and the point
 // of writing them down is that a locale or ICU change that moves them should
-// be a failing test and not a quiet change to every dashboard.
+// be a failing test and not a quiet change to every chart.
 eq('under a thousand is itself', formatCompact(999), '999')
 eq('a thousand is K', formatCompact(1000), '1K')
 eq('a lakh is L', formatCompact(100000), '1L')
@@ -69,11 +69,31 @@ eq('and a half', formatCompact(150000), '1.5L')
 eq('ten lakh stays in lakhs', formatCompact(1000000), '10L')
 eq('a crore is Cr', formatCompact(10000000), '1Cr')
 eq('and a hundred crore', formatCompact(1000000000), '100Cr')
-// Worth knowing rather than hiding: one rupee short of a lakh rounds up to the
-// same label as a lakh itself. Compact is for a glance and the exact figure is
-// a tap away, so this is recorded, not corrected.
-eq('₹99,999 reads as a lakh', formatCompact(99999), '1L')
-eq('as does a lakh', formatCompact(100000), '1L')
+
+console.log('\n── AND IT NEVER CLAIMS A FIGURE THAT WAS NOT REACHED ──')
+// ICU rounds to nearest by default, so one rupee short of a lakh carried the
+// same label as a lakh itself — on an axis whose only job is to say which order
+// of magnitude you are reading.
+eq('one rupee short of a lakh is not a lakh', formatCompact(99999), '99.9K')
+eq('a lakh is', formatCompact(100000), '1L')
+eq('one short of ten lakh is not ten lakh', formatCompact(999999), '9.9L')
+eq('one short of a crore is not a crore', formatCompact(9999999), '99.9L')
+eq('a crore is', formatCompact(10000000), '1Cr')
+// And the digit that is kept is still truncated, not rounded up: 99,950 would
+// round to 1L and must not.
+eq('fifty short of a lakh is not a lakh either', formatCompact(99950), '99.9K')
+eq('while 99,949 reads the same, as it always did', formatCompact(99949), '99.9K')
+// The reason this is `trunc` and not `floor`. Flooring -99,999 gives -1L,
+// because floor moves away from zero below it — overstating the figure in the
+// one direction nobody checks.
+eq('a negative is not overstated either', formatCompact(-99999), '-99.9K')
+eq('nor is a larger one', formatCompact(-9999999), '-99.9L')
+eq('and a negative lakh is still a negative lakh', formatCompact(-100000), '-1L')
+// Controls: truncating must not shift a figure that is already exact, or one
+// well inside a band.
+eq('an exact figure is unmoved', formatCompact(1500), '1.5K')
+eq('and so is one mid-band', formatCompact(1234), '1.2K')
+eq('zero is zero', formatCompact(0), '0')
 
 console.log('\n── DATES ──')
 eq('an ISO date reads as a person writes it', formatDate('2026-04-01'), '01 Apr 2026')

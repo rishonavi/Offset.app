@@ -12,9 +12,21 @@ const currencyFmt = new Intl.NumberFormat(LOCALE, {
   maximumFractionDigits: 2,
 })
 
+// A compact label must never claim a figure that has not been reached. ICU's
+// default rounds to nearest, so **₹99,999 read "1L"** — the same label an actual
+// lakh gets, on a chart axis, where the whole point of the tick is to tell you
+// which order of magnitude you are looking at.
+//
+// `trunc` rather than `floor`, and the difference is only visible on a negative:
+// flooring -99,999 gives **-1L**, because floor moves away from zero below it,
+// which overstates the very thing this is meant to stop. `trunc` always moves
+// toward zero, so neither sign is ever overstated. On a non-negative figure —
+// which is all these axes plot today — the two are identical, so this costs
+// nothing and is right if a negative ever reaches it.
 const compactFmt = new Intl.NumberFormat(LOCALE, {
   notation: 'compact',
   maximumFractionDigits: 1,
+  roundingMode: 'trunc',
 })
 
 // `Number(n) || 0` was not enough. It catches NaN, null, '' and a word, because
