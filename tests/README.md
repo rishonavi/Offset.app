@@ -45,7 +45,7 @@ for Vite's resolver.
 | `bugreport.test.mjs` | 157 | what leaves the browser when somebody reports a bug, against what the dialog said would |
 | `bundling.test.mjs` | 54 | the heavy libraries and who may reach them, and every import used exactly once |
 | `certainty.test.mjs` | 34 | how a figure was arrived at, and why a total is only as certain as its least certain part |
-| `clock.test.mjs` | 41 | the helper that holds the clock still, and every other way of making a date that it must leave alone |
+| `clock.test.mjs` | 25 | the helper that holds the clock still, and every other way of making a date that it must leave alone |
 | `cloudwiring.test.mjs` | 9 | every `db.*` the app calls existing in both backends, which is what the cloud path kept failing on |
 | `commitments.test.mjs` | 50 | what has been agreed and not yet spent, against what is owed now — and why an instalment falls due on its own building |
 | `corp.test.mjs` | 149 | entities, control, ledgers, audit events, and what needs a second pair of eyes |
@@ -106,7 +106,7 @@ for Vite's resolver.
 | `today.test.mjs` | 26 | what day it is where the user is standing, rather than where the server is |
 | `tokens.test.mjs` | 8 | the theme's invariants: no half-declared colour, no raw palette |
 | `wirecheck.test.mjs` | 120 | every column the client sends against the columns the schema has, including the ones only an update writes, and whether the type will accept what is sent — the failures that would otherwise wait for a live Supabase |
-| | **5,480** | |
+| | **5,464** | |
 
 ## Browser — `tests/browser/`
 
