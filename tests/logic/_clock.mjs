@@ -20,7 +20,17 @@
 // string, a timestamp, `Date.UTC` — is left alone, so dates in the data still
 // mean what they say.
 export function freezeClock(iso) {
-  const fixed = new Date(iso).getTime()
+  // A string, a timestamp, or a Date — and nothing else, because JavaScript
+  // will coerce most things into a date rather than refuse them.
+  // `new Date(null)` is the epoch, `new Date(true)` is one millisecond after
+  // it, and `new Date([])` is the epoch too. So a caller passing a variable
+  // that turned out to be undefined would have frozen the clock to 1 January
+  // 1970, and the assertions against it would have been wrong in a way nothing
+  // would have attributed to the clock. That silent-wrong-answer is the exact
+  // hazard this helper exists to end, so the argument is checked by type first
+  // and only then for being a real instant.
+  const shaped = typeof iso === 'string' || typeof iso === 'number' || iso instanceof Date
+  const fixed = shaped ? new Date(iso).getTime() : NaN
   if (!Number.isFinite(fixed)) throw new Error(`freezeClock: ${iso} is not a date`)
   const Real = globalThis.Date
   class Frozen extends Real {

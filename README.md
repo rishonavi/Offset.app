@@ -19,6 +19,7 @@ it was built the way it was:
 
 | Document | Covers |
 | --- | --- |
+| [`docs/HANDOFF.md`](./docs/HANDOFF.md) | **Start here if you are new to this repository.** Which branch the work is on, how the tests are run, where the bugs have historically lived, and what to look at next |
 | [`docs/DEPLOY.md`](./docs/DEPLOY.md) | Putting it online: Vercel, Supabase, and what each optional key buys |
 | [`docs/ASSETS.md`](./docs/ASSETS.md) | Metals and broker holdings — assets that are a quantity, not a price |
 | [`docs/INVOICES.md`](./docs/INVOICES.md) | The invoice template language and its tokens |
