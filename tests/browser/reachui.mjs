@@ -117,7 +117,6 @@ console.log('\n── NOTHING SCROLLS SIDEWAYS ON A PHONE ──')
 await p.setViewportSize({ width: 390, height: 844 })
 for (const r of ROUTES) {
   await p.goto(B + r, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(400)
   const { overflow } = await inspect()
   ok(`${r} fits`, overflow <= 2, `${overflow}px over`)
 }
@@ -136,7 +135,6 @@ console.log('\n── AND EVERY CONTROL HAS A NAME ──')
 await p.setViewportSize({ width: 1280, height: 900 })
 for (const r of ROUTES) {
   await p.goto(B + r, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(400)
   const { unnamed, unlabelled } = await inspect()
   ok(`${r}: every button says what it does`, unnamed.length === 0, unnamed.slice(0, 2).join(' / '))
   ok(`${r}: every field has a label`, unlabelled.length === 0, unlabelled.slice(0, 3).join(' / '))
@@ -150,7 +148,6 @@ console.log('\n── AND ON A WIDE SCREEN YOU CAN SEE IT ──')
 // looking at it did.
 await p.setViewportSize({ width: 1280, height: 900 })
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 const dateLabels = await p.evaluate(() => {
   const seen = []
   for (const input of document.querySelectorAll('#main-content input[type="date"]')) {

@@ -83,7 +83,6 @@ console.log('\n── AND ON THE PERSONAL PAGE TOO ──')
       category: c, created_at: now }))))
   })
   await p.goto(`${B}/personal`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
   const has = await p.evaluate(() =>
     [...document.querySelectorAll('dl')].some((d) => /%/.test(d.innerText) && /₹/.test(d.innerText)))
   const empty = await p.evaluate(() => /No spending this month/.test(document.body.innerText))

@@ -56,7 +56,6 @@ await p.evaluate(({ ent, site }) => {
 
 console.log('\n── IT IS IN THE SIDE BAR, AND IT OPENS ──')
 await p.goto(`${B}/day`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 let t = await main()
 ok('the page is there', /day sheet/i.test(t), t.slice(0, 200).replace(/\n/g, ' | '))
 ok('on the right site', /Marine Drive Tower/.test(t))

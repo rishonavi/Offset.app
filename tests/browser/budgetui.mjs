@@ -51,7 +51,6 @@ const seed = (budgets) => p.evaluate((budgetList) => {
 
 const open = async () => {
   await p.goto(`${B}/personal`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
   return main()
 }
 

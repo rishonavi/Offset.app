@@ -38,7 +38,6 @@ console.log('\n── ARRIVING WITH NOTHING ──')
 {
   const { ctx, p } = await fresh()
   await p.goto(B, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
   const t = await main(p)
   ok('the dashboard renders for someone with no data', t.length > 60, t.slice(0, 160))
   ok('and does not show NaN, undefined or Invalid Date',
@@ -60,7 +59,6 @@ console.log('\n── EVERY PAGE, EMPTY ──')
   for (const r of routes) {
     const before = errs.length
     await p.goto(`${B}${r}`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(450)
     const t = await main(p)
     const bad = /NaN|Invalid Date|\[object Object\]/.test(t)
     ok(`${r} renders and says something`, t.length > 30 && !bad && errs.length === before,
@@ -75,14 +73,12 @@ const NASTY = '<img src=x onerror=alert(1)>Sea "View" का घर 🏠 & <b>bo
 {
   const { ctx, p } = await fresh()
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   await p.locator('#main-content input').first().fill(NASTY)
   await p.locator('form button[type="submit"]').first().click()
   await p.waitForTimeout(1200)
   const saved = (await rows(p, 'pl_properties'))[0]
   ok('an asset with markup and unicode in its name saves', Boolean(saved), JSON.stringify(saved || {}).slice(0, 120))
   await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   ok('and the markup is shown as text, not run',
     (await p.evaluate(() => document.querySelectorAll('#main-content img').length)) === 0)
   ok('the name is on screen', /Sea/.test(await main(p)))
@@ -97,7 +93,6 @@ console.log('\n── MONEY THAT IS NOT MONEY ──')
 {
   const { ctx, p } = await fresh()
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   await p.locator('#main-content input').first().fill('Pressure Asset')
   await p.locator('form button[type="submit"]').first().click()
   await p.waitForTimeout(1000)
@@ -108,7 +103,6 @@ console.log('\n── MONEY THAT IS NOT MONEY ──')
   // positive beside it says only that the app did nothing.
   const saveExpense = async (value) => {
     await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(500)
     await p.locator('#main-content input[type=number]').first().fill(value).catch(() => {})
     await p.locator('form button[type="submit"]').first().click()
     await p.waitForTimeout(900)
@@ -136,7 +130,6 @@ console.log('\n── MONEY THAT IS NOT MONEY ──')
   // And whatever did save must still total correctly on the pages that add up.
   for (const r of ['/', '/reports', '/expenses']) {
     await p.goto(`${B}${r}`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(600)
     const t = await main(p)
     ok(`${r} still totals without NaN`, !/NaN|Infinity|e\+\d/.test(t), t.match(/.{0,40}(NaN|Infinity|e\+\d+).{0,30}/)?.[0])
   }
@@ -149,7 +142,6 @@ console.log('\n── TOO MUCH TEXT ──')
   const { ctx, p } = await fresh()
   const HUGE = 'A'.repeat(1000)
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   await p.locator('#main-content input').first().fill(HUGE)
   await p.locator('input[placeholder="Street, area, city"]').fill(HUGE)
   await p.locator('form button[type="submit"]').first().click()
@@ -157,7 +149,6 @@ console.log('\n── TOO MUCH TEXT ──')
   const saved = (await rows(p, 'pl_properties'))[0]
   ok('a thousand-character name is saved or trimmed, not lost', Boolean(saved?.name), String(saved?.name).length)
   await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   ok('and does not push the page sideways', overflow <= 2, `${overflow}px`)
   await p.setViewportSize({ width: 390, height: 800 })
@@ -172,7 +163,6 @@ console.log('\n── IMPATIENCE ──')
 {
   const { ctx, p } = await fresh()
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   await p.locator('#main-content input').first().fill('Double Tap')
   const submit = p.locator('form button[type="submit"]').first()
   await Promise.all([submit.click(), submit.click().catch(() => {})])
@@ -196,7 +186,6 @@ console.log('\n── WHEN STORAGE TURNS ON YOU ──')
   const before = errs.length
   for (const r of ['/', '/properties', '/expenses', '/bills', '/invoices', '/reports', '/personal', '/bin', '/settings', '/companies']) {
     await p.goto(`${B}${r}`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(400)
     const t = await main(p)
     ok(`${r} survives corrupt storage`, t.length > 30, t.slice(0, 80))
   }
@@ -206,7 +195,6 @@ console.log('\n── WHEN STORAGE TURNS ON YOU ──')
 {
   const { ctx, p } = await fresh()
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   // Fill the quota, then try to save. The app must say so, not fail silently.
   await p.evaluate(() => {
     try {
@@ -252,7 +240,6 @@ console.log('\n── PUSHING ON THE TWO SETS OF BOOKS ──')
 
   // Switch back and forth quickly — a stale filter would show the wrong rows.
   await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   for (let i = 0; i < 4; i++) { await pick('personal'); await pick('company') }
   const after = await main(p)
   ok('rapid switching lands somewhere consistent',
@@ -260,7 +247,6 @@ console.log('\n── PUSHING ON THE TWO SETS OF BOOKS ──')
 
   // Half-fill a form, switch books underneath it, then save.
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   await p.locator('#main-content input').first().fill('Started In A Company')
   await pick('personal')
   await p.waitForTimeout(500)
@@ -280,7 +266,6 @@ console.log('\n── PUSHING ON THE TWO SETS OF BOOKS ──')
   const before = errs.length
   for (const r of ['/', '/properties', '/operations', '/reports', '/companies']) {
     await p.goto(`${B}${r}`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(500)
     ok(`${r} survives its company being archived`, (await main(p)).length > 30 && errs.length === before,
       errs.slice(before).join(' / '))
   }
@@ -297,7 +282,6 @@ console.log('\n── NAVIGATION NOBODY PLANNED FOR ──')
   const before = errs.length
   for (const r of ['/', '/properties', '/expenses', '/reports', '/settings']) {
     await p.goto(`${B}${r}`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(300)
   }
   for (let i = 0; i < 4; i++) { await p.goBack({ waitUntil: 'domcontentloaded' }).catch(() => {}); await p.waitForTimeout(300) }
   for (let i = 0; i < 4; i++) { await p.goForward({ waitUntil: 'domcontentloaded' }).catch(() => {}); await p.waitForTimeout(300) }
@@ -309,7 +293,6 @@ console.log('\n── NAVIGATION NOBODY PLANNED FOR ──')
     '/reports?from=not-a-date&to=%%%', '/reports?propertyId=../../etc/passwd', '/nonsense/deep/path']) {
     const n = errs.length
     await p.goto(`${B}${r}`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(500)
     const t = await main(p)
     ok(`${r} is handled`, t.length > 20 && errs.length === n, errs.slice(n).join(' / ') || t.slice(0, 70))
   }
@@ -344,7 +327,6 @@ console.log('\n== FILES THAT LIE ==')
   for (const [name, body] of files) {
     const before = errs.length
     await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(600)
     const accept = name.endsWith('.json') ? 'input[accept="application/json,.json"]'
       : name.endsWith('.xml') ? 'input[accept*="xml"]'
       : 'input[type=file]'
@@ -380,7 +362,6 @@ console.log('\n== DATES NOBODY MEANS ==')
   const before = errs.length
   for (const r of ['/', '/expenses', '/bills', '/reports', '/exports', '/invoices']) {
     await p.goto(`${B}${r}`, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(600)
     const t = await main(p)
     ok(`${r} survives dates at the edges`,
       errs.length === before && !/Invalid Date|NaN/.test(t),

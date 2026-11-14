@@ -51,7 +51,6 @@ await p.evaluate(({ ent }) => {
 
 console.log('\n── THE BOOKS HAVE NEVER BEEN CLOSED ──')
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 let t = await main()
 ok('the closing card is there', /closing the books/i.test(t), t.slice(0, 400))
 ok('and says nothing has been closed', /never been closed/i.test(t), t.slice(0, 900))
@@ -62,7 +61,6 @@ ok('with nothing to reopen', await p.getByRole('button', { name: /Reopen/ }).cou
 
 console.log('\n── AN ENTRY IN AN OPEN MONTH SAVES ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await p.locator('#main-content input[type=number]').first().fill('40000')
 await p.locator('#main-content input[type=date]').first().fill(`${BEFORE}-15`)
 await p.locator('#main-content form button[type="submit"]').first().click()
@@ -72,7 +70,6 @@ ok('it is in the books', (await ls('pl_expenses')).filter((e) => !e.deleted_at).
 
 console.log('\n── CLOSING IT ──')
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 await p.getByRole('button', { name: new RegExp(`Close ${LAST}`) }).first().click()
 await p.waitForTimeout(1000)
 ok('it asked first', confirmed > 0, String(confirmed))
@@ -85,7 +82,6 @@ ok('there is now something to reopen', await p.getByRole('button', { name: new R
 
 console.log('\n── AND THE ENTRY FORM REFUSES A DATE INSIDE IT ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await p.locator('#main-content input[type=number]').first().fill('55000')
 await p.locator('#main-content input[type=date]').first().fill(`${LAST}-20`)
 await p.locator('#main-content form button[type="submit"]').first().click()
@@ -111,7 +107,6 @@ console.log('\n── THE STORE REFUSES TOO, NOT ONLY THE FORM ──')
 // so the same month is tried through the muster roll — which never touches the
 // expense form and would have been the way round a form-only check.
 await p.goto(`${B}/operations?tab=labour`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 await p.locator('#main-content input[aria-label="Muster date"]').fill(`${LAST}-18`)
 await p.locator('#main-content input[aria-label="Headcount"]').fill('6')
 await p.locator('#main-content input[aria-label="Day rate"]').fill('850')
@@ -137,7 +132,6 @@ ok('and the same day, dated today, goes in',
 
 console.log('\n── REOPENING TAKES THE MONTHS AFTER IT ──')
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 await p.getByRole('button', { name: new RegExp(`Reopen ${LAST}`) }).first().click()
 await p.waitForTimeout(1000)
 const after = (await ls('pl_corp_entities'))[0]?.books_locked_through
@@ -147,7 +141,6 @@ ok('and the card follows', new RegExp(`Closed through ${BEFORE}`).test(t), t.sli
 // The consequence, stated rather than hidden: the month just reopened can be
 // written into again.
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await p.locator('#main-content input[type=number]').first().fill('55000')
 await p.locator('#main-content input[type=date]').first().fill(`${LAST}-20`)
 await p.locator('#main-content form button[type="submit"]').first().click()
@@ -157,7 +150,6 @@ ok('the entry that was refused now saves', (await ls('pl_expenses')).filter((e) 
 
 console.log('\n── AND THE MONTH BEFORE IT IS STILL SHUT ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await p.locator('#main-content input[type=number]').first().fill('9000')
 await p.locator('#main-content input[type=date]').first().fill(`${BEFORE}-05`)
 await p.locator('#main-content form button[type="submit"]').first().click()

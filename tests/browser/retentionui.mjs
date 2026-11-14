@@ -93,7 +93,6 @@ await p.evaluate(({ ent, longAgo, recently }) => {
 
 const openContractors = async () => {
   await p.goto(`${B}/operations?tab=labour`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
   await chose(p.locator('#main-content [role="tab"]', { hasText: 'Contractors' }).first())
 }
 await openContractors()

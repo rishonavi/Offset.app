@@ -166,7 +166,6 @@ for (const r of ROUTES) {
 {
   for (const [route, want] of [['/day', true], ['/expenses', false]]) {
     await p.goto(B + route, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(400)
     const state = await p.evaluate(() => {
       const f = document.querySelector('[data-fab]')
       return {
@@ -189,7 +188,6 @@ for (const r of ROUTES) {
 // "uneven" complaint in one control, so the shape is the assertion.
 {
   await p.goto(B + '/operations?tab=projects', { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   const bar = await p.evaluate(() => {
     // Found through the tabs, not through the class that makes it scroll —
     // otherwise renaming the class reports "null" and reads like the bug
@@ -278,7 +276,6 @@ for (const r of ROUTES) {
 // rows are different heights and the list reads as broken.
 {
   await p.goto(B + '/day', { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   const rows = await p.evaluate(() => {
     const steppers = [...document.querySelectorAll('[aria-label$="headcount"]')]
     return steppers.map((s) => {

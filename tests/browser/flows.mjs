@@ -70,7 +70,6 @@ ok('the income is saved', (await rows('pl_income')).length === 1)
 // ── 4. The dashboard reflects it ──
 console.log('\n── THE DASHBOARD ──')
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 const dash = await p.locator('#main-content').innerText()
 ok('income appears on the dashboard', /55,000/.test(dash), dash.slice(0, 200).replace(/\n/g, ' | '))
 ok('the expense appears too', /4,200/.test(dash))
@@ -100,7 +99,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_expenses', JSON.stringify(list))
 })
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 const allRows = await p.locator('tbody tr').count()
 await p.locator('input[aria-label="Search expenses by vendor or note"]').fill('Adani')
 await p.waitForTimeout(500)
@@ -136,7 +134,6 @@ if (await del.count()) {
   const after = (await rows('pl_expenses')).filter((r) => !r.deleted_at).length
   ok('deleting removes one row', after === before - 1, `${before} → ${after}`)
   await p.goto(`${B}/bin`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(400)
   const binText = await p.locator('#main-content').innerText()
   ok('the deleted row is in the bin', !/bin is empty/i.test(binText), binText.slice(0, 80).replace(/\n/g, ' '))
   const restore = p.locator('button[aria-label="Restore this item"], button[title="Restore"]').first()

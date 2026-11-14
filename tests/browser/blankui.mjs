@@ -51,7 +51,6 @@ const seed = (costs, rents = []) => p.evaluate(({ rows, rent }) => {
 
 const open = async () => {
   await p.goto(B, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
   return main()
 }
 

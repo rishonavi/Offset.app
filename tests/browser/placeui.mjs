@@ -57,7 +57,6 @@ await p.evaluate(({ ent, site }) => {
 
 console.log('\n── THE FORM OPENS WITH NOTHING TO BOOK TO ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 let body = await main()
 ok('it does not send you off to create an asset first', !/add an asset first|create one before/i.test(body), body.slice(0, 200).replace(/\n/g, ' | '))
 ok('there is an amount box to type in', await amount().isVisible())
@@ -71,13 +70,11 @@ console.log('\n── AND SO DOES THE IMPORT PAGE ──')
 // A bank statement is where most of a builder's costs arrive from, and the
 // page refused to show the importer at all until an asset existed.
 await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 body = await main()
 ok('a statement can be imported with nothing owned', !/add an asset first/i.test(body), body.slice(0, 250).replace(/\n/g, ' | '))
 ok('the statement importer is on the page', /bank .{0,4}(&|and).{0,4} upi statement/i.test(body), body.slice(0, 400).replace(/\n/g, ' | '))
 
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 console.log('\n── A COST BOOKED TO THE JOB ──')
 await amount().fill('810000')
 await siteSelect().selectOption(SITE)
@@ -92,7 +89,6 @@ ok('and to no asset, as null rather than an empty string', rows[0]?.property_id 
 
 console.log('\n── WHAT THE LIST CALLS IT ──')
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 body = await main()
 // Headings are CSS-uppercased, so these read case-insensitively.
 ok('the column is not headed Property in a company', !/\bPROPERTY\b/.test(body), body.slice(0, 300).replace(/\n/g, ' | '))
@@ -101,7 +97,6 @@ ok('and the answer is the job', /Marine Drive Tower/.test(body), body.slice(0, 4
 
 console.log('\n── AN OVERHEAD, WHICH IS BOOKED TO NOTHING ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 await amount().fill('65000')
 // The site select is left on its first option, which is "Not booked to a site".
 await save().click()
@@ -112,14 +107,12 @@ const rent = rows.find((r) => Number(r.amount) === 65000)
 ok('against no job', !rent?.project_id, String(rent?.project_id))
 ok('and no asset', !rent?.property_id, String(rent?.property_id))
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 body = await main()
 ok('it shows in the list', /65,000/.test(body), body.slice(0, 400).replace(/\n/g, ' | '))
 ok('with the job still named on the other row', /Marine Drive Tower/.test(body))
 
 console.log('\n── THE DASHBOARD SAYS WHO IS CARRYING WHAT ──')
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 body = await main()
 ok('the job appears as something spent against', /Marine Drive Tower/.test(body), body.slice(0, 500).replace(/\n/g, ' | '))
 // It used to read "Unknown", which is what a failed lookup says. Office rent is
@@ -134,7 +127,6 @@ await p.evaluate(({ ent }) => {
   ]))
 }, { ent: ENT })
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('the asset field appears', await assetSelect().isVisible())
 const opts = await assetSelect().locator('option').allInnerTexts()
 ok('with "none of them" as a real answer', /not booked to an asset/i.test(opts.join('|')), opts.join('|'))
@@ -150,7 +142,6 @@ console.log('\n── A BACKUP THAT DOES NOT QUIETLY DROP THE OVERHEADS ──')
 // match — which, once an entry may legitimately have no asset, meant throwing
 // away every overhead in the file without saying so.
 await p.goto(`${B}/exports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 const [download] = await Promise.all([
   p.waitForEvent('download', { timeout: 30000 }),
   p.locator('button', { hasText: /Download backup/i }).first().click(),
@@ -164,7 +155,6 @@ ok('and the site cost travels with its job', (dump.expenses || []).some((e) => e
 
 await p.evaluate(() => localStorage.setItem('pl_expenses', '[]'))
 await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 await p.locator('input[type=file][accept*="json"]').first().setInputFiles(file)
 await p.waitForTimeout(1800)
 rows = await expenses()
@@ -187,7 +177,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_expenses', '[]')
 })
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 body = await main()
 ok('with no asset, the form still refuses to open', /add an asset first|create one before/i.test(body), body.slice(0, 250).replace(/\n/g, ' | '))
 await p.evaluate(() => {
@@ -196,7 +185,6 @@ await p.evaluate(() => {
   ]))
 })
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('with one, it opens on that asset rather than on nothing',
   (await assetSelect().inputValue()) === 'own1', await assetSelect().inputValue())
 const ownOpts = await assetSelect().locator('option').allInnerTexts()
@@ -205,7 +193,6 @@ await amount().fill('1200')
 await save().click()
 await p.waitForTimeout(900)
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 body = await main()
 ok('and the column goes back to being called Property', /\bproperty\b/i.test(body), body.slice(0, 300).replace(/\n/g, ' | '))
 ok('with nothing about being booked to anything', !/booked to/i.test(body), body.slice(0, 300).replace(/\n/g, ' | '))

@@ -78,7 +78,6 @@ await p.waitForTimeout(500)
 ok('the choice survives a reload', /डैशबोर्ड/.test(await nav()))
 ok('and is stored under one key', (await p.evaluate(() => localStorage.getItem('pl_lang'))) === 'hi')
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 ok('and holds across navigation', /व्यय/.test(await nav()))
 
 // ── 5. Every language renders ──
@@ -123,7 +122,6 @@ const ta = await b.newContext({ viewport: { width: 1280, height: 900 }, locale: 
 const tp = await ta.newPage()
 await tp.route('**/fonts.g**/**', (r) => r.abort())
 await tp.goto(B, { waitUntil: 'networkidle' })
-await tp.waitForTimeout(700)
 const taNav = await tp.locator('aside nav').innerText()
 ok('a Tamil browser gets Tamil without being asked', /டாஷ்போர்டு/.test(taNav), taNav.split('\n')[0])
 ok('with nothing stored, because it was never chosen',
@@ -135,7 +133,6 @@ const other = await b.newContext({ viewport: { width: 1280, height: 900 }, local
 const op = await other.newPage()
 await op.route('**/fonts.g**/**', (r) => r.abort())
 await op.goto(B, { waitUntil: 'networkidle' })
-await op.waitForTimeout(600)
 ok('a browser Offset does not speak falls back to English',
   /DASHBOARD/i.test(await op.locator('aside nav').innerText()),
   (await op.locator('aside nav').innerText()).split('\n')[0])
@@ -146,7 +143,6 @@ const frc = await b.newContext({ viewport: { width: 1280, height: 900 }, locale:
 const fp = await frc.newPage()
 await fp.route('**/fonts.g**/**', (r) => r.abort())
 await fp.goto(B, { waitUntil: 'networkidle' })
-await fp.waitForTimeout(600)
 ok('a French browser now gets French',
   /TABLEAU DE BORD/i.test(await fp.locator('aside nav').innerText()),
   (await fp.locator('aside nav').innerText()).split('\n')[0])

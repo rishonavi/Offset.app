@@ -112,7 +112,6 @@ await p.evaluate(([id, stamp]) => {
 
 console.log('\n── THE PAYMENT CERTIFICATE ──')
 await p.goto(`${B}/operations?tab=labour`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await view('Contractors')
 const labour = await main()
 ok('the certificate is offered on the bill itself', /Certificate/.test(labour), labour.slice(0, 800))
@@ -122,7 +121,6 @@ await prints('the certificate', () => p.locator('#main-content button[aria-label
 
 console.log('\n── THE DEMAND LETTER ──')
 await p.goto(`${B}/operations?tab=sales`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await view('Collections')
 ok('a demand letter is offered where the money is owed',
   (await p.locator('#main-content button[aria-label^="Demand letter"]').count()) === 1,
@@ -131,7 +129,6 @@ await prints('the demand letter', () => p.locator('#main-content button[aria-lab
 
 console.log('\n── THE MEASUREMENT SHEET ──')
 await p.goto(`${B}/operations?tab=projects`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await view('Progress')
 ok('the sheet is offered where the measuring happens',
   (await p.locator('#main-content button[aria-label="Print measurement sheet"]').count()) === 1)
@@ -139,7 +136,6 @@ await prints('the measurement sheet', () => p.locator('#main-content button[aria
 
 console.log('\n── THE STOCK STATEMENT AND THE INDENT ──')
 await p.goto(`${B}/operations?tab=materials`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 ok('a stock statement is offered in the yard',
   (await p.locator('#main-content button[aria-label="Print stock statement"]').count()) === 1)
 // 200 bags against a reorder level of 500, so there is something to indent for.
@@ -150,7 +146,6 @@ await prints('the indent', () => p.locator('#main-content button[aria-label="Pri
 
 console.log('\n── THE MUSTER ROLL ──')
 await p.goto(`${B}/operations?tab=labour`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 ok('the muster roll is offered on the register',
   (await p.locator('#main-content button[aria-label="Print muster roll"]').count()) === 1)
 await prints('the muster roll', () => p.locator('#main-content button[aria-label="Print muster roll"]').click())
@@ -163,11 +158,9 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_muster', '[]')
 })
 await p.goto(`${B}/operations?tab=materials`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 ok('an empty yard offers no stock statement',
   (await p.locator('#main-content button[aria-label="Print stock statement"]').count()) === 0)
 await p.goto(`${B}/operations?tab=labour`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 ok('and an empty register offers no muster roll',
   (await p.locator('#main-content button[aria-label="Print muster roll"]').count()) === 0)
 

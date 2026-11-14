@@ -77,7 +77,6 @@ await p.evaluate((ent) => {
 
 const payroll = async () => {
   await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
   return main()
 }
 
@@ -181,7 +180,6 @@ ok('while an unrecorded month reflects the new pay', /not run/i.test(t), t.slice
 
 console.log('\n── TAKING SOMEBODY OFF IS NOT ERASING THEM ──')
 await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 await p.locator('#main-content button[aria-label="Remove Sanket More"]').click()
 await p.waitForTimeout(800)
 const gone = await who('Sanket More')
@@ -214,7 +212,6 @@ await p.evaluate((ent) => {
 }, ENT)
 const advTab = async () => {
   await p.goto(`${B}/operations?tab=advances`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
   return main()
 }
 const advances = async () => (await ls('pl_corp_advances')).filter((r) => !r.deleted_at)

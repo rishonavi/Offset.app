@@ -119,7 +119,6 @@ await collect('the income form')
 
 console.log('\n── A QUICK ADD, WHICH BUILDS ITS OWN ROW ──')
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const quick = p.locator('button', { hasText: /quick add|add expense/i }).first()
 if (await quick.count()) {
   await quick.click()
@@ -140,7 +139,6 @@ console.log('\n── MARKING ONE PAID, WHICH SPREADS THE WHOLE ROW BACK ──'
 // through the same write. If a key got onto it that has no column, this is
 // where it would be sent a second time.
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const paidBtn = p.locator('#main-content button', { hasText: /mark paid|paid/i }).first()
 if (await paidBtn.count()) { await paidBtn.click(); await p.waitForTimeout(800) }
 ok('the expenses list is still there', (await ls('pl_expenses')).length >= 1)
@@ -154,7 +152,6 @@ await p.evaluate(() => {
   localStorage.removeItem('pl_onboarding_dismissed')
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 const load = p.locator('button', { hasText: 'Load sample data' })
 ok('the sample is on offer', await load.count() === 1)
 await load.click()
@@ -165,7 +162,6 @@ await collect('the sample portfolio')
 
 console.log('\n── AND A BACKUP PUT BACK, WHICH REBUILDS EVERY ROW ──')
 await p.goto(`${B}/exports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 const [download] = await Promise.all([
   p.waitForEvent('download', { timeout: 30000 }),
   p.locator('button', { hasText: /Download backup/i }).first().click(),
@@ -175,7 +171,6 @@ await p.evaluate(() => {
   for (const k of ['pl_properties', 'pl_expenses', 'pl_income']) localStorage.setItem(k, '[]')
 })
 await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 await p.locator('input[type=file][accept*="json"]').first().setInputFiles(file)
 await p.waitForTimeout(4000)
 ok('the restore rebuilt the books', (await ls('pl_expenses')).length >= 20,
@@ -198,7 +193,6 @@ await p.waitForTimeout(1000)
 const asset = (await ls('pl_properties'))[0]
 ok('an asset to hang a document off', Boolean(asset?.id), JSON.stringify(asset))
 await p.goto(`${B}/properties/${asset.id}`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 // Title, type and an expiry date — the optional field that drives the
 // dashboard reminder, and the one most likely to be forgotten in a shape.
 const docForm = p.locator('#main-content form').filter({ hasText: 'Add document' }).first()
@@ -221,7 +215,6 @@ await p.evaluate((pid) => {
   }]))
 }, asset.id)
 await p.goto(`${B}/bills`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 // The thread is behind the message-count button on the bill — titled rather
 // than labelled, and carrying only an icon — so it has to be opened before
 // there is anywhere to type.
@@ -282,7 +275,6 @@ await p.evaluate((ent) => {
   localStorage.setItem('pl_corp_active', ent)
 }, ENT)
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 await amount().fill('810000')
 const site = p.locator('#main-content select[aria-label="Site"]').first()
 if (await site.count()) await site.selectOption('site-col-1')

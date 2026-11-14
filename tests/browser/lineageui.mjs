@@ -103,7 +103,6 @@ await p.evaluate(({ ent }) => {
 
 console.log('\n── THE COMPARISON ──')
 await p.goto(`${B}/operations?tab=projects`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 await view('Progress')
 let t = await panel()
 ok('the panel is on the progress screen', t.length > 40, (await main()).slice(0, 300))
@@ -142,7 +141,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_measurements', JSON.stringify(takes))
 })
 await p.goto(`${B}/operations?tab=projects`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 await view('Progress')
 t = await panel()
 ok('the second contract is compared now', /Ganesh Construction/.test(t), t)
@@ -153,7 +151,6 @@ ok('nothing is left uncompared', !/names no scheduled item/i.test(t), t)
 
 console.log('\n── AND THE DASHBOARD SAYS IT TOO ──')
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 t = await main()
 ok('a contractor certified beyond the tape is named', /certified more than has been measured/i.test(t), t.slice(0, 900))
 ok('and the work nobody billed for is money', /measured work nobody has billed/i.test(t), t.slice(0, 1400))

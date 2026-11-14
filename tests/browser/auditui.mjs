@@ -55,7 +55,6 @@ for (const theme of ['light', 'dark']) {
   const unnamed = []
   for (const route of ROUTES) {
     await p.goto(B + route, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(600)
     await p.evaluate(installColour)
     await p.evaluate(() => {
       const paper = getComputedStyle(document.documentElement).getPropertyValue('--color-paper').trim()
@@ -149,7 +148,6 @@ console.log('\n── ON A PHONE, EVERY PAGE ──')
   const wide = []
   for (const route of ROUTES) {
     await p.goto(B + route, { waitUntil: 'networkidle' })
-    await p.waitForTimeout(500)
     const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     if (over > 2) wide.push(`${route} +${over}px`)
   }
@@ -203,7 +201,6 @@ console.log('\n── UNDER LOAD ──')
   // The claim in the README is that long lists render a page at a time. Two
   // thousand rows in the DOM at once is what that claim exists to prevent.
   await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   const rows = await p.evaluate(() => document.querySelectorAll('#main-content tbody tr').length)
   ok('the list pages rather than rendering everything', rows > 0 && rows < 300, `${rows} rows in the DOM`)
 

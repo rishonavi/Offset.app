@@ -31,11 +31,9 @@ await p.evaluate(() => {
 
 console.log('\n── IT IS IN THE APP ──')
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 ok('Invoices is in the sidebar', /INVOICES/i.test(await p.locator('aside nav').innerText()),
   (await p.locator('aside nav').innerText()).replace(/\n/g, ' | '))
 await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 let t = await p.locator('#main-content').innerText()
 ok('the page loads', t.length > 200, t.slice(0, 120))
 ok('with exactly one h1', (await p.locator('#main-content h1').count()) === 1)
@@ -152,7 +150,6 @@ if (file && existsSync(file)) {
 console.log('\n── LAYOUT ──')
 await p.setViewportSize({ width: 390, height: 800 })
 await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 ok('no sideways scroll on a phone', overflow <= 2, `${overflow}px`)
 const unlabelled = await p.evaluate(() =>

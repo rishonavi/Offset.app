@@ -61,7 +61,6 @@ console.log('\n── NOTHING TO RECONCILE WITH, AND IT SAYS SO BY SAYING NOTHIN
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await seed()
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 const quiet = await main()
 // "Everything is up to date" with no server behind it is a lie that reads as
 // reassurance, which is the worst kind.
@@ -73,7 +72,6 @@ ok('the page is otherwise itself', /Activity/.test(quiet), quiet.slice(-300).rep
 console.log('\n── A WRITE CARRIES A VERSION ──')
 // Without one, nothing can tell a row that has been sent from one that has not.
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 await chose(p.locator('#main-content button[aria-pressed]').nth(2))
 await p.locator('input[aria-label="Muster date"]').fill('2026-03-03')
 await p.locator('select[aria-label="Trade"]').selectOption('mason')
@@ -91,7 +89,6 @@ console.log('\n── A DELETE LEAVES A MARK ──')
 // A row that is simply gone cannot reach the other devices: each keeps its
 // copy, re-sends it, and the thing somebody deleted comes back.
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 await chose(p.locator('#main-content button[aria-pressed]').nth(1))
 await chose(p.locator('#main-content [role="tab"]', { hasText: 'Quotations' }).first())
 await p.evaluate(() => {
@@ -124,7 +121,6 @@ const twice = [
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await seed(twice)
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 const flagged = await main()
 ok('the repeat is surfaced even with no server', /looks like a repeat|look like repeats/.test(flagged), flagged.slice(0, 600))
 ok('naming the day', /2026-03-03/.test(flagged), flagged.slice(0, 800))
@@ -139,7 +135,6 @@ console.log('\n── AND NOT WHEN THERE IS NOTHING TO SAY ──')
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await seed([twice[0], twice[2]])
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 ok('a clean ledger is not nagged about', !/looks like a repeat|look like repeats/.test(await main()))
 
 console.log('\n── NOTHING BROKE ──')

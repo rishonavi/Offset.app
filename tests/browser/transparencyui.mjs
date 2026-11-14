@@ -29,7 +29,6 @@ await p.evaluate(() => {
 
 console.log('── A GUESS SAYS IT IS A GUESS ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const body = await text()
 ok('the form says some fields were filled in', /filled in for you/i.test(body), body.slice(0, 120).replace(/\n/g, ' | '))
 ok('and the asset field says where its value came from', /from your last entry/i.test(body))
@@ -60,7 +59,6 @@ await p.evaluate(() => {
   }]))
 })
 await p.goto(`${B}/expenses/kept/edit`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const editing = await text()
 ok('editing marks nothing as guessed', !/filled in for you/i.test(editing))
 ok('and no field claims a source', !/from your last entry|what you usually pick/i.test(editing))
@@ -75,7 +73,6 @@ await p.evaluate(() => {
     }))))
 })
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 await more().click()
 await p.waitForTimeout(300)
 ok('no payment method is offered, so none is explained', !/what you usually pick/i.test(await text()))
@@ -84,7 +81,6 @@ console.log('\n── WHAT LEAVES THE DEVICE IS SAID BEFORE IT GOES ──')
 // Scanning uploads the photo. Someone deciding whether to photograph a bill
 // should be told first, not after it has already been sent.
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 await p.setInputFiles('#main-content input[type=file]', {
   name: 'bill.png', mimeType: 'image/png',
   // A 1x1 PNG — enough to be a scannable file without being a real receipt.

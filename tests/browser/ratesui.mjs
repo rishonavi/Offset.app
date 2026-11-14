@@ -95,7 +95,6 @@ await p.evaluate(({ ent, dates }) => {
 
 console.log('\n── THE ONE THAT JUMPED ──')
 await p.goto(`${B}/operations?tab=materials`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 await view('Prices')
 let t = await main()
 ok('the prices screen opens', /what it costs/i.test(t), t.slice(0, 200))
@@ -123,7 +122,6 @@ ok('and says how many came in above it', /1 above it/i.test(t), t.slice(0, 900))
 
 console.log('\n── AND THE SAME TRADE, TWO SITES, TWO RATES ──')
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 t = await main()
 ok('the dashboard says tilers are paid differently', /tile layers are paid .*% more on one site/i.test(t), t.slice(0, 900))
 ok('naming the dearer site and its rate', /Marine Drive Tower is paying ₹950/.test(t), t.slice(0, 1200))

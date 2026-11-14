@@ -67,7 +67,6 @@ await p.evaluate(() => {
 await p.goto(B, { waitUntil: 'networkidle' })
 ok('the sidebar has no Operations entry', !/OPERATIONS/i.test(await p.locator('aside nav').innerText()))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 ok('the page itself says why it is empty', /Add a company first/.test(await main()))
 await p.locator('body').click({ position: { x: 5, y: 5 } })
 await p.keyboard.press('Control+k')
@@ -78,7 +77,6 @@ ok('and the palette does not offer it either', !/Operations/.test(await p.locato
 await p.keyboard.press('Escape')
 await p.waitForTimeout(300)
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 ok('and the report grows no company section', !/What the company cost/.test(await main()))
 
 // ── 2. With a company ──
@@ -101,7 +99,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_active', id)
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 ok('Operations appears in the sidebar', /OPERATIONS/i.test(await p.locator('aside nav').innerText()))
 await p.locator('aside nav a[href="/operations"]').click()
 await p.waitForURL('**/operations')
@@ -293,7 +290,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_members', JSON.stringify(m))
 })
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 await p.locator('select[aria-label="Switch company"]').selectOption('__all__')
 await p.waitForTimeout(600)
 ok('all-companies says these are kept per company', /Pick one company/.test(await main()), (await main()).slice(0, 160))
@@ -337,7 +333,6 @@ for (const name of ['Materials', 'Advances', 'Payroll']) {
 console.log('\n── STOCK AND PAYROLL IN THE REPORT ──')
 await p.setViewportSize({ width: 1440, height: 1000 })
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 let rep = await main()
 ok('the report has a section for what the company cost', /What the company cost/.test(rep), rep.slice(-300))
 ok('it names the company', /Acme Industries/.test(rep))
@@ -368,7 +363,6 @@ ok('one month needs no month-by-month table', !/MONTH\tSTAFF/.test(rep))
 const monthsBack = (n) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0, 7) }
 const [m2, m1, m0] = [monthsBack(2), monthsBack(1), monthsBack(0)]
 await p.goto(`${B}/reports?from=${m2}-01&to=${m0}-28`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 rep = await main()
 ok('a range gives a month for each', [m2, m1, m0].every((m) => rep.includes(m)), rep.slice(-900))
 ok('three months of payroll cost more than one', /1,31,400/.test(rep), rep.slice(-900))
@@ -378,14 +372,12 @@ ok('and the wording follows the filter', /for the period above/.test(rep))
 // reached are dropped, and the card says it dropped them.
 const ahead = (n) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + n); return d.toISOString().slice(0, 7) }
 await p.goto(`${B}/reports?from=${m0}-01&to=${ahead(3)}-28`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 rep = await main()
 ok('months still to come are left out', !rep.includes(ahead(1)) && !rep.includes(ahead(3)), rep.slice(-500))
 ok('and it says it left them out', /still to come, are left out/.test(rep), rep.slice(-400))
 
 // Stock is dated, so an end date before the movements is a real answer.
 await p.goto(`${B}/reports?from=2020-01-01&to=2020-12-31`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 rep = await main()
 ok('a period before anything happened shows no stock', /ON HAND\n₹0/.test(rep), rep.slice(-600))
 ok('and no payroll section, because nobody was employed then', !/ON PAYROLL/.test(rep), rep.slice(-600))
@@ -393,7 +385,6 @@ ok('and no payroll section, because nobody was employed then', !/ON PAYROLL/.tes
 // An advance past the day it was expected back is the one thing in this card a
 // finance team acts on, so it gets said in words rather than left in a table.
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 await tab('Advances')
 const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
 await p.locator('input[placeholder="Ravi Contractors"]').fill('Late Vendor')
@@ -403,7 +394,6 @@ await overdueForm.locator('input[type="date"]').first().fill(yesterday)
 await p.locator('button', { hasText: 'Record advance' }).click()
 await p.waitForTimeout(600)
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 rep = await main()
 ok('an advance past its date is called out', /past the date it was expected back/.test(rep), rep.slice(-800))
 ok('by how much', /₹12,000 is past the date/.test(rep), rep.slice(-800))
@@ -412,7 +402,6 @@ ok('the total owed grows by it', /42,000/.test(rep), rep.slice(-800))
 
 // The year-end PDF has to carry them too.
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 const pdf = await Promise.all([
   p.waitForEvent('download'),
   p.locator('button', { hasText: 'Year-end PDF' }).click(),
@@ -430,7 +419,6 @@ ok('and is not an empty shell', raw.length > 4000, `${raw.length} bytes`)
 console.log('\n── BACKUP AND RESTORE ──')
 await p.setViewportSize({ width: 1440, height: 1000 })
 await p.goto(`${B}/exports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 const dl = await Promise.all([
   p.waitForEvent('download'),
   p.locator('button', { hasText: 'Download backup' }).click(),
@@ -448,17 +436,14 @@ ok('and not the active-company pointer, which is this browser’s', payload.corp
 // Wipe the corporate side only, the way a new browser would have it.
 await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pl_corp')).forEach((k) => localStorage.removeItem(k)))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 ok('with the corporate side wiped, the page is back to asking for a company', /Add a company first/.test(await main()))
 
 await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 await p.locator('input[accept="application/json,.json"]').setInputFiles(file)
 await p.waitForTimeout(1500)
 ok('the restore says how many company records came back', /company records/.test(await main()), (await main()).slice(0, 300))
 ok('the companies are back', (await ls('pl_corp_entities')).length === 2)
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 await tab('Materials')
 const back = await main()
 ok('and the stock is back with it', /Cement 50kg/.test(back), back.slice(0, 200))
@@ -467,7 +452,6 @@ ok('and the employee', /Sunil Rao/.test(await main()))
 
 // Doing it twice must not double the books.
 await p.goto(`${B}/import`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 await p.locator('input[accept="application/json,.json"]').setInputFiles(file)
 await p.waitForTimeout(1500)
 ok('restoring the same file again adds no companies', (await ls('pl_corp_entities')).length === 2)

@@ -23,7 +23,6 @@ const seed = () => p.evaluate(() => {
 const setLang = async (code) => {
   await p.evaluate((c) => localStorage.setItem('pl_lang', c), code)
   await p.goto(B, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
 }
 const overflow = () => p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 
@@ -81,7 +80,6 @@ ok('the active-nav marker flips to the right edge',
 
 console.log('\n── FORM FURNITURE FLIPS TOO ──')
 await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 const money = await p.evaluate(() => {
   const span = [...document.querySelectorAll('form span')].find((s) => /[₹$€]/.test(s.textContent.trim()) && s.textContent.trim().length <= 2)
   if (!span) return null
@@ -127,7 +125,6 @@ ok('no sideways scroll on the form either', (await overflow()) <= 2, `${await ov
 console.log('\n── AND LTR IS UNCHANGED ──')
 await p.evaluate(() => localStorage.setItem('pl_lang', 'en'))
 await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const ltrMoney = await p.evaluate(() => {
   const span = [...document.querySelectorAll('form span')].find((s) => /[₹$€]/.test(s.textContent.trim()) && s.textContent.trim().length <= 2)
   const input = span?.parentElement.querySelector('input')
@@ -147,7 +144,6 @@ ok('and the sidebar is back on the left', ltrGeom !== null && ltrGeom < 50, Stri
 
 console.log('\n── THE PICKER ──')
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 const opts = await p.locator('select[aria-label="Language"], select[aria-label="भाषा"]').first().locator('option').allInnerTexts()
 ok('all thirteen languages are offered, plus "match my browser"', opts.length === 14, `${opts.length}: ${opts.join(' / ')}`)
 ok('each is named in its own script', opts.some((o) => /العربية/.test(o)) && opts.some((o) => /简体中文/.test(o)) && opts.some((o) => /Русский/.test(o)),
@@ -169,7 +165,6 @@ console.log('\n── PHONE, IN ARABIC ──')
 await p.setViewportSize({ width: 390, height: 800 })
 for (const path of ['/', '/expenses', '/settings', '/properties/new']) {
   await p.goto(B + path, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   const o = await overflow()
   ok(`${path} does not scroll sideways in Arabic on a phone`, o <= 2, `${o}px`)
 }

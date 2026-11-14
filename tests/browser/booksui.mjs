@@ -26,7 +26,6 @@ const pick = async (name) => {
 }
 const addAsset = async (name) => {
   await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   await p.locator('#main-content input').first().fill(name)
   await p.locator('form button[type="submit"]').first().click()
   await p.waitForTimeout(1000)
@@ -45,7 +44,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_income', '[]'); localStorage.setItem('pl_documents', '[]')
 })
 await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('a personal install sees its asset', /Sea View Villa/.test(await main()))
 
 // ── 2. A company arrives ──
@@ -58,12 +56,10 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_active', 'ent-1')
 })
 await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('and the company starts with none of it', !/Sea View Villa/.test(await main()), (await main()).slice(0, 200))
 ok('which is the point — the books are separate', /COMPANY/i.test(await chosen()))
 await pick('personal')
 await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('and it is still there in your own books', /Sea View Villa/.test(await main()))
 
 // ── 3. Adding on each side ──
@@ -83,13 +79,11 @@ ok('stamped with that company', stored.find((r) => r.name === 'Factory Unit')?.e
   JSON.stringify(stored.find((r) => r.name === 'Factory Unit')?.entity_id))
 
 await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 let text = await main()
 ok('the company sees only its own', /Factory Unit/.test(text) && !/Personal Flat/.test(text) && !/Sea View Villa/.test(text),
   text.slice(0, 240))
 await pick('personal')
 await p.goto(`${B}/properties`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 text = await main()
 ok('and personal sees only its own', /Personal Flat/.test(text) && /Sea View Villa/.test(text) && !/Factory Unit/.test(text),
   text.slice(0, 240))
@@ -100,11 +94,9 @@ ok('the personal expense is in personal books', /Adani/.test(await p.goto(`${B}/
 await p.goto(B, { waitUntil: 'networkidle' })
 await pick('company')
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('and not in the company', !/Adani/.test(await main()), (await main()).slice(0, 200))
 // The dashboard and the sidebar counts read the same rows, so they follow too.
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 ok('the dashboard shows the company, not your flat', !/Sea View Villa/.test(await main()), (await main()).slice(0, 300))
 
 // ── 5. Bills ──
@@ -124,7 +116,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_expenses', JSON.stringify(rows))
 })
 await p.goto(`${B}/bills`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 // Bills groups attached receipts by asset, so the asset filter is what says
 // whose books you are in.
 let bills = await main()
@@ -133,7 +124,6 @@ ok('personal books offer only personal assets', /Sea View Villa/.test(bills) && 
 await p.goto(B, { waitUntil: 'networkidle' })
 await pick('company')
 await p.goto(`${B}/bills`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 bills = await main()
 ok('and the company only its own', /Factory Unit/.test(bills) && !/Sea View Villa/.test(bills),
   bills.replace(/\n+/g, ' | ').slice(0, 260))
@@ -144,7 +134,6 @@ ok('and the company only its own', /Factory Unit/.test(bills) && !/Sea View Vill
 // two sets of books puts gaps in both.
 console.log('\n── AND SO DOES WHO AN INVOICE IS FROM ──')
 await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 const issuerName = () => p.getByLabel('Name / business').first()
 const gstinBox = () => p.locator('input[placeholder="27AAAPA1234A1Z5"]').first()
 ok('a company pre-fills its own name', (await issuerName().inputValue()).includes('Acme'),
@@ -157,7 +146,6 @@ ok('the company issuer is stored under its own key',
 await p.goto(B, { waitUntil: 'networkidle' })
 await pick('personal')
 await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 ok('your own books do not inherit the company GSTIN', (await gstinBox().inputValue()) === '',
   await gstinBox().inputValue())
 await issuerName().fill('Krish Shah')
@@ -169,13 +157,11 @@ ok('and are stored under the unsuffixed key, where they always were',
 // The numbering series is per issuer too.
 await p.evaluate(() => { localStorage.setItem('pl_invoice_seq', '7'); localStorage.setItem('pl_invoice_seq:ent-1', '42') })
 await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 let shown = await main()
 ok('personal invoices number from their own series', /0007/.test(shown), shown.slice(0, 300))
 await p.goto(B, { waitUntil: 'networkidle' })
 await pick('company')
 await p.goto(`${B}/invoices`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 shown = await main()
 ok('and the company from its own', /0042/.test(shown) && !/0007/.test(shown), shown.slice(0, 300))
 
@@ -196,7 +182,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_expenses', JSON.stringify(rows))
 })
 await p.goto(`${B}/bin`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 // The bin lists category, asset and amount rather than the vendor, so the
 // amount is what tells the two rows apart.
 let bin = await main()
@@ -205,7 +190,6 @@ ok('your bin holds only what you deleted', /₹100/.test(bin) && !/₹200/.test(
 await p.goto(B, { waitUntil: 'networkidle' })
 await pick('company')
 await p.goto(`${B}/bin`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 bin = await main()
 ok('and the company only what it deleted', /₹200/.test(bin) && !/₹100/.test(bin),
   bin.replace(/\n+/g, ' | ').slice(0, 260))
@@ -216,7 +200,6 @@ ok('and the company only what it deleted', /₹200/.test(bin) && !/₹100/.test(
 // you had just opened.
 console.log('\n── HALF-TYPED ENTRIES AND WHAT YOU SEARCHED ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 await p.locator('input[placeholder="e.g. Asian Paints"]').fill('Company Vendor Draft')
 await p.waitForTimeout(900)
 const draftKeys = await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pl_draft_')))
@@ -224,7 +207,6 @@ ok('a company draft is kept under its own key', draftKeys.some((k) => k.includes
 await p.goto(B, { waitUntil: 'networkidle' })
 await pick('personal')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 ok('and does not restore into a personal form',
   (await p.locator('input[placeholder="e.g. Asian Paints"]').inputValue()) !== 'Company Vendor Draft',
   await p.locator('input[placeholder="e.g. Asian Paints"]').inputValue())
@@ -245,7 +227,6 @@ const palette = async () => {
   return t
 }
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 let pal = await palette()
 ok('your own recent searches are yours', /personal search/.test(pal) && !/acme search/.test(pal), pal.slice(0, 200))
 await pick('company')
@@ -275,7 +256,6 @@ console.log('\n── AND FROM A PHONE, WHERE IT LIVES INSIDE THE DRAWER ──'
     localStorage.setItem('pl_corp_active', 'e1')
   })
   await m.goto(B, { waitUntil: 'networkidle' })
-  await m.waitForTimeout(900)
   // The desktop sidebar is still in the DOM at this width, just hidden — so
   // everything here asks for the *visible* control, or it drives a copy of the
   // switcher no thumb can reach.

@@ -50,7 +50,6 @@ console.log('\n── NOTHING WRONG IS SAID, NOT SHOWN EMPTY ──')
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await seed()
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 const clear = await main()
 // An empty box reads like something failed to load.
 ok('a company with nothing wrong is told so', /Nothing needs attention/.test(clear), clear.slice(0, 400))
@@ -66,7 +65,6 @@ await seed({
   ],
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 let shown = await card()
 ok('the rejected delivery is surfaced', /went back to suppliers/.test(shown), shown.slice(0, 500))
 ok('with the figure', /4,000/.test(shown))
@@ -91,7 +89,6 @@ await seed({
   pl_corp_units: [{ id: 'u1', entity_id: ID, project_id: null, name: 'A-1204', kind: 'flat', carpet_area: 2000, area_basis: 'carpet', rate_per_area: 10000, agreed_price: 20000000, other_charges: 0, status: 'available', created_at: now }],
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 shown = await card()
 ok('the short store is reported', /never received/.test(shown), shown.slice(0, 600))
 ok('and the saleable stock is on the list too', /still available to sell/.test(shown), shown.slice(0, 900))
@@ -124,7 +121,6 @@ ok('and lands on that tab rather than the first one',
   /Add a material|Add a machine|Add a unit|Record a day/.test(landed), landed.slice(0, 300))
 // A tab in the URL is a tab somebody can send to somebody else.
 await p.goto(`${B}/operations?tab=plant`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 ok('and a tab can be linked to directly', /Add a machine/.test(await main()), (await main()).slice(0, 300))
 
 console.log('\n── THE QUIETEST MONEY THERE IS ──')
@@ -134,7 +130,6 @@ await seed({
   pl_corp_plant_logs: [{ id: 'l1', entity_id: ID, plant_id: 'p1', project_id: null, date: '2026-03-01', working_hours: 8, idle_hours: 0, breakdown_hours: 0, trips: 0, fuel_litres: 0, fuel_cost: 0, created_at: now }],
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 shown = await card()
 ok('plant billed with no log sheet is surfaced', /no log sheet/.test(shown), shown.slice(0, 600))
 ok('with what it cost', /1,08,000/.test(shown), shown.slice(0, 600))
@@ -143,7 +138,6 @@ ok('and why it is the quietest money there is', /turned a wheel/.test(shown))
 console.log('\n── PERSONAL BOOKS HAVE NONE OF THIS ──')
 await p.evaluate(() => localStorage.setItem('pl_corp_active', '__personal__'))
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 const personal = await main()
 ok('no attention card in personal books', !/Needs attention/.test(personal) && !/Nothing needs attention/.test(personal),
   personal.slice(0, 300))

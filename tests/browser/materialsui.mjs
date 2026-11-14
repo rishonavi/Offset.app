@@ -60,7 +60,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_active', id)
 })
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 
 // The page opens on Projects — a cost belongs to a job before it belongs to a
 // ledger — so this suite has to ask for Materials.
@@ -388,12 +387,10 @@ ok('and reads as a sentence rather than a dotted string',
   trail.every((a) => a.summary && !/^[a-z]+\.[a-z]+$/.test(a.summary)),
   trail.filter((a) => /^[a-z]+\.[a-z]+$/.test(a.summary || '')).map((a) => a.action).join(', '))
 await p.goto(`${B}/activity`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 const shown = await main()
 ok('and the log on screen shows the construction work',
   /recorded a stock movement|added a material/i.test(shown), shown.slice(-900))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 await outerTab('Materials')
 
 console.log('\n── FINDING IT ──')
@@ -415,7 +412,6 @@ console.log('\n── THE BOOKS LINE STILL HOLDS ──')
 // somebody else's steel.
 await p.evaluate(() => localStorage.setItem('pl_corp_active', '__personal__'))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 const personal = await main()
 ok('in personal books the page says these belong to a company',
   /personal books/i.test(personal), personal.slice(0, 300))
@@ -449,7 +445,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_active', id)
 })
 await p.goto(`${B}/operations?tab=materials`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 const onFile = async () => (await ls('pl_corp_items')).filter((r) => !r.deleted_at)
 const logged = async () => (await ls('pl_corp_movements')).filter((r) => !r.deleted_at)
 const panel = (name) => (label) =>

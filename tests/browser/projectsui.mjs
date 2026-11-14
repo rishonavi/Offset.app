@@ -68,7 +68,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_active', id)
 })
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 
 console.log('\n── THE PAGE OPENS ON THE JOBS ──')
 // Everything else on this page is a cost, and a cost belongs to a job before it
@@ -120,11 +119,9 @@ ok('a site with no figures says so rather than showing 0%',
 console.log('\n── A BILL BOOKED TO A JOB ──')
 // The site picker appears on the entry form only once a company has sites.
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('the expense form now offers a site', (await p.locator('select[aria-label="Site"]').count()) === 1)
 const bill = async (amount, site, status = 'paid') => {
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   if (site) await p.locator('select[aria-label="Site"]').selectOption({ label: site })
   await p.locator('#main-content input[type="number"]').first().fill(String(amount))
   if (status === 'unpaid') {
@@ -143,7 +140,6 @@ await bill(400000, null)
 ok('a bill with no site is still a bill', (await ls('pl_expenses')).some((e) => !e.project_id))
 
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 text = await main()
 ok('the job shows what it has cost', /30,00,000|3,000,000/.test(text), text.slice(0, 800))
 ok('and how much of the estimate that is', /38% of the estimate used/.test(text), text.slice(0, 900))
@@ -194,7 +190,6 @@ ok('the whole contract is not yet billed', /Not yet billed/.test(billing))
 ok('and that is the full contract value', /1,00,00,000|10,000,000/.test(billing), billing.slice(0, 900))
 
 await p.goto(`${B}/income/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('the income form offers a site too', (await p.locator('select[aria-label="Site"]').count()) === 1)
 await p.locator('select[aria-label="Site"]').selectOption({ label: 'Marine Drive Tower' })
 await p.locator('#main-content input[type="number"]').first().fill('4000000')
@@ -204,7 +199,6 @@ const income = await ls('pl_income')
 ok('the invoice is stored against the site', income[0]?.project_id === sites[0].id, JSON.stringify(income[0] || {}).slice(0, 120))
 
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 await view('Billing')
 billing = await main()
 ok('the invoice reaches the billing view', /40,00,000|4,000,000/.test(billing), billing.slice(0, 900))
@@ -260,14 +254,12 @@ ok('and the open one stays', /Powai Annexe/.test(openOnly))
 console.log('\n── THE BOOKS LINE STILL HOLDS ──')
 await p.evaluate(() => localStorage.setItem('pl_corp_active', '__personal__'))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const personal = await main()
 ok('in personal books the page says these belong to a company', /personal books/i.test(personal), personal.slice(0, 300))
 ok('and shows no sites', !/Marine Drive Tower/.test(personal))
 // A personal expense has no site, and the field should not be there to suggest
 // otherwise.
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('and the expense form offers no site', (await p.locator('select[aria-label="Site"]').count()) === 0)
 
 console.log('\n── NOTHING BROKE ──')

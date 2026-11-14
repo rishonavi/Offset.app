@@ -87,7 +87,6 @@ console.log('\n── THE FILTER IS IN THE ADDRESS BAR ──')
 {
   const { ctx, p } = await open()
   await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   ok('a plain visit leaves a plain URL', !p.url().includes('?'), p.url())
   await p.locator('#main-content select').first().selectOption('a1')
   await p.waitForTimeout(400)
@@ -106,7 +105,6 @@ console.log('\n── AND IT FOLLOWS YOU BETWEEN THE TWO ──')
   // place, and the reason not to.
   const { ctx, p } = await open()
   await p.goto(`${B}/reports?propertyId=a2&from=2026-05-01`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   const before = await body(p)
   // The href now carries the query, which is the whole point — so match on the
   // path rather than the exact string.
@@ -126,7 +124,6 @@ console.log('\n── BOTH ARE FINDABLE ──')
 {
   const { ctx, p } = await open()
   await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   ok('the side bar lists reports', (await p.locator('nav a[href="/reports"]').count()) === 1)
   ok('and lists export separately', (await p.locator('nav a[href="/exports"]').count()) === 1)
   // The palette has to answer the word someone actually types.

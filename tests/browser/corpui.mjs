@@ -50,7 +50,6 @@ ok('the ledger still shows the personal entry', /Adani/.test(await p.locator('#m
 // to the page that turns the corporate side on was typing its URL.
 console.log('\n── AND YET THERE IS A WAY IN ──')
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 const settings = await p.locator('#main-content').innerText()
 // Directly under the account card, because it is about the account: which sets
 // of books this login has. Personal is stated as a fact — it already exists and
@@ -84,7 +83,6 @@ ok('the account card has no books switch yet',
 // ── 2. Creating the first company ──
 console.log('\n── THE FIRST COMPANY ──')
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 ok('the page invites you to add one', /No companies yet/.test(await p.locator('#main-content').innerText()))
 await p.locator('button', { hasText: 'Add a company' }).first().click()
 await p.waitForTimeout(300)
@@ -101,7 +99,6 @@ ok('creating it is audited', (await ls('pl_corp_audit')).some((a) => a.action ==
 
 // The nav and switcher appear only now.
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 ok('Companies now appears in the sidebar', /COMPANIES/i.test(await p.locator('aside nav').innerText()))
 // One company needs no dropdown to choose between — the tabs say which set of
 // books, and the company's name sits under them.
@@ -114,7 +111,6 @@ ok('the personal books are untouched', (await ls('pl_expenses')).length === 1)
 // Once you are through it, the door stops being a door: the nav entry and the
 // books tabs are how you get back, and a third copy in Settings would be noise.
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 // After that the books tabs on the account card are how you move between them,
 // and this would be a second copy of a control that already exists.
 ok('and Settings stops offering, now that there is one',
@@ -123,7 +119,6 @@ ok('and Settings stops offering, now that there is one',
 // ── 3. Departments ──
 console.log('\n── DEPARTMENTS ──')
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 await p.locator('input[aria-label="Department name"]').fill('Operations')
 await p.locator('input[aria-label="Department code"]').fill('ops')
 await p.locator('button', { hasText: 'Add department' }).click()
@@ -191,7 +186,6 @@ ok('and the link opens the log', /Audit log/.test(trailPage), trailPage.slice(0,
 ok('which names what happened', /created a company|added a member|added a department/.test(trailPage),
   trailPage.slice(0, 400).replace(/\n/g, ' | '))
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 
 // ── 7. A second company and the consolidated view ──
 console.log('\n── A SECOND COMPANY ──')
@@ -228,12 +222,10 @@ ok('the company is still active', /Acme/.test(await p.locator('#main-content').i
 // ledger — that is the feature. What has to survive is that it is still there,
 // untouched, in the books it belongs to.
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 ok('a personal entry is not in the company ledger', !/Adani/.test(await p.locator('#main-content').innerText()))
 ok('but the row itself is untouched', (await ls('pl_expenses')).some((e) => e.vendor === 'Adani'))
 await pick('personal')
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 ok('and it still shows in your own books', /Adani/.test(await p.locator('#main-content').innerText()))
 await pick('company')
 await p.goto(B, { waitUntil: 'networkidle' })
@@ -249,7 +241,6 @@ console.log('\n── PERSONAL BOOKS ──')
 await p.setViewportSize({ width: 1440, height: 1000 })
 
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('the tabs offer both sets of books', /PERSONAL/.test(await tabs.innerText()) && /COMPANY/.test(await tabs.innerText()))
 ok('a company is what you are in', /COMPANY/i.test(await chosen()))
 await pick('personal')
@@ -261,17 +252,14 @@ ok('Operations says which books you are in', /You are in your personal books/.te
 
 // The one that would be a disaster to get wrong.
 await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 ok('the personal ledger still shows', /Adani/.test(await p.locator('#main-content').innerText()))
 ok('and is still writable', (await p.locator('a[href="/expenses/new"]').count()) > 0)
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('a new entry can still be started', (await p.locator('#main-content input,#main-content select').count()) > 3,
   (await p.locator('#main-content').innerText()).slice(0, 120))
 
 // Companies is still reachable — otherwise the tab would be a trap.
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 let co = await p.locator('#main-content').innerText()
 ok('Companies still lists them', /Acme Industries/.test(co))
 ok('and still offers to add one', /Add a company/i.test(co))
@@ -282,7 +270,6 @@ await pick('company')
 await p.waitForTimeout(700)
 ok('coming back lands on a company', !/PERSONAL/i.test(await chosen()))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('and Operations works again', /Add a site/.test(await p.locator('#main-content').innerText()))
 ok('the dropdown is back, with two companies to choose from',
   await p.locator('select[aria-label="Switch company"]').isVisible())
@@ -304,7 +291,6 @@ await pick('personal')
 await p.waitForTimeout(600)
 ok('Companies is still in the nav from personal books', /COMPANIES/i.test(await p.locator('aside nav').innerText()))
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('and the page still offers to add one', (await p.locator('#main-content button', { hasText: 'Add a company' }).count()) > 0,
   (await p.locator('#main-content').innerText()).slice(0, 200))
 const before = (await ls('pl_corp_entities')).length
@@ -338,7 +324,6 @@ ok('and a reload does not move you somewhere else', (await p.evaluate(() => loca
 // card too — the same component, so the two cannot drift apart.
 console.log('\n── AND ON THE ACCOUNT CARD ──')
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const account = p.locator('#main-content h2', { hasText: /^Account$/ }).locator('xpath=..')
 ok('the account card carries the books switch', (await account.locator('[role="tablist"]').count()) === 1,
   (await account.innerText()).replace(/\n+/g, ' | ').slice(0, 200))
@@ -351,10 +336,8 @@ ok('switching on Settings moves the side bar too',
 ok('and it is the same choice, not a second one',
   (await p.evaluate(() => localStorage.getItem('pl_corp_active'))) === '__personal__')
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('so Operations follows it', /You are in your personal books/.test(await p.locator('#main-content').innerText()))
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 await account.getByRole('tab', { name: /company/i }).click()
 await p.waitForTimeout(700)
 ok('and back again', !/PERSONAL/i.test(await chosen()), await chosen())
@@ -383,7 +366,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_active', 'e-fix')
 })
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await p.locator('button[aria-label="Edit U.K. Builders"]').click()
 await p.waitForTimeout(350)
 const panel = p.locator('[role="group"][aria-label="Editing U.K. Builders"]')
@@ -436,7 +418,6 @@ ok('and not the month number it used to print', !/FY from month/.test(listed))
 console.log('\n── LAYOUT ──')
 await p.setViewportSize({ width: 390, height: 800 })
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 ok('no sideways scroll on a phone', overflow <= 2, `${overflow}px`)
 const unlabelled = await p.evaluate(() =>

@@ -29,7 +29,6 @@ const box = () => p.locator('label:has-text("What is it?") input')
 const other = () => p.locator('label:has-text("Other")').first()
 
 await p.goto(B + '/properties/new', { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 
 // ── Hidden until it is wanted ───────────────────────────────────────────
 ok('the write-in box is absent until Other is chosen', (await box().count()) === 0)
@@ -75,7 +74,6 @@ ok('the list shows it rather than "Other"',
 
 // ── And comes back on the way in ────────────────────────────────────────
 await p.goto(B + `/properties/${stored.id}/edit`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('reopening it shows the Other tile selected',
   await other().evaluate((el) => el.querySelector('input').checked))
 ok('  with the typed type back in the box',
@@ -95,7 +93,6 @@ ok('  and the stored type is the listed one', after.type === 'Vehicle / Car', St
 
 // ── The control: a plain "Other" still works as it always did ───────────
 await p.goto(B + '/properties/new', { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 await other().click()
 await p.waitForTimeout(200)
 await p.locator('input[placeholder^="e.g."]').first().fill('Unnamed thing')

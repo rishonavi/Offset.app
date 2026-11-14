@@ -34,7 +34,6 @@ await p.evaluate(() => {
 
 console.log('── THE FORM OPENS SHORT ──')
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 const shown = await fields()
 ok('only a handful of fields are on screen', shown > 0 && shown <= 7, `${shown} showing`)
 ok('the rest are behind one control', await more().isVisible())
@@ -75,7 +74,6 @@ await p.evaluate(() => {
     }))))
 })
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 await more().click()
 await p.waitForTimeout(300)
 const guessed = await p.evaluate(() =>
@@ -91,7 +89,6 @@ await p.evaluate(() => {
   }]))
 })
 await p.goto(`${B}/expenses/kept/edit`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('the details are open from the start', (await more().getAttribute('aria-expanded')) === 'true')
 ok('and the note is on screen', (await p.locator('#main-content textarea').first().inputValue()) === 'settle by Friday')
 
@@ -105,7 +102,6 @@ ok('the button lists what is inside', /cash/i.test(summary), summary)
 
 console.log('\n── THE SAME ON THE INCOME FORM ──')
 await p.goto(`${B}/income/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 ok('income folds its details too', await more().isVisible())
 ok('and starts closed', (await more().getAttribute('aria-expanded')) === 'false')
 await more().click()

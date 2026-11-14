@@ -58,7 +58,6 @@ const seed = () => p.evaluate(() => {
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await seed()
 await p.goto(`${B}/activity`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 
 console.log('\n── IT SAYS WHAT CHANGED, NOT ONLY THAT SOMETHING DID ──')
 let t = await log()

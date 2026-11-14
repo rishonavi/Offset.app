@@ -69,7 +69,6 @@ for (const route of ROUTES) {
   await p.route('**/fonts.g**/**', (r) => r.abort())
   await p.addInitScript(SEED)
   await p.goto(B + route, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
 
   const labels = await p.evaluate(() =>
     [...document.querySelectorAll('#main-content button')].map((el, i) => ({

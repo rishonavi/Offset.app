@@ -48,7 +48,6 @@ await p.evaluate(({ ent }) => {
 
 const open = async () => {
   await p.goto(`${B}/operations?tab=import`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(900)
 }
 await open()
 

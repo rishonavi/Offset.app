@@ -37,7 +37,6 @@ console.log('── SETTLING SEVERAL AT ONCE ──')
 {
   const { ctx, p, errs } = await open()
   await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   ok('the side bar says three are outstanding', (await badge(p)).includes('3'), await badge(p))
 
   await p.locator('#main-content thead input[type=checkbox]').first().check()
@@ -66,7 +65,6 @@ console.log('\n── NOTHING TO SETTLE, NOTHING OFFERED ──')
 {
   const { ctx, p } = await open()
   await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   // The table sorts newest first, so position is not a reliable way to find a
   // settled row. Pick the one whose row has no Overdue badge.
   await p.locator('#main-content tbody tr').filter({ hasNotText: /overdue/i }).first()
@@ -98,7 +96,6 @@ console.log('\n── THE SAME SPREADSHEET TWICE ──')
   const msg = await p.locator('#main-content').innerText()
   ok('the second says it skipped a duplicate', /skipped 1 duplicate/i.test(msg), msg.slice(0, 160))
   await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   const count = await p.evaluate(() =>
     [...document.querySelectorAll('#main-content tbody tr')].filter((r) => /4,321/.test(r.innerText)).length)
   ok('and the row is in the books exactly once', count === 1, `${count} rows`)

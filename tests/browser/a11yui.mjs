@@ -109,7 +109,6 @@ const reset = async () => {
 }
 
 await p.goto(B + '/expenses', { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 
 // A comparison of two screenshots is only about the thing under test if
 // everything else is the same in both. Playwright leaves its mouse wherever it
@@ -175,7 +174,6 @@ ok('inverting actually repaints the page', !inverted.equals(basePixels))
   await q.goto(B, { waitUntil: 'domcontentloaded' })
   await q.evaluate(SEED)
   await q.goto(B + '/expenses', { waitUntil: 'networkidle' })
-  await q.waitForTimeout(700)
 
   const fabAfterScroll = async () => {
     await q.evaluate(() => window.scrollTo(0, 0))

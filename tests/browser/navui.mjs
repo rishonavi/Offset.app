@@ -24,7 +24,6 @@ const open = async (viewport, unpaid = 3, pending = 1) => {
   await p.route('**/fonts.g**/**', (r) => r.abort())
   await p.addInitScript(seed(), [unpaid, pending])
   await p.goto(`${B}/expenses`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   return { ctx, p }
 }
 const sidebar = (p) => p.locator('aside').first()

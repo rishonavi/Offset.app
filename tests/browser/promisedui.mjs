@@ -62,7 +62,6 @@ console.log('\n── WITH NOTHING AGREED, THE CARD IS NOT THERE ──')
 // An empty panel of zeroes reads as something that failed to load.
 await seed({})
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 ok('the dashboard loads', (await main()).length > 200)
 ok('and says nothing about promises', !/already promised/i.test(await main()))
 
@@ -83,7 +82,6 @@ const bill = {
 }
 await seed({ pl_corp_work_orders: [order], pl_corp_ra_bills: [bill] })
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 let t = await card()
 ok('the card appears', t.length > 50, (await main()).slice(0, 200))
 // ₹10,00,000 agreed less ₹4,00,000 certified.
@@ -127,7 +125,6 @@ const quote = {
 }
 await seed({ pl_corp_work_orders: [order], pl_corp_ra_bills: [bill], pl_corp_quotes: [quote] })
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 t = await card()
 // 1,000 × ₹60 plus 18% = ₹70,800, so committed becomes ₹6,70,800.
 ok('the delivery is added to what is committed', /6,70,800/.test(t), t)
@@ -140,7 +137,6 @@ await seed({
   pl_corp_quotes: [{ ...quote, received_at: now }],
 })
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 t = await card()
 ok('the same quotation, stamped, drops out', !/6,70,800/.test(t), t)
 ok('leaving the order on its own', /6,00,000/.test(t), t)
@@ -159,7 +155,6 @@ const clientOrder = { ...order, id: 'wo-c', contractor: 'Metro Development Autho
 const clientBill = { ...bill, id: 'ra-c', work_order_id: 'wo-c', claimed_to_date: 1000000, certified_to_date: 1000000 }
 await seed({ pl_corp_work_orders: [order, clientOrder], pl_corp_ra_bills: [bill, clientBill] })
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 t = await card()
 // ₹10,00,000 certified less 5% and 1% is ₹9,40,000 coming in.
 ok('what the client owes is due in', /9,40,000/.test(t), t)
@@ -172,7 +167,6 @@ await seed({
   pl_corp_ra_bills: [bill],
 })
 await p.goto(`${B}/`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 t = await card()
 ok('the reader is told it is a floor', /this is a floor/i.test(t), t)
 ok('and how many contracts carry no value', /1 contract carries no/i.test(t), t)

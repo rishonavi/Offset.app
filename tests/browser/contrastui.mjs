@@ -61,7 +61,6 @@ for (const theme of ['light', 'dark']) {
   await p.waitForTimeout(800)
   await p.evaluate((t) => localStorage.setItem('pl_theme', t), theme)
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(700)
   for (const r of await measure(p)) {
     ok(`${r.name} is readable`, r.ratio >= r.need, `${r.ratio}:1, needs ${r.need}:1`)
   }
@@ -78,7 +77,6 @@ console.log('\n── THE FORM ON A PHONE ──')
   await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
   await p.waitForTimeout(800)
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   ok('no sideways scroll', overflow <= 2, `${overflow}px`)
   // The two-column grid is a sm: breakpoint, so a phone gets one column and the
@@ -106,7 +104,6 @@ console.log('\n── TARGETS BIG ENOUGH TO HIT ──')
   await p.locator('form button[type="submit"], button:has-text("Save")').first().click()
   await p.waitForTimeout(800)
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(600)
   // Apple's HIG says 44pt, Material says 48dp. 44 is the floor either way.
   //
   // The whole page, not only #main-content. Scoping this to the content is what
@@ -130,7 +127,6 @@ console.log('\n── WHEN SOMEONE ASKS FOR LESS MOTION ──')
   const p = await ctx.newPage()
   await p.route('**/fonts.g**/**', (r) => r.abort())
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(500)
   const moving = await p.evaluate(() =>
     [...document.querySelectorAll('#main-content *')]
       .filter((el) => {

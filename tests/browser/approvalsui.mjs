@@ -66,7 +66,6 @@ console.log('\n── THE SWITCH USED TO CHANGE NOTHING ──')
 await p.goto(B, { waitUntil: 'domcontentloaded' })
 await seed({})
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('approvals start off', !(await policy())['ent-appr-1']?.enabled)
 await p.locator('#main-content input[type="checkbox"]').first().check()
 await p.waitForTimeout(600)
@@ -93,7 +92,6 @@ ok('and the ones nobody set are not invented',
 console.log('\n── A BILL OVER THE LINE WAITS ──')
 const spend = async (amount) => {
   await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-  await p.waitForTimeout(650)
   await p.locator('#main-content input[type="number"]').first().fill(String(amount))
   await p.locator('button[type="submit"]').first().click()
   await p.waitForTimeout(900)
@@ -112,7 +110,6 @@ ok('the bill records who raised it', spent.every((e) => e.created_by !== undefin
 
 console.log('\n── ONE QUEUE, WHEREVER IT WAS RAISED ──')
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 let page = await main()
 ok('the queue shows it', /Waiting for approval/.test(page), page.slice(0, 400))
 ok('with what it is holding up', /60,000/.test(page), page.slice(page.indexOf('Waiting for approval'), page.indexOf('Waiting for approval') + 300))
@@ -155,7 +152,6 @@ await p.evaluate(() => {
   }]))
 })
 await p.goto(`${B}/companies`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 page = await main()
 ok('a work order and a certification queue up beside a bill',
   /Sharma Plastering/.test(page) && /Running account bills/.test(page), page.slice(page.indexOf('Waiting for approval'), page.indexOf('Waiting for approval') + 500))
@@ -174,7 +170,6 @@ ok('naming who signed', (await ls('pl_corp_ra_bills'))[0]?.approved_by !== undef
 
 console.log('\n── A REFUSAL IS NOT A CERTIFICATION ──')
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 await outerTab('Labour')
 await chose(p.locator('#main-content [role="tab"]', { hasText: 'Contractors' }).first())
 const labour = await main()
@@ -187,7 +182,6 @@ ok('and the work order still says it is waiting',
 console.log('\n── THE PAGE WHERE WORK HAPPENS SAYS SO ──')
 // A control nobody finds gets switched off, and the queue lives elsewhere.
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(800)
 const ops = await main()
 ok('Operations says something is held up', /waiting for approval/i.test(ops), ops.slice(0, 400))
 ok('with what it is worth', /9,00,000/.test(ops), ops.slice(0, 400))
@@ -200,7 +194,6 @@ ok('with approvals off nothing waits for anybody',
   (await ls('pl_expenses')).every((e) => e.approval_status !== 'pending'),
   JSON.stringify((await ls('pl_expenses')).map((e) => e.approval_status)))
 await p.goto(`${B}/operations`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('and no banner appears', !/waiting for approval/i.test(await main()))
 
 console.log('\n── PERSONAL BOOKS HAVE NOBODY TO APPROVE ──')

@@ -63,7 +63,6 @@ await p.evaluate(([long, mid, soon, old]) => {
 
 console.log('\n── THE CARD ──')
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('the report says what is owed', /What is owed, and how late/.test(await main()))
 let r = await card()
 // 120,000 + 4,000 + 1,000 + 2,500 on Sea View, plus 50,000 on Hill Cottage.
@@ -96,21 +95,18 @@ ok('and which way the late money runs', /₹1,29,000 more is late from you than 
 console.log('\n── WHAT THE FILTER DOES, AND DOES NOT ──')
 // A property narrows which bills are being asked about.
 await p.goto(`${B}/reports?propertyId=p2`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 r = await card()
 ok('a property filter narrows it', /₹50,000/.test(r) && !/1,77,500/.test(r), r)
 
 // A start date must not: the whole point is the bill nobody has paid for
 // months, and a range starting this year would hide it.
 await p.goto(`${B}/reports?from=${day(-5)}`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 r = await card()
 ok('a start date does not hide the oldest bill', /1,77,500/.test(r), r)
 ok('which the card says out loud', /not just what falls inside the period above/.test(r))
 
 // An end date does, because "still open as at" is a real question.
 await p.goto(`${B}/reports?to=${day(-150)}`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 r = await card()
 // 150 days ago every one of these bills was still ahead of its due date.
 ok('an end date ages everything as at that day', /Not yet due\t4/.test(r), r)
@@ -126,13 +122,11 @@ await p.evaluate(() => {
   ))
 })
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 ok('with nothing owed the card stays away', !/What is owed, and how late/.test(await main()))
 
 console.log('\n── LAYOUT ──')
 await p.setViewportSize({ width: 390, height: 800 })
 await p.goto(`${B}/reports?propertyId=p1`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 ok('no sideways scroll on a phone', overflow <= 2, `${overflow}px`)
 

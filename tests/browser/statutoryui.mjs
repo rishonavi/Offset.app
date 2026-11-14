@@ -83,7 +83,6 @@ await seed(12)
 
 console.log('\n── NOTHING IS DEDUCTED UNTIL SOMEBODY SAYS ──')
 await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 let t = await main()
 ok('the payroll is on screen', /payslips/i.test(t), t.slice(0, 300).replace(/\n/g, ' | '))
 ok('both schemes are asked about', /provident fund/i.test(t) && /state insurance/i.test(t),
@@ -178,7 +177,6 @@ await p.evaluate((ent) => {
   localStorage.setItem('pl_corp_active', ent)
 }, ENT)
 await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 t = await main()
 ok('four men on the books', /ON PAYROLL\s*\n\s*4\b/i.test(t), t.slice(0, 1200).replace(/\n/g, ' | '))
 ok('nothing is required of them', !/required at/i.test(t), t.slice(0, 1200).replace(/\n/g, ' | '))
@@ -199,7 +197,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(list))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 let att = await attentionCard()
 ok('an unanswered scheme reaches the dashboard', /Nobody has said whether this company runs/i.test(att),
   att.slice(0, 900).replace(/\n/g, ' | '))
@@ -212,7 +209,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(list))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 att = await attentionCard()
 ok('answering it takes it off the list', !/Nobody has said whether this company runs/i.test(att),
   att.slice(0, 900).replace(/\n/g, ' | '))
@@ -230,7 +226,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_employees', JSON.stringify(list))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 att = await attentionCard()
 ok('not registering at twelve employees is raised', /required at this headcount/i.test(att),
   att.slice(0, 1200).replace(/\n/g, ' | '))
@@ -242,7 +237,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_employees', JSON.stringify(list.slice(0, 4)))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 att = await attentionCard()
 ok('four men and the same answer is nothing to raise', !/required at this headcount/i.test(att),
   att.slice(0, 1200).replace(/\n/g, ' | '))
@@ -253,7 +247,6 @@ console.log('\n── PROFESSIONAL TAX IS TWENTY-TWO TAXES WEARING ONE NAME ─�
 // professional tax whatsoever — had ₹200 a month taken off every payslip.
 await seed(4)
 await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 t = await main()
 ok('the payroll asks about it', /Professional tax/.test(t), t.slice(0, 1400).replace(/\n/g, ' | '))
 // The company never chose a state. It did enter a GSTIN, and the first two
@@ -345,7 +338,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(list))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 const ptCard = async () => {
   const txt = await main()
   const i = txt.indexOf('Needs attention')
@@ -362,7 +354,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(list))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 pt = await ptCard()
 ok('answering it takes it off the list', !/which state the professional tax is for/i.test(pt),
   pt.slice(0, 1000).replace(/\n/g, ' | '))
@@ -373,7 +364,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(list))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 pt = await ptCard()
 ok('a small state’s slabs are raised as worth checking', /slabs are worth checking/i.test(pt),
   pt.slice(0, 1200).replace(/\n/g, ' | '))
@@ -385,7 +375,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(list))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 pt = await ptCard()
 ok('and a state this is sure of is not raised at all', !/slabs are worth checking/i.test(pt),
   pt.slice(0, 1200).replace(/\n/g, ' | '))
@@ -414,7 +403,6 @@ await p.evaluate((ent) => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(ents))
 }, ENT)
 await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 t = await main()
 const money = (label) => {
   const m = (t.match(new RegExp(`${label}\\s*\\n\\s*₹([\\d,.]+)`, 'i')) || [])[1]
@@ -469,7 +457,6 @@ ok('with the minimum wage', (await entRow())?.minimum_wage === 12000, JSON.strin
 
 console.log('\n── AND BOTH REACH THE DASHBOARD ──')
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 let owedCard = await attentionCard()
 ok('gratuity already owed is raised', /gratuity is owed and nothing is set aside/i.test(owedCard),
   owedCard.slice(0, 1200).replace(/\n/g, ' | '))
@@ -480,7 +467,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_employees', JSON.stringify(list.map((e) => ({ ...e, joined_on: '2024-01-01' }))))
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 owedCard = await attentionCard()
 ok('a payroll where nobody has five years is not told they are owed',
   !/gratuity is owed/i.test(owedCard), owedCard.slice(0, 1200).replace(/\n/g, ' | '))
@@ -512,7 +498,6 @@ const reportGross = async () => {
   return m ? Number(m[1].replace(/,/g, '')) : null
 }
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 const offCost = await costToCompany()
 const offGross = await reportGross()
 ok('the report costs the payroll', offCost !== null && offGross !== null, `${offCost} / ${offGross}`)
@@ -525,7 +510,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_corp_entities', JSON.stringify(list))
 })
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 const onCost = await costToCompany()
 ok('and saying yes puts the employer share into the report', onCost > offCost, `${onCost} vs ${offCost}`)
 // The employer half of PF on four men: one on ₹40,000 basic capped at the

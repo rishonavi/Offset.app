@@ -55,7 +55,6 @@ await p.evaluate(({ month }) => {
 
 console.log('\n── NOTHING LOADED IS NOT A CLEAN BILL OF HEALTH ──')
 await p.goto(`${B}/reports`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1200)
 let t = await panel()
 ok('the panel is on the reports page', t.length > 40, (await main()).slice(0, 300))
 ok('and says nothing has been checked', /nothing has been checked/i.test(t), t)

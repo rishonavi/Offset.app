@@ -59,7 +59,6 @@ await p.evaluate(() => {
   document.documentElement.classList.add('dark')
 })
 await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1100)
 
 console.log('\n── THE PAGE, THE CARD AND THE FIELD ARE THREE PLANES ──')
 const depth = await p.evaluate(`(() => {

@@ -76,7 +76,6 @@ await p.evaluate((ent) => {
 
 console.log('\n── A MONTH NOBODY HAS RUN SAYS SO ──')
 await p.goto(`${B}/operations?tab=payroll`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(900)
 let t = await main()
 ok('the payroll is on screen', /payslips/i.test(t), t.slice(0, 300).replace(/\n/g, ' | '))
 ok('both people are on it', /R\. Yadav/.test(t) && /S\. Shaikh/.test(t))

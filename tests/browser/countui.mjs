@@ -79,7 +79,6 @@ await p.evaluate(({ ent }) => {
 
 console.log('\n── NOBODY HAS EVER LOOKED ──')
 await p.goto(`${B}/operations?tab=materials`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(1000)
 await view('Verify')
 let t = await main()
 ok('the verify screen opens', /count sheet/i.test(t), t.slice(0, 300))

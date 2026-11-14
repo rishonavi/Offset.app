@@ -25,7 +25,6 @@ await p.evaluate(() => {
   localStorage.setItem('pl_income', '[]'); localStorage.setItem('pl_documents', '[]')
 })
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 
 console.log('\n── IT IS FINDABLE ──')
 const sidebarBtn = p.locator('aside button', { hasText: 'Report a problem' })
@@ -96,7 +95,6 @@ ok('the report is still marked as filed, not sent',
 
 console.log('\n── IT APPEARS IN SETTINGS ──')
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(700)
 const settings = await p.locator('#main-content').innerText()
 ok('Settings has a Report a problem section', /Report a problem/.test(settings))
 ok('and lists the filed report', settings.includes(r.reference), r.reference)
@@ -114,7 +112,6 @@ ok('and the list is gone from the page', !(await p.locator('#main-content').inne
 
 console.log('\n── A CRASH OFFERS TO REPORT ITSELF ──')
 await p.goto(B, { waitUntil: 'networkidle' })
-await p.waitForTimeout(400)
 await p.evaluate(() => {
   const err = new Error('Synthetic failure for the error log')
   window.dispatchEvent(new ErrorEvent('error', { message: err.message, error: err }))
@@ -143,7 +140,6 @@ await p.keyboard.press('Escape')
 console.log('\n── LAYOUT ──')
 await p.setViewportSize({ width: 390, height: 800 })
 await p.goto(`${B}/settings`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 let overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
 ok('Settings does not scroll sideways on a phone', overflow <= 2, `${overflow}px`)
 await p.locator('button', { hasText: 'New report' }).first().click()

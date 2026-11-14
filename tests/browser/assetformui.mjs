@@ -152,7 +152,6 @@ ok('and the tenant it was given', shop.tenant_name === 'Rahul Mehta', JSON.strin
 
 console.log('\n── THE FORM ASKS FOR ONE THING ──')
 await p.goto(`${B}/properties/new`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(500)
 let text = await p.locator('#main-content').innerText()
 ok('it says only the name is needed', /Only the name is needed/.test(text), text.slice(-200))
 ok('the loan block starts shut', (await p.locator('input[placeholder="e.g. 240"]').count()) === 0)
@@ -224,7 +223,6 @@ const id = await p.evaluate(() =>
   (JSON.parse(localStorage.getItem('pl_properties') || '[]').find((x) => x.name === 'Mortgaged Villa') || {}).id)
 ok('the asset with the loan saved', Boolean(id), String(id))
 await p.goto(`${B}/properties/${id}/edit`, { waitUntil: 'networkidle' })
-await p.waitForTimeout(600)
 // A collapsed row saying "Loan / mortgage" would hide the very numbers you
 // opened the page to change.
 ok('a mortgaged asset opens with its loan showing',
