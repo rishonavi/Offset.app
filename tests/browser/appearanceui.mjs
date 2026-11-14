@@ -14,6 +14,7 @@ const open = async (path = '/settings') => {
   p.setDefaultTimeout(30000)
   await p.route('**/fonts.g**/**', (r) => r.abort())
   await p.goto(B + path, { waitUntil: 'networkidle' })
+  await p.waitForTimeout(400)
   return { ctx, p }
 }
 const accentVar = (p) => p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-gold').trim())
@@ -132,6 +133,7 @@ console.log('\n── THE ACCENT REACHES EVERYTHING ──')
       }]))
     }, [accent, theme])
     await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+    await p.waitForTimeout(600)
     // A real click, so :focus actually applies.
     await p.locator('#main-content input.field-input').first().click()
     await p.waitForTimeout(250)
@@ -176,6 +178,7 @@ for (const theme of ['light', 'dark']) {
       localStorage.setItem('pl_theme', t)
     }, [a.id, theme])
     await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+    await p.waitForTimeout(500)
     await p.evaluate(installColour)
     const spots = await p.evaluate(() =>
       [['#main-content .btn-primary', 'the primary button'], ['.eyebrow', 'a section eyebrow'], ['nav a[aria-current], aside a[aria-current]', 'the current page in the sidebar']]
@@ -258,6 +261,7 @@ for (const theme of ['light', 'dark']) {
       localStorage.setItem('pl_theme', th)
     }, [t.id, theme])
     await p.goto(`${B}/expenses/new`, { waitUntil: 'networkidle' })
+    await p.waitForTimeout(500)
     await p.evaluate(installColour)
     const spots = await p.evaluate(() =>
       [['.field-label', 'a field label'], ['#main-content h1', 'the page heading'],
