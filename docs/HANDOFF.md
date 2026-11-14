@@ -37,8 +37,10 @@ No framework, no runner in `package.json`. Each file prints `PASS`/`**FAIL**` pe
 assertion and `N passed, M failed`, and exits non-zero. Commands are in
 `../CLAUDE.md`; `../tests/README.md` lists every suite.
 
-Baselines, all verified 2026-11-11: logic **5464/0 across 77**, browser
-**2334/0 across 66**, SQL **246/0**.
+Baselines, all verified 2026-11-14: logic **5464/0 across 77**, browser
+**2334/0 across 66**, SQL **246/0**. The whole baseline is ~7 minutes and the
+browser sweep is almost all of it — `../CLAUDE.md` has the measurements and the
+two speed-ups already spent, so you don't repeat them.
 
 Traps that cost real time:
 
@@ -111,6 +113,18 @@ mentions, 257 in all. Worth doing, in order:
    money off photographs and put it in the ledger.
 3. `src/lib/exports.js` (4/8) — the import half was done; export decides what
    leaves.
+
+**A specification with no caller.** `src/lib/brokers.js` (`BROKERS`) and
+`src/lib/marketHours.js` (`SESSION`, `sessionLabel`) have no caller anywhere in
+`src/` or `api/` — no screen offers a broker-holdings import, and valuations
+carry no session date. Both keep their tests, and `docs/ASSETS.md` now says so at
+the top of each section instead of describing them in the present tense. Either
+wire them up or delete them; don't leave it ambiguous a second time.
+
+Worth noting *why* `scripts/untested-exports.mjs` never flagged these: a test
+mentions every one of those names, and that tool only claims a name nothing
+mentions is untested. Its one-sidedness, in practice — it finds untested code,
+not unreachable code.
 
 **Not targets, despite high counts:** `storage/local.js` (24/40) and `supabase.js`
 (23/40) — `cloudwiring.test.mjs` and the SQL suite already cover what matters;

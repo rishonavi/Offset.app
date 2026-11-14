@@ -41,15 +41,30 @@ unneeded. Then report what changed and what you deleted.
 
 The known list, worst first — re-measure rather than trusting this:
 
-1. **834 `waitForTimeout` calls, 577 seconds of sleeping, across
-   `tests/browser/*.mjs`.** This is 85% of the test runtime (browser sweep 7m05
-   against logic 44s). Replace with Playwright's auto-waiting locators, which are
-   less code and faster. Measured 2026-11-11.
-2. **Over-long comment headers**, including mine. Several files carry three lines
+1. **Over-long comment headers**, including mine. Several files carry three lines
    of prose per line of code. Cut to the reason.
-3. Run `npx vite-node scripts/untested-exports.mjs` and read the reasoning in
+2. Run `npx vite-node scripts/untested-exports.mjs` and read the reasoning in
    `docs/HANDOFF.md` before adding tests — a high count is not automatically a
    target, and more tests is not automatically better.
+
+### The browser sweep is slow, and two obvious fixes are already spent
+
+Measured 2026-11-14, so you don't pay for these twice:
+
+- **264 sleeps after a `networkidle` goto are gone.** 834 calls / 577 s → 570 /
+  387 s. It bought **44 seconds** (6m47 → 6m03), not the 192 s deleted.
+- **The cost is CPU contention, not sleeping.** Four cores run eight Chromium
+  instances, so while one worker slept another used the core. `user` time went
+  *up* as wall-clock went down. An earlier version of this file claimed the
+  sleeping was "85% of runtime" — wrong: the browser *sweep* is 85% of the
+  baseline, and sleeping is a modest part of that sweep.
+- **`-P 4` is slower, not faster.** 7m07 against 6m03, and red. Oversubscription
+  helps because workers block on browser I/O. Don't re-try it.
+- So the **570 remaining sleeps after `click`/`fill` are a small prize**, maybe
+  another 40–60 s for 570 careful edits. Do them for correctness if you like —
+  a locator wait says what it waits for — but not for speed.
+- `appearanceui.mjs` keeps its sleeps on purpose: it measures computed CSS
+  contrast, and `networkidle` settles the network, not the paint.
 
 ## The rules that are not negotiable
 
@@ -69,7 +84,7 @@ The known list, worst first — re-measure rather than trusting this:
 npm run build
 ./scripts/sweep.sh logic                        # 44s
 npx vite preview --port 4188 --strictPort       # then wait ~8s
-./scripts/sweep.sh browser                      # 7m — see sweep item 1
+./scripts/sweep.sh browser                      # 6m — see the note above
 pg_ctlcluster 16 main start && OFFSET_TEST_PG='postgresql:///offset_test' node tests/sql/run.mjs
 ```
 
