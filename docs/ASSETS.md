@@ -63,6 +63,11 @@ from it would be worse than saying the reader is unavailable.
 
 ### Dating a price
 
+> **Modelled and tested, not yet wired.** The rules below live in
+> `src/lib/marketHours.js` (`SESSION`, `sessionLabel`) and no screen calls them
+> — valuations do not currently carry a session date. The reasoning holds and
+> the tests pass; what is missing is a caller.
+
 A rate read at 2am on a Sunday is Friday's close. Valuations are dated to the
 **session close** they came from, so a stale number is visibly stale rather than
 looking live. Market hours are computed in IST regardless of the browser's
@@ -71,6 +76,12 @@ rather than pretending to know them — the answer is still right on weekends an
 outside hours without one.
 
 ## Broker holdings
+
+> **Modelled and tested, not yet wired.** The column aliases live in
+> `src/lib/brokers.js` (`BROKERS`), covered by `tests/logic/brokers.test.mjs`,
+> and **no screen offers this import** — there is nowhere in the app to drop a
+> holdings file. Read what follows as the specification it is, not as behaviour
+> you can reach today.
 
 Every Indian broker exports holdings and none of them agree on column names.
 Zerodha writes "Avg. cost", Groww "Average buy price", Upstox "Buy Avg", ICICI
